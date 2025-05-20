@@ -15,12 +15,6 @@ namespace DfE.ExternalApplications.Application.Schools.Commands.CreateReport
     {
         public Task<bool> Handle(CreateReportCommand request, CancellationToken cancellationToken)
         {
-            var taskName = "Create_Report_Task1";
-
-            backgroundServiceFactory.EnqueueTask(
-                async () => await (new CreateReportExampleTask()).RunAsync(taskName),
-                result => new CreateReportExampleTaskCompletedEvent(taskName, result)
-                );
 
             return Task.FromResult(true);
         }
