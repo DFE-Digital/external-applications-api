@@ -17,7 +17,7 @@ namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.School
             typeof(PrincipalDetailsCustomization),
             typeof(CreateSchoolCommandCustomization))]
         public async Task Handle_ShouldCreateAndReturnSchoolId_WhenCommandIsValid(
-            [Frozen] ISclRepository<Domain.Entities.Schools.School> mockSchoolRepository,
+            [Frozen] IEaRepository<Domain.Entities.Schools.School> mockSchoolRepository,
             CreateSchoolCommandHandler handler,
             CreateSchoolCommand command,
             Domain.Entities.Schools.School school)

@@ -27,7 +27,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 {
                     SeedData = new Dictionary<Type, Action<DbContext>>
                     {
-                        { typeof(SclContext), context => SclContextSeeder.Seed((SclContext)context) },
+                        { typeof(ExternalApplicationsContext), context => SclContextSeeder.Seed((ExternalApplicationsContext)context) },
                     },
                     ExternalServicesConfiguration = services =>
                     {

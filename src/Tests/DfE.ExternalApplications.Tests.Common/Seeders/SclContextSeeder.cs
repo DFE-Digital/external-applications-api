@@ -6,7 +6,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
 {
     public static class SclContextSeeder
     {
-        public static void Seed(SclContext context)
+        public static void Seed(ExternalApplicationsContext context)
         {
                 var memberContact1 = new PrincipalDetails(
                     new PrincipalId(1),
@@ -50,8 +50,8 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
                     memberContact2
                 );
 
-                context.Schools.AddRange(school1, school2);
-                context.SaveChanges();
+               // context.Schools.AddRange(school1, school2);
+               // context.SaveChanges();
         }
     }
 }
