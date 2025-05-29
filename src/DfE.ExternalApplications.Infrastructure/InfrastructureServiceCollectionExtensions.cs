@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, IConfiguration config)
         {
             //Repos
-            services.AddScoped<ISchoolRepository, SchoolRepository>();
-            services.AddScoped(typeof(ISclRepository<>), typeof(SclRepository<>));
+           // services.AddScoped<ISchoolRepository, SchoolRepository>();
+            services.AddScoped(typeof(IEaRepository<>), typeof(EaRepository<>));
 
             //Cache service
             services.AddServiceCaching(config);
@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
             //Db
             var connectionString = config.GetConnectionString("DefaultConnection");
 
-            services.AddDbContext<SclContext>(options =>
+            services.AddDbContext<ExternalApplicationsContext>(options =>
                 options.UseSqlServer(connectionString));
 
             // Authentication

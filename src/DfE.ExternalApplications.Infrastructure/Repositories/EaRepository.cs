@@ -6,8 +6,8 @@ using DfE.ExternalApplications.Infrastructure.Database;
 namespace DfE.ExternalApplications.Infrastructure.Repositories
 {
     [ExcludeFromCodeCoverage]
-    public class SclRepository<TAggregate>(SclContext dbContext)
-        : Repository<TAggregate, SclContext>(dbContext), ISclRepository<TAggregate>
+    public class EaRepository<TAggregate>(ExternalApplicationsContext dbContext)
+        : Repository<TAggregate, ExternalApplicationsContext>(dbContext), IEaRepository<TAggregate>
         where TAggregate : class, IAggregateRoot
     {
     }

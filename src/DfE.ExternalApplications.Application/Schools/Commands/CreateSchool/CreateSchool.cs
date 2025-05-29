@@ -14,7 +14,7 @@ namespace DfE.ExternalApplications.Application.Schools.Commands.CreateSchool
         PrincipalDetailsModel PrincipalDetails
     ) : IRequest<SchoolId>;
 
-    public class CreateSchoolCommandHandler(ISclRepository<School> schoolRepository)
+    public class CreateSchoolCommandHandler(IEaRepository<School> schoolRepository)
         : IRequestHandler<CreateSchoolCommand, SchoolId>
     {
         public async Task<SchoolId> Handle(CreateSchoolCommand request, CancellationToken cancellationToken)
