@@ -29,6 +29,12 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("ApplicationId");
 
+                    b.Property<string>("ApplicationReference")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("ApplicationReference");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("CreatedBy");

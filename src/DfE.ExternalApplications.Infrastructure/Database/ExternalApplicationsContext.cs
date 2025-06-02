@@ -27,7 +27,6 @@ public class ExternalApplicationsContext : DbContext
         _serviceProvider = serviceProvider;
     }
 
-
     public DbSet<Role> Roles { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Template> Templates { get; set; } = null!;
@@ -217,6 +216,10 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("ApplicationId")
             .ValueGeneratedOnAdd()
             .HasConversion(v => v.Value, v => new ApplicationId(v))
+            .IsRequired();
+        b.Property(e => e.ApplicationReference)
+            .HasColumnName("ApplicationReference")
+            .HasMaxLength(20)
             .IsRequired();
         b.Property(e => e.TemplateVersionId)
             .HasColumnName("TemplateVersionId")
@@ -421,38 +424,4 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(e => e.CreatedBy)
             .OnDelete(DeleteBehavior.Restrict);
     }
-
-    //private static void ConfigureSchool(EntityTypeBuilder<School> schoolConfiguration)
-    //{
-    //    schoolConfiguration.HasKey(s => s.Id);
-    //    schoolConfiguration.ToTable("Schools", DefaultSchema);
-    //    schoolConfiguration.Property(e => e.Id)
-    //        .ValueGeneratedOnAdd()
-    //        .HasConversion(
-    //            v => v!.Value,
-    //            v => new SchoolId(v));
-
-    //    schoolConfiguration.Property(e => e.PrincipalId)
-    //        .HasConversion(
-    //            v => v.Value,
-    //            v => new PrincipalId(v));
-
-    //    schoolConfiguration.Property(e => e.SchoolName).HasColumnName("SchoolName");
-
-    //    schoolConfiguration.OwnsOne(e => e.NameDetails, nameDetails =>
-    //    {
-    //        nameDetails.Property(nd => nd.NameListAs).HasColumnName("NameListAs");
-    //        nameDetails.Property(nd => nd.NameDisplayAs).HasColumnName("NameDisplayAs");
-    //        nameDetails.Property(nd => nd.NameFullTitle).HasColumnName("NameFullTitle");
-    //    });
-
-    //    schoolConfiguration.Property(e => e.LastRefresh).HasColumnName("LastRefresh");
-
-    //    schoolConfiguration
-    //        .HasOne(c => c.PrincipalDetails)
-    //        .WithOne()
-    //        .HasForeignKey<School>(c => c.PrincipalId)
-    //        .HasPrincipalKey<PrincipalDetails>(m => m.Id);
-    //}
-
 }

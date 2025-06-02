@@ -7,6 +7,7 @@ namespace DfE.ExternalApplications.Domain.Entities;
 public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
 {
     public ApplicationId? Id { get; private set; }
+    public string ApplicationReference { get; private set; }
     public TemplateVersionId TemplateVersionId { get; private set; }
     public TemplateVersion? TemplateVersion { get; private set; }
     public DateTime CreatedOn { get; private set; }
