@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DfE.ExternalApplications.Infrastructure.Migrations
 {
     [DbContext(typeof(ExternalApplicationsContext))]
-    [Migration("20250520152756_Initial")]
+    [Migration("20250602095352_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -31,6 +31,12 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("ApplicationId");
+
+                    b.Property<string>("ApplicationReference")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("ApplicationReference");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uniqueidentifier")

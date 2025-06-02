@@ -203,6 +203,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 columns: table => new
                 {
                     ApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ApplicationReference = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     TemplateVersionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
