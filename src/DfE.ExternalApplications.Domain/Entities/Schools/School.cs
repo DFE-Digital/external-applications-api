@@ -17,8 +17,6 @@ namespace DfE.ExternalApplications.Domain.Entities.Schools
 
         public PrincipalDetails PrincipalDetails { get; private set; }
 
-        private School() { }
-
         public School(
             SchoolId schoolId,
             PrincipalId principalId,
@@ -49,6 +47,11 @@ namespace DfE.ExternalApplications.Domain.Entities.Schools
             LastRefresh = lastRefresh;
             EndDate = endDate;
             PrincipalDetails = principalDetails;
+        }
+
+        public School()
+        {
+            throw new NotImplementedException();
         }
 
         public static School Create(

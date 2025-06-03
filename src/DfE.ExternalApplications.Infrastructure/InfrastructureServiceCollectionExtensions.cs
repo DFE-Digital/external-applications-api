@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, IConfiguration config)
         {
             //Repos
-           // services.AddScoped<ISchoolRepository, SchoolRepository>();
+            services.AddScoped<ISchoolRepository, SchoolRepository>();
             services.AddScoped(typeof(IEaRepository<>), typeof(EaRepository<>));
 
             //Cache service

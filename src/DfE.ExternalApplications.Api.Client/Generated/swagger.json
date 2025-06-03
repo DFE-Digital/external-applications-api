@@ -158,6 +158,41 @@
           }
         }
       }
+    },
+    "/v1/Users/{email}/permissions": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "GET /api/users/{email}/permissions\nReturns all permissions for the user identified by {email}.",
+        "operationId": "Users_GetAllPermissionsForUser",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A UserPermission object representing the User's Permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Principal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "School cannot be null or empty."
+          }
+        }
+      }
     }
   },
   "components": {

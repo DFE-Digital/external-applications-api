@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DfE.ExternalApplications.Infrastructure.Migrations
 {
     [DbContext(typeof(ExternalApplicationsContext))]
-    [Migration("20250602095352_Initial")]
+    [Migration("20250602161455_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -468,7 +468,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("Permissions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -585,6 +585,11 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.Navigation("Template");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.User", b =>
+                {
+                    b.Navigation("Permissions");
                 });
 #pragma warning restore 612, 618
         }

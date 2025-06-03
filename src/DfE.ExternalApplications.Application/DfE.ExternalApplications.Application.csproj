@@ -19,4 +19,8 @@
     <ProjectReference Include="..\DfE.ExternalApplications.Utils\DfE.ExternalApplications.Utils.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Permissions\" />
+  </ItemGroup>
+
 </Project>
