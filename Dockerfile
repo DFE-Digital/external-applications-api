@@ -50,6 +50,7 @@ COPY --from=builder /app/appsettings* /DfE.ExternalApplications.Api/
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-azurelinux3.0 AS final
 LABEL org.opencontainers.image.source="https://github.com/DFE-Digital/external-applications-api"
 LABEL org.opencontainers.image.description="External Applications - API"
+WORKDIR /app
 
 COPY --from=builder /app /app
 COPY ./script/docker-entrypoint.sh /app/docker-entrypoint.sh
