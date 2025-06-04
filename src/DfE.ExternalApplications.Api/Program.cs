@@ -1,6 +1,9 @@
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
+using DfE.CoreLibs.Http.Interfaces;
+using DfE.CoreLibs.Http.Middlewares.CorrelationId;
 using DfE.ExternalApplications.Api.Middleware;
 using DfE.ExternalApplications.Api.Swagger;
-using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.FeatureManagement;
 using NetEscapades.AspNetCore.SecurityHeaders;
@@ -9,10 +12,6 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
-using Asp.Versioning;
-using Asp.Versioning.ApiExplorer;
-using DfE.CoreLibs.Http.Middlewares.CorrelationId;
-using DfE.CoreLibs.Http.Interfaces;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
 namespace DfE.ExternalApplications.Api

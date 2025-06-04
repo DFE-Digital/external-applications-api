@@ -129,7 +129,12 @@
       "inlineNamedDictionaries": false,
       "inlineNamedTuples": true,
       "inlineNamedAny": false,
-      "generateDtoTypes": true,
+      "generateDtoTypes": false,
+      "useSharedDTOs": true,
+      "typeMappings": {
+        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response.UserPermissionDto": "UserPermissionDto",
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums.AccessType": "AccessType"
+      },
       "generateOptionalPropertiesAsNullable": false,
       "generateNullableReferenceTypes": false,
       "templateDirectory": null,

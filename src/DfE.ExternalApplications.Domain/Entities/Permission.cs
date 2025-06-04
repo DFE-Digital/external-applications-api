@@ -1,4 +1,5 @@
-﻿using DfE.ExternalApplications.Domain.Common;
+﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 

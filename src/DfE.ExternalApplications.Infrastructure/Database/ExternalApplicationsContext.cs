@@ -1,3 +1,4 @@
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database.Interceptors;

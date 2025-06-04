@@ -1,4 +1,5 @@
 ﻿using AutoFixture;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Helpers;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
