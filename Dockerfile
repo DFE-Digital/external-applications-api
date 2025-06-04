@@ -34,7 +34,11 @@ ARG PROJECT_NAME="DfE.ExternalApplications.Api"
 ENV PATH=$PATH:/root/.dotnet/tools
 RUN dotnet tool install --global dotnet-ef  --version ${DOTNET_EF_TAG}
 RUN mkdir /sql
-RUN dotnet ef migrations bundle -r linux-x64 --configuration Release -p ${PROJECT_NAME} --no-build -o /sql/migratedb
+RUN dotnet ef migrations bundle -r linux-x64 \
+    --configuration Release \
+    -p ./src/${PROJECT_NAME} \
+    --no-build \
+    -o /sql/migratedb
 
 # ==============================================
 # Entity Framework: Migration Runner
