@@ -7,16 +7,21 @@ FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-azurelinux3.0 AS builder
 ARG CI
 ENV CI=${CI}
 WORKDIR /build
+
 # Mount GitHub Token as a Docker secret so that NuGet Feed can be accessed
-RUN --mount=type=secret,id=github_token dotnet nuget add source --username USERNAME --password $(cat /run/secrets/github_token) --store-password-in-clear-text --name github "https://nuget.pkg.github.com/DFE-Digital/index.json"
+RUN --mount=type=secret,id=github_token dotnet nuget add source \
+    --username USERNAME \
+    --password $(cat /run/secrets/github_token) \
+    --store-password-in-clear-text \
+    --name github "https://nuget.pkg.github.com/DFE-Digital/index.json"
 
 ARG PROJECT_NAME="DfE.ExternalApplications.Api"
 COPY ./${PROJECT_NAME}.sln .
 COPY ./Directory.Build.props .
 COPY ./src/ ./src/
 RUN dotnet restore
-RUN dotnet build -c Release -p:CI=${CI} --no-restore
-RUN dotnet publish -c Release -o /app --no-build
+RUN dotnet build ./src/${PROJECT_NAME} -c Release -p:CI=${CI} --no-restore
+RUN dotnet publish ./src/${PROJECT_NAME} -c Release -o /app --no-build
 
 # ==============================================
 # Entity Framework: Migration Builder
