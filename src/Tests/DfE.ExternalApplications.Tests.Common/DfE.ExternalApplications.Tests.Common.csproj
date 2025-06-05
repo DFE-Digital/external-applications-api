@@ -34,4 +34,9 @@
     <ProjectReference Include="..\..\DfE.ExternalApplications.Infrastructure\DfE.ExternalApplications.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Customizations\Commands\" />
+    <Folder Include="Customizations\Models\" />
+  </ItemGroup>
+
 </Project>

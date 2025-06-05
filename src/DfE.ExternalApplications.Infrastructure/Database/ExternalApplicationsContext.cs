@@ -1,3 +1,4 @@
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database.Interceptors;
@@ -116,7 +117,6 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("LastModifiedBy")
             .HasConversion(v => v!.Value, v => new UserId(v))
             .IsRequired(false);
-
         b.HasIndex(e => e.Email).IsUnique();
         b.HasOne(e => e.Role)
             .WithMany()
@@ -129,6 +129,10 @@ public class ExternalApplicationsContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.LastModifiedBy)
             .OnDelete(DeleteBehavior.Restrict);
+        b.HasMany(u => u.Permissions)
+            .WithOne(p => p.User)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     private static void ConfigureTemplate(EntityTypeBuilder<Template> b)
@@ -325,6 +329,9 @@ public class ExternalApplicationsContext : DbContext
             .IsRequired();
         b.Property(e => e.AccessType)
             .HasColumnName("AccessType")
+            .HasConversion(
+            v => (byte)v,
+            v => (AccessType)v)
             .IsRequired();
         b.Property(e => e.GrantedOn)
             .HasColumnName("GrantedOn")
@@ -334,10 +341,10 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("GrantedBy")
             .HasConversion(v => v.Value, v => new UserId(v))
             .IsRequired();
-
-        b.HasOne(e => e.User)
-            .WithMany()
-            .HasForeignKey(e => e.UserId);
+        b.HasOne(p => p.User)
+            .WithMany(u => u.Permissions)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
         b.HasOne(e => e.Application)
             .WithMany()
             .HasForeignKey(e => e.ApplicationId);

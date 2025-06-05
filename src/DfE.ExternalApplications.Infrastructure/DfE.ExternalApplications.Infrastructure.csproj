@@ -22,8 +22,4 @@
     <ProjectReference Include="..\DfE.ExternalApplications.Domain\DfE.ExternalApplications.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Migrations\" />
-  </ItemGroup>
-
 </Project>

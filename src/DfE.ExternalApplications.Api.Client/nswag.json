@@ -88,8 +88,13 @@
       "queryNullValue": "",
       "className": "{controller}Client",
       "operationGenerationMode": "MultipleClientsFromOperationId",
-      "additionalNamespaceUsages": [],
-      "additionalContractNamespaceUsages": [],
+      "additionalNamespaceUsages": [
+        "System.Net.Http",
+        "System.Collections.ObjectModel",
+        "System.Threading.Tasks",
+        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
+      ],
       "generateOptionalParameters": false,
       "generateJsonMethods": true,
       "generateXmlDocumentation": true,
@@ -129,7 +134,16 @@
       "inlineNamedDictionaries": false,
       "inlineNamedTuples": true,
       "inlineNamedAny": false,
-      "generateDtoTypes": true,
+      "additionalContractNamespaceUsages": [
+        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
+      ],
+      "generateDtoTypes": false,
+      "useSharedDTOs": true,
+      "typeMappings": {
+        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response.UserPermissionDto": "UserPermissionDto",
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums.AccessType": "AccessType"
+      },
       "generateOptionalPropertiesAsNullable": false,
       "generateNullableReferenceTypes": false,
       "templateDirectory": null,

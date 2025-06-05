@@ -16,5 +16,4 @@ namespace DfE.ExternalApplications.Application.Common.Exceptions
 
         public IDictionary<string, string[]> Errors { get; } = new Dictionary<string, string[]>();
     }
-
 }

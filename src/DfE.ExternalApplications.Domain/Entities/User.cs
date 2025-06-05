@@ -1,5 +1,7 @@
-﻿using DfE.ExternalApplications.Domain.Common;
+﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Domain.Entities;
 
@@ -16,4 +18,73 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
     public DateTime? LastModifiedOn { get; private set; }
     public UserId? LastModifiedBy { get; private set; }
     public User? LastModifiedByUser { get; private set; }
+
+    private readonly List<Permission> _permissions = new();
+
+    public IReadOnlyCollection<Permission> Permissions
+        => _permissions.AsReadOnly();
+
+    private User()
+    {
+        // Required by EF Core to materialise the entity.
+    }
+
+    /// <summary>
+    /// Constructs a new User with all required fields. 
+    /// Pass in null for optional fields (CreatedBy, LastModifiedOn, LastModifiedBy).
+    /// </summary>
+    public User(
+        UserId id,
+        RoleId roleId,
+        string name,
+        string email,
+        DateTime createdOn,
+        UserId? createdBy,
+        DateTime? lastModifiedOn,
+        UserId? lastModifiedBy,
+        IEnumerable<Permission>? initialPermissions = null)
+    {
+        Id = id ?? throw new ArgumentNullException(nameof(id));
+        RoleId = roleId;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Email = (email ?? throw new ArgumentNullException(nameof(email))).Trim();
+        CreatedOn = createdOn;
+        CreatedBy = createdBy;
+        LastModifiedOn = lastModifiedOn;
+        LastModifiedBy = lastModifiedBy;
+
+        if (initialPermissions != null)
+        {
+            _permissions.AddRange(initialPermissions);
+        }
+    }
+
+    /// <summary>
+    /// Factory method to create and attach a new Permission to this User.
+    /// </summary>
+    public Permission AddPermission(
+        ApplicationId applicationId,
+        string resourceKey,
+        AccessType accessType,
+        UserId grantedBy,
+        DateTime? grantedOn = null)
+    {
+        if (string.IsNullOrWhiteSpace(resourceKey))
+            throw new ArgumentException("ResourceKey cannot be empty", nameof(resourceKey));
+
+        var id = new PermissionId(Guid.NewGuid());
+        var when = grantedOn ?? DateTime.UtcNow;
+
+        var permission = new Permission(
+            id,
+            this.Id ?? throw new InvalidOperationException("UserId must be set before adding a permission."),
+            applicationId,
+            resourceKey,
+            accessType,
+            when,
+            grantedBy);
+
+        _permissions.Add(permission);
+        return permission;
+    }
 }

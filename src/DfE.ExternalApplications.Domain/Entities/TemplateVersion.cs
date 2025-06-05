@@ -16,4 +16,29 @@ public sealed class TemplateVersion : IEntity<TemplateVersionId>
     public DateTime? LastModifiedOn { get; private set; }
     public UserId? LastModifiedBy { get; private set; }
     public User? LastModifiedByUser { get; private set; }
+
+    private TemplateVersion() { /* For EF Core */ }
+
+    /// <summary>
+    /// Constructs a new TemplateVersion.
+    /// </summary>
+    public TemplateVersion(
+        TemplateVersionId id,
+        TemplateId templateId,
+        string versionNumber,
+        string jsonSchema,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime? lastModifiedOn = null,
+        UserId? lastModifiedBy = null)
+    {
+        Id = id ?? throw new ArgumentNullException(nameof(id));
+        TemplateId = templateId;
+        VersionNumber = versionNumber ?? throw new ArgumentNullException(nameof(versionNumber));
+        JsonSchema = jsonSchema ?? throw new ArgumentNullException(nameof(jsonSchema));
+        CreatedOn = createdOn;
+        CreatedBy = createdBy;
+        LastModifiedOn = lastModifiedOn;
+        LastModifiedBy = lastModifiedBy;
+    }
 }

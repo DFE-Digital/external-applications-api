@@ -27,7 +27,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 {
                     SeedData = new Dictionary<Type, Action<DbContext>>
                     {
-                        { typeof(ExternalApplicationsContext), context => SclContextSeeder.Seed((ExternalApplicationsContext)context) },
+                        { typeof(ExternalApplicationsContext), context => EaContextSeeder.SeedTestData((ExternalApplicationsContext)context) },
                     },
                     ExternalServicesConfiguration = services =>
                     {
@@ -57,14 +57,14 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                 var services = new ServiceCollection();
                 services.AddSingleton<IConfiguration>(config);
-                services.AddApiClient<ISchoolsClient, SchoolsClient>(config, client);
+                services.AddApiClient<IUsersClient, UsersClient>(config, client);
 
                 var serviceProvider = services.BuildServiceProvider();
 
                 fixture.Inject(factory);
                 fixture.Inject(serviceProvider);
                 fixture.Inject(client);
-                fixture.Inject(serviceProvider.GetRequiredService<ISchoolsClient>());
+                fixture.Inject(serviceProvider.GetRequiredService<IUsersClient>());
                 fixture.Inject(new List<Claim>());
 
                 return factory;
