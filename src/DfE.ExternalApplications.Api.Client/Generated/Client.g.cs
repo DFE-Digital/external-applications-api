@@ -4,6 +4,11 @@
 // </auto-generated>
 //----------------------
 
+using System.Net.Http;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Client.Contracts;
 
 #pragma warning disable 108 // Disable "CS0108 '{derivedDto}.ToJson()' hides inherited member '{dtoBase}.ToJson()'. Use the new keyword if hiding was intended."
