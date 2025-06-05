@@ -1,4 +1,6 @@
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Interfaces;
+using DfE.ExternalApplications.Infrastructure;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Infrastructure.Repositories;
 using DfE.ExternalApplications.Infrastructure.Security.Authorization;
@@ -14,6 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             //Repos
             services.AddScoped(typeof(IEaRepository<>), typeof(EaRepository<>));
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             //Cache service
             services.AddServiceCaching(config);
