@@ -99,7 +99,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
         public virtual TAggregate Add(TAggregate entity)
         {
             this.DbContext.Add<TAggregate>(entity);
-            this.DbContext.SaveChanges();
             return entity;
         }
 
@@ -107,7 +106,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
         public virtual async Task<TAggregate> AddAsync(TAggregate entity, CancellationToken cancellationToken = default(CancellationToken))
         {
             await this.DbContext.AddAsync<TAggregate>(entity, cancellationToken);
-            await this.DbContext.SaveChangesAsync(cancellationToken);
             return entity;
         }
 
@@ -115,7 +113,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
         public virtual IEnumerable<TAggregate> AddRange(ICollection<TAggregate> entities)
         {
             this.DbContext.AddRange((IEnumerable<object>)entities);
-            this.DbContext.SaveChanges();
             return (IEnumerable<TAggregate>)entities;
         }
 
@@ -125,7 +122,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
           CancellationToken cancellationToken = default(CancellationToken))
         {
             await this.DbContext.AddRangeAsync((IEnumerable<object>)entities, cancellationToken);
-            await this.DbContext.SaveChangesAsync(cancellationToken);
             return (IEnumerable<TAggregate>)entities;
         }
 
@@ -133,7 +129,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
         public virtual TAggregate Remove(TAggregate entity)
         {
             this.DbContext.Remove<TAggregate>(entity);
-            this.DbContext.SaveChanges();
             return entity;
         }
 
@@ -143,7 +138,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
           CancellationToken cancellationToken = default(CancellationToken))
         {
             this.DbContext.Remove<TAggregate>(entity);
-            await this.DbContext.SaveChangesAsync(cancellationToken);
             return entity;
         }
 
@@ -157,7 +151,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
         public virtual IEnumerable<TAggregate> RemoveRange(ICollection<TAggregate> entities)
         {
             this.DbSet().RemoveRange((IEnumerable<TAggregate>)entities);
-            this.DbContext.SaveChanges();
             return (IEnumerable<TAggregate>)entities;
         }
 
@@ -167,7 +160,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
           CancellationToken cancellationToken = default(CancellationToken))
         {
             this.DbSet().RemoveRange((IEnumerable<TAggregate>)entities);
-            await this.DbContext.SaveChangesAsync(cancellationToken);
             return (IEnumerable<TAggregate>)entities;
         }
 
@@ -175,7 +167,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
         public virtual TAggregate Update(TAggregate entity)
         {
             this.DbContext.Update<TAggregate>(entity);
-            this.DbContext.SaveChanges();
             return entity;
         }
 
@@ -185,7 +176,6 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories
           CancellationToken cancellationToken = default(CancellationToken))
         {
             this.DbContext.Update<TAggregate>(entity);
-            await this.DbContext.SaveChangesAsync(cancellationToken);
             return entity;
         }
     }
