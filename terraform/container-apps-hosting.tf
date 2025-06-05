@@ -51,4 +51,15 @@ module "azure_container_apps_hosting" {
   enable_init_container  = local.enable_init_container
   init_container_image   = local.init_container_image
   init_container_command = local.init_container_command
+
+  enable_mssql_database                 = local.enable_mssql_database
+  mssql_server_admin_password           = local.mssql_server_admin_password
+  mssql_azuread_admin_username          = local.mssql_azuread_admin_username
+  mssql_azuread_admin_object_id         = local.mssql_azuread_admin_object_id
+  mssql_sku_name                        = local.mssql_sku_name
+  mssql_database_name                   = local.mssql_database_name
+  mssql_firewall_ipv4_allow_list        = local.mssql_firewall_ipv4_allow_list
+  enable_mssql_vulnerability_assessment = local.enable_mssql_vulnerability_assessment
+  mssql_managed_identity_assign_role    = local.mssql_managed_identity_assign_role
+  mssql_server_public_access_enabled    = local.mssql_server_public_access_enabled
 }
