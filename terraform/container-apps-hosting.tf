@@ -33,7 +33,7 @@ module "azure_container_apps_hosting" {
   existing_container_app_environment = local.existing_container_app_environment
   existing_virtual_network           = local.existing_virtual_network
   existing_resource_group            = local.existing_resource_group
-  launch_in_vnet                     = true
+  launch_in_vnet                     = false
   container_app_name_override        = local.container_app_name_override
 
   enable_monitoring              = local.enable_monitoring
