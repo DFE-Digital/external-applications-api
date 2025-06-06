@@ -54,6 +54,12 @@ variable "virtual_network_address_space" {
   type        = string
 }
 
+variable "container_apps_infra_subnet_cidr" {
+  description = "Specify a subnet prefix to use for the container_apps_infra subnet"
+  type        = string
+  default     = "172.16.110.16/28"
+}
+
 variable "enable_container_registry" {
   description = "Set to true to create a container registry"
   type        = bool
@@ -451,4 +457,10 @@ variable "mssql_azuread_auth_only" {
   description = "Set to true to only permit SQL logins from Azure AD users"
   type        = bool
   default     = true
+}
+
+variable "restrict_container_apps_to_cdn_inbound_only" {
+  description = "Restricts access to the Container Apps by creating a network security group rule that only allows 'AzureFrontDoor.Backend' inbound, and attaches it to the subnet of the container app environment."
+  type        = bool
+  default     = false
 }

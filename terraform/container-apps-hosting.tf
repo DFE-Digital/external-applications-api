@@ -32,8 +32,9 @@ module "azure_container_apps_hosting" {
 
   existing_container_app_environment = local.existing_container_app_environment
   existing_virtual_network           = local.existing_virtual_network
+  container_apps_infra_subnet_cidr   = local.container_apps_infra_subnet_cidr
   existing_resource_group            = local.existing_resource_group
-  launch_in_vnet                     = false
+  launch_in_vnet                     = true
   container_app_name_override        = local.container_app_name_override
 
   enable_monitoring              = local.enable_monitoring
@@ -46,6 +47,7 @@ module "azure_container_apps_hosting" {
   existing_logic_app_workflow                  = local.existing_logic_app_workflow
   existing_network_watcher_name                = local.existing_network_watcher_name
   existing_network_watcher_resource_group_name = local.existing_network_watcher_resource_group_name
+  restrict_container_apps_to_cdn_inbound_only  = local.restrict_container_apps_to_cdn_inbound_only
 
   custom_container_apps  = local.custom_container_apps
   enable_init_container  = local.enable_init_container
