@@ -59,4 +59,6 @@ locals {
   mssql_managed_identity_assign_role           = var.mssql_managed_identity_assign_role
   mssql_server_public_access_enabled           = var.mssql_server_public_access_enabled
   mssql_azuread_auth_only                      = var.mssql_azuread_auth_only
+  restrict_container_apps_to_cdn_inbound_only  = var.restrict_container_apps_to_cdn_inbound_only
+  container_apps_infra_subnet_cidr             = var.container_apps_infra_subnet_cidr
 }
