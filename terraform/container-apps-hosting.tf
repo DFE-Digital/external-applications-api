@@ -62,4 +62,5 @@ module "azure_container_apps_hosting" {
   enable_mssql_vulnerability_assessment = local.enable_mssql_vulnerability_assessment
   mssql_managed_identity_assign_role    = local.mssql_managed_identity_assign_role
   mssql_server_public_access_enabled    = local.mssql_server_public_access_enabled
+  mssql_azuread_auth_only               = local.mssql_azuread_auth_only
 }

@@ -58,4 +58,5 @@ locals {
   enable_mssql_vulnerability_assessment        = var.enable_mssql_vulnerability_assessment
   mssql_managed_identity_assign_role           = var.mssql_managed_identity_assign_role
   mssql_server_public_access_enabled           = var.mssql_server_public_access_enabled
+  mssql_azuread_auth_only                      = var.mssql_azuread_auth_only
 }

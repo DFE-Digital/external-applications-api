@@ -446,3 +446,9 @@ variable "mssql_server_public_access_enabled" {
   type        = bool
   default     = true
 }
+
+variable "mssql_azuread_auth_only" {
+  description = "Set to true to only permit SQL logins from Azure AD users"
+  type        = bool
+  default     = true
+}
