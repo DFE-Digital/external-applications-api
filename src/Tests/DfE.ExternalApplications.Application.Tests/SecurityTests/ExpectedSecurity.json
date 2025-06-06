@@ -4,6 +4,11 @@
       "Controller": "UsersController",
       "Action": "GetAllPermissionsForUserAsync",
       "ExpectedSecurity": "AllowAnonymous"
+    },
+    {
+      "Controller": "TemplatesController",
+      "Action": "GetLatestTemplateSchemaAsync",
+      "ExpectedSecurity": "AllowAnonymous"
     }
   ]
 }
