@@ -1,5 +1,5 @@
 using Asp.Versioning;
-using DfE.ExternalApplications.Application.Templates.Models;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -29,7 +29,7 @@ public class TemplatesController(ISender sender) : ControllerBase
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
-            return BadRequest(result.Error);
+            return BadRequest((object?)result.Error);
 
         return Ok(result.Value);
     }

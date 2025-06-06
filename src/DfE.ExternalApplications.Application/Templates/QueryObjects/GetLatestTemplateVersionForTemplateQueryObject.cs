@@ -7,11 +7,9 @@ namespace DfE.ExternalApplications.Application.Templates.QueryObjects;
 public sealed class GetLatestTemplateVersionForTemplateQueryObject(TemplateId templateId)
     : IQueryObject<TemplateVersion>
 {
-    private readonly TemplateId _templateId = templateId;
-
     public IQueryable<TemplateVersion> Apply(IQueryable<TemplateVersion> query) =>
         query
-            .Where(tv => tv.TemplateId == _templateId)
+            .Where(tv => tv.TemplateId == templateId)
             .OrderByDescending(tv => tv.CreatedOn)
             .Take(1);
 }

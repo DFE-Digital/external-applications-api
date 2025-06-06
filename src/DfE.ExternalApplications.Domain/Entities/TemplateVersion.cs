@@ -3,7 +3,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 
 namespace DfE.ExternalApplications.Domain.Entities;
 
-public sealed class TemplateVersion : IEntity<TemplateVersionId>
+public sealed class TemplateVersion : BaseAggregateRoot, IEntity<TemplateVersionId>
 {
     public TemplateVersionId? Id { get; private set; }
     public TemplateId TemplateId { get; private set; }

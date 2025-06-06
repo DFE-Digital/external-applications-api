@@ -1,6 +1,6 @@
 using DfE.CoreLibs.Caching.Helpers;
 using DfE.CoreLibs.Caching.Interfaces;
-using DfE.ExternalApplications.Application.Templates.Models;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -25,6 +25,7 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
         try
         {
             var cacheKey = $"TemplateSchema_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateName)}_{request.UserId}";
+
             var methodName = nameof(GetLatestTemplateSchemaQueryHandler);
 
             return await cacheService.GetOrAddAsync(
@@ -52,7 +53,8 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
                     var dto = new TemplateSchemaDto
                     {
                         VersionNumber = latest.VersionNumber,
-                        JsonSchema = latest.JsonSchema
+                        JsonSchema = latest.JsonSchema,
+                        TemplateId = latest.TemplateId.Value
                     };
 
                     return Result<TemplateSchemaDto>.Success(dto);

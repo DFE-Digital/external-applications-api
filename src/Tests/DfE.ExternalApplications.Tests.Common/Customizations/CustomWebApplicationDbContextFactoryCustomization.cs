@@ -58,6 +58,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 var services = new ServiceCollection();
                 services.AddSingleton<IConfiguration>(config);
                 services.AddApiClient<IUsersClient, UsersClient>(config, client);
+                services.AddApiClient<ITemplatesClient, TemplatesClient>(config, client);
 
                 var serviceProvider = services.BuildServiceProvider();
 
@@ -65,6 +66,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 fixture.Inject(serviceProvider);
                 fixture.Inject(client);
                 fixture.Inject(serviceProvider.GetRequiredService<IUsersClient>());
+                fixture.Inject(serviceProvider.GetRequiredService<ITemplatesClient>());
+
                 fixture.Inject(new List<Claim>());
 
                 return factory;

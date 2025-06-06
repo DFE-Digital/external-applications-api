@@ -1,11 +1,11 @@
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
-using DfE.ExternalApplications.Infrastructure.Database;
-using DfE.ExternalApplications.Tests.Common.Customizations;
+using DfE.ExternalApplications.Client.Contracts;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using DfE.ExternalApplications.Infrastructure.Database;
+using DfE.ExternalApplications.Tests.Common.Customizations;
 using Microsoft.EntityFrameworkCore;
-using System.Net.Http.Json;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
 
@@ -15,18 +15,19 @@ public class TemplatesControllerTests
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task GetLatestTemplateSchemaAsync_ReturnsLatestSchema_WhenUserHasAccess(
         CustomWebApplicationDbContextFactory<Program> factory,
-        HttpClient client)
+        ITemplatesClient templatesClient)
     {
         var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
 
+        // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
         var template = await dbContext.Templates.FirstAsync();
         var userAccess = await dbContext.UserTemplateAccesses.FirstAsync();
 
         // add a newer version
+        // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
         var latestVersion = await dbContext.TemplateVersions
             .Where(tv => tv.TemplateId == template.Id)
-            .OrderByDescending(tv => tv.CreatedOn)
-            .FirstAsync();
+            .OrderByDescending(tv => tv.CreatedOn).FirstAsync();
 
         var newVersion = new TemplateVersion(
             new TemplateVersionId(Guid.NewGuid()),
@@ -39,12 +40,10 @@ public class TemplatesControllerTests
         dbContext.TemplateVersions.Add(newVersion);
         await dbContext.SaveChangesAsync();
 
-        var response = await client.GetAsync($"v1/Templates/{Uri.EscapeDataString(template.Name)}/schema/{userAccess.UserId.Value}");
-        response.EnsureSuccessStatusCode();
-        var dto = await response.Content.ReadFromJsonAsync<DfE.ExternalApplications.Application.Templates.Models.TemplateSchemaDto>();
+        var response = await templatesClient.GetLatestTemplateSchemaAsync(template.Name, userAccess.UserId.Value);
 
-        Assert.NotNull(dto);
-        Assert.Equal("v9.9", dto!.VersionNumber);
-        Assert.Equal("{\"new\":true}", dto.JsonSchema);
+        Assert.NotNull(response);
+        Assert.Equal("v9.9", response!.VersionNumber);
+        Assert.Equal("{\"new\":true}", response.JsonSchema);
     }
 }

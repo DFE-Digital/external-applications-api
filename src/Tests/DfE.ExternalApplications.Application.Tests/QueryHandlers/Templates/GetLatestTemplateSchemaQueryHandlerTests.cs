@@ -1,12 +1,11 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
 using DfE.CoreLibs.Caching.Interfaces;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
-using DfE.ExternalApplications.Application.Templates.Models;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
 using NSubstitute;
