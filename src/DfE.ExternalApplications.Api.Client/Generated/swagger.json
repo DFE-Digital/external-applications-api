@@ -6,6 +6,51 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/v1/Templates/{templateName}/schema/{userId}": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Returns the latest template schema for the specified template name if the user has access.",
+        "operationId": "Templates_GetLatestTemplateSchema",
+        "parameters": [
+          {
+            "name": "templateName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The latest template schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateSchemaDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request was invalid or access denied."
+          }
+        }
+      }
+    },
     "/v1/Users/{email}/permissions": {
       "get": {
         "tags": [
@@ -47,6 +92,22 @@
   },
   "components": {
     "schemas": {
+      "TemplateSchemaDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "versionNumber": {
+            "type": "string"
+          },
+          "jsonSchema": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
       "UserPermissionDto": {
         "type": "object",
         "additionalProperties": false,

@@ -45,7 +45,7 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
         IEnumerable<Permission>? initialPermissions = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
-        RoleId = roleId;
+        RoleId = roleId ?? throw new ArgumentNullException(nameof(roleId));
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Email = (email ?? throw new ArgumentNullException(nameof(email))).Trim();
         CreatedOn = createdOn;

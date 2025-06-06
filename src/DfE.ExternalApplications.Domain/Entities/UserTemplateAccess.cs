@@ -3,7 +3,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 
 namespace DfE.ExternalApplications.Domain.Entities;
 
-public sealed class UserTemplateAccess : IEntity<UserTemplateAccessId>
+public sealed class UserTemplateAccess : BaseAggregateRoot, IEntity<UserTemplateAccessId>
 {
     public UserTemplateAccessId? Id { get; private set; }
     public UserId UserId { get; private set; }
@@ -27,8 +27,8 @@ public sealed class UserTemplateAccess : IEntity<UserTemplateAccessId>
         UserId grantedBy)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
-        UserId = userId;
-        TemplateId = templateId;
+        UserId = userId ?? throw new ArgumentNullException(nameof(userId));
+        TemplateId = templateId ?? throw new ArgumentNullException(nameof(templateId));
         GrantedOn = grantedOn;
         GrantedBy = grantedBy;
     }
