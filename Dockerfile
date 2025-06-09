@@ -4,17 +4,21 @@ ARG DOTNET_VERSION=8.0
 # Stage 1 - Build the app using the dotnet SDK
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-azurelinux3.0 AS build
 WORKDIR /build
+ARG CI
+ENV CI=${CI}
 
 # Mount GitHub Token as a Docker secret so that NuGet Feed can be accessed
 RUN --mount=type=secret,id=github_token dotnet nuget add source --username USERNAME --password $(cat /run/secrets/github_token) --store-password-in-clear-text --name github "https://nuget.pkg.github.com/DFE-Digital/index.json"
 
 # Copy the application code
-COPY ./src/ ./
+COPY ./src/ ./src/
+COPY Directory.Build.props ./
+COPY DfE.ExternalApplications.Api.sln ./
 
 # Build and publish the dotnet solution
-RUN dotnet restore DfE.ExternalApplications.Api && \
-    dotnet build DfE.ExternalApplications.Api --no-restore -c Release && \
-    dotnet publish DfE.ExternalApplications.Api --no-build -o /app
+RUN dotnet restore DfE.ExternalApplications.Api.sln && \
+    dotnet build ./src/DfE.ExternalApplications.Api --no-restore -c Release && \
+    dotnet publish ./src/DfE.ExternalApplications.Api --no-build -o /app
 
 # ==============================================
 # Entity Framework: Migration Builder
@@ -29,7 +33,7 @@ RUN dotnet tool install --global dotnet-ef
 RUN mkdir /sql
 RUN dotnet ef migrations bundle -r linux-x64 \
       --configuration Release \
-      --project DfE.ExternalApplications.Api \
+      --project ./src/DfE.ExternalApplications.Api \
       --no-build -o /sql/migratedb
 
 # ==============================================
