@@ -28,7 +28,7 @@ jobs:
       image-name: ${{ steps.var.outputs.image-name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - id: var
         run: |
@@ -65,7 +65,7 @@ jobs:
             tag-prefix: "init-"
     steps:
       - name: Build
-        uses: DFE-Digital/deploy-azure-container-apps-action/.github/actions/build@v5.2.1
+        uses: DFE-Digital/deploy-azure-container-apps-action/.github/actions/build@8e72e403f05ff9da09668207eef1d79e1ce9d1a7 # v5.2.1
         with:
           image-name: ${{ needs.set-env.outputs.image-name }}
           build-args: CI=true
@@ -74,7 +74,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Import
-        uses: DFE-Digital/deploy-azure-container-apps-action/.github/actions/import@v5.2.1
+        uses: DFE-Digital/deploy-azure-container-apps-action/.github/actions/import@8e72e403f05ff9da09668207eef1d79e1ce9d1a7 # v5.2.1
         with:
           image-name: ${{ needs.set-env.outputs.image-name }}
           tag-prefix: ${{ matrix.tag-prefix }}
@@ -96,7 +96,7 @@ jobs:
       id-token: write
     steps:
       - name: Release
-        uses: DFE-Digital/deploy-azure-container-apps-action/.github/actions/deploy@v5.2.1
+        uses: DFE-Digital/deploy-azure-container-apps-action/.github/actions/deploy@8e72e403f05ff9da09668207eef1d79e1ce9d1a7 # v5.2.1
         with:
           image-name: ${{ needs.set-env.outputs.image-name }}
           annotate-release: 'yes'
