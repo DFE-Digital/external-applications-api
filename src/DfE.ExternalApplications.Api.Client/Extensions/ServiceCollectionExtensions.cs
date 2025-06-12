@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using DfE.ExternalApplications.Api.Client.Security;
 using DfE.ExternalApplications.Api.Client.Settings;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -43,7 +44,9 @@ namespace DfE.ExternalApplications.Api.Client.Extensions
                 .AddHttpMessageHandler(serviceProvider =>
                 {
                     var tokenService = serviceProvider.GetRequiredService<ITokenAcquisitionService>();
-                    return new BearerTokenHandler(tokenService);
+                    var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+
+                    return new BearerTokenHandler(tokenService, httpContextAccessor);
                 });
             }
             return services;

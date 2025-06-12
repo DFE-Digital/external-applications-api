@@ -49,6 +49,21 @@ namespace DfE.ExternalApplications.Client.Contracts
     public partial interface IUsersClient
     {
         /// <summary>
+        /// Returns all my permissions.
+        /// </summary>
+        /// <returns>A UserPermission object representing the User's Permissions.</returns>
+        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync();
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Returns all my permissions.
+        /// </summary>
+        /// <returns>A UserPermission object representing the User's Permissions.</returns>
+        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
         /// Returns all permissions for the user by {email}.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>

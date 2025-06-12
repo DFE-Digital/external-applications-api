@@ -1,4 +1,5 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database;
@@ -101,6 +102,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
                 userId: bobId,
                 applicationId: applicationId,
                 resourceKey: "Application:Read",
+                resourceType: ResourceType.Application,
                 accessType: AccessType.Read,
                 grantedOn: now,
                 grantedBy: aliceId
@@ -111,6 +113,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
                 userId: bobId,
                 applicationId: applicationId,
                 resourceKey: "Application:Write",
+                resourceType: ResourceType.Application,
                 accessType: AccessType.Write,
                 grantedOn: now,
                 grantedBy: aliceId
@@ -121,12 +124,32 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
                 userId: aliceId,
                 applicationId: applicationId,
                 resourceKey: "Application:Write",
+                resourceType: ResourceType.Application,
                 accessType: AccessType.Write,
                 grantedOn: now,
                 grantedBy: aliceId
             );
 
             ctx.Permissions.AddRange(perm1, perm2, perm3);
+
+            var templatePerm1 = new TemplatePermission(
+                new TemplatePermissionId(Guid.NewGuid()),
+                userId: bobId,
+                templateId: templateId,
+                accessType: AccessType.Read,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var templatePerm2 = new TemplatePermission(
+                new TemplatePermissionId(Guid.NewGuid()),
+                userId: aliceId,
+                templateId: templateId,
+                accessType: AccessType.Write,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+            ctx.TemplatePermissions.AddRange(templatePerm1, templatePerm2);
 
             var response2Id = new ResponseId(Guid.NewGuid());
             var response2 = new ApplicationResponse(
@@ -140,15 +163,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
             );
             ctx.ApplicationResponses.Add(response2);
 
-            var utaId = new UserTemplateAccessId(Guid.NewGuid());
-            var uta = new UserTemplateAccess(
-                utaId,
-                userId: aliceId,
-                templateId: templateId,
-                grantedOn: now,
-                grantedBy: bobId
-            );
-            ctx.UserTemplateAccesses.Add(uta);
+
 
             ctx.SaveChanges();
         }

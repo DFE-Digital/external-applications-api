@@ -51,6 +51,33 @@
         }
       }
     },
+    "/v1/me/permissions": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Returns all my permissions.",
+        "operationId": "Users_GetMyPermissions",
+        "responses": {
+          "200": {
+            "description": "A UserPermission object representing the User's Permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserPermissionDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized – no valid user token"
+          }
+        }
+      }
+    },
     "/v1/Users/{email}/permissions": {
       "get": {
         "tags": [

@@ -19,7 +19,8 @@ public class TemplatesController(ISender sender) : ControllerBase
     [HttpGet("{templateName}/schema/{userId}")]
     [SwaggerResponse(200, "The latest template schema.", typeof(TemplateSchemaDto))]
     [SwaggerResponse(400, "Request was invalid or access denied.")]
-    [AllowAnonymous]
+    [Authorize(Policy = "CanRead")]
+    [Authorize(Policy = "CanRead")]
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
         [FromRoute] string templateName,
         [FromRoute] Guid userId,

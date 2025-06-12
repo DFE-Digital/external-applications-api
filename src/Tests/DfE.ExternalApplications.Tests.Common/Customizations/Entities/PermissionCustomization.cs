@@ -1,6 +1,7 @@
 ﻿using AutoFixture;
 using AutoFixture.Kernel;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
@@ -15,6 +16,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
         public UserId? OverrideUserId { get; set; }
         public ApplicationId? OverrideAppId { get; set; }
         public string? OverrideResourceKey { get; set; }
+        public ResourceType? OverrideResourceType { get; set; }
         public AccessType? OverrideAccessType { get; set; }
         public DateTime? OverrideGrantedOn { get; set; }
         public UserId? OverrideGrantedBy { get; set; }
@@ -33,6 +35,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
                     var appId = OverrideAppId ?? new ApplicationId(fixture.Create<Guid>());
                     var resourceKey = OverrideResourceKey ?? fixture.Create<string>();
                     var accessType = OverrideAccessType ?? fixture.Create<AccessType>();
+                    var resourceType = OverrideResourceType ?? fixture.Create<ResourceType>();
                     var grantedOn = OverrideGrantedOn ?? fixture.Create<DateTime>();
                     var grantedBy = OverrideGrantedBy ?? new UserId(fixture.Create<Guid>());
 
