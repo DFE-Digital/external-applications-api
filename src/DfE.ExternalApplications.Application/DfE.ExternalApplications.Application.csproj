@@ -4,6 +4,15 @@
 		<TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="MappingProfiles\**" />
+    <Compile Remove="Permissions\**" />
+    <EmbeddedResource Remove="MappingProfiles\**" />
+    <EmbeddedResource Remove="Permissions\**" />
+    <None Remove="MappingProfiles\**" />
+    <None Remove="Permissions\**" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="DfE.CoreLibs.AsyncProcessing" Version="1.0.12" />
@@ -19,11 +28,6 @@
   <ItemGroup>
     <ProjectReference Include="..\DfE.ExternalApplications.Domain\DfE.ExternalApplications.Domain.csproj" />
     <ProjectReference Include="..\DfE.ExternalApplications.Utils\DfE.ExternalApplications.Utils.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="MappingProfiles\" />
-    <Folder Include="Permissions\" />
   </ItemGroup>
 
 </Project>

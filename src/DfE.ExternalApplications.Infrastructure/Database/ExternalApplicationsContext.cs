@@ -134,6 +134,10 @@ public class ExternalApplicationsContext : DbContext
             .WithOne(p => p.User)
             .HasForeignKey(p => p.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        b.HasMany(u => u.TemplatePermissions)
+            .WithOne(p => p.User)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     private static void ConfigureTemplate(EntityTypeBuilder<Template> b)
@@ -432,11 +436,6 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("GrantedBy")
             .HasConversion(v => v.Value, v => new UserId(v))
             .IsRequired();
-
-        b.HasOne(e => e.User)
-            .WithMany()
-            .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
         b.HasOne(e => e.Template)
             .WithMany()
             .HasForeignKey(e => e.TemplateId);

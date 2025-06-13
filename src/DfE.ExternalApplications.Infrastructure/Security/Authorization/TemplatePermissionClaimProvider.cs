@@ -3,6 +3,7 @@ using DfE.ExternalApplications.Application.Users.Queries;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 
 namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
 {
@@ -14,7 +15,7 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
             if (string.IsNullOrEmpty(email))
                 return Array.Empty<Claim>();
 
-            var query = new GetAllUserTemplatePermissionsQuery(email);
+            var query = new GetTemplatePermissionsForUserQuery(email);
             var result = await sender.Send(query);
 
             if (result is { IsSuccess: false })

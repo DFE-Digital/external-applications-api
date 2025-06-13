@@ -1,43 +1,45 @@
 ﻿using DfE.CoreLibs.Caching.Helpers;
 using DfE.CoreLibs.Caching.Interfaces;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Application.TemplatePermissions.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace DfE.ExternalApplications.Application.Users.Queries
+namespace DfE.ExternalApplications.Application.TemplatePermissions.Queries
 {
-    public sealed record GetAllUserTemplatePermissionsQuery(string Email)
+    public sealed record GetTemplatePermissionsForUserQuery(string Email)
         : IRequest<Result<IReadOnlyCollection<TemplatePermissionDto>>>;
 
-    public sealed class GetAllUserTemplatePermissionsQueryHandler(
+    public sealed class GetTemplatePermissionsForUserQueryHandler(
         IEaRepository<User> userRepo,
         ICacheService<IMemoryCacheType> cacheService)
-        : IRequestHandler<GetAllUserTemplatePermissionsQuery, Result<IReadOnlyCollection<TemplatePermissionDto>>>
+        : IRequestHandler<GetTemplatePermissionsForUserQuery, Result<IReadOnlyCollection<TemplatePermissionDto>>>
     {
         public async Task<Result<IReadOnlyCollection<TemplatePermissionDto>>> Handle(
-            GetAllUserTemplatePermissionsQuery request,
+            GetTemplatePermissionsForUserQuery request,
             CancellationToken cancellationToken)
         {
             try
             {
                 var cacheKey = $"Template_Permissions_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}";
 
-                var methodName = nameof(GetAllUserTemplatePermissionsQueryHandler);
+                var methodName = nameof(GetTemplatePermissionsForUserQueryHandler);
 
                 return await cacheService.GetOrAddAsync(
                     cacheKey,
                     async () =>
                     {
-                        var userWithTemplatePermissions = await new GetUserWithAllTemplatePermissionsQueryObject(request.Email)
-                            .Apply(userRepo.Query().AsNoTracking())
-                            .FirstOrDefaultAsync(cancellationToken);
+                        var userWithTemplatePermissions =
+                            await new GetTemplatePermissionsForUserQueryObject(request.Email)
+                                .Apply(userRepo.Query().AsNoTracking())
+                                .FirstOrDefaultAsync(cancellationToken);
 
                         if (userWithTemplatePermissions is null)
                         {
-                            return Result<IReadOnlyCollection<TemplatePermissionDto>>.Success(Array.Empty<TemplatePermissionDto>());
+                            return Result<IReadOnlyCollection<TemplatePermissionDto>>.Success(
+                                Array.Empty<TemplatePermissionDto>());
                         }
 
                         var dtoList = userWithTemplatePermissions.TemplatePermissions

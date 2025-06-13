@@ -82,9 +82,9 @@ namespace DfE.ExternalApplications.Client
         /// </summary>
         /// <returns>The latest template schema.</returns>
         /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(string templateName)
+        public virtual System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId)
         {
-            return GetLatestTemplateSchemaAsync(templateName, System.Threading.CancellationToken.None);
+            return GetLatestTemplateSchemaAsync(templateId, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -93,10 +93,10 @@ namespace DfE.ExternalApplications.Client
         /// </summary>
         /// <returns>The latest template schema.</returns>
         /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(string templateName, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken)
         {
-            if (templateName == null)
-                throw new System.ArgumentNullException("templateName");
+            if (templateId == null)
+                throw new System.ArgumentNullException("templateId");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -109,9 +109,9 @@ namespace DfE.ExternalApplications.Client
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
-                    // Operation Path: "v1/Templates/{templateName}/schema"
+                    // Operation Path: "v1/Templates/{templateId}/schema"
                     urlBuilder_.Append("v1/Templates/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(templateName, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture)));
                     urlBuilder_.Append("/schema");
 
                     PrepareRequest(client_, request_, urlBuilder_);

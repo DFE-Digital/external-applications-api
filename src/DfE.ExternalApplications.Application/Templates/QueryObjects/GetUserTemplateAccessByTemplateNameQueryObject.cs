@@ -1,14 +1,14 @@
 using DfE.ExternalApplications.Application.Common.QueriesObjects;
 using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Templates.QueryObjects;
 
-public sealed class GetTemplatePermissionByTemplateNameQueryObject(string email, string templateName)
+public sealed class GetTemplatePermissionByTemplateNameQueryObject(string email, Guid templateId)
     : IQueryObject<TemplatePermission>
 {
     private readonly string _normalizedEmail = email.Trim().ToLowerInvariant();
-    private readonly string _normalizedName = templateName.Trim().ToLowerInvariant();
 
     public IQueryable<TemplatePermission> Apply(IQueryable<TemplatePermission> query) =>
         query
@@ -16,6 +16,6 @@ public sealed class GetTemplatePermissionByTemplateNameQueryObject(string email,
             .Include(x => x.User)
             .Where(x => 
                 x.User != null
-                && x.User.Email.Equals(_normalizedEmail, StringComparison.InvariantCultureIgnoreCase)
-                && x.Template!.Name.ToLower() == _normalizedName);
+                && x.User.Email.ToLower() == _normalizedEmail
+                && x.Template!.Id == new TemplateId(templateId));
 }

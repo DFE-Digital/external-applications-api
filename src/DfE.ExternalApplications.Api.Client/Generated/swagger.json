@@ -6,7 +6,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/v1/Templates/{templateName}/schema": {
+    "/v1/Templates/{templateId}/schema": {
       "get": {
         "tags": [
           "Templates"
@@ -15,11 +15,12 @@
         "operationId": "Templates_GetLatestTemplateSchema",
         "parameters": [
           {
-            "name": "templateName",
+            "name": "templateId",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "guid"
             },
             "x-position": 1
           }

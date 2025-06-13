@@ -33,7 +33,7 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// </summary>
         /// <returns>The latest template schema.</returns>
         /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(string templateName);
+        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -41,7 +41,7 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// </summary>
         /// <returns>The latest template schema.</returns>
         /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(string templateName, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken);
 
     }
 

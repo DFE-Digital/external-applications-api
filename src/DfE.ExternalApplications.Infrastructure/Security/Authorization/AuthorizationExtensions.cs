@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
 using System.Diagnostics.CodeAnalysis;
 using DfE.ExternalApplications.Infrastructure.Security.Configurations;
+using Microsoft.AspNetCore.Authorization;
+using DfE.CoreLibs.Security.Interfaces;
 
 namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
 {
@@ -68,7 +70,23 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
                 subscribeToJwtBearerMiddlewareDiagnosticsEvents: false
             );
 
-            services.AddApplicationAuthorization(configuration);
+            var policyCustomizations = new Dictionary<string, Action<AuthorizationPolicyBuilder>>
+            {
+                ["CanReadTemplate"] = pb =>
+                {
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.TemplatePermissionRequirement("Read"));
+                }
+            };
+
+            services.AddApplicationAuthorization(
+                configuration,
+                policyCustomizations: policyCustomizations,
+                apiAuthenticationScheme: null,
+                configureResourcePolicies: null);
+
+            services.AddSingleton<IAuthorizationHandler, Handlers.TemplatePermissionHandler>();
+            services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
 
             return services;
         }
