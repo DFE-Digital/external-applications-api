@@ -10,7 +10,7 @@ namespace DfE.ExternalApplications.Application.Templates.Queries
         {
             RuleFor(x => x.TemplateName)
                 .NotEmpty();
-            RuleFor(x => x.UserId)
+            RuleFor(x => x.Email)
                 .NotEmpty();
         }
     }

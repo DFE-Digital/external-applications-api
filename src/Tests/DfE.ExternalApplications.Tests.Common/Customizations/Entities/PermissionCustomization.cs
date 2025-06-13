@@ -45,6 +45,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
                         userId,
                         appId,
                         resourceKey,
+                        resourceType,
                         accessType,
                         grantedOn,
                         grantedBy);

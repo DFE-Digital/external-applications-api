@@ -6,7 +6,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/v1/Templates/{templateName}/schema/{userId}": {
+    "/v1/Templates/{templateName}/schema": {
       "get": {
         "tags": [
           "Templates"
@@ -22,16 +22,6 @@
               "type": "string"
             },
             "x-position": 1
-          },
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 2
           }
         ],
         "responses": {
@@ -123,15 +113,15 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
           "versionNumber": {
             "type": "string"
           },
           "jsonSchema": {
             "type": "string"
-          },
-          "templateId": {
-            "type": "string",
-            "format": "guid"
           }
         }
       },
@@ -146,10 +136,31 @@
           "resourceKey": {
             "type": "string"
           },
+          "resourceType": {
+            "$ref": "#/components/schemas/ResourceType"
+          },
           "accessType": {
             "$ref": "#/components/schemas/AccessType"
           }
         }
+      },
+      "ResourceType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Application",
+          "TaskGroup",
+          "Task",
+          "Page",
+          "Field"
+        ],
+        "enum": [
+          "Application",
+          "TaskGroup",
+          "Task",
+          "Page",
+          "Field"
+        ]
       },
       "AccessType": {
         "type": "string",

@@ -21,7 +21,7 @@ public class TemplatesControllerTests
 
         // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
         var template = await dbContext.Templates.FirstAsync();
-        var userAccess = await dbContext.UserTemplateAccesses.FirstAsync();
+        var userAccess = await dbContext.TemplatePermissions.FirstAsync();
 
         // add a newer version
         // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
@@ -40,7 +40,7 @@ public class TemplatesControllerTests
         dbContext.TemplateVersions.Add(newVersion);
         await dbContext.SaveChangesAsync();
 
-        var response = await templatesClient.GetLatestTemplateSchemaAsync(template.Name, userAccess.UserId.Value);
+        var response = await templatesClient.GetLatestTemplateSchemaAsync(template.Name);
 
         Assert.NotNull(response);
         Assert.Equal("v9.9", response!.VersionNumber);

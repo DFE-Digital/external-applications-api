@@ -45,6 +45,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                             .Select(p => new UserPermissionDto
                             {
                                 ApplicationId = p.ApplicationId.Value,
+                                ResourceType = p.ResourceType,
                                 ResourceKey = p.ResourceKey,
                                 AccessType = p.AccessType
                             })

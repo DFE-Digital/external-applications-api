@@ -38,8 +38,8 @@ namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Users
             backingField.SetValue(userA, new List<Permission>());
 
             var grantedBy = new UserId(Guid.NewGuid());
-            userA.AddPermission(new ApplicationId(Guid.NewGuid()), "Key:Read", AccessType.Read, grantedBy, DateTime.UtcNow);
-            userA.AddPermission(new ApplicationId(Guid.NewGuid()), "Key:Write", AccessType.Write, grantedBy, DateTime.UtcNow);
+            userA.AddPermission(new ApplicationId(Guid.NewGuid()), "Key:Read", ResourceType.Field, AccessType.Read, grantedBy, DateTime.UtcNow);
+            userA.AddPermission(new ApplicationId(Guid.NewGuid()), "Key:Write", ResourceType.Field, AccessType.Write, grantedBy, DateTime.UtcNow);
 
             var users = new List<User> { userA };
             var mockQ = users.AsQueryable().BuildMock();
@@ -103,7 +103,7 @@ namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Users
                 .GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
             backingField.SetValue(user, new List<Permission>());
 
-            user.AddPermission(new ApplicationId(Guid.NewGuid()), "Other:Key", AccessType.Read, new UserId(Guid.NewGuid()), DateTime.UtcNow);
+            user.AddPermission(new ApplicationId(Guid.NewGuid()), "Other:Key", ResourceType.Field, AccessType.Read, new UserId(Guid.NewGuid()), DateTime.UtcNow);
 
             var users = new List<User> { user };
             var mockQ = users.AsQueryable().BuildMock();

@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Templates.Queries;
 
-public sealed record GetLatestTemplateSchemaQuery(string TemplateName, Guid UserId)
+public sealed record GetLatestTemplateSchemaQuery(string TemplateName, string Email)
     : IRequest<Result<TemplateSchemaDto>>;
 
 public sealed class GetLatestTemplateSchemaQueryHandler(
-    IEaRepository<UserTemplateAccess> accessRepo,
+    IEaRepository<TemplatePermission> accessRepo,
     IEaRepository<TemplateVersion> versionRepo,
     ICacheService<IMemoryCacheType> cacheService)
     : IRequestHandler<GetLatestTemplateSchemaQuery, Result<TemplateSchemaDto>>
@@ -24,7 +24,7 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
     {
         try
         {
-            var cacheKey = $"TemplateSchema_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateName)}_{request.UserId}";
+            var cacheKey = $"TemplateSchema_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateName)}_{request.Email}";
 
             var methodName = nameof(GetLatestTemplateSchemaQueryHandler);
 
@@ -32,7 +32,7 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
                 cacheKey,
                 async () =>
                 {
-                    var access = await new GetUserTemplateAccessByTemplateNameQueryObject(request.UserId, request.TemplateName)
+                    var access = await new GetTemplatePermissionByTemplateNameQueryObject(request.Email, request.TemplateName)
                         .Apply(accessRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
 

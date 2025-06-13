@@ -14,24 +14,25 @@ namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Templates;
 
 public class GetLatestTemplateSchemaQueryHandlerTests
 {
-    [Theory, CustomAutoData(typeof(UserTemplateAccessCustomization), typeof(TemplateVersionCustomization))]
+    [Theory, CustomAutoData(typeof(TemplatePermissionCustomization), typeof(TemplateVersionCustomization))]
     public async Task Handle_ShouldReturnLatestSchema_WhenUserHasAccess(
-        UserTemplateAccessCustomization utaCustom,
+        TemplatePermissionCustomization utaCustom,
         TemplateVersionCustomization tvCustom,
-        [Frozen] IEaRepository<UserTemplateAccess> accessRepo,
+        [Frozen] IEaRepository<TemplatePermission> accessRepo,
         [Frozen] IEaRepository<TemplateVersion> versionRepo,
         [Frozen] ICacheService<IMemoryCacheType> cacheService)
     {
         var template = new Fixture().Customize(new TemplateCustomization()).Create<Template>();
         utaCustom.OverrideTemplateId = template.Id;
         var fixture = new Fixture().Customize(utaCustom);
-        var access = fixture.Create<UserTemplateAccess>();
-        typeof(UserTemplateAccess).GetProperty(nameof(UserTemplateAccess.Template))!.SetValue(access, template);
+        var access = fixture.Create<TemplatePermission>();
+        typeof(TemplatePermission).GetProperty(nameof(TemplatePermission.Template))!.SetValue(access, template);
 
         var userId = access.UserId;
+        var userEmail = access.User?.Email;
         var templateName = template.Name;
 
-        var accessQ = new List<UserTemplateAccess> { access }.AsQueryable().BuildMock();
+        var accessQ = new List<TemplatePermission> { access }.AsQueryable().BuildMock();
         accessRepo.Query().Returns(accessQ);
 
         tvCustom.OverrideTemplateId = template.Id;
@@ -48,7 +49,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
         var tvQ = tvList.AsQueryable().BuildMock();
         versionRepo.Query().Returns(tvQ);
 
-        var cacheKey = $"TemplateSchema_{DfE.CoreLibs.Caching.Helpers.CacheKeyHelper.GenerateHashedCacheKey(templateName)}_{userId.Value}";
+        var cacheKey = $"TemplateSchema_{DfE.CoreLibs.Caching.Helpers.CacheKeyHelper.GenerateHashedCacheKey(templateName)}_{userEmail}";
         cacheService
             .GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), nameof(GetLatestTemplateSchemaQueryHandler))
             .Returns(call =>
@@ -58,7 +59,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
             });
 
         var handler = new GetLatestTemplateSchemaQueryHandler(accessRepo, versionRepo, cacheService);
-        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateName, userId.Value), CancellationToken.None);
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateName, userEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(newer.JsonSchema, result.Value!.JsonSchema);
