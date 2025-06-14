@@ -22,7 +22,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     [SwaggerResponse(200, "The latest template schema.", typeof(TemplateSchemaDto))]
     [SwaggerResponse(400, "Request was invalid or access denied.")]
     [Authorize(AuthenticationSchemes = AuthConstants.UserScheme, Policy = "CanReadTemplate")]
-    //[Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "CanRead")]
+    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "CanRead")]
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
         [FromRoute] Guid templateId, CancellationToken cancellationToken)
     {
