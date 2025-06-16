@@ -284,7 +284,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 {
                     PermissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     ResourceType = table.Column<byte>(type: "tinyint", nullable: false),
                     ResourceKey = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     AccessType = table.Column<byte>(type: "tinyint", nullable: false),
@@ -299,8 +299,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         column: x => x.ApplicationId,
                         principalSchema: "ea",
                         principalTable: "Applications",
-                        principalColumn: "ApplicationId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ApplicationId");
                     table.ForeignKey(
                         name: "FK_Permissions_Users_GrantedBy",
                         column: x => x.GrantedBy,

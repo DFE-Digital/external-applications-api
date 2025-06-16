@@ -132,7 +132,8 @@
         "properties": {
           "applicationId": {
             "type": "string",
-            "format": "guid"
+            "format": "guid",
+            "nullable": true
           },
           "resourceKey": {
             "type": "string"
@@ -150,6 +151,7 @@
         "description": "",
         "x-enumNames": [
           "Application",
+          "User",
           "TaskGroup",
           "Task",
           "Page",
@@ -157,6 +159,7 @@
         ],
         "enum": [
           "Application",
+          "User",
           "TaskGroup",
           "Task",
           "Page",

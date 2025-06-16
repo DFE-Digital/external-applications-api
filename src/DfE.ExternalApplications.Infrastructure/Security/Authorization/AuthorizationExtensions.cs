@@ -70,12 +70,18 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
                 subscribeToJwtBearerMiddlewareDiagnosticsEvents: false
             );
 
+            // set-up and define Template Permission policies
             var policyCustomizations = new Dictionary<string, Action<AuthorizationPolicyBuilder>>
             {
                 ["CanReadTemplate"] = pb =>
                 {
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.TemplatePermissionRequirement("Read"));
+                },
+                ["CanReadUser"] = pb =>
+                {
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.UserPermissionRequirement("Read"));
                 }
             };
 
@@ -83,10 +89,17 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
                 configuration,
                 policyCustomizations: policyCustomizations,
                 apiAuthenticationScheme: null,
-                configureResourcePolicies: null);
+                // set-up resource permissions and policies
+                configureResourcePolicies: opts =>
+                {
+                    opts.Actions.AddRange(["Read", "Write"]);
+                    opts.ClaimType = "permission";
+                });
 
             services.AddSingleton<IAuthorizationHandler, Handlers.TemplatePermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, Handlers.UserPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
+            services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
 
             return services;
         }

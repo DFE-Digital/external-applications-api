@@ -326,8 +326,7 @@ public class ExternalApplicationsContext : DbContext
             .IsRequired();
         b.Property(e => e.ApplicationId)
             .HasColumnName("ApplicationId")
-            .HasConversion(v => v.Value, v => new ApplicationId(v))
-            .IsRequired();
+            .HasConversion(v => v.Value, v => new ApplicationId(v));
         b.Property(e => e.ResourceType)
             .HasColumnName("ResourceType")
             .HasConversion(

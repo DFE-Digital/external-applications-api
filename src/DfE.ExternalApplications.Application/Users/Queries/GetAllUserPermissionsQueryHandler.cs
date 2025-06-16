@@ -44,7 +44,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                         var dtoList = userWithPermissions.Permissions
                             .Select(p => new UserPermissionDto
                             {
-                                ApplicationId = p.ApplicationId.Value,
+                                ApplicationId = p.ApplicationId?.Value,
                                 ResourceType = p.ResourceType,
                                 ResourceKey = p.ResourceKey,
                                 AccessType = p.AccessType

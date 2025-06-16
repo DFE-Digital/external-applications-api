@@ -10,7 +10,7 @@ public sealed class Permission : IEntity<PermissionId>
     public PermissionId? Id { get; private set; }
     public UserId UserId { get; private set; }
     public User? User { get; private set; }
-    public ApplicationId ApplicationId { get; private set; }
+    public ApplicationId? ApplicationId { get; private set; }
     public Application? Application { get; private set; }
     public ResourceType ResourceType { get; private set; }
     public string ResourceKey { get; private set; } = null!;

@@ -22,6 +22,8 @@ public class UsersController(ISender sender) : ControllerBase
     [Authorize(AuthenticationSchemes = AuthConstants.UserScheme)]
     [SwaggerResponse(200, "A UserPermission object representing the User's Permissions.", typeof(IReadOnlyCollection<UserPermissionDto>))]
     [SwaggerResponse(401, "Unauthorized – no valid user token")]
+    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "CanRead")]
+    [Authorize(AuthenticationSchemes = AuthConstants.UserScheme, Policy = "CanReadUser")]
     public async Task<IActionResult> GetMyPermissionsAsync(
         CancellationToken cancellationToken)
     {

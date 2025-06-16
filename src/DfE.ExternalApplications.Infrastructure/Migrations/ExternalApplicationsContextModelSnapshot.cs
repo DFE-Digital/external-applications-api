@@ -128,7 +128,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnType("tinyint")
                         .HasColumnName("AccessType");
 
-                    b.Property<Guid>("ApplicationId")
+                    b.Property<Guid?>("ApplicationId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("ApplicationId");
 
@@ -462,9 +462,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 {
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.Application", "Application")
                         .WithMany()
-                        .HasForeignKey("ApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ApplicationId");
 
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "GrantedByUser")
                         .WithMany()
