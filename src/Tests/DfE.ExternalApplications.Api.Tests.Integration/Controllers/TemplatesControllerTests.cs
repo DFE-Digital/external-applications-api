@@ -40,7 +40,7 @@ public class TemplatesControllerTests
         dbContext.TemplateVersions.Add(newVersion);
         await dbContext.SaveChangesAsync();
 
-        var response = await templatesClient.GetLatestTemplateSchemaAsync(template.Name);
+        var response = await templatesClient.GetLatestTemplateSchemaAsync(template.Id.Value);
 
         Assert.NotNull(response);
         Assert.Equal("v9.9", response!.VersionNumber);

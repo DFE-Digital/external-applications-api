@@ -22,8 +22,8 @@ public class UsersController(ISender sender) : ControllerBase
     [Authorize(AuthenticationSchemes = AuthConstants.UserScheme)]
     [SwaggerResponse(200, "A UserPermission object representing the User's Permissions.", typeof(IReadOnlyCollection<UserPermissionDto>))]
     [SwaggerResponse(401, "Unauthorized – no valid user token")]
-    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "CanRead")]
     [Authorize(AuthenticationSchemes = AuthConstants.UserScheme, Policy = "CanReadUser")]
+    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanRead")]
     public async Task<IActionResult> GetMyPermissionsAsync(
         CancellationToken cancellationToken)
     {
@@ -45,7 +45,8 @@ public class UsersController(ISender sender) : ControllerBase
     [HttpGet("{email}/permissions")]
     [SwaggerResponse(200, "A UserPermission object representing the User's Permissions.", typeof(IReadOnlyCollection<UserPermissionDto>))]
     [SwaggerResponse(400, "Email cannot be null or empty.")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = AuthConstants.UserScheme, Policy = "CanReadUser")]
+    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanRead")]
     public async Task<IActionResult> GetAllPermissionsForUserAsync(
         [FromRoute] string email,
         CancellationToken cancellationToken)
@@ -58,6 +59,4 @@ public class UsersController(ISender sender) : ControllerBase
 
         return Ok(result.Value);
     }
-
-
 }
