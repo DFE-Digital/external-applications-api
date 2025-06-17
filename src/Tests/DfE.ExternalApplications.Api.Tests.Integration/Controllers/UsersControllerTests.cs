@@ -20,17 +20,20 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             IUsersClient usersClient,
             HttpClient httpClient)
         {
-            factory.TestClaims = [
+
+            factory.TestClaims = new List<Claim>
+            {
                 new Claim(ClaimTypes.Email, "alice1@example.com"),
-                new Claim(ClaimTypes.Role, "API.Read")
-            ];
+                new Claim(ClaimTypes.Role,  "API.Read"),
+            };
 
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "user-token");
             httpClient.DefaultRequestHeaders.Remove(AuthConstants.ServiceAuthHeader);
-            httpClient.DefaultRequestHeaders.Add(AuthConstants.ServiceAuthHeader, "svc-token");
-            factory.TestClaims = [new Claim(ClaimTypes.Role, "API.Read")];
-
+            httpClient.DefaultRequestHeaders.Add(
+                AuthConstants.ServiceAuthHeader,
+                "svc-token"
+            );
             // Arrange
             var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
 
@@ -47,6 +50,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
                 .Where(p => p.UserId == aliceId)
                 .ExecuteUpdateAsync(p => p
                     .SetProperty(p => p.ResourceKey, "alice1@example.com")
+                    .SetProperty(p => p.ResourceType, ResourceType.User)
                     .SetProperty(p => p.AccessType, AccessType.Read)
                 );
 

@@ -13,6 +13,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using DfE.ExternalApplications.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations
 {
@@ -31,14 +35,28 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                     },
                     ExternalServicesConfiguration = services =>
                     {
-                        services.PostConfigure<AuthenticationOptions>(options =>
+
+                        services.RemoveAll(typeof(IConfigureOptions<AuthenticationOptions>));
+                        services.RemoveAll(typeof(IConfigureOptions<JwtBearerOptions>));
+                        services.RemoveAll<IPostConfigureOptions<AuthenticationOptions>>();
+                        services.RemoveAll<IPostConfigureOptions<JwtBearerOptions>>();
+
+                        services.AddAuthentication()
+                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
+                                AuthConstants.UserScheme,
+                                opts => { /* picks up factory.TestClaims */ })
+
+                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
+                                AuthConstants.AzureAdScheme,
+                                opts => { /* picks up the same factory.TestClaims */ });
+
+
+                        services.PostConfigure<AuthenticationOptions>(opts =>
                         {
-                            options.DefaultAuthenticateScheme = "TestScheme";
-                            options.DefaultChallengeScheme = "TestScheme";
+                            opts.DefaultAuthenticateScheme = AuthConstants.UserScheme;
+                            opts.DefaultChallengeScheme = AuthConstants.UserScheme;
                         });
 
-                        services.AddAuthentication("TestScheme")
-                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>("TestScheme", options => { });
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
