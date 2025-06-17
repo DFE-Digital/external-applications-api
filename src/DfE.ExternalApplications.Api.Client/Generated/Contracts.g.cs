@@ -32,7 +32,7 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -40,7 +40,7 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken);
 
     }
@@ -52,7 +52,7 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// Returns all my permissions.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync();
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -60,14 +60,14 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// Returns all my permissions.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
         /// Returns all permissions for the user by {email}.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetAllPermissionsForUserAsync(string email);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -75,7 +75,7 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// Returns all permissions for the user by {email}.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetAllPermissionsForUserAsync(string email, System.Threading.CancellationToken cancellationToken);
 
     }
@@ -85,7 +85,7 @@ namespace DfE.ExternalApplications.Client.Contracts
 
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PersonsApiException : System.Exception
+    public partial class ExternalApplicationsException : System.Exception
     {
         public int StatusCode { get; private set; }
 
@@ -93,7 +93,7 @@ namespace DfE.ExternalApplications.Client.Contracts
 
         public System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> Headers { get; private set; }
 
-        public PersonsApiException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception innerException)
+        public ExternalApplicationsException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception innerException)
             : base(message + "\n\nStatus: " + statusCode + "\nResponse: \n" + ((response == null) ? "(null)" : response.Substring(0, response.Length >= 512 ? 512 : response.Length)), innerException)
         {
             StatusCode = statusCode;
@@ -108,11 +108,11 @@ namespace DfE.ExternalApplications.Client.Contracts
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PersonsApiException<TResult> : PersonsApiException
+    public partial class ExternalApplicationsException<TResult> : ExternalApplicationsException
     {
         public TResult Result { get; private set; }
 
-        public PersonsApiException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception innerException)
+        public ExternalApplicationsException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception innerException)
             : base(message, statusCode, response, headers, innerException)
         {
             Result = result;

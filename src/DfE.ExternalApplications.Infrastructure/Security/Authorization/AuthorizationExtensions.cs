@@ -23,6 +23,10 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
                 .GetSection(AuthConstants.ExternalIdpSection)
                 .Get<ExternalIdpOptions>()!;
 
+            configuration
+                .GetSection(AuthConstants.ExternalIdpSection)
+                .Bind(externalOpts);
+
             var auth = services.AddAuthentication();
 
             // User Scheme

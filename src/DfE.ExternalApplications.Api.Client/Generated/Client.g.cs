@@ -81,7 +81,7 @@ namespace DfE.ExternalApplications.Client
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         public virtual System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId)
         {
             return GetLatestTemplateSchemaAsync(templateId, System.Threading.CancellationToken.None);
@@ -92,7 +92,7 @@ namespace DfE.ExternalApplications.Client
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken)
         {
             if (templateId == null)
@@ -142,7 +142,7 @@ namespace DfE.ExternalApplications.Client
                             var objectResponse_ = await ReadObjectResponseAsync<TemplateSchemaDto>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new PersonsApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             return objectResponse_.Object;
                         }
@@ -150,12 +150,12 @@ namespace DfE.ExternalApplications.Client
                         if (status_ == 400)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new PersonsApiException("Request was invalid or access denied.", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("Request was invalid or access denied.", status_, responseText_, headers_, null);
                         }
                         else
                         {
                             var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new PersonsApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                            throw new ExternalApplicationsException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
                         }
                     }
                     finally
@@ -205,7 +205,7 @@ namespace DfE.ExternalApplications.Client
                 catch (Newtonsoft.Json.JsonException exception)
                 {
                     var message = "Could not deserialize the response body string as " + typeof(T).FullName + ".";
-                    throw new PersonsApiException(message, (int)response.StatusCode, responseText, headers, exception);
+                    throw new ExternalApplicationsException(message, (int)response.StatusCode, responseText, headers, exception);
                 }
             }
             else
@@ -224,7 +224,7 @@ namespace DfE.ExternalApplications.Client
                 catch (Newtonsoft.Json.JsonException exception)
                 {
                     var message = "Could not deserialize the response body stream as " + typeof(T).FullName + ".";
-                    throw new PersonsApiException(message, (int)response.StatusCode, string.Empty, headers, exception);
+                    throw new ExternalApplicationsException(message, (int)response.StatusCode, string.Empty, headers, exception);
                 }
             }
         }
@@ -336,7 +336,7 @@ namespace DfE.ExternalApplications.Client
         /// Returns all my permissions.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync()
         {
             return GetMyPermissionsAsync(System.Threading.CancellationToken.None);
@@ -347,7 +347,7 @@ namespace DfE.ExternalApplications.Client
         /// Returns all my permissions.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken)
         {
             var client_ = _httpClient;
@@ -392,7 +392,7 @@ namespace DfE.ExternalApplications.Client
                             var objectResponse_ = await ReadObjectResponseAsync<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new PersonsApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             return objectResponse_.Object;
                         }
@@ -400,12 +400,12 @@ namespace DfE.ExternalApplications.Client
                         if (status_ == 401)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new PersonsApiException("Unauthorized \u2013 no valid user token", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("Unauthorized \u2013 no valid user token", status_, responseText_, headers_, null);
                         }
                         else
                         {
                             var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new PersonsApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                            throw new ExternalApplicationsException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
                         }
                     }
                     finally
@@ -426,7 +426,7 @@ namespace DfE.ExternalApplications.Client
         /// Returns all permissions for the user by {email}.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetAllPermissionsForUserAsync(string email)
         {
             return GetAllPermissionsForUserAsync(email, System.Threading.CancellationToken.None);
@@ -437,7 +437,7 @@ namespace DfE.ExternalApplications.Client
         /// Returns all permissions for the user by {email}.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetAllPermissionsForUserAsync(string email, System.Threading.CancellationToken cancellationToken)
         {
             if (email == null)
@@ -487,7 +487,7 @@ namespace DfE.ExternalApplications.Client
                             var objectResponse_ = await ReadObjectResponseAsync<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new PersonsApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             return objectResponse_.Object;
                         }
@@ -495,12 +495,12 @@ namespace DfE.ExternalApplications.Client
                         if (status_ == 400)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new PersonsApiException("Email cannot be null or empty.", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("Email cannot be null or empty.", status_, responseText_, headers_, null);
                         }
                         else
                         {
                             var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new PersonsApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                            throw new ExternalApplicationsException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
                         }
                     }
                     finally
@@ -550,7 +550,7 @@ namespace DfE.ExternalApplications.Client
                 catch (Newtonsoft.Json.JsonException exception)
                 {
                     var message = "Could not deserialize the response body string as " + typeof(T).FullName + ".";
-                    throw new PersonsApiException(message, (int)response.StatusCode, responseText, headers, exception);
+                    throw new ExternalApplicationsException(message, (int)response.StatusCode, responseText, headers, exception);
                 }
             }
             else
@@ -569,7 +569,7 @@ namespace DfE.ExternalApplications.Client
                 catch (Newtonsoft.Json.JsonException exception)
                 {
                     var message = "Could not deserialize the response body stream as " + typeof(T).FullName + ".";
-                    throw new PersonsApiException(message, (int)response.StatusCode, string.Empty, headers, exception);
+                    throw new ExternalApplicationsException(message, (int)response.StatusCode, string.Empty, headers, exception);
                 }
             }
         }
