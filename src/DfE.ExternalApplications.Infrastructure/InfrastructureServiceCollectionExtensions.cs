@@ -1,3 +1,4 @@
+using DfE.CoreLibs.Security.Configurations;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Infrastructure;

@@ -1,12 +1,16 @@
-using DfE.CoreLibs.Security.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using DfE.CoreLibs.Security;
+using DfE.CoreLibs.Security.Configurations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
-using DfE.ExternalApplications.Infrastructure.Security.Configurations;
-using Microsoft.AspNetCore.Authorization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Security.Authorization;
 using DfE.CoreLibs.Security.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
 {
@@ -16,93 +20,82 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
         public static IServiceCollection AddCustomAuthorization(this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.Configure<ExternalIdpOptions>(
-                configuration.GetSection(AuthConstants.ExternalIdpSection));
+            services.AddExternalIdentityValidation(configuration);
 
-            var externalOpts = configuration
-                .GetSection(AuthConstants.ExternalIdpSection)
-                .Get<ExternalIdpOptions>()!;
+            // Config
+            services
+                .Configure<OpenIdConnectOptions>(
+                    configuration.GetSection("DfESignIn"));
 
-            configuration
-                .GetSection(AuthConstants.ExternalIdpSection)
-                .Bind(externalOpts);
+            var tokenSettings = new TokenSettings();
+            configuration.GetSection("Authorization:TokenSettings").Bind(tokenSettings);
 
-            var auth = services.AddAuthentication();
+            services.AddUserTokenService(configuration);
 
-            // User Scheme
-            auth.AddJwtBearer(AuthConstants.UserScheme, opts =>
-            {
-                opts.Authority = externalOpts.Authority;
-                opts.Audience = externalOpts.ClientId;
-
-                opts.Events = new JwtBearerEvents
+            services.AddAuthentication(options =>
                 {
-                    OnMessageReceived = ctx =>
+                    options.DefaultAuthenticateScheme = "CompositeScheme";
+                    options.DefaultChallengeScheme = "CompositeScheme";
+                })
+                .AddPolicyScheme("CompositeScheme", "CompositeAuth", options =>
+                {
+                    options.ForwardDefaultSelector = context =>
                     {
-                        var hdr = ctx.Request.Headers[AuthConstants.AuthorizationHeader]
-                            .ToString();
-                        if (hdr.StartsWith(AuthConstants.BearerPrefix,
-                                StringComparison.OrdinalIgnoreCase))
+                        var header = context.Request.Headers["Authorization"].FirstOrDefault();
+                        if (header?.StartsWith("Bearer ") == true)
                         {
-                            ctx.Token = hdr[AuthConstants.BearerPrefix.Length..].Trim();
+                            var token = header.Substring(7);
+                            var handler = new JwtSecurityTokenHandler();
+                            var jwt = handler.ReadJwtToken(token);
+                            return jwt.Issuer == tokenSettings.Issuer
+                                ? AuthConstants.UserScheme
+                                : AuthConstants.AzureAdScheme;
                         }
-                        return Task.CompletedTask;
-                    }
-                };
-            });
-
-            // Service-Scheme Azure AD
-            auth.AddMicrosoftIdentityWebApi(
-                configureMicrosoftIdentityOptions: opts =>
-                {
-                    configuration
-                        .GetSection(AuthConstants.AzureAdSection)
-                        .Bind(opts);
-                },
-                configureJwtBearerOptions: opts =>
-                {
-                    opts.Events ??= new JwtBearerEvents();
-                    opts.Events.OnMessageReceived = ctx =>
-                    {
-                        ctx.Token = ctx.Request
-                            .Headers[AuthConstants.ServiceAuthHeader]
-                            .FirstOrDefault();
-                        return Task.CompletedTask;
+                        return AuthConstants.AzureAdScheme;
                     };
-                },
-                jwtBearerScheme: AuthConstants.AzureAdScheme,
-                subscribeToJwtBearerMiddlewareDiagnosticsEvents: false
-            );
+                })
+                .AddJwtBearer(AuthConstants.UserScheme, opts =>
+                {
+                    opts.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = tokenSettings.Issuer,
+                        ValidateAudience = true,
+                        ValidAudience = tokenSettings.Audience,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(tokenSettings.SecretKey))
+                    };
+                })
+                .AddMicrosoftIdentityWebApi(
+                    configuration.GetSection(AuthConstants.AzureAdSection),
+                    jwtBearerScheme: AuthConstants.AzureAdScheme,
+                    subscribeToJwtBearerMiddlewareDiagnosticsEvents: false);
 
-            // set-up and define Template Permission policies
+            // set-up and define User and Template Permission policies
             var policyCustomizations = new Dictionary<string, Action<AuthorizationPolicyBuilder>>
             {
                 ["CanReadTemplate"] = pb =>
                 {
                     pb.RequireAuthenticatedUser();
-                    pb.AddRequirements(new Handlers.TemplatePermissionRequirement("Read"));
+                    pb.AddRequirements(new Handlers.TemplatePermissionRequirement(AccessType.Read.ToString()));
                 },
                 ["CanReadUser"] = pb =>
                 {
+                    pb.AddAuthenticationSchemes("CompositeScheme");
                     pb.RequireAuthenticatedUser();
-                    pb.AddRequirements(new Handlers.UserPermissionRequirement("Read"));
+                    pb.AddRequirements(new Handlers.UserPermissionRequirement(AccessType.Read.ToString()));
                 }
             };
 
             services.AddApplicationAuthorization(
                 configuration,
                 policyCustomizations: policyCustomizations,
-                apiAuthenticationScheme: null,
-                // set-up resource permissions and policies
-                configureResourcePolicies: opts =>
-                {
-                    opts.Actions.AddRange(["Read", "Write"]);
-                    opts.ClaimType = "permission";
-                });
+                apiAuthenticationScheme: "CompositeScheme",
+                configureResourcePolicies: null);
 
             services.AddSingleton<IAuthorizationHandler, Handlers.TemplatePermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, Handlers.UserPermissionHandler>();
-            services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
 
             return services;

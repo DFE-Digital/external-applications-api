@@ -39,7 +39,8 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     CreatedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     LastModifiedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastModifiedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    LastModifiedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ExternalProviderId = table.Column<string>(type: "varchar(100)", unicode: false, maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -443,6 +444,14 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 table: "Users",
                 column: "Email",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ExternalProviderId",
+                schema: "ea",
+                table: "Users",
+                column: "ExternalProviderId",
+                unique: true,
+                filter: "[ExternalProviderId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_LastModifiedBy",

@@ -4,7 +4,7 @@
     {
         // Scheme names
         public const string UserScheme = "UserScheme";
-        public const string AzureAdScheme = "AzureAdScheme";
+        public const string AzureAdScheme = "AzureEntra";
 
         // Header names & prefixes
         public const string AuthorizationHeader = "Authorization";

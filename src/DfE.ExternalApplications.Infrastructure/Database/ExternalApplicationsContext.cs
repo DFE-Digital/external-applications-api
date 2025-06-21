@@ -118,6 +118,10 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("LastModifiedBy")
             .HasConversion(v => v!.Value, v => new UserId(v))
             .IsRequired(false);
+        b.Property(u => u.ExternalProviderId)
+            .HasMaxLength(100)
+            .IsUnicode(false);
+        b.HasIndex(u => u.ExternalProviderId).IsUnique();
         b.HasIndex(e => e.Email).IsUnique();
         b.HasOne(e => e.Role)
             .WithMany()

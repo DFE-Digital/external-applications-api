@@ -22,15 +22,11 @@ public class UsersController(ISender sender) : ControllerBase
     [Authorize(AuthenticationSchemes = AuthConstants.UserScheme)]
     [SwaggerResponse(200, "A UserPermission object representing the User's Permissions.", typeof(IReadOnlyCollection<UserPermissionDto>))]
     [SwaggerResponse(401, "Unauthorized – no valid user token")]
-    [Authorize(AuthenticationSchemes = AuthConstants.UserScheme, Policy = "CanReadUser")]
-    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanRead")]
+    [Authorize(Policy = "CanReadUser")]
     public async Task<IActionResult> GetMyPermissionsAsync(
         CancellationToken cancellationToken)
     {
-        var email = User.FindFirstValue(ClaimTypes.Email)
-                    ?? throw new InvalidOperationException("No email claim in token");
-
-        var query = new GetAllUserPermissionsQuery(email);
+        var query = new GetMyPermissionsQuery();
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
@@ -45,8 +41,7 @@ public class UsersController(ISender sender) : ControllerBase
     [HttpGet("{email}/permissions")]
     [SwaggerResponse(200, "A UserPermission object representing the User's Permissions.", typeof(IReadOnlyCollection<UserPermissionDto>))]
     [SwaggerResponse(400, "Email cannot be null or empty.")]
-    [Authorize(AuthenticationSchemes = AuthConstants.UserScheme, Policy = "CanReadUser")]
-    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanRead")]
+    [Authorize(Policy = "CanReadUser")]
     public async Task<IActionResult> GetAllPermissionsForUserAsync(
         [FromRoute] string email,
         CancellationToken cancellationToken)

@@ -5,7 +5,6 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DfE.CoreLibs.Security" Version="1.1.9-prerelease-11" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.16" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.16" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.16">

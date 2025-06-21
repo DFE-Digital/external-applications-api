@@ -1,9 +1,8 @@
 ﻿using DfE.CoreLibs.Security.Interfaces;
-using DfE.ExternalApplications.Application.Users.Queries;
+using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
-using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 
 namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
 {

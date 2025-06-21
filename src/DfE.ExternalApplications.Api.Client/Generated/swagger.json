@@ -42,6 +42,39 @@
         }
       }
     },
+    "/v1/Tokens/exchange": {
+      "post": {
+        "tags": [
+          "Tokens"
+        ],
+        "summary": "Exchanges an DSI token for our ExternalApplications InternalUser JWT.",
+        "operationId": "Tokens_Exchange",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeTokenRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeTokenRequestDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/permissions": {
       "get": {
         "tags": [
@@ -122,6 +155,15 @@
             "type": "string"
           },
           "jsonSchema": {
+            "type": "string"
+          }
+        }
+      },
+      "ExchangeTokenRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accessToken": {
             "type": "string"
           }
         }

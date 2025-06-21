@@ -18,6 +18,7 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
     public DateTime? LastModifiedOn { get; private set; }
     public UserId? LastModifiedBy { get; private set; }
     public User? LastModifiedByUser { get; private set; }
+    public string? ExternalProviderId { get; private set; }
 
     private readonly List<Permission> _permissions = new();
     private readonly List<TemplatePermission> _templatePermissions = new();

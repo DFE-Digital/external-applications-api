@@ -374,6 +374,11 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)")
                         .HasColumnName("Email");
 
+                    b.Property<string>("ExternalProviderId")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<Guid?>("LastModifiedBy")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("LastModifiedBy");
@@ -398,6 +403,10 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("ExternalProviderId")
+                        .IsUnique()
+                        .HasFilter("[ExternalProviderId] IS NOT NULL");
 
                     b.HasIndex("LastModifiedBy");
 
