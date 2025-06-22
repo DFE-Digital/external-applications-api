@@ -21,8 +21,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     [HttpGet("{templateId}/schema")]
     [SwaggerResponse(200, "The latest template schema.", typeof(TemplateSchemaDto))]
     [SwaggerResponse(400, "Request was invalid or access denied.")]
-    [Authorize(AuthenticationSchemes = AuthConstants.UserScheme, Policy = "CanReadTemplate")]
-    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "CanRead")]
+    [Authorize(Policy = "CanReadTemplate")]
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
         [FromRoute] Guid templateId, CancellationToken cancellationToken)
     {
