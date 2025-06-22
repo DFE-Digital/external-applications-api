@@ -97,6 +97,7 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
             services.AddSingleton<IAuthorizationHandler, Handlers.TemplatePermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, Handlers.UserPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
+            services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
 
             return services;
         }

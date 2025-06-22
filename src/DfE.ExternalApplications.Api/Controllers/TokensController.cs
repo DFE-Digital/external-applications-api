@@ -1,4 +1,5 @@
 ﻿using Asp.Versioning;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common.Models;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Infrastructure.Security;
@@ -18,8 +19,8 @@ namespace DfE.ExternalApplications.Api.Controllers
         /// </summary>
         [HttpPost("exchange")]
         [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Roles = "API.Write")]
-        public async Task<ActionResult<ExchangeTokenRequestDto>> Exchange(
-            [FromBody] ExchangeTokenRequestDto request,
+        public async Task<ActionResult<ExchangeTokenDto>> Exchange(
+            [FromBody] ExchangeTokenDto request,
             CancellationToken ct)
         {
             var result = await sender.Send(

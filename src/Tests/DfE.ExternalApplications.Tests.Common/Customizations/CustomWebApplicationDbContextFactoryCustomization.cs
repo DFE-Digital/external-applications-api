@@ -41,21 +41,35 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         services.RemoveAll<IPostConfigureOptions<AuthenticationOptions>>();
                         services.RemoveAll<IPostConfigureOptions<JwtBearerOptions>>();
 
-                        services.AddAuthentication()
+                        services.AddAuthentication(options =>
+                            {
+                                options.DefaultAuthenticateScheme = "CompositeScheme";
+                                options.DefaultChallengeScheme = "CompositeScheme";
+                            })
+                            .AddPolicyScheme("CompositeScheme", "CompositeAuth", schemeOptions =>
+                            {
+                                schemeOptions.ForwardDefaultSelector = context =>
+                                {
+                                    var header = context.Request.Headers[AuthConstants.AuthorizationHeader]
+                                        .FirstOrDefault();
+                                    if (header?.StartsWith(AuthConstants.BearerPrefix) == true)
+                                    {
+                                        var token = header.Substring(AuthConstants.BearerPrefix.Length);
+                                        return token.StartsWith("user")
+                                            ? AuthConstants.UserScheme
+                                            : AuthConstants.AzureAdScheme;
+                                    }
+
+                                    return AuthConstants.AzureAdScheme;
+                                };
+                            })
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
                                 AuthConstants.UserScheme,
-                                opts => { /* picks up factory.TestClaims */ })
+                                _ => { /* picks up factory.TestClaims */ })
 
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
                                 AuthConstants.AzureAdScheme,
-                                opts => { /* picks up the same factory.TestClaims */ });
-
-
-                        services.PostConfigure<AuthenticationOptions>(opts =>
-                        {
-                            opts.DefaultAuthenticateScheme = AuthConstants.UserScheme;
-                            opts.DefaultChallengeScheme = AuthConstants.UserScheme;
-                        });
+                                _ => { /* picks up the same factory.TestClaims */ });
 
                     },
                     ExternalHttpClientConfiguration = client =>

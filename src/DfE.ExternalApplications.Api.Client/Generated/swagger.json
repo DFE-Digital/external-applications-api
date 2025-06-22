@@ -54,7 +54,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ExchangeTokenRequestDto"
+                "$ref": "#/components/schemas/ExchangeTokenDto"
               }
             }
           },
@@ -67,7 +67,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExchangeTokenRequestDto"
+                  "$ref": "#/components/schemas/ExchangeTokenDto"
                 }
               }
             }
@@ -159,7 +159,7 @@
           }
         }
       },
-      "ExchangeTokenRequestDto": {
+      "ExchangeTokenDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {

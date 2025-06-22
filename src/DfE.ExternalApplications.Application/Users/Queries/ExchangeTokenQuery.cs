@@ -9,19 +9,20 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 
 namespace DfE.ExternalApplications.Application.Users.Queries
 {
-    public record ExchangeTokenQuery(string SubjectToken) : IRequest<ExchangeTokenRequestDto>;
+    public record ExchangeTokenQuery(string SubjectToken) : IRequest<ExchangeTokenDto>;
 
     public class ExchangeTokenQueryHandler(
         IExternalIdentityValidator externalValidator,
         IEaRepository<User> userRepo,
         IUserTokenService tokenSvc,
         IHttpContextAccessor httpCtxAcc)
-        : IRequestHandler<ExchangeTokenQuery, ExchangeTokenRequestDto>
+        : IRequestHandler<ExchangeTokenQuery, ExchangeTokenDto>
     {
-        public async Task<ExchangeTokenRequestDto> Handle(ExchangeTokenQuery req, CancellationToken ct)
+        public async Task<ExchangeTokenDto> Handle(ExchangeTokenQuery req, CancellationToken ct)
         {
             var externalUser = await externalValidator
                 .ValidateIdTokenAsync(req.SubjectToken, ct);
@@ -60,7 +61,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             var mergedUser = new ClaimsPrincipal(identity);
 
             var internalToken = await tokenSvc.GetUserTokenAsync(mergedUser);
-            return new ExchangeTokenRequestDto(internalToken);
+            return new ExchangeTokenDto(internalToken);
         }
     }
 }

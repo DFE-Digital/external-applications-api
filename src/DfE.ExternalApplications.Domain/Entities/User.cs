@@ -47,6 +47,7 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
         UserId? createdBy,
         DateTime? lastModifiedOn,
         UserId? lastModifiedBy,
+        string? externalProviderId = null,
         IEnumerable<Permission>? initialPermissions = null,
         IEnumerable<TemplatePermission>? initialTemplatePermissions = null)
     {
@@ -58,6 +59,7 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
         CreatedBy = createdBy;
         LastModifiedOn = lastModifiedOn;
         LastModifiedBy = lastModifiedBy;
+        ExternalProviderId = externalProviderId;
 
         if (initialPermissions != null)
         {

@@ -2,7 +2,8 @@
 {
     public static class AuthConstants
     {
-        // Scheme names
+        // Scheme names#
+        public const string CompositeScheme = "CompositeScheme";
         public const string UserScheme = "UserScheme";
         public const string AzureAdScheme = "AzureEntra";
 

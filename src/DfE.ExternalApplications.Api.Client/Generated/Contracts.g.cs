@@ -52,14 +52,14 @@ namespace DfE.ExternalApplications.Client.Contracts
         /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
         /// </summary>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExchangeTokenRequestDto> ExchangeAsync(ExchangeTokenRequestDto request);
+        System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
         /// </summary>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ExchangeTokenRequestDto> ExchangeAsync(ExchangeTokenRequestDto request, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request, System.Threading.CancellationToken cancellationToken);
 
     }
 

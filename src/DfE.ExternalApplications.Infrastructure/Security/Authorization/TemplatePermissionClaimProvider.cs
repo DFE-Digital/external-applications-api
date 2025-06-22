@@ -3,34 +3,39 @@ using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
+namespace DfE.ExternalApplications.Infrastructure.Security.Authorization;
+public class TemplatePermissionsClaimProvider(ISender sender, ILogger<TemplatePermissionsClaimProvider> logger) : ICustomClaimProvider
 {
-    public class TemplatePermissionsClaimProvider(ISender sender, ILogger<TemplatePermissionsClaimProvider> logger) : ICustomClaimProvider
+    public async Task<IEnumerable<Claim>> GetClaimsAsync(ClaimsPrincipal principal)
     {
-        public async Task<IEnumerable<Claim>> GetClaimsAsync(ClaimsPrincipal principal)
+        var issuer = principal.FindFirst(JwtRegisteredClaimNames.Iss)?.Value
+                     ?? principal.FindFirst("iss")?.Value;
+        if (string.IsNullOrEmpty(issuer) || !issuer.Contains("windows.net", StringComparison.OrdinalIgnoreCase))
+            return Array.Empty<Claim>();
+
+        var clientId = principal.FindFirst("appid")?.Value;
+        if (string.IsNullOrEmpty(clientId))
         {
-            var email = principal.FindFirstValue(ClaimTypes.Email);
-            if (string.IsNullOrEmpty(email))
-                return Array.Empty<Claim>();
-
-            var query = new GetTemplatePermissionsForUserQuery(email);
-            var result = await sender.Send(query);
-
-            if (result is { IsSuccess: false })
-            {
-                logger.LogWarning($"TemplatePermissionsClaimProvider() > Failed to return the template permissions for user: {email}");
-                return Array.Empty<Claim>();
-            }
-
-            return result.Value == null ? 
-                Array.Empty<Claim>() : 
-                result.Value.Select(p =>
-                new Claim(
-                    "permission",
-                    $"Template:{p.TemplateId}:{p.AccessType.ToString()}"
-                )
-            );
+            logger.LogWarning("TemplatePermissionsClaimProvider() > Azure token had no appid");
+            return Array.Empty<Claim>();
         }
+
+        var query = new GetTemplatePermissionsForUserByExternalProviderIdQuery(clientId);
+        var result = await sender.Send(query);
+
+        if (result is { IsSuccess: false })
+        {
+            logger.LogWarning($"TemplatePermissionsClaimProvider() > Failed to return the template permissions for Azure AppId:{clientId}");
+            return Array.Empty<Claim>();
+        }
+
+        return result.Value == null
+            ? Array.Empty<Claim>()
+            : result.Value.Select(p => new Claim(
+                "permission",
+                $"Template:{p.TemplateId}:{p.AccessType}")
+            );
     }
 }

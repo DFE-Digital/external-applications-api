@@ -336,7 +336,7 @@ namespace DfE.ExternalApplications.Client
         /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
         /// </summary>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<ExchangeTokenRequestDto> ExchangeAsync(ExchangeTokenRequestDto request)
+        public virtual System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request)
         {
             return ExchangeAsync(request, System.Threading.CancellationToken.None);
         }
@@ -346,7 +346,7 @@ namespace DfE.ExternalApplications.Client
         /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
         /// </summary>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ExchangeTokenRequestDto> ExchangeAsync(ExchangeTokenRequestDto request, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request, System.Threading.CancellationToken cancellationToken)
         {
             if (request == null)
                 throw new System.ArgumentNullException("request");
@@ -394,7 +394,7 @@ namespace DfE.ExternalApplications.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<ExchangeTokenRequestDto>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<ExchangeTokenDto>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
