@@ -1,12 +1,11 @@
-using System.Security.Claims;
 using Asp.Versioning;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.Queries;
-using DfE.ExternalApplications.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 

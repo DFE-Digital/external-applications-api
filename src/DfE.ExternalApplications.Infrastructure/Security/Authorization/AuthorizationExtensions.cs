@@ -77,6 +77,7 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
             {
                 ["CanReadTemplate"] = pb =>
                 {
+                    pb.AddAuthenticationSchemes("CompositeScheme");
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.TemplatePermissionRequirement(AccessType.Read.ToString()));
                 },
