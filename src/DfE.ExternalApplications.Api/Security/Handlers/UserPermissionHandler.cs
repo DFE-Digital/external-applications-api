@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization.Handlers
+namespace DfE.ExternalApplications.Api.Security.Handlers
 {
     /// <summary>
     /// Authorization handler that checks user permission claims for a specific user resource.

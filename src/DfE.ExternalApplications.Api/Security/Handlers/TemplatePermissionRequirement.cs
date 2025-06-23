@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization.Handlers
+namespace DfE.ExternalApplications.Api.Security.Handlers
 {
     public sealed class TemplatePermissionRequirement(string action) : IAuthorizationRequirement
     {

@@ -1,18 +1,19 @@
-using DfE.CoreLibs.Security;
-using DfE.CoreLibs.Security.Configurations;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Identity.Web;
-using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Security;
 using DfE.CoreLibs.Security.Authorization;
+using DfE.CoreLibs.Security.Configurations;
 using DfE.CoreLibs.Security.Interfaces;
+using DfE.ExternalApplications.Api.Security.Handlers;
+using DfE.ExternalApplications.Infrastructure.Security;
+using DfE.ExternalApplications.Infrastructure.Security.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
+namespace DfE.ExternalApplications.Api.Security
 {
     [ExcludeFromCodeCoverage]
     public static class AuthorizationExtensions
@@ -95,7 +96,7 @@ namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
                 apiAuthenticationScheme: "CompositeScheme",
                 configureResourcePolicies: null);
 
-            services.AddSingleton<IAuthorizationHandler, Handlers.TemplatePermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, TemplatePermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, Handlers.UserPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();

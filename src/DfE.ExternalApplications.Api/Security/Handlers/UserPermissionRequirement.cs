@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization.Handlers
+namespace DfE.ExternalApplications.Api.Security.Handlers
 {
     /// <summary>
     /// Authorization requirement for user resource actions.

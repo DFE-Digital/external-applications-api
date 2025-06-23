@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization.Handlers
+namespace DfE.ExternalApplications.Api.Security.Handlers
 {
     public sealed class TemplatePermissionHandler(IHttpContextAccessor accessor)
         : AuthorizationHandler<TemplatePermissionRequirement>
