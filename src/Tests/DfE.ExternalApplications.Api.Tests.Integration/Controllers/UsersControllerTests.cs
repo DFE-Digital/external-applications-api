@@ -141,5 +141,98 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
                 Assert.Equal((AccessType)expected[i].AccessType, actual[i].AccessType);
             }
         }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetMyPermissionsAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+     CustomWebApplicationDbContextFactory<Program> factory,
+     IUsersClient usersClient)
+        {
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+                () => usersClient.GetMyPermissionsAsync());
+
+            Assert.Equal(403, ex.StatusCode);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetMyPermissionsAsync_ShouldReturnForbidden_WhenPermissionMissing(
+            CustomWebApplicationDbContextFactory<Program> factory,
+            IUsersClient usersClient,
+            HttpClient httpClient)
+        {
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", "user-token");
+
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+                () => usersClient.GetMyPermissionsAsync());
+
+            Assert.Equal(403, ex.StatusCode);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetAllPermissionsForUserAsync_ShouldReturnPermissions_WhenAuthorized(
+            CustomWebApplicationDbContextFactory<Program> factory,
+            IUsersClient usersClient,
+            HttpClient httpClient)
+        {
+            factory.TestClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "API.Read"),
+                new Claim("permission", "User:bob@example.com:Read")
+            };
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", "azure-token");
+
+            var result = await usersClient.GetAllPermissionsForUserAsync("bob@example.com");
+
+            Assert.NotNull(result);
+            Assert.NotEmpty(result);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetAllPermissionsForUserAsync_ShouldReturnBadRequest_WhenEmailInvalid(
+            CustomWebApplicationDbContextFactory<Program> factory,
+            IUsersClient usersClient,
+            HttpClient httpClient)
+        {
+            factory.TestClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "API.Read"),
+                new Claim("permission", "User:not-an-email:Read")
+            };
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", "azure-token");
+
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+                () => usersClient.GetAllPermissionsForUserAsync("not-an-email"));
+
+            Assert.Equal(400, ex.StatusCode);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetAllPermissionsForUserAsync_ShouldReturnForbidden_WhenPermissionMissing(
+            CustomWebApplicationDbContextFactory<Program> factory,
+            IUsersClient usersClient,
+            HttpClient httpClient)
+        {
+            factory.TestClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "API.Read")
+            };
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", "azure-token");
+
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+                () => usersClient.GetAllPermissionsForUserAsync("bob@example.com"));
+
+            Assert.Equal(403, ex.StatusCode);
+        }
     }
 }

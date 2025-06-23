@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             var performanceLoggingEnabled = config.GetValue<bool>("Features:PerformanceLoggingEnabled");
 
-            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), includeInternalTypes: true);
 
             services.AddMediatR(cfg =>
             {

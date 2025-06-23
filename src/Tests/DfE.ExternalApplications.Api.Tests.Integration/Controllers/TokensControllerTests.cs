@@ -65,4 +65,81 @@ public class TokensControllerTests
         Assert.Contains(principal.Claims,
             c => c.Type == System.Security.Claims.ClaimTypes.Role && c.Value == "API.Write");
     }
+
+    private static string CreateTokenWithoutEmail()
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
+        };
+        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        var creds = new Microsoft.IdentityModel.Tokens.SigningCredentials(
+            new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+            Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+        var jwt = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(claims: claims, signingCredentials: creds);
+        return handler.WriteToken(jwt);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task Exchange_ShouldReturnUnauthorized_WhenAzureTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITokensClient tokensClient)
+    {
+        var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
+
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => tokensClient.ExchangeAsync(new ExchangeTokenDto(externalToken)));
+
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task Exchange_ShouldReturnForbidden_WhenRoleMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITokensClient tokensClient,
+        HttpClient httpClient)
+    {
+        factory.TestClaims = new List<Claim>
+        {
+            new Claim("appid", "app"),
+            new Claim("iss", "windows.net")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "azure-token");
+
+        var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
+
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => tokensClient.ExchangeAsync(new ExchangeTokenDto(externalToken)));
+
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task Exchange_ShouldReturnServerError_WhenSubjectTokenInvalid(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITokensClient tokensClient,
+        HttpClient httpClient)
+    {
+        factory.TestClaims = new List<Claim>
+        {
+            new Claim("iss", "windows.net"),
+            new Claim("appid", "app"),
+            new Claim(ClaimTypes.Role, "API.Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "azure-token");
+
+        var invalidToken = CreateTokenWithoutEmail();
+
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => tokensClient.ExchangeAsync(new ExchangeTokenDto(invalidToken)));
+
+        Assert.Equal(500, ex.StatusCode);
+    }
 }
