@@ -1,4 +1,5 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Client.Contracts;
@@ -231,6 +232,84 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
 
             var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
                 () => usersClient.GetAllPermissionsForUserAsync("bob@example.com"));
+
+            Assert.Equal(403, ex.StatusCode);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetMyApplicationsAsync_ShouldReturnApplications_WhenUserEmailExists(
+          CustomWebApplicationDbContextFactory<Program> factory,
+          HttpClient httpClient)
+        {
+            factory.TestClaims = new List<Claim>
+            {
+                new Claim("permission", "User:alice@example.com:Read"),
+                new Claim(ClaimTypes.Email, "alice@example.com")
+            };
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", "user-token");
+
+            var response = await httpClient.GetAsync("v1/me/applications");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ApplicationDto>>(json);
+
+            Assert.NotNull(list);
+            Assert.NotEmpty(list!);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetApplicationsForUserAsync_ShouldReturnApplications_WhenAuthorized(
+            CustomWebApplicationDbContextFactory<Program> factory,
+            HttpClient httpClient)
+        {
+            factory.TestClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "API.Read"),
+                new Claim("permission", "User:bob@example.com:Read")
+            };
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", "azure-token");
+
+            var response = await httpClient.GetAsync("v1/Users/bob@example.com/applications");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+            var list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ApplicationDto>>(json);
+
+            Assert.NotNull(list);
+            Assert.NotEmpty(list!);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetMyApplicationsAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+            CustomWebApplicationDbContextFactory<Program> factory)
+        {
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+                () => factory.CreateClient().GetAsync("v1/me/applications"));
+            Assert.Equal(403, ex.StatusCode);
+        }
+
+        [Theory]
+        [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+        public async Task GetApplicationsForUserAsync_ShouldReturnForbidden_WhenPermissionMissing(
+            CustomWebApplicationDbContextFactory<Program> factory,
+            HttpClient httpClient)
+        {
+            factory.TestClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Role, "API.Read")
+            };
+
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", "azure-token");
+
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+                () => httpClient.GetAsync("v1/Users/bob@example.com/applications"));
 
             Assert.Equal(403, ex.StatusCode);
         }
