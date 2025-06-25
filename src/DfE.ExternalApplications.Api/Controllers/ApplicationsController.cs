@@ -21,7 +21,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [Authorize(AuthenticationSchemes = AuthConstants.UserScheme)]
     [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
     [SwaggerResponse(401, "Unauthorized  no valid user token")]
-    [Authorize(Policy = "CanReadApplication")]
+    [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetMyApplicationsAsync(
         CancellationToken cancellationToken)
     {
@@ -40,7 +40,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [HttpGet("/v{version:apiVersion}/Users/{email}/applications")]
     [SwaggerResponse(200, "Applications for the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
     [SwaggerResponse(400, "Email cannot be null or empty.")]
-    [Authorize(Policy = "CanReadApplication")]
+    [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetApplicationsForUserAsync(
         [FromRoute] string email,
         CancellationToken cancellationToken)

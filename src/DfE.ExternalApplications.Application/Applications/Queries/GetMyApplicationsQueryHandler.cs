@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Net.Http;
+using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Security.Interfaces;
 using MediatR;
@@ -9,7 +10,7 @@ namespace DfE.ExternalApplications.Application.Applications.Queries;
 public sealed record GetMyApplicationsQuery() : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
 
 public sealed class GetMyApplicationsQueryHandler(
-    ICurrentUser currentUser,
+    IHttpContextAccessor httpContextAccessor,
     ISender mediator)
     : IRequestHandler<GetMyApplicationsQuery, Result<IReadOnlyCollection<ApplicationDto>>>
 {
@@ -17,12 +18,14 @@ public sealed class GetMyApplicationsQueryHandler(
         GetMyApplicationsQuery request,
         CancellationToken cancellationToken)
     {
-        if (!currentUser.IsAuthenticated)
+        var user = httpContextAccessor.HttpContext?.User;
+        if (user is null || !user.Identity?.IsAuthenticated == true)
             return Result<IReadOnlyCollection<ApplicationDto>>.Failure("Not authenticated");
 
-        var principalId = currentUser.Email
-                          ?? currentUser.GetClaimValue("appid")
-                          ?? currentUser.GetClaimValue("azp");
+        var principalId = user.FindFirstValue(ClaimTypes.Email);
+
+        if (string.IsNullOrEmpty(principalId))
+            principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
         if (string.IsNullOrEmpty(principalId))
             return Result<IReadOnlyCollection<ApplicationDto>>.Failure("No user identifier");

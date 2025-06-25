@@ -3,13 +3,14 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Http;
 
 namespace DfE.ExternalApplications.Application.Common.Behaviours
 {
     [ExcludeFromCodeCoverage]
     public class PerformanceBehaviour<TRequest, TResponse>(
         ILogger<TRequest> logger,
-        ICurrentUser currentUser)
+        IHttpContextAccessor context)
         : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -28,7 +29,7 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
             if (elapsedMilliseconds <= 500) return response;
 
             var requestName = typeof(TRequest).Name;
-            var identityName = currentUser.Name;
+            var identityName = context.HttpContext?.User?.Identity?.Name;
 
             logger.LogWarning("PersonsAPI Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@IdentityName} {@Request}",
                 requestName, elapsedMilliseconds, identityName, request);

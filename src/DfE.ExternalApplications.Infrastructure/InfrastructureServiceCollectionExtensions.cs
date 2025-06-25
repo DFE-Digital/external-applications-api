@@ -22,9 +22,6 @@ namespace Microsoft.Extensions.DependencyInjection
             //Cache service
             services.AddServiceCaching(config);
 
-            services.AddHttpContextAccessor();
-            services.AddScoped<ICurrentUser, CurrentUser>();
-
             //Db
             var connectionString = config.GetConnectionString("DefaultConnection");
 

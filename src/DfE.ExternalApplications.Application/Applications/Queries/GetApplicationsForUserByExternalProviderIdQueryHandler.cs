@@ -57,6 +57,8 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                         ApplicationId = a.Id!.Value,
                         ApplicationReference = a.ApplicationReference,
                         TemplateVersionId = a.TemplateVersionId.Value,
+                        DateCreated = a.CreatedOn,
+                        TemplateName = a.TemplateVersion?.Template?.Name ?? string.Empty,
                         Status = a.Status
                     }).ToList().AsReadOnly();
 

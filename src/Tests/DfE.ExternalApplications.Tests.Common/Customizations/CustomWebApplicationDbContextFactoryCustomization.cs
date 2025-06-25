@@ -89,8 +89,6 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                         services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                         services.AddUserTokenService(tokenConfig);
-
-                        services.AddScoped<ICurrentUser, CurrentUser>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
@@ -119,7 +117,6 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                 services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                 services.AddUserTokenService(config);
-                services.AddScoped<ICurrentUser, CurrentUser>();
 
                 var serviceProvider = services.BuildServiceProvider();
 

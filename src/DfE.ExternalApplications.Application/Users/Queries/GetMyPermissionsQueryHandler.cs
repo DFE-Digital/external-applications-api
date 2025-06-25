@@ -1,6 +1,8 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Security.Interfaces;
 using MediatR;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Users.Queries
 {
@@ -8,7 +10,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         : IRequest<Result<IReadOnlyCollection<UserPermissionDto>>>;
 
     public sealed class GetMyPermissionsQueryHandler(
-        ICurrentUser currentUser,
+        IHttpContextAccessor httpContextAccessor,
         ISender mediator)
         : IRequestHandler<GetMyPermissionsQuery, Result<IReadOnlyCollection<UserPermissionDto>>>
     {
@@ -16,12 +18,15 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             GetMyPermissionsQuery request,
             CancellationToken cancellationToken)
         {
-            if (!currentUser.IsAuthenticated)
+            var user = httpContextAccessor.HttpContext?.User;
+            if (user is null || !user.Identity?.IsAuthenticated == true)
                 return Result<IReadOnlyCollection<UserPermissionDto>>.Failure("Not authenticated");
 
-            var principalId = currentUser.Email
-                              ?? currentUser.GetClaimValue("appid")
-                              ?? currentUser.GetClaimValue("azp");
+            var principalId = user.FindFirstValue(ClaimTypes.Email);
+
+            if (string.IsNullOrEmpty(principalId))
+                principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
+
 
             if (string.IsNullOrEmpty(principalId))
                 return Result<IReadOnlyCollection<UserPermissionDto>>.Failure("No user identifier");

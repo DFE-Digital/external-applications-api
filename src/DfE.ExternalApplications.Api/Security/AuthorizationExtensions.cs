@@ -10,6 +10,7 @@ using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 
@@ -35,10 +36,10 @@ namespace DfE.ExternalApplications.Api.Security
 
             services.AddAuthentication(options =>
                 {
-                    options.DefaultAuthenticateScheme = "CompositeScheme";
-                    options.DefaultChallengeScheme = "CompositeScheme";
+                    options.DefaultAuthenticateScheme = AuthConstants.CompositeScheme;
+                    options.DefaultChallengeScheme = AuthConstants.CompositeScheme;
                 })
-                .AddPolicyScheme("CompositeScheme", "CompositeAuth", options =>
+                .AddPolicyScheme(AuthConstants.CompositeScheme, "CompositeAuth", options =>
                 {
                     options.ForwardDefaultSelector = context =>
                     {
@@ -78,33 +79,40 @@ namespace DfE.ExternalApplications.Api.Security
             {
                 ["CanReadTemplate"] = pb =>
                 {
-                    pb.AddAuthenticationSchemes("CompositeScheme");
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.TemplatePermissionRequirement(AccessType.Read.ToString()));
                 },
                 ["CanReadUser"] = pb =>
                 {
-                    pb.AddAuthenticationSchemes("CompositeScheme");
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.UserPermissionRequirement(AccessType.Read.ToString()));
                 },
                 ["CanReadApplication"] = pb =>
                 {
-                    pb.AddAuthenticationSchemes("CompositeScheme");
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.ApplicationPermissionRequirement(AccessType.Read.ToString()));
+                },
+                ["CanReadAnyApplication"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.ApplicationListPermissionRequirement(AccessType.Read.ToString()));
                 }
             };
 
             services.AddApplicationAuthorization(
                 configuration,
                 policyCustomizations: policyCustomizations,
-                apiAuthenticationScheme: "CompositeScheme",
+                apiAuthenticationScheme: AuthConstants.CompositeScheme,
                 configureResourcePolicies: null);
 
             services.AddSingleton<IAuthorizationHandler, TemplatePermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, UserPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationPermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, ApplicationListPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
 
