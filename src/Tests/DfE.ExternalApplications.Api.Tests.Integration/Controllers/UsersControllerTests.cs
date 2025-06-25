@@ -244,9 +244,6 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
           IApplicationsClient appsClient,
           HttpClient httpClient)
         {
-            var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
-            var app = await dbContext.Applications.FirstAsync();
-
             factory.TestClaims = new List<Claim>
             {
                 new Claim("permission", $"Application:{EaContextSeeder.ApplicationId}:Read"),
@@ -266,21 +263,19 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
         [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
         public async Task GetApplicationsForUserAsync_ShouldReturnApplications_WhenAuthorized(
             CustomWebApplicationDbContextFactory<Program> factory,
+            IApplicationsClient appsClient,
             HttpClient httpClient)
         {
             factory.TestClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.Role, "API.Read"),
-                new Claim("permission", "Application:bob@example.com:Read")
+                new Claim("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
             };
 
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "azure-token");
 
-            var response = await httpClient.GetAsync("v1/Users/bob@example.com/applications");
-            response.EnsureSuccessStatusCode();
-            var json = await response.Content.ReadAsStringAsync();
-            var list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ApplicationDto>>(json);
+            var list = await appsClient.GetApplicationsForUserAsync("bob@example.com");
 
             Assert.NotNull(list);
             Assert.NotEmpty(list!);
@@ -289,10 +284,12 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
         [Theory]
         [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
         public async Task GetMyApplicationsAsync_ShouldReturnUnauthorized_WhenTokenMissing(
-            CustomWebApplicationDbContextFactory<Program> factory)
+            CustomWebApplicationDbContextFactory<Program> factory,
+            IApplicationsClient appsClient
+            )
         {
             var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-                () => factory.CreateClient().GetAsync("v1/me/applications"));
+                () => appsClient.GetMyApplicationsAsync());
             Assert.Equal(403, ex.StatusCode);
         }
 
@@ -300,6 +297,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
         [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
         public async Task GetApplicationsForUserAsync_ShouldReturnForbidden_WhenPermissionMissing(
             CustomWebApplicationDbContextFactory<Program> factory,
+            IApplicationsClient appsClient,
             HttpClient httpClient)
         {
             factory.TestClaims = new List<Claim>
@@ -311,7 +309,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
                 new AuthenticationHeaderValue("Bearer", "azure-token");
 
             var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-                () => httpClient.GetAsync("v1/Users/bob@example.com/applications"));
+                () => appsClient.GetApplicationsForUserAsync("bob@example.com"));
 
             Assert.Equal(403, ex.StatusCode);
         }
