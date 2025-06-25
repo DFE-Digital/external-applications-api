@@ -1,8 +1,8 @@
 ﻿using DfE.CoreLibs.Testing.Authorization;
 using DfE.CoreLibs.Testing.Authorization.Helpers;
-using DfE.ExternalApplications.Api;
+using Xunit;
 
-namespace DfE.ExternalApplications.Application.Tests.SecurityTests
+namespace DfE.ExternalApplications.Api.Tests.SecurityTests
 {
     public class EndpointSecurityTests
     {

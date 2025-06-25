@@ -23,12 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="SecurityTests\ExpectedSecurity.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="CommandHandlers\" />
   </ItemGroup>
 

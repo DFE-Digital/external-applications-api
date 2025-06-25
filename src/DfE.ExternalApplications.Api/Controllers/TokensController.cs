@@ -18,7 +18,7 @@ namespace DfE.ExternalApplications.Api.Controllers
         /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
         /// </summary>
         [HttpPost("exchange")]
-        [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Roles = "API.Write")]
+        [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanReadWrite")]
         public async Task<ActionResult<ExchangeTokenDto>> Exchange(
             [FromBody] ExchangeTokenDto request,
             CancellationToken ct)
