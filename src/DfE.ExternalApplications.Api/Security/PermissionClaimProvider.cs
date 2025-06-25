@@ -1,11 +1,10 @@
-﻿using DfE.CoreLibs.Security.Interfaces;
+﻿using System.Security.Claims;
+using DfE.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.Users.Queries;
 using MediatR;
-using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization
+namespace DfE.ExternalApplications.Api.Security
 {
     public class PermissionsClaimProvider(ISender sender, ILogger<PermissionsClaimProvider> logger) : ICustomClaimProvider
     {

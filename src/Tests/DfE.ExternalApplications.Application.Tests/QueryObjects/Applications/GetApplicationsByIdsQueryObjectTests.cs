@@ -10,6 +10,7 @@ public class GetApplicationsByIdsQueryObjectTests
     [Theory, CustomAutoData(typeof(ApplicationCustomization))]
     public void Apply_ShouldReturnMatchingApplications(ApplicationCustomization appCustom)
     {
+        appCustom.OverrideId = null;
         var fixture = new Fixture().Customize(appCustom);
         var app1 = fixture.Create<Domain.Entities.Application>();
         var app2 = fixture.Create<Domain.Entities.Application>();

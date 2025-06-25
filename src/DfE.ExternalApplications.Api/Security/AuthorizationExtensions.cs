@@ -6,9 +6,9 @@ using DfE.CoreLibs.Security;
 using DfE.CoreLibs.Security.Authorization;
 using DfE.CoreLibs.Security.Configurations;
 using DfE.CoreLibs.Security.Interfaces;
+using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
-using DfE.ExternalApplications.Infrastructure.Security.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
@@ -87,6 +87,12 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.AddAuthenticationSchemes("CompositeScheme");
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.UserPermissionRequirement(AccessType.Read.ToString()));
+                },
+                ["CanReadApplication"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes("CompositeScheme");
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.ApplicationPermissionRequirement(AccessType.Read.ToString()));
                 }
             };
 
@@ -97,7 +103,8 @@ namespace DfE.ExternalApplications.Api.Security
                 configureResourcePolicies: null);
 
             services.AddSingleton<IAuthorizationHandler, TemplatePermissionHandler>();
-            services.AddSingleton<IAuthorizationHandler, Handlers.UserPermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, UserPermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, ApplicationPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
 

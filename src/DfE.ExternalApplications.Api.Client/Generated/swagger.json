@@ -6,6 +6,71 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/v1/me/applications": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Returns all applications the current user can access.",
+        "operationId": "Applications_GetMyApplications",
+        "responses": {
+          "200": {
+            "description": "A list of applications accessible to the user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized  no valid user token"
+          }
+        }
+      }
+    },
+    "/v1/Users/{email}/applications": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Returns all applications for the user by {email}.",
+        "operationId": "Applications_GetApplicationsForUser",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Applications for the user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email cannot be null or empty."
+          }
+        }
+      }
+    },
     "/v1/Templates/{templateId}/schema": {
       "get": {
         "tags": [
@@ -143,6 +208,40 @@
   },
   "components": {
     "schemas": {
+      "ApplicationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "applicationId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "applicationReference": {
+            "type": "string"
+          },
+          "templateVersionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "templateName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateSubmitted": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
       "TemplateSchemaDto": {
         "type": "object",
         "additionalProperties": false,

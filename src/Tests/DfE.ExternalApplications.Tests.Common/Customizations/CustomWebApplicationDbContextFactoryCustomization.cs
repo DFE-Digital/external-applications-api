@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using DfE.CoreLibs.Security.Interfaces;
 using DfE.CoreLibs.Security;
+using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations
@@ -88,6 +89,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                         services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                         services.AddUserTokenService(tokenConfig);
+
+                        services.AddScoped<ICurrentUser, CurrentUser>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
@@ -109,12 +112,14 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 services.AddApiClient<IUsersClient, UsersClient>(config, client);
                 services.AddApiClient<ITemplatesClient, TemplatesClient>(config, client);
                 services.AddApiClient<ITokensClient, TokensClient>(config, client);
+                services.AddApiClient<IApplicationsClient, ApplicationsClient>(config, client);
 
                 services.RemoveAll<IExternalIdentityValidator>();
                 services.RemoveAll<IUserTokenService>();
 
                 services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                 services.AddUserTokenService(config);
+                services.AddScoped<ICurrentUser, CurrentUser>();
 
                 var serviceProvider = services.BuildServiceProvider();
 
@@ -124,8 +129,10 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 fixture.Inject(serviceProvider.GetRequiredService<IUsersClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<ITemplatesClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<ITokensClient>());
+                fixture.Inject(serviceProvider.GetRequiredService<IApplicationsClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<IExternalIdentityValidator>());
 
+                
                 fixture.Inject(new List<Claim>());
 
                 return factory;

@@ -1,3 +1,5 @@
+using DfE.CoreLibs.Security.Interfaces;
+using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Infrastructure;
@@ -19,6 +21,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             //Cache service
             services.AddServiceCaching(config);
+
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUser, CurrentUser>();
 
             //Db
             var connectionString = config.GetConnectionString("DefaultConnection");

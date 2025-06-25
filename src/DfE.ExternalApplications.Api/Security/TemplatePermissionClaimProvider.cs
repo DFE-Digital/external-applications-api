@@ -1,11 +1,10 @@
-﻿using DfE.CoreLibs.Security.Interfaces;
+﻿using System.Security.Claims;
+using DfE.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 using MediatR;
-using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace DfE.ExternalApplications.Infrastructure.Security.Authorization;
+namespace DfE.ExternalApplications.Api.Security;
 public class TemplatePermissionsClaimProvider(ISender sender, ILogger<TemplatePermissionsClaimProvider> logger) : ICustomClaimProvider
 {
     public async Task<IEnumerable<Claim>> GetClaimsAsync(ClaimsPrincipal principal)

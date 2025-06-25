@@ -8,6 +8,7 @@ using DfE.ExternalApplications.Tests.Common.Customizations;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using DfE.ExternalApplications.Tests.Common.Seeders;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
 {
@@ -240,21 +241,22 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
         [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
         public async Task GetMyApplicationsAsync_ShouldReturnApplications_WhenUserEmailExists(
           CustomWebApplicationDbContextFactory<Program> factory,
+          IApplicationsClient appsClient,
           HttpClient httpClient)
         {
+            var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
+            var app = await dbContext.Applications.FirstAsync();
+
             factory.TestClaims = new List<Claim>
             {
-                new Claim("permission", "User:alice@example.com:Read"),
+                new Claim("permission", $"Application:{EaContextSeeder.ApplicationId}:Read"),
                 new Claim(ClaimTypes.Email, "alice@example.com")
             };
 
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "user-token");
 
-            var response = await httpClient.GetAsync("v1/me/applications");
-            response.EnsureSuccessStatusCode();
-            var json = await response.Content.ReadAsStringAsync();
-            var list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<ApplicationDto>>(json);
+            var list = await appsClient.GetMyApplicationsAsync();
 
             Assert.NotNull(list);
             Assert.NotEmpty(list!);
@@ -269,7 +271,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             factory.TestClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.Role, "API.Read"),
-                new Claim("permission", "User:bob@example.com:Read")
+                new Claim("permission", "Application:bob@example.com:Read")
             };
 
             httpClient.DefaultRequestHeaders.Authorization =
@@ -302,7 +304,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
         {
             factory.TestClaims = new List<Claim>
             {
-                new Claim(ClaimTypes.Role, "API.Read")
+                new Claim(ClaimTypes.Role, "API.Read"),
             };
 
             httpClient.DefaultRequestHeaders.Authorization =
