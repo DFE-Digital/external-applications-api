@@ -18,7 +18,6 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// Returns all applications the current user can access.
     /// </summary>
     [HttpGet("/v{version:apiVersion}/me/applications")]
-    [Authorize(AuthenticationSchemes = AuthConstants.UserScheme)]
     [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
     [SwaggerResponse(401, "Unauthorized  no valid user token")]
     [Authorize(Policy = "CanReadAnyApplication")]

@@ -21,9 +21,8 @@ namespace DfE.ExternalApplications.Api
     {
         public static async Task Main(string[] args)
         {
-
             var builder = WebApplication.CreateBuilder(args);
-
+            builder.Logging.AddConsole();
             builder.Host.UseSerilog((context, services, loggerConfiguration) =>
             {
                 loggerConfiguration

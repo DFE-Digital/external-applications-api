@@ -17,7 +17,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "PersonsApi": {
+    "ExternalApplications": {
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "swagger",
