@@ -1,11 +1,11 @@
 name: Build and Push NuGet Package
 
 on:
-  push:
-    branches:
-    - release/*
-    paths:
-    - 'DfE.ExternalApplications.Api.Client*/**'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "The production tag name to process"
+        required: true
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -16,6 +16,8 @@ jobs:
     permissions:
       packages: write
       contents: write
+    if: startsWith(github.event.inputs.tag_name, 'package-')
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -83,7 +85,7 @@ jobs:
       shell: /usr/bin/bash -e {0}
 
     - name: Build, pack and publish
-      working-directory: DfE.ExternalApplications.Api.Client
+      working-directory: src/DfE.ExternalApplications.Api.Client
       run: |
         dotnet build -c Release
         dotnet pack -c Release -p:PackageVersion=${{ env.NEW_VERSION }} --output .
