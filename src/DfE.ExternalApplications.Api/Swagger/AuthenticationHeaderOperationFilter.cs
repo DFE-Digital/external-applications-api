@@ -17,22 +17,9 @@ namespace DfE.ExternalApplications.Api.Swagger
                     Id = "Bearer"
                 }
             };
-
-            var svcScheme = new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "ServiceBearer"
-                }
-            };
             operation.Security.Add(new OpenApiSecurityRequirement
             {
                 [userScheme] = Array.Empty<string>()
-            });
-            operation.Security.Add(new OpenApiSecurityRequirement
-            {
-                [svcScheme] = Array.Empty<string>()
             });
         }
     }

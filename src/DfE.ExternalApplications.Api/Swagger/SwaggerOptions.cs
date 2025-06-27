@@ -51,22 +51,6 @@ namespace DfE.ExternalApplications.Api.Swagger
                     Id = "Bearer"
                 }
             });
-
-            options.AddSecurityDefinition("ServiceBearer", new OpenApiSecurityScheme
-            {
-                Description = "Service-to-service bearer token. Example: X-Service-Authorization: {token}",
-                Name = "X-Service-Authorization",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat = "JWT",
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "ServiceBearer"
-                }
-            });
-
             options.OperationFilter<AuthenticationHeaderOperationFilter>();
         }
     }
