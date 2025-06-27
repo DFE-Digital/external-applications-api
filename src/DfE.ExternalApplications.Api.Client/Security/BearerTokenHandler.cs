@@ -1,7 +1,6 @@
+using Microsoft.AspNetCore.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
 
 namespace DfE.ExternalApplications.Api.Client.Security
 {
@@ -12,17 +11,7 @@ namespace DfE.ExternalApplications.Api.Client.Security
         {
             var token = await tokenAcquisitionService.GetTokenAsync();
 
-            // Service-To-Service token
-            request.Headers.Add("X-Service-Authorization", token);
-
-            // User Token ExtIdP
-            var userToken = await httpCtx.HttpContext!
-                .GetTokenAsync("id_token");
-            if (!string.IsNullOrEmpty(userToken))
-            {
-                request.Headers.Authorization =
-                    new AuthenticationHeaderValue("Bearer", userToken);
-            }
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             return await base.SendAsync(request, cancellationToken);
         }
