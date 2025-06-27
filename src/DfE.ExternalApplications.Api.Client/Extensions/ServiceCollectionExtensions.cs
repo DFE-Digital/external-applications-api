@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using DfE.ExternalApplications.Api.Client.Security;
 using DfE.ExternalApplications.Api.Client.Settings;
+using DfE.ExternalApplications.Client.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +11,7 @@ namespace DfE.ExternalApplications.Api.Client.Extensions
     [ExcludeFromCodeCoverage]
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddApiClient<TClientInterface, TClientImplementation>(
+        public static IServiceCollection AddExternalApplicationsApiClient<TClientInterface, TClientImplementation>(
             this IServiceCollection services,
             IConfiguration configuration,
             HttpClient? existingHttpClient = null)
@@ -18,10 +19,16 @@ namespace DfE.ExternalApplications.Api.Client.Extensions
             where TClientImplementation : class, TClientInterface
         {
             var apiSettings = new ApiClientSettings();
-            configuration.GetSection("ApiClient").Bind(apiSettings);
+            configuration.GetSection("ExternalApplicationsApiClient").Bind(apiSettings);
 
             services.AddSingleton(apiSettings);
             services.AddSingleton<ITokenAcquisitionService, TokenAcquisitionService>();
+            services.AddHttpContextAccessor();
+            services.AddSingleton<IInternalUserTokenStore, HttpContextInternalUserTokenStore>();
+            if (apiSettings.RequestTokenExchange)
+            {
+                services.AddTransient<TokenExchangeHandler>();
+            }
 
             if (existingHttpClient != null)
             {
@@ -34,19 +41,25 @@ namespace DfE.ExternalApplications.Api.Client.Extensions
             }
             else
             {
-                services.AddHttpClient<TClientInterface, TClientImplementation>((httpClient, serviceProvider) =>
+                var builder = services.AddHttpClient<TClientInterface, TClientImplementation>((httpClient, serviceProvider) =>
                 {
                     httpClient.BaseAddress = new Uri(apiSettings.BaseUrl!);
 
                     return ActivatorUtilities.CreateInstance<TClientImplementation>(
                         serviceProvider, httpClient, apiSettings.BaseUrl!);
-                })
-                .AddHttpMessageHandler(serviceProvider =>
+                });
+
+                if (typeof(TClientInterface) != typeof(ITokensClient) && apiSettings.RequestTokenExchange)
+                {
+                    builder.AddHttpMessageHandler<TokenExchangeHandler>();
+                }
+
+                builder.AddHttpMessageHandler(serviceProvider =>
                 {
                     var tokenService = serviceProvider.GetRequiredService<ITokenAcquisitionService>();
-                    var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+                    var tokenStore = serviceProvider.GetRequiredService<IInternalUserTokenStore>();
 
-                    return new BearerTokenHandler(tokenService, httpContextAccessor);
+                    return new BearerTokenHandler(tokenService, tokenStore);
                 });
             }
             return services;
