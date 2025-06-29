@@ -24,6 +24,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
         [FromRoute] Guid templateId, CancellationToken cancellationToken)
     {
+        // TODO Remove the Email requirement and let the handler check the user/service identity
         var email = User.FindFirstValue(ClaimTypes.Email)
                     ?? throw new InvalidOperationException("No email claim in token");
 

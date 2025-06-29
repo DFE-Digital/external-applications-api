@@ -1,4 +1,5 @@
-﻿using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 
@@ -13,7 +14,7 @@ public class ApplicationTests
         TemplateVersionId templateVersionId,
         DateTime createdOn,
         UserId createdBy,
-        int? status,
+        ApplicationStatus? status,
         DateTime? lastModifiedOn,
         UserId? lastModifiedBy)
     {
@@ -38,7 +39,7 @@ public class ApplicationTests
         TemplateVersionId templateVersionId,
         DateTime createdOn,
         UserId createdBy,
-        int? status,
+        ApplicationStatus? status,
         DateTime? lastModifiedOn,
         UserId? lastModifiedBy)
     {

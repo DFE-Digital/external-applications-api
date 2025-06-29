@@ -1,4 +1,5 @@
-﻿using DfE.ExternalApplications.Domain.Common;
+﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
@@ -6,6 +7,8 @@ namespace DfE.ExternalApplications.Domain.Entities;
 
 public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
 {
+    private readonly List<ApplicationResponse> _responses = new();
+
     public ApplicationId? Id { get; private set; }
     public string ApplicationReference { get; private set; }
     public TemplateVersionId TemplateVersionId { get; private set; }
@@ -13,10 +16,11 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
     public DateTime CreatedOn { get; private set; }
     public UserId CreatedBy { get; private set; }
     public User? CreatedByUser { get; private set; }
-    public int? Status { get; private set; }
+    public ApplicationStatus? Status { get; private set; }
     public DateTime? LastModifiedOn { get; private set; }
     public UserId? LastModifiedBy { get; private set; }
     public User? LastModifiedByUser { get; private set; }
+    public IReadOnlyCollection<ApplicationResponse> Responses => _responses.AsReadOnly();
 
     private Application() { /* For EF Core */ }
 
@@ -30,7 +34,7 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
         TemplateVersionId templateVersionId,
         DateTime createdOn,
         UserId createdBy,
-        int? status = null,
+        ApplicationStatus? status = null,
         DateTime? lastModifiedOn = null,
         UserId? lastModifiedBy = null)
     {
@@ -43,5 +47,16 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
         Status = status;
         LastModifiedOn = lastModifiedOn;
         LastModifiedBy = lastModifiedBy;
+    }
+
+    public void AddResponse(ApplicationResponse response)
+    {
+        if (response == null)
+            throw new ArgumentNullException(nameof(response));
+
+        if (response.ApplicationId != Id)
+            throw new InvalidOperationException("Response's ApplicationId must match the Application's Id");
+
+        _responses.Add(response);
     }
 }

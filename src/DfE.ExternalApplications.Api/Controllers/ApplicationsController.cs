@@ -1,5 +1,7 @@
 ﻿using Asp.Versioning;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Infrastructure.Security;
 using MediatR;
@@ -14,6 +16,26 @@ namespace DfE.ExternalApplications.Api.Controllers;
 [Route("v{version:apiVersion}/[controller]")]
 public class ApplicationsController(ISender sender) : ControllerBase
 {
+    /// <summary>
+    /// Creates a new application with initial response.
+    /// </summary>
+    [HttpPost]
+    [SwaggerResponse(200, "The created application.", typeof(ApplicationDto))]
+    [SwaggerResponse(400, "Invalid request data.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [Authorize(Policy = "CanCreateAnyApplication")]
+    public async Task<IActionResult> CreateApplicationAsync(
+        [FromBody] CreateApplicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new CreateApplicationCommand(request.TemplateId, request.InitialResponseBody), cancellationToken);
+
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
+
+        return Ok(result.Value);
+    }
+
     /// <summary>
     /// Returns all applications the current user can access.
     /// </summary>

@@ -107,10 +107,10 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                 var services = new ServiceCollection();
                 services.AddSingleton<IConfiguration>(config);
-                services.AddApiClient<IUsersClient, UsersClient>(config, client);
-                services.AddApiClient<ITemplatesClient, TemplatesClient>(config, client);
-                services.AddApiClient<ITokensClient, TokensClient>(config, client);
-                services.AddApiClient<IApplicationsClient, ApplicationsClient>(config, client);
+                services.AddExternalApplicationsApiClient<IUsersClient, UsersClient>(config, client);
+                services.AddExternalApplicationsApiClient<ITemplatesClient, TemplatesClient>(config, client);
+                services.AddExternalApplicationsApiClient<ITokensClient, TokensClient>(config, client);
+                services.AddExternalApplicationsApiClient<IApplicationsClient, ApplicationsClient>(config, client);
 
                 services.RemoveAll<IExternalIdentityValidator>();
                 services.RemoveAll<IUserTokenService>();

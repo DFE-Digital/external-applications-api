@@ -303,8 +303,9 @@ public class ExternalApplicationsContext : DbContext
             .IsRequired(false);
 
         b.HasOne(e => e.Application)
-            .WithMany()
-            .HasForeignKey(e => e.ApplicationId);
+            .WithMany(a => a.Responses)
+            .HasForeignKey(e => e.ApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
         b.HasOne(e => e.CreatedByUser)
             .WithMany()
             .HasForeignKey(e => e.CreatedBy)

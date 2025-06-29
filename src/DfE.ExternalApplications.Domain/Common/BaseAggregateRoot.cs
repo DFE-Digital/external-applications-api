@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DfE.ExternalApplications.Domain.Common
@@ -7,9 +8,9 @@ namespace DfE.ExternalApplications.Domain.Common
         private readonly List<IDomainEvent> _domainEvents = new();
 
         [NotMapped]
-        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => new ReadOnlyCollection<IDomainEvent>(_domainEvents);
 
-        protected virtual void AddDomainEvent(IDomainEvent domainEvent)
+        public void AddDomainEvent(IDomainEvent domainEvent)
         {
             _domainEvents.Add(domainEvent);
         }

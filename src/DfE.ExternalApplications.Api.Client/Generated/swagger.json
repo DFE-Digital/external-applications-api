@@ -6,6 +6,45 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/v1/Applications": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Creates a new application with initial response.",
+        "operationId": "Applications_CreateApplication",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplicationRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "The created application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          }
+        }
+      }
+    },
     "/v1/me/applications": {
       "get": {
         "tags": [
@@ -227,9 +266,12 @@
             "type": "string"
           },
           "status": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
           },
           "dateCreated": {
             "type": "string",
@@ -242,11 +284,40 @@
           }
         }
       },
+      "ApplicationStatus": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "InProgress",
+          "Submitted"
+        ],
+        "enum": [
+          "InProgress",
+          "Submitted"
+        ]
+      },
+      "CreateApplicationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "initialResponseBody": {
+            "type": "string"
+          }
+        }
+      },
       "TemplateSchemaDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "templateVersionId": {
             "type": "string",
             "format": "guid"
           },

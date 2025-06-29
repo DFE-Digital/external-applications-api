@@ -92,7 +92,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
                 templateVersionId: templateVersionId,
                 createdOn: now,
                 createdBy: bobId,
-                status: 1,
+                status: ApplicationStatus.InProgress,
                 lastModifiedOn: null,
                 lastModifiedBy: null
             );

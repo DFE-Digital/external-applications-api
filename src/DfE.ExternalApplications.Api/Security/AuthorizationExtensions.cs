@@ -1,18 +1,16 @@
-using System.Diagnostics.CodeAnalysis;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Security;
 using DfE.CoreLibs.Security.Authorization;
 using DfE.CoreLibs.Security.Configurations;
 using DfE.CoreLibs.Security.Interfaces;
-using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace DfE.ExternalApplications.Api.Security
 {
@@ -100,6 +98,12 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.ApplicationListPermissionRequirement(AccessType.Read.ToString()));
+                },
+                ["CanCreateAnyApplication"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.AnyTemplatePermissionRequirement(AccessType.Write.ToString()));
                 }
             };
 
@@ -113,6 +117,7 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, UserPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationListPermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, AnyTemplatePermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
 

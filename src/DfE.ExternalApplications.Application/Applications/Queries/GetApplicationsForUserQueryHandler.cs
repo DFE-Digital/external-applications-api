@@ -1,5 +1,6 @@
 ﻿using DfE.CoreLibs.Caching.Helpers;
 using DfE.CoreLibs.Caching.Interfaces;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
@@ -57,6 +58,8 @@ public sealed class GetApplicationsForUserQueryHandler(
                         ApplicationId = a.Id!.Value,
                         ApplicationReference = a.ApplicationReference,
                         TemplateVersionId = a.TemplateVersionId.Value,
+                        DateCreated = a.CreatedOn,
+                        DateSubmitted = a.Status == ApplicationStatus.Submitted ? a.LastModifiedOn : null,
                         Status = a.Status
                     }).ToList().AsReadOnly();
 

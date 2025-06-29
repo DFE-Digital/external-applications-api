@@ -1,4 +1,7 @@
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Services;
+using DfE.ExternalApplications.Domain.Factories;
+using DfE.ExternalApplications.Domain.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +29,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
                 }
             });
+            services.AddScoped<ITemplatePermissionService, TemplatePermissionService>();
+            services.AddTransient<IApplicationFactory, ApplicationFactory>();
 
             services.AddBackgroundService();
 

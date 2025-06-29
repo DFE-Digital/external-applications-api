@@ -5,7 +5,7 @@ using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId
 
 namespace DfE.ExternalApplications.Domain.Entities;
 
-public sealed class Permission : IEntity<PermissionId>
+public sealed class Permission : BaseAggregateRoot, IEntity<PermissionId>
 {
     public PermissionId? Id { get; private set; }
     public UserId UserId { get; private set; }
