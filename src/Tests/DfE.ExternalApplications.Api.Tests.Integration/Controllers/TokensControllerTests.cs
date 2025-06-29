@@ -26,6 +26,7 @@ public class TokensControllerTests
         {
             new Claim("iss", "windows.net"),
             new Claim("appid", appid),
+            new Claim(ClaimTypes.Role, "API.Read"),
             new Claim(ClaimTypes.Role, "API.Write")
         };
 
@@ -129,6 +130,7 @@ public class TokensControllerTests
         {
             new Claim("iss", "windows.net"),
             new Claim("appid", "app"),
+            new Claim(ClaimTypes.Role, "API.Read"),
             new Claim(ClaimTypes.Role, "API.Write")
         };
 

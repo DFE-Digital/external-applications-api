@@ -141,7 +141,10 @@
             }
           },
           "400": {
-            "description": "Request was invalid or access denied."
+            "description": "Request was invalid or template not found."
+          },
+          "403": {
+            "description": "Access denied."
           }
         }
       }

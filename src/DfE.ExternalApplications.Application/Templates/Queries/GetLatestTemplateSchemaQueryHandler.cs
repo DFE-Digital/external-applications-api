@@ -4,6 +4,7 @@ using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,13 +26,23 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
         try
         {
             var cacheKey = $"TemplateSchema_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateId.ToString())}_{request.Email}";
-
             var methodName = nameof(GetLatestTemplateSchemaQueryHandler);
 
             return await cacheService.GetOrAddAsync(
                 cacheKey,
                 async () =>
                 {
+                    // First check if the template exists
+                    var latest = await new GetLatestTemplateVersionForTemplateQueryObject(new TemplateId(request.TemplateId))
+                        .Apply(versionRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (latest is null)
+                    {
+                        return Result<TemplateSchemaDto>.Failure("Template version not found");
+                    }
+
+                    // Then check if the user has access
                     var access = await new GetTemplatePermissionByTemplateNameQueryObject(request.Email, request.TemplateId)
                         .Apply(accessRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
@@ -39,15 +50,6 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
                     if (access is null)
                     {
                         return Result<TemplateSchemaDto>.Failure("Access denied");
-                    }
-
-                    var latest = await new GetLatestTemplateVersionForTemplateQueryObject(access.TemplateId)
-                        .Apply(versionRepo.Query().AsNoTracking())
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (latest is null)
-                    {
-                        return Result<TemplateSchemaDto>.Failure("Template version not found");
                     }
 
                     var dto = new TemplateSchemaDto

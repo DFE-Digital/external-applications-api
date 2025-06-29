@@ -129,8 +129,6 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 fixture.Inject(serviceProvider.GetRequiredService<ITokensClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<IApplicationsClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<IExternalIdentityValidator>());
-
-                
                 fixture.Inject(new List<Claim>());
 
                 return factory;

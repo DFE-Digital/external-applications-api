@@ -599,7 +599,13 @@ namespace DfE.ExternalApplications.Client
                         if (status_ == 400)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ExternalApplicationsException("Request was invalid or access denied.", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("Request was invalid or template not found.", status_, responseText_, headers_, null);
+                        }
+                        else
+                        if (status_ == 403)
+                        {
+                            string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ExternalApplicationsException("Access denied.", status_, responseText_, headers_, null);
                         }
                         else
                         {

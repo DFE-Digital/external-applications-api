@@ -23,17 +23,16 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new("appid", EaContextSeeder.BobExternalId),
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "Application:Write")
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "test-token");
+            new AuthenticationHeaderValue("Bearer", "user-token");
 
         var request = new CreateApplicationRequest
         {
-            TemplateId = Guid.Parse(EaContextSeeder.TemplateVersionId),
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
             InitialResponseBody = initialResponseBody
         };
 
@@ -69,7 +68,6 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new("appid", EaContextSeeder.BobExternalId),
             new(ClaimTypes.Email, EaContextSeeder.BobEmail)
         };
 
@@ -92,17 +90,16 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new("appid", EaContextSeeder.BobExternalId),
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "Application:Write")
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "test-token");
+            new AuthenticationHeaderValue("Bearer", "user-token");
 
         var request = new CreateApplicationRequest
         {
-            TemplateId = Guid.Parse(EaContextSeeder.TemplateVersionId),
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
             InitialResponseBody = string.Empty
         };
 
@@ -122,7 +119,6 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new("appid", EaContextSeeder.BobExternalId),
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
             new("permission", "Application:Read")
         };
@@ -160,7 +156,6 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new("appid", EaContextSeeder.BobExternalId),
             new(ClaimTypes.Email, EaContextSeeder.BobEmail)
         };
 

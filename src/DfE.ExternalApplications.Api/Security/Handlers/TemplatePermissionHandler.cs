@@ -9,16 +9,29 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             TemplatePermissionRequirement requirement)
         {
-            var templateId = accessor.HttpContext?.Request.RouteValues["templateId"]?.ToString();
-            if (string.IsNullOrWhiteSpace(templateId))
+            // First check if the user has any template permission
+            var hasAnyTemplatePermission = context.User.Claims.Any(c =>
+                c.Type == "permission" &&
+                c.Value.StartsWith("Template:", StringComparison.OrdinalIgnoreCase) &&
+                c.Value.EndsWith($":{requirement.Action}", StringComparison.OrdinalIgnoreCase));
+
+            if (!hasAnyTemplatePermission)
                 return Task.CompletedTask;
 
+            // Then check for specific template permission if templateId is provided
+            var templateId = accessor.HttpContext?.Request.RouteValues["templateId"]?.ToString();
+            if (string.IsNullOrWhiteSpace(templateId))
+            {
+                context.Succeed(requirement);
+                return Task.CompletedTask;
+            }
+
             var expected = $"Template:{templateId}:{requirement.Action}";
-            var hasClaim = context.User.Claims.Any(c =>
+            var hasSpecificClaim = context.User.Claims.Any(c =>
                 c.Type == "permission" &&
                 string.Equals(c.Value, expected, StringComparison.OrdinalIgnoreCase));
 
-            if (hasClaim)
+            if (hasSpecificClaim)
                 context.Succeed(requirement);
 
             return Task.CompletedTask;

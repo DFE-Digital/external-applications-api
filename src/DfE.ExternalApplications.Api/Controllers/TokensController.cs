@@ -6,6 +6,7 @@ using DfE.ExternalApplications.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DfE.ExternalApplications.Api.Controllers
 {
@@ -23,9 +24,16 @@ namespace DfE.ExternalApplications.Api.Controllers
             [FromBody] ExchangeTokenDto request,
             CancellationToken ct)
         {
-            var result = await sender.Send(
-                new ExchangeTokenQuery(request.AccessToken), ct);
-            return Ok(result);
+            try
+            {
+                var result = await sender.Send(
+                    new ExchangeTokenQuery(request.AccessToken), ct);
+                return Ok(result);
+            }
+            catch (SecurityTokenException ex)
+            {
+                return StatusCode(500, new { Message = ex.Message });
+            }
         }
     }
 }

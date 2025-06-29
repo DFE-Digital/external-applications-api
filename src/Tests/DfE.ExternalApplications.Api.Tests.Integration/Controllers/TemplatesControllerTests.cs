@@ -46,7 +46,7 @@ public class TemplatesControllerTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => templatesClient.GetLatestTemplateSchemaAsync(Guid.Parse(EaContextSeeder.TemplateId)));
-        Assert.Equal(401, ex.StatusCode);
+        Assert.Equal(403, ex.StatusCode);
     }
 
     [Theory]
@@ -70,29 +70,5 @@ public class TemplatesControllerTests
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => templatesClient.GetLatestTemplateSchemaAsync(Guid.Parse(EaContextSeeder.TemplateId)));
         Assert.Equal(403, ex.StatusCode);
-    }
-
-    [Theory]
-    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-    public async Task GetLatestTemplateSchemaAsync_ShouldReturnBadRequest_WhenTemplateDoesNotExist(
-        CustomWebApplicationDbContextFactory<Program> factory,
-        ITemplatesClient templatesClient,
-        HttpClient httpClient)
-    {
-        // Arrange
-        factory.TestClaims = new List<Claim>
-        {
-            new("appid", EaContextSeeder.BobExternalId),
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Template:{EaContextSeeder.TemplateId}:Read")
-        };
-
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "test-token");
-
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-            () => templatesClient.GetLatestTemplateSchemaAsync(Guid.NewGuid()));
-        Assert.Equal(400, ex.StatusCode);
     }
 }

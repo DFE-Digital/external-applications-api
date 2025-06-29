@@ -60,6 +60,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
                 createdBy: null,
                 lastModifiedOn: null,
                 lastModifiedBy: null,
+                externalProviderId: BobExternalId,
                 initialPermissions: null
             );
 
@@ -156,7 +157,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
                 new TemplatePermissionId(new Guid(TemplatePermissionId1)),
                 userId: bobId,
                 templateId: templateId,
-                accessType: AccessType.Read,
+                accessType: AccessType.Write,
                 grantedOn: now,
                 grantedBy: aliceId
             );

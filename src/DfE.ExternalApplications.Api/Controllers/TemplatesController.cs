@@ -19,12 +19,12 @@ public class TemplatesController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("{templateId}/schema")]
     [SwaggerResponse(200, "The latest template schema.", typeof(TemplateSchemaDto))]
-    [SwaggerResponse(400, "Request was invalid or access denied.")]
+    [SwaggerResponse(400, "Request was invalid or template not found.")]
+    [SwaggerResponse(403, "Access denied.")]
     [Authorize(Policy = "CanReadTemplate")]
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
         [FromRoute] Guid templateId, CancellationToken cancellationToken)
     {
-        // TODO Remove the Email requirement and let the handler check the user/service identity
         var email = User.FindFirstValue(ClaimTypes.Email)
                     ?? throw new InvalidOperationException("No email claim in token");
 
@@ -32,7 +32,14 @@ public class TemplatesController(ISender sender) : ControllerBase
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
-            return BadRequest(result.Error);
+        {
+            return result.Error switch
+            {
+                "Template version not found" => BadRequest(result.Error),
+                "Access denied" => Forbid(),
+                _ => BadRequest(result.Error)
+            };
+        }
 
         return Ok(result.Value);
     }
