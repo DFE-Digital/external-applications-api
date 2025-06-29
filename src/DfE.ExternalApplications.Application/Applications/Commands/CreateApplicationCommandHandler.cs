@@ -31,8 +31,8 @@ public sealed class CreateApplicationCommandHandler(
     {
         try
         {
-            var user = httpContextAccessor.HttpContext?.User;
-            if (user is null || !user.Identity?.IsAuthenticated == true)
+            var httpContext = httpContextAccessor.HttpContext;
+            if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
                 return Result<ApplicationDto>.Failure("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
@@ -61,14 +61,12 @@ public sealed class CreateApplicationCommandHandler(
                 return Result<ApplicationDto>.Failure("User not found");
 
             var canAccess = await templatePermissionService.CanUserCreateApplicationForTemplate(
-                dbUser.Id,
+                dbUser.Id!,
                 request.TemplateId,
                 cancellationToken);
 
             if (!canAccess)
                 return Result<ApplicationDto>.Failure("User does not have permission to create applications for this template");
-
-
 
             var templateSchemaResult = await mediator.Send(
                 new GetLatestTemplateSchemaByUserIdQuery(request.TemplateId, dbUser.Id!),
@@ -103,7 +101,7 @@ public sealed class CreateApplicationCommandHandler(
         }
         catch (Exception e)
         {
-            return Result<ApplicationDto>.Failure(e.ToString());
+            return Result<ApplicationDto>.Failure(e.Message);
         }
     }
 } 

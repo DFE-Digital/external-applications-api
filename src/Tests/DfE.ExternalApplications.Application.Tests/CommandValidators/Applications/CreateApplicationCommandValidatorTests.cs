@@ -11,13 +11,12 @@ public class CreateApplicationCommandValidatorTests
     [CustomAutoData(typeof(ApplicationCustomization))]
     public void Validate_ShouldSucceed_WhenAllPropertiesValid(
         string applicationReference,
-        TemplateVersionId templateVersionId,
+        TemplateId templateId,
         string initialResponseBody)
     {
         // Arrange
         var command = new CreateApplicationCommand(
-            applicationReference,
-            templateVersionId,
+            templateId.Value,
             initialResponseBody);
         var validator = new CreateApplicationCommandValidator();
 
@@ -31,33 +30,12 @@ public class CreateApplicationCommandValidatorTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Validate_ShouldFail_WhenApplicationReferenceEmpty(string applicationReference)
+    public void Validate_ShouldFail_WhenInitialResponseBodyEmpty(string responseBody)
     {
         // Arrange
         var command = new CreateApplicationCommand(
-            applicationReference,
-            new TemplateVersionId(Guid.NewGuid()),
-            "Initial response");
-        var validator = new CreateApplicationCommandValidator();
-
-        // Act
-        var result = validator.Validate(command);
-
-        // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == nameof(command.ApplicationReference));
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData(null)]
-    public void Validate_ShouldFail_WhenInitialResponseBodyEmpty(string initialResponseBody)
-    {
-        // Arrange
-        var command = new CreateApplicationCommand(
-            "APP-001",
-            new TemplateVersionId(Guid.NewGuid()),
-            initialResponseBody);
+            Guid.NewGuid(),
+            responseBody);
         var validator = new CreateApplicationCommandValidator();
 
         // Act
@@ -69,12 +47,11 @@ public class CreateApplicationCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_ShouldFail_WhenTemplateVersionIdNull()
+    public void Validate_ShouldFail_WhenTemplateIdEmpty()
     {
         // Arrange
         var command = new CreateApplicationCommand(
-            "APP-001",
-            null!,
+            Guid.Empty,
             "Initial response");
         var validator = new CreateApplicationCommandValidator();
 
@@ -83,6 +60,6 @@ public class CreateApplicationCommandValidatorTests
 
         // Assert
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == nameof(command.TemplateVersionId));
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(command.TemplateId));
     }
 } 

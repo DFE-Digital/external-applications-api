@@ -1,114 +1,175 @@
-//using System.Net;
-//using DfE.CoreLibs.Testing.AutoFixture.Attributes;
-//using DfE.ExternalApplications.Application.Applications.Commands;
-//using DfE.ExternalApplications.Domain.ValueObjects;
-//using DfE.ExternalApplications.Tests.Common.Customizations;
-//using DfE.ExternalApplications.Tests.Common.Seeders;
-//using System.Net.Http.Headers;
-//using System.Net.Http.Json;
-//using System.Security.Claims;
-//using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-//using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
+using System.Net;
+using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using DfE.ExternalApplications.Tests.Common.Customizations;
+using DfE.ExternalApplications.Tests.Common.Seeders;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
+using DfE.ExternalApplications.Client.Contracts;
 
-//namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
+namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
 
-//public class ApplicationsControllerTests
-//{
-//    [Theory]
-//    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-//    public async Task CreateApplicationAsync_ShouldCreateApplication_WhenValidRequest(
-//        CustomWebApplicationDbContextFactory<Program> factory,
-//        HttpClient httpClient,
-//        string applicationReference,
-//        string initialResponseBody)
-//    {
-//        // Arrange
-//        factory.TestClaims = new List<Claim>
-//        {
-//            new(ClaimTypes.NameIdentifier, EaContextSeeder.BobId),
-//            new("permission", "Application:Write")
-//        };
+public class ApplicationsControllerTests
+{
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateApplicationAsync_ShouldCreateApplication_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string initialResponseBody)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Write")
+        };
 
-//        httpClient.DefaultRequestHeaders.Authorization =
-//            new AuthenticationHeaderValue("Bearer", "test-token");
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
 
-//        var command = new CreateApplicationCommand(
-//            applicationReference,
-//            new TemplateVersionId(Guid.Parse(EaContextSeeder.TemplateVersionId)),
-//            initialResponseBody);
+        var request = new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateVersionId),
+            InitialResponseBody = initialResponseBody
+        };
 
-//        // Act
-//        var response = await httpClient.PostAsJsonAsync("/v1/applications", command);
+        // Act
+        var result = await applicationsClient.CreateApplicationAsync(request);
 
-//        // Assert
-//        response.EnsureSuccessStatusCode();
-//        var result = await response.Content.ReadFromJsonAsync<ApplicationDto>();
-//        Assert.NotNull(result);
-//        Assert.Equal(applicationReference, result.ApplicationReference);
-//    }
+        // Assert
+        Assert.NotNull(result);
+        Assert.StartsWith("APP-", result.ApplicationReference);
+    }
 
-//    [Theory]
-//    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-//    public async Task CreateApplicationAsync_ShouldReturnUnauthorized_WhenTokenMissing(
-//        CustomWebApplicationDbContextFactory<Program> factory,
-//        HttpClient httpClient,
-//        CreateApplicationCommand command)
-//    {
-//        // Act
-//        var response = await httpClient.PostAsJsonAsync("/v1/applications", command);
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateApplicationAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        CreateApplicationRequest request)
+    {
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.CreateApplicationAsync(request));
+        Assert.Equal(403, ex.StatusCode);
+    }
 
-//        // Assert
-//        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-//    }
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateApplicationAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        CreateApplicationRequest request)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+        };
 
-//    [Theory]
-//    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-//    public async Task CreateApplicationAsync_ShouldReturnForbidden_WhenPermissionMissing(
-//        CustomWebApplicationDbContextFactory<Program> factory,
-//        HttpClient httpClient,
-//        CreateApplicationCommand command)
-//    {
-//        // Arrange
-//        factory.TestClaims = new List<Claim>
-//        {
-//            new(ClaimTypes.NameIdentifier, EaContextSeeder.BobId)
-//        };
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
 
-//        httpClient.DefaultRequestHeaders.Authorization =
-//            new AuthenticationHeaderValue("Bearer", "test-token");
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.CreateApplicationAsync(request));
+        Assert.Equal(403, ex.StatusCode);
+    }
 
-//        // Act
-//        var response = await httpClient.PostAsJsonAsync("/v1/applications", command);
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateApplicationAsync_ShouldReturnBadRequest_WhenInvalidData(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Write")
+        };
 
-//        // Assert
-//        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-//    }
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
 
-//    [Theory]
-//    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-//    public async Task CreateApplicationAsync_ShouldReturnBadRequest_WhenInvalidData(
-//        CustomWebApplicationDbContextFactory<Program> factory,
-//        HttpClient httpClient)
-//    {
-//        // Arrange
-//        factory.TestClaims = new List<Claim>
-//        {
-//            new(ClaimTypes.NameIdentifier, EaContextSeeder.BobId),
-//            new("permission", "Application:Write")
-//        };
+        var request = new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateVersionId),
+            InitialResponseBody = string.Empty
+        };
 
-//        httpClient.DefaultRequestHeaders.Authorization =
-//            new AuthenticationHeaderValue("Bearer", "test-token");
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.CreateApplicationAsync(request));
+        Assert.Equal(400, ex.StatusCode);
+    }
 
-//        var command = new CreateApplicationCommand(
-//            string.Empty,
-//            new TemplateVersionId(Guid.Parse(EaContextSeeder.TemplateVersionId)),
-//            string.Empty);
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnApplications_WhenUserHasAccess(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
+        };
 
-//        // Act
-//        var response = await httpClient.PostAsJsonAsync("/v1/applications", command);
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
 
-//        // Assert
-//        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-//    }
-//} 
+        // Act
+        var result = await applicationsClient.GetMyApplicationsAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient)
+    {
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.GetMyApplicationsAsync());
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.GetMyApplicationsAsync());
+        Assert.Equal(403, ex.StatusCode);
+    }
+} 

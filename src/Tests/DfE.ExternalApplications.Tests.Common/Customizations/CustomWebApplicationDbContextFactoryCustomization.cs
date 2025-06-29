@@ -101,7 +101,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 var config = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        { "ApiClient:BaseUrl", client.BaseAddress!.ToString() },
+                        { "ExternalApplicationsApiClient:BaseUrl", client.BaseAddress!.ToString() },
+                        { "ExternalApplicationsApiClient:RequestTokenExchange", "false" }
                     })
                     .Build();
 

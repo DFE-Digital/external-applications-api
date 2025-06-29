@@ -1,11 +1,8 @@
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Client.Contracts;
-using DfE.ExternalApplications.Domain.Entities;
-using DfE.ExternalApplications.Domain.ValueObjects;
-using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Tests.Common.Customizations;
-using Microsoft.EntityFrameworkCore;
+using DfE.ExternalApplications.Tests.Common.Seeders;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 
@@ -15,97 +12,87 @@ public class TemplatesControllerTests
 {
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-    public async Task GetLatestTemplateSchemaAsync_ShouldReturnLatest_WhenAzureTokenValid(
-       CustomWebApplicationDbContextFactory<Program> factory,
-       ITemplatesClient templatesClient,
-       HttpClient httpClient)
-    {
-        var externalId = Guid.NewGuid();
-
-        var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
-        var template = await dbContext.Templates.FirstAsync();
-
-        factory.TestClaims = new List<Claim>
-        {
-            new Claim("iss", "windows.net"),
-            new Claim("appid", externalId.ToString()),
-            new Claim(ClaimTypes.Email, "bob@example.com"),
-            new Claim(ClaimTypes.Role, "API.Read"),
-            new Claim("permission", $"Template:{template.Id.Value}:Read")
-        };
-
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "azure-token");
-
-        await dbContext.Users
-            .Where(u => u.Email == "bob@example.com")
-            .ExecuteUpdateAsync(u => u.SetProperty(x => x.ExternalProviderId, externalId.ToString()));
-        // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
-        var latestVersion = await dbContext.TemplateVersions
-            .Where(tv => tv.TemplateId == template.Id)
-            .OrderByDescending(tv => tv.CreatedOn).FirstAsync();
-
-        var newVersion = new TemplateVersion(
-            new TemplateVersionId(Guid.NewGuid()),
-            template.Id,
-            "v9.9",
-            "{\"new\":true}",
-            DateTime.UtcNow.AddMinutes(1),
-            latestVersion.CreatedBy);
-
-        dbContext.TemplateVersions.Add(newVersion);
-        await dbContext.SaveChangesAsync();
-
-        var response = await templatesClient.GetLatestTemplateSchemaAsync(template.Id.Value);
-
-        Assert.NotNull(response);
-        Assert.Equal("v9.9", response!.VersionNumber);
-        Assert.Equal("{\"new\":true}", response.JsonSchema);
-    }
-
-    [Theory]
-    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-    public async Task GetLatestTemplateSchemaAsync_ShouldReturnLatest_WhenUserTokenValid(
+    public async Task GetLatestTemplateSchemaAsync_ShouldReturnSchema_WhenUserHasAccess(
         CustomWebApplicationDbContextFactory<Program> factory,
         ITemplatesClient templatesClient,
         HttpClient httpClient)
     {
+        // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new Claim("permission", "Template:" +
-            // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
-            factory.GetDbContext<ExternalApplicationsContext>().Templates.First().Id!.Value + ":Read"),
-            new Claim(ClaimTypes.Email, "bob@example.com")
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "user-token");
+            new AuthenticationHeaderValue("Bearer", "test-token");
 
-        var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
-        // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
-        var template = await dbContext.Templates.FirstAsync();
-        // ReSharper disable once EntityFramework.NPlusOne.IncompleteDataQuery
-        var latestVersion = await dbContext.TemplateVersions
-            .Where(tv => tv.TemplateId == template.Id)
-            .OrderByDescending(tv => tv.CreatedOn).FirstAsync();
+        // Act
+        var result = await templatesClient.GetLatestTemplateSchemaAsync(Guid.Parse(EaContextSeeder.TemplateId));
 
-        var newVersion = new TemplateVersion(
-            new TemplateVersionId(Guid.NewGuid()),
-            template.Id!,
-            "v9.9",
-            "{\"new\":true}",
-            DateTime.UtcNow.AddMinutes(1),
-            latestVersion.CreatedBy);
-
-        dbContext.TemplateVersions.Add(newVersion);
-        await dbContext.SaveChangesAsync();
-
-        var response = await templatesClient.GetLatestTemplateSchemaAsync(template.Id!.Value);
-
-        Assert.NotNull(response);
-        Assert.Equal("v9.9", response!.VersionNumber);
-        Assert.Equal("{\"new\":true}", response.JsonSchema);
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(Guid.Parse(EaContextSeeder.TemplateVersionId), result.TemplateVersionId);
+        Assert.NotNull(result.JsonSchema);
     }
 
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetLatestTemplateSchemaAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITemplatesClient templatesClient)
+    {
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => templatesClient.GetLatestTemplateSchemaAsync(Guid.Parse(EaContextSeeder.TemplateId)));
+        Assert.Equal(401, ex.StatusCode);
+    }
 
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetLatestTemplateSchemaAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITemplatesClient templatesClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => templatesClient.GetLatestTemplateSchemaAsync(Guid.Parse(EaContextSeeder.TemplateId)));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetLatestTemplateSchemaAsync_ShouldReturnBadRequest_WhenTemplateDoesNotExist(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITemplatesClient templatesClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new("appid", EaContextSeeder.BobExternalId),
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => templatesClient.GetLatestTemplateSchemaAsync(Guid.NewGuid()));
+        Assert.Equal(400, ex.StatusCode);
+    }
 }

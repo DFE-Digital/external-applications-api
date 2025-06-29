@@ -11,6 +11,8 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
     {
         public const string AliceId = "c3cbbc7a-07d0-471c-a544-7bcf3237adaa";
         public const string BobId = "ba6e447b-5e20-45cf-8a6e-133efeb586c2";
+        public const string BobExternalId = "a1d3d871-ce57-47b9-807d-de5c1551f9f7";
+        public const string BobEmail = "bob@example.com";
         public const string ApplicationId = "9816b822-56e3-4b65-852a-00a4a3294e11";
         public const string PermissionId1 = "02ce58d2-051f-4fe7-a545-d63acca93752";
         public const string PermissionId2 = "02ce58d2-051f-4fe7-a545-d63acca93753";
@@ -24,6 +26,9 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
         public const string AdminRoleId = "e0546efd-d85e-452a-8232-06a84d1b8513";
         public const string SubmitterRoleId = "a5d3d871-ce57-47b9-807d-de5c1551f9f2";
 
+
+
+        
         public static void SeedTestData(ExternalApplicationsContext ctx)
         {
             var roleAdmin = new Role(new RoleId(new Guid(AdminRoleId)), "Administrator");

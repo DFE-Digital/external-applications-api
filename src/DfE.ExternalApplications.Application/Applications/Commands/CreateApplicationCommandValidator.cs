@@ -9,7 +9,7 @@ internal class CreateApplicationCommandValidator : AbstractValidator<CreateAppli
     public CreateApplicationCommandValidator()
     {
         RuleFor(x => x.TemplateId)
-            .NotNull()
+            .NotEmpty()
             .WithMessage("Template ID is required");
 
         RuleFor(x => x.InitialResponseBody)
