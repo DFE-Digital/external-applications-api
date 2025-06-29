@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             });
             services.AddScoped<ITemplatePermissionService, TemplatePermissionService>();
+            services.AddScoped<IPermissionCheckerService, ClaimBasedPermissionCheckerService>();
             services.AddTransient<IApplicationFactory, ApplicationFactory>();
 
             services.AddBackgroundService();

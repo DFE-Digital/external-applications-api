@@ -367,6 +367,7 @@
         "x-enumNames": [
           "Application",
           "User",
+          "Template",
           "TaskGroup",
           "Task",
           "Page",
@@ -375,6 +376,7 @@
         "enum": [
           "Application",
           "User",
+          "Template",
           "TaskGroup",
           "Task",
           "Page",

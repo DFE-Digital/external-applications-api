@@ -9,7 +9,6 @@
 
         // Header names & prefixes
         public const string AuthorizationHeader = "Authorization";
-        public const string ServiceAuthHeader = "X-Service-Authorization";
         public const string BearerPrefix = "Bearer ";
 
         // Configuration sections

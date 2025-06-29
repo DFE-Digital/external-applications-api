@@ -11,6 +11,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
@@ -22,6 +23,7 @@ public sealed class CreateApplicationCommandHandler(
     IApplicationReferenceProvider referenceProvider,
     ITemplatePermissionService templatePermissionService,
     IApplicationFactory applicationFactory,
+    IPermissionCheckerService permissionCheckerService,
     ISender mediator,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateApplicationCommand, Result<ApplicationDto>>
 {
@@ -60,10 +62,7 @@ public sealed class CreateApplicationCommandHandler(
             if (dbUser is null)
                 return Result<ApplicationDto>.Failure("User not found");
 
-            var canAccess = await templatePermissionService.CanUserCreateApplicationForTemplate(
-                dbUser.Id!,
-                request.TemplateId,
-                cancellationToken);
+            var canAccess = permissionCheckerService.HasPermission(ResourceType.Template, request.TemplateId.ToString(), AccessType.Write);
 
             if (!canAccess)
                 return Result<ApplicationDto>.Failure("User does not have permission to create applications for this template");
