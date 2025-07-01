@@ -1,11 +1,18 @@
-﻿using System.Security.Claims;
-using DfE.CoreLibs.Security.Interfaces;
+﻿using DfE.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
+using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
+using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Security;
-public class TemplatePermissionsClaimProvider(ISender sender, ILogger<TemplatePermissionsClaimProvider> logger) : ICustomClaimProvider
+public class TemplatePermissionsClaimProvider(
+    ISender sender,
+    ILogger<TemplatePermissionsClaimProvider> logger,
+    IEaRepository<User> userRepo) : ICustomClaimProvider
 {
     public async Task<IEnumerable<Claim>> GetClaimsAsync(ClaimsPrincipal principal)
     {
@@ -21,7 +28,14 @@ public class TemplatePermissionsClaimProvider(ISender sender, ILogger<TemplatePe
             return Array.Empty<Claim>();
         }
 
-        var query = new GetTemplatePermissionsForUserByExternalProviderIdQuery(clientId);
+        var dbUser = await (new GetUserByExternalProviderIdQueryObject(clientId))
+                .Apply(userRepo.Query().AsNoTracking())
+                .FirstOrDefaultAsync();
+
+        if (dbUser is null)
+            return Array.Empty<Claim>();
+
+        var query = new GetTemplatePermissionsForUserByUserIdQuery(dbUser.Id!);
         var result = await sender.Send(query);
 
         if (result is { IsSuccess: false })

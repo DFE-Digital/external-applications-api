@@ -16,12 +16,15 @@ using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
+public sealed record CreateApplicationCommand(
+    Guid TemplateId,
+    string InitialResponseBody) : IRequest<Result<ApplicationDto>>;
+
 public sealed class CreateApplicationCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,
     IEaRepository<User> userRepo,
     IHttpContextAccessor httpContextAccessor,
     IApplicationReferenceProvider referenceProvider,
-    ITemplatePermissionService templatePermissionService,
     IApplicationFactory applicationFactory,
     IPermissionCheckerService permissionCheckerService,
     ISender mediator,

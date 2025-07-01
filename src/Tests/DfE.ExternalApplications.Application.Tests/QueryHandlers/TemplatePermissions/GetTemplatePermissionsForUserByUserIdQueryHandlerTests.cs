@@ -1,7 +1,5 @@
 //using AutoFixture;
 //using AutoFixture.Xunit2;
-//using DfE.CoreLibs.Caching.Helpers;
-//using DfE.CoreLibs.Caching.Interfaces;
 //using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 //using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 //using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
@@ -10,6 +8,7 @@
 //using DfE.ExternalApplications.Domain.ValueObjects;
 //using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 //using MockQueryable;
+//using MockQueryable.NSubstitute;
 //using NSubstitute;
 //using NSubstitute.ExceptionExtensions;
 
@@ -19,52 +18,54 @@
 //{
 //    [Theory]
 //    [CustomAutoData(typeof(UserCustomization), typeof(TemplatePermissionCustomization))]
-//    public async Task Handle_ShouldReturnAllPermissions_ForExistingUser(
+//    public async Task Handle_ShouldReturnTemplatePermissions_WhenUserExists(
 //        UserId userId,
-//        TemplatePermissionCustomization tpCustom,
-//        [Frozen] IEaRepository<TemplatePermission> repo,
-//        [Frozen] ICacheService<IMemoryCacheType> cache)
+//        UserCustomization userCustom,
+//        TemplatePermissionCustomization permCustom,
+//        [Frozen] IEaRepository<User> userRepo)
 //    {
 //        // Arrange
-//        tpCustom.OverrideUserId = userId;
-//        var fixture = new Fixture().Customize(tpCustom);
-//        var tp1 = fixture.Create<User>();
-//        var tp2 = fixture.Create<User>();
+//        userCustom.OverrideId = userId;
+//        var fixture = new Fixture().Customize(userCustom);
+//        var user = fixture.Create<User>();
 
-//        var list = new List<User> { tp1, tp2 };
-//        var mockQ = list.AsQueryable().BuildMock();
-//        repo.Query().Returns(mockQ);
+//        var backingField = typeof(User)
+//            .GetField("_templatePermissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+//        backingField.SetValue(user, new List<TemplatePermission>());
 
-//        var cacheKey = $"Template_Permissions_ByUserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
-//        cache
-//            .GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<TemplatePermissionDto>>>>>(), nameof(GetTemplatePermissionsForUserByUserIdQueryHandler))
-//            .Returns(call => { var f = call.Arg<Func<Task<Result<IReadOnlyCollection<TemplatePermissionDto>>>>>(); return f(); });
+//        var templatePermission = new Fixture().Customize(permCustom).Create<TemplatePermission>();
+//        ((List<TemplatePermission>)backingField.GetValue(user)!).Add(templatePermission);
 
-//        var handler = new GetTemplatePermissionsForUserByUserIdQueryHandler(repo, cache);
+//        var userList = new List<User> { user };
+//        userRepo.Query().Returns(userList.AsQueryable().BuildMock());
+
+//        var handler = new GetTemplatePermissionsForUserByUserIdQueryHandler(userRepo);
+
+//        // Act
 //        var result = await handler.Handle(new GetTemplatePermissionsForUserByUserIdQuery(userId), CancellationToken.None);
 
 //        // Assert
 //        Assert.True(result.IsSuccess);
-//        Assert.Equal(2, result.Value!.Count);
+//        Assert.Single(result.Value!);
+//        Assert.Equal(templatePermission.Id!.Value, result.Value!.First().TemplatePermissionId);
 //    }
 
 //    [Theory]
 //    [CustomAutoData(typeof(UserCustomization))]
-//    public async Task Handle_ShouldReturnEmpty_WhenUserHasNoPermissions(
+//    public async Task Handle_ShouldReturnEmpty_WhenUserNotFound(
 //        UserId userId,
-//        [Frozen] IEaRepository<TemplatePermission> repo,
-//        [Frozen] ICacheService<IMemoryCacheType> cache)
+//        UserCustomization userCustom,
+//        [Frozen] IEaRepository<User> userRepo)
 //    {
 //        // Arrange
-//        var list = new List<TemplatePermission>();
-//        repo.Query().Returns(list.AsQueryable().BuildMock());
+//        userCustom.OverrideId = new UserId(Guid.NewGuid());
+//        var user = new Fixture().Customize(userCustom).Create<User>();
+//        var userQ = new List<User> { user }.AsQueryable().BuildMock();
+//        userRepo.Query().Returns(userQ);
 
-//        var cacheKey = $"Template_Permissions_ByUserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
-//        cache
-//            .GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<TemplatePermissionDto>>>>>(), nameof(GetTemplatePermissionsForUserByUserIdQueryHandler))
-//            .Returns(call => { var f = call.Arg<Func<Task<Result<IReadOnlyCollection<TemplatePermissionDto>>>>>(); return f(); });
+//        var handler = new GetTemplatePermissionsForUserByUserIdQueryHandler(userRepo);
 
-//        var handler = new GetTemplatePermissionsForUserByUserIdQueryHandler(repo, cache);
+//        // Act
 //        var result = await handler.Handle(new GetTemplatePermissionsForUserByUserIdQuery(userId), CancellationToken.None);
 
 //        // Assert
@@ -74,46 +75,20 @@
 
 //    [Theory]
 //    [CustomAutoData]
-//    public async Task Handle_ShouldReturnFromCache(
+//    public async Task Handle_ShouldReturnFailure_WhenExceptionOccurs(
 //        UserId userId,
-//        List<TemplatePermissionDto> cached,
-//        [Frozen] IEaRepository<TemplatePermission> repo,
-//        [Frozen] ICacheService<IMemoryCacheType> cache)
+//        [Frozen] IEaRepository<User> userRepo)
 //    {
 //        // Arrange
-//        var readOnly = cached.AsReadOnly();
-//        var cacheKey = $"Template_Permissions_ByUserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
-//        cache
-//            .GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<TemplatePermissionDto>>>>>(), nameof(GetTemplatePermissionsForUserByUserIdQueryHandler))
-//            .Returns(Task.FromResult(Result<IReadOnlyCollection<TemplatePermissionDto>>.Success(readOnly)));
+//        userRepo.Query().Throws(new Exception("Boom"));
 
-//        var handler = new GetTemplatePermissionsForUserByUserIdQueryHandler(repo, cache);
-//        var result = await handler.Handle(new GetTemplatePermissionsForUserByUserIdQuery(userId), CancellationToken.None);
+//        var handler = new GetTemplatePermissionsForUserByUserIdQueryHandler(userRepo);
 
-//        // Assert
-//        Assert.True(result.IsSuccess);
-//        Assert.Equal(readOnly.Count, result.Value!.Count);
-//        repo.DidNotReceive().Query();
-//    }
-
-//    [Theory]
-//    [CustomAutoData(typeof(UserCustomization))]
-//    public async Task Handle_ShouldReturnFailure_WhenCacheThrows(
-//        UserId userId,
-//        [Frozen] IEaRepository<TemplatePermission> repo,
-//        [Frozen] ICacheService<IMemoryCacheType> cache)
-//    {
-//        // Arrange
-//        cache
-//            .GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<TemplatePermissionDto>>>>>(), Arg.Any<string>())
-//            .Throws(new Exception("Boom"));
-
-//        var handler = new GetTemplatePermissionsForUserByUserIdQueryHandler(repo, cache);
+//        // Act
 //        var result = await handler.Handle(new GetTemplatePermissionsForUserByUserIdQuery(userId), CancellationToken.None);
 
 //        // Assert
 //        Assert.False(result.IsSuccess);
 //        Assert.Contains("Boom", result.Error);
-//        repo.DidNotReceive().Query();
 //    }
 //} 

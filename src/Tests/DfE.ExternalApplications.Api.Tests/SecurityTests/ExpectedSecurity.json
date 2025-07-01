@@ -2,11 +2,6 @@
   "Endpoints": [
     {
       "Controller": "UsersController",
-      "Action": "GetAllPermissionsForUserAsync",
-      "ExpectedSecurity": "Authorize: Policy=CanReadUser"
-    },
-    {
-      "Controller": "UsersController",
       "Action": "GetMyPermissionsAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadUser"
     },

@@ -33,7 +33,14 @@ public sealed class GetApplicationsForUserQueryHandler(
                 cacheKey,
                 async () =>
                 {
-                    var userWithPerms = await new GetUserWithAllPermissionsQueryObject(request.Email)
+                    var dbUser = await (new GetUserByEmailQueryObject(request.Email))
+                            .Apply(userRepo.Query().AsNoTracking())
+                            .FirstOrDefaultAsync(cancellationToken);
+
+                    if (dbUser is null)
+                     return Result<IReadOnlyCollection<ApplicationDto>>.Failure("GetApplicationsForUserQueryHandler > User not found.");
+
+                    var userWithPerms = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
                         .Apply(userRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
 

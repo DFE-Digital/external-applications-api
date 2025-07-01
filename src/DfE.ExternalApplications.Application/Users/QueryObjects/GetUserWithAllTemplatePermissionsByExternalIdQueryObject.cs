@@ -5,9 +5,14 @@ namespace DfE.ExternalApplications.Application.Users.QueryObjects
 {
     public sealed class GetUserWithAllTemplatePermissionsByExternalIdQueryObject(string externalProviderId)
     {
-        public IQueryable<User> Apply(IQueryable<User> query) =>
-            query
+        public IQueryable<User> Apply(IQueryable<User> query)
+        {
+            if (string.IsNullOrWhiteSpace(externalProviderId))
+                return query.Where(u => false); // Return empty result
+
+            return query
                 .Where(u => u.ExternalProviderId == externalProviderId)
                 .Include(u => u.TemplatePermissions);
+        }
     }
 }

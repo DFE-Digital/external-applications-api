@@ -1,22 +1,27 @@
 using DfE.CoreLibs.Caching.Helpers;
 using DfE.CoreLibs.Caching.Interfaces;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Templates.QueryObjects;
+using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.ValueObjects;
+using DfE.ExternalApplications.Domain.Services;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Templates.Queries;
 
-public sealed record GetLatestTemplateSchemaQuery(Guid TemplateId, string Email)
+public sealed record GetLatestTemplateSchemaQuery(Guid TemplateId)
     : IRequest<Result<TemplateSchemaDto>>;
 
 public sealed class GetLatestTemplateSchemaQueryHandler(
-    IEaRepository<TemplatePermission> accessRepo,
-    IEaRepository<TemplateVersion> versionRepo,
-    ICacheService<IMemoryCacheType> cacheService)
+    IHttpContextAccessor httpContextAccessor,
+    IEaRepository<User> userRepo,
+    IPermissionCheckerService permissionCheckerService,
+    ICacheService<IMemoryCacheType> cacheService,
+    ISender mediator)
     : IRequestHandler<GetLatestTemplateSchemaQuery, Result<TemplateSchemaDto>>
 {
     public async Task<Result<TemplateSchemaDto>> Handle(
@@ -25,42 +30,47 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
     {
         try
         {
-            var cacheKey = $"TemplateSchema_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateId.ToString())}_{request.Email}";
+            var httpContext = httpContextAccessor.HttpContext;
+            if (httpContext?.User is not { } user || !user.Identity?.IsAuthenticated == true)
+                return Result<TemplateSchemaDto>.Failure("Not authenticated");
+
+            var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
+
+            if (string.IsNullOrEmpty(principalId))
+                principalId = user.FindFirstValue(ClaimTypes.Email);
+
+            if (string.IsNullOrEmpty(principalId))
+                return Result<TemplateSchemaDto>.Failure("No user identifier");
+
+            var cacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateId.ToString())}_{principalId}";
             var methodName = nameof(GetLatestTemplateSchemaQueryHandler);
 
             return await cacheService.GetOrAddAsync(
                 cacheKey,
                 async () =>
                 {
-                    // First check if the template exists
-                    var latest = await new GetLatestTemplateVersionForTemplateQueryObject(new TemplateId(request.TemplateId))
-                        .Apply(versionRepo.Query().AsNoTracking())
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (latest is null)
+                    User? dbUser;
+                    if (principalId.Contains('@'))
                     {
-                        return Result<TemplateSchemaDto>.Failure("Template version not found");
+                        dbUser = await (new GetUserByEmailQueryObject(principalId))
+                            .Apply(userRepo.Query().AsNoTracking())
+                            .FirstOrDefaultAsync(cancellationToken);
+                    }
+                    else
+                    {
+                        dbUser = await (new GetUserByExternalProviderIdQueryObject(principalId))
+                            .Apply(userRepo.Query().AsNoTracking())
+                            .FirstOrDefaultAsync(cancellationToken);
                     }
 
-                    // Then check if the user has access
-                    var access = await new GetTemplatePermissionByTemplateNameQueryObject(request.Email, request.TemplateId)
-                        .Apply(accessRepo.Query().AsNoTracking())
-                        .FirstOrDefaultAsync(cancellationToken);
+                    var canAccess = permissionCheckerService.HasPermission(ResourceType.Template, request.TemplateId.ToString(), AccessType.Read);
 
-                    if (access is null)
-                    {
-                        return Result<TemplateSchemaDto>.Failure("Access denied");
-                    }
+                    if (!canAccess)
+                        return Result<TemplateSchemaDto>.Failure("User does not have permission to read this template");
 
-                    var dto = new TemplateSchemaDto
-                    {
-                        VersionNumber = latest.VersionNumber,
-                        JsonSchema = latest.JsonSchema,
-                        TemplateId = latest.TemplateId.Value,
-                        TemplateVersionId = latest.Id!.Value,
-                    };
-
-                    return Result<TemplateSchemaDto>.Success(dto);
+                    return await mediator.Send(
+                        new GetLatestTemplateSchemaByUserIdQuery(request.TemplateId, dbUser.Id!),
+                        cancellationToken);
                 },
                 methodName);
         }

@@ -7,6 +7,7 @@ using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MediatR;
+using MockQueryable;
 using MockQueryable.NSubstitute;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -30,7 +31,7 @@ public class GetLatestTemplateSchemaByUserIdQueryHandlerTests
         version.GetType().GetProperty(nameof(TemplateVersion.Template))!.SetValue(version, template);
         version.GetType().GetProperty(nameof(TemplateVersion.TemplateId))!.SetValue(version, template.Id);
 
-        var versionQ = new List<TemplateVersion> { version }.AsQueryable().BuildMockDbSet();
+        var versionQ = new List<TemplateVersion> { version }.AsQueryable().BuildMock();
         versionRepo.Query().Returns(versionQ);
 
         var handler = new GetLatestTemplateSchemaByUserIdQueryHandler(versionRepo, mediator);
@@ -56,7 +57,7 @@ public class GetLatestTemplateSchemaByUserIdQueryHandlerTests
         [Frozen] ISender mediator)
     {
         // Arrange
-        var versionQ = new List<TemplateVersion>().AsQueryable().BuildMockDbSet();
+        var versionQ = new List<TemplateVersion>().AsQueryable().BuildMock();
         versionRepo.Query().Returns(versionQ);
 
         var handler = new GetLatestTemplateSchemaByUserIdQueryHandler(versionRepo, mediator);

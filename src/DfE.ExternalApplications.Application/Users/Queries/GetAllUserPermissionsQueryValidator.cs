@@ -8,9 +8,8 @@ namespace DfE.ExternalApplications.Application.Users.Queries
     {
         public GetAllUserPermissionsQueryValidator()
         {
-            RuleFor(x => x.Email)
-                .EmailAddress()
-                .NotEmpty();
+            RuleFor(x => x.UserId)
+                .NotNull();
         }
     }
 }

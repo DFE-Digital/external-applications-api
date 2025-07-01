@@ -24,6 +24,9 @@
 
   <ItemGroup>
     <Folder Include="CommandHandlers\" />
+    <Folder Include="QueryHandlers\TemplatePermissions\" />
+    <Folder Include="QueryHandlers\Users\" />
+    <Folder Include="QueryValidators\Users\" />
   </ItemGroup>
 
 </Project>

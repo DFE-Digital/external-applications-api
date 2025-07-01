@@ -1,21 +1,20 @@
 ﻿using DfE.ExternalApplications.Application.Common.QueriesObjects;
 using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Users.QueryObjects
 {
     /// <summary>
-    /// Filters to one user by normalized email, and includes all Permission children.
+    /// Filters to one user by UserId, and includes all Permission children.
     /// </summary>
-    public sealed class GetUserWithAllPermissionsQueryObject(string email)
+    public sealed class GetUserWithAllPermissionsByUserIdQueryObject(UserId userId)
         : IQueryObject<User>
     {
-        private readonly string _normalizedEmail = email.Trim().ToLowerInvariant();
-
         public IQueryable<User> Apply(IQueryable<User> query)
         {
             return query
-                .Where(u => u.Email.ToLower() == _normalizedEmail)
+                .Where(u => u.Id == userId)
                 .Include(u => u.Permissions);
         }
     }

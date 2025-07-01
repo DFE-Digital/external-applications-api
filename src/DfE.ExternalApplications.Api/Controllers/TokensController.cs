@@ -1,6 +1,5 @@
 ﻿using Asp.Versioning;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Common.Models;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Infrastructure.Security;
 using MediatR;

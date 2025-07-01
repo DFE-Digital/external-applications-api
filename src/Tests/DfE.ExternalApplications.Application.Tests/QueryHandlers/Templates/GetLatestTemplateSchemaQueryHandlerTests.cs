@@ -1,71 +1,293 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
+using DfE.CoreLibs.Caching.Helpers;
 using DfE.CoreLibs.Caching.Interfaces;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
-using MockQueryable;
+using MediatR;
+using Microsoft.AspNetCore.Http;
+using MockQueryable.NSubstitute;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
+using System.Security.Claims;
+using MockQueryable;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Templates;
 
 public class GetLatestTemplateSchemaQueryHandlerTests
 {
-    [Theory, CustomAutoData(typeof(TemplatePermissionCustomization), typeof(TemplateVersionCustomization))]
-    public async Task Handle_ShouldReturnLatestSchema_WhenUserHasAccess(
-        TemplatePermissionCustomization utaCustom,
-        TemplateVersionCustomization tvCustom,
-        [Frozen] IEaRepository<TemplatePermission> accessRepo,
-        [Frozen] IEaRepository<TemplateVersion> versionRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cacheService)
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_ShouldReturnSchema_WhenUserHasEmailAndPermission(
+        Guid templateId,
+        string emailName,
+        TemplateSchemaDto templateSchema,
+        UserCustomization userCustom,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IPermissionCheckerService permissionCheckerService,
+        [Frozen] ICacheService<IMemoryCacheType> cacheService,
+        [Frozen] ISender mediator)
     {
-        var template = new Fixture().Customize(new TemplateCustomization()).Create<Template>();
-        var user = new Fixture().Customize(new UserCustomization()).Create<User>();
-
-        utaCustom.OverrideTemplateId = template.Id;
-        var fixture = new Fixture().Customize(utaCustom);
-        var access = fixture.Create<TemplatePermission>();
-        typeof(TemplatePermission).GetProperty(nameof(TemplatePermission.Template))!.SetValue(access, template);
-        typeof(TemplatePermission).GetProperty(nameof(TemplatePermission.User))!.SetValue(access, user);
-
-        var userId = access.UserId;
-        var userEmail = access.User?.Email;
-        var templateId = template.Id.Value;
-
-        var accessQ = new List<TemplatePermission> { access }.AsQueryable().BuildMock();
-        accessRepo.Query().Returns(accessQ);
-
-        tvCustom.OverrideTemplateId = template.Id;
-        tvCustom.OverrideCreatedOn = DateTime.UtcNow.AddDays(-1);
-        var older = new Fixture().Customize(tvCustom).Create<TemplateVersion>();
-        var newerCustomization = new TemplateVersionCustomization
+        // Arrange
+        var email = $"{emailName}@example.com";
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
         {
-            OverrideTemplateId = template.Id,
-            OverrideCreatedOn = DateTime.UtcNow
+            new(ClaimTypes.Email, email)
         };
-        var newer = new Fixture().Customize(newerCustomization).Create<TemplateVersion>();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var tvList = new List<TemplateVersion> { older, newer };
-        var tvQ = tvList.AsQueryable().BuildMock();
-        versionRepo.Query().Returns(tvQ);
+        userCustom.OverrideEmail = email;
+        var user = new Fixture().Customize(userCustom).Create<User>();
+        var userQ = new List<User> { user }.AsQueryable().BuildMock();
+        userRepo.Query().Returns(userQ);
 
-        var cacheKey = $"TemplateSchema_{DfE.CoreLibs.Caching.Helpers.CacheKeyHelper.GenerateHashedCacheKey(templateId.ToString())}_{userEmail}";
-        cacheService
-            .GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), nameof(GetLatestTemplateSchemaQueryHandler))
+        permissionCheckerService.HasPermission(ResourceType.Template, templateId.ToString(), AccessType.Read)
+            .Returns(true);
+
+        mediator.Send(Arg.Is<GetLatestTemplateSchemaByUserIdQuery>(q => q.TemplateId == templateId && q.UserId == user.Id), Arg.Any<CancellationToken>())
+            .Returns(Result<TemplateSchemaDto>.Success(templateSchema));
+
+        var cacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(templateId.ToString())}_{email}";
+        cacheService.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), nameof(GetLatestTemplateSchemaQueryHandler))
             .Returns(call =>
             {
-                var factory = call.Arg<Func<Task<Result<TemplateSchemaDto>>>>();
-                return factory();
+                var f = call.Arg<Func<Task<Result<TemplateSchemaDto>>>>();
+                return f();
             });
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(accessRepo, versionRepo, cacheService);
-        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId, userEmail), CancellationToken.None);
+        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
+        // Act
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
+
+        // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(newer.JsonSchema, result.Value!.JsonSchema);
-        Assert.Equal(newer.VersionNumber, result.Value!.VersionNumber);
+        Assert.Equal(templateSchema, result.Value);
     }
-}
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_ShouldReturnSchema_WhenUserHasExternalIdAndPermission(
+        Guid templateId,
+        string externalId,
+        TemplateSchemaDto templateSchema,
+        UserCustomization userCustom,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IPermissionCheckerService permissionCheckerService,
+        [Frozen] ICacheService<IMemoryCacheType> cacheService,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new("appid", externalId)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        userCustom.OverrideExternalProviderId = externalId;
+        var user = new Fixture().Customize(userCustom).Create<User>();
+        var userQ = new List<User> { user }.AsQueryable().BuildMock();
+        userRepo.Query().Returns(userQ);
+
+        permissionCheckerService.HasPermission(ResourceType.Template, templateId.ToString(), AccessType.Read)
+            .Returns(true);
+
+        mediator.Send(Arg.Is<GetLatestTemplateSchemaByUserIdQuery>(q => q.TemplateId == templateId && q.UserId == user.Id), Arg.Any<CancellationToken>())
+            .Returns(Result<TemplateSchemaDto>.Success(templateSchema));
+
+        var cacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(templateId.ToString())}_{externalId}";
+        cacheService.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), nameof(GetLatestTemplateSchemaQueryHandler))
+            .Returns(call =>
+            {
+                var f = call.Arg<Func<Task<Result<TemplateSchemaDto>>>>();
+                return f();
+            });
+
+        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(templateSchema, result.Value);
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldReturnFailure_WhenNotAuthenticated(
+        Guid templateId,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IPermissionCheckerService permissionCheckerService,
+        [Frozen] ICacheService<IMemoryCacheType> cacheService,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Not authenticated", result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldReturnFailure_WhenNoUserIdentifier(
+        Guid templateId,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IPermissionCheckerService permissionCheckerService,
+        [Frozen] ICacheService<IMemoryCacheType> cacheService,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(Array.Empty<Claim>(), "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("No user identifier", result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenUserDoesNotHavePermission(
+        Guid templateId,
+        string email,
+        UserCustomization userCustom,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IPermissionCheckerService permissionCheckerService,
+        [Frozen] ICacheService<IMemoryCacheType> cacheService,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        userCustom.OverrideEmail = email;
+        var user = new Fixture().Customize(userCustom).Create<User>();
+        var userQ = new List<User> { user }.AsQueryable().BuildMock();
+        userRepo.Query().Returns(userQ);
+
+        permissionCheckerService.HasPermission(ResourceType.Template, templateId.ToString(), AccessType.Read)
+            .Returns(false);
+
+        var cacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(templateId.ToString())}_{email}";
+        cacheService.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), nameof(GetLatestTemplateSchemaQueryHandler))
+            .Returns(call =>
+            {
+                var f = call.Arg<Func<Task<Result<TemplateSchemaDto>>>>();
+                return f();
+            });
+
+        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("User does not have permission to read this template", result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldReturnFromCache(
+        Guid templateId,
+        string email,
+        TemplateSchemaDto templateSchema,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IPermissionCheckerService permissionCheckerService,
+        [Frozen] ICacheService<IMemoryCacheType> cacheService,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var cacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(templateId.ToString())}_{email}";
+        cacheService.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), nameof(GetLatestTemplateSchemaQueryHandler))
+            .Returns(Result<TemplateSchemaDto>.Success(templateSchema));
+
+        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(templateSchema, result.Value);
+        userRepo.DidNotReceive().Query();
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldReturnFailure_WhenCacheThrows(
+        Guid templateId,
+        string email,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IPermissionCheckerService permissionCheckerService,
+        [Frozen] ICacheService<IMemoryCacheType> cacheService,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        cacheService.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), Arg.Any<string>())
+            .Throws(new Exception("Boom"));
+
+        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Boom", result.Error);
+    }
+} 

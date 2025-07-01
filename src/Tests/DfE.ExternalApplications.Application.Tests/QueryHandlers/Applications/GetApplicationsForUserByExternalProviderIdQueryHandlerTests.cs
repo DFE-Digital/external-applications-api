@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using AutoFixture.Xunit2;
 using DfE.CoreLibs.Caching.Helpers;
 using DfE.CoreLibs.Caching.Interfaces;
@@ -11,16 +11,18 @@ using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
+using MockQueryable.NSubstitute;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Applications;
 
-public class GetApplicationsForUserQueryHandlerTests
+public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 {
-    [Theory, CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization), typeof(ApplicationCustomization))]
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization), typeof(ApplicationCustomization))]
     public async Task Handle_ShouldReturnApplications_WhenUserHasPermissions(
-        string rawEmail,
+        string externalProviderId,
         UserCustomization userCustom,
         PermissionCustomization permCustom,
         ApplicationCustomization appCustom,
@@ -28,7 +30,8 @@ public class GetApplicationsForUserQueryHandlerTests
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
         [Frozen] ICacheService<IMemoryCacheType> cache)
     {
-        userCustom.OverrideEmail = rawEmail;
+        // Arrange
+        userCustom.OverrideExternalProviderId = externalProviderId;
         userCustom.OverridePermissions = Array.Empty<Permission>();
         var fixture = new Fixture().Customize(userCustom);
         var user = fixture.Create<User>();
@@ -46,86 +49,97 @@ public class GetApplicationsForUserQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
+        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
-        var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
+        // Assert
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value!);
         Assert.Equal(app.Id!.Value, result.Value!.First().ApplicationId);
     }
 
-    [Theory, CustomAutoData(typeof(UserCustomization))]
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
     public async Task Handle_ShouldReturnEmpty_WhenUserNotFound(
-        string rawEmail,
+        string externalProviderId,
         UserCustomization userCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
         [Frozen] ICacheService<IMemoryCacheType> cache)
     {
-        // Return empty query result to simulate user not found
-        var userQ = new List<User>().AsQueryable().BuildMock();
+        // Arrange
+        userCustom.OverrideExternalProviderId = "different-id";
+        var user = new Fixture().Customize(userCustom).Create<User>();
+        var userQ = new List<User> { user }.AsQueryable().BuildMock();
         userRepo.Query().Returns(userQ);
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
+        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
-        var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
-        Assert.False(result.IsSuccess);
-        Assert.Contains("User not found", result.Error!);
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value!);
     }
 
-    [Theory, CustomAutoData]
+    [Theory]
+    [CustomAutoData]
     public async Task Handle_ShouldReturnFromCache(
-        string rawEmail,
+        string externalProviderId,
         List<ApplicationDto> cached,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
         [Frozen] ICacheService<IMemoryCacheType> cache)
     {
+        // Arrange
         var readOnly = cached.AsReadOnly();
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
+        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(Task.FromResult(Result<IReadOnlyCollection<ApplicationDto>>.Success(readOnly)));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
-        var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
+        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(readOnly.Count, result.Value!.Count);
         userRepo.DidNotReceive().Query();
     }
 
-    [Theory, CustomAutoData(typeof(UserCustomization))]
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
     public async Task Handle_ShouldReturnFailure_WhenCacheThrows(
-        string rawEmail,
+        string externalProviderId,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
         [Frozen] ICacheService<IMemoryCacheType> cache)
     {
+        // Arrange
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), Arg.Any<string>())
             .Throws(new Exception("Boom"));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
-        var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
+        // Assert
         Assert.False(result.IsSuccess);
         Assert.Contains("Boom", result.Error);
         userRepo.DidNotReceive().Query();
     }
-}
+} 

@@ -2,12 +2,14 @@ using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Templates.Queries;
+
+public sealed record GetLatestTemplateSchemaByUserIdQuery(Guid TemplateId, UserId UserId)
+    : IRequest<Result<TemplateSchemaDto>>;
 
 public sealed class GetLatestTemplateSchemaByUserIdQueryHandler(
     IEaRepository<TemplateVersion> versionRepo,

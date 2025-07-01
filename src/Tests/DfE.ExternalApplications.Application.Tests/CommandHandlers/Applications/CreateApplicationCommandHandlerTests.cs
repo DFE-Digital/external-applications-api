@@ -11,6 +11,7 @@ using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
 using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
@@ -31,7 +32,7 @@ public class CreateApplicationCommandHandlerTests
         IEaRepository<User> userRepo,
         IApplicationReferenceProvider referenceProvider,
         IApplicationFactory applicationFactory,
-        ITemplatePermissionService templatePermissionService,
+        IPermissionCheckerService permissionCheckerService,
         ISender mediator,
         IUnitOfWork unitOfWork)
     {
@@ -60,12 +61,8 @@ public class CreateApplicationCommandHandlerTests
 
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
-        
-        templatePermissionService.CanUserCreateApplicationForTemplate(
-            user.Id!,
-            command.TemplateId,
-            Arg.Any<CancellationToken>())
-            .Returns(true);
+
+        permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
 
         referenceProvider.GenerateReferenceAsync(Arg.Any<CancellationToken>())
             .Returns("APP-001");
@@ -94,8 +91,8 @@ public class CreateApplicationCommandHandlerTests
             userRepo,
             httpContextAccessor,
             referenceProvider,
-            templatePermissionService,
             applicationFactory,
+            permissionCheckerService,
             mediator,
             unitOfWork);
 
@@ -124,7 +121,7 @@ public class CreateApplicationCommandHandlerTests
         IEaRepository<User> userRepo,
         IApplicationReferenceProvider referenceProvider,
         IApplicationFactory applicationFactory,
-        ITemplatePermissionService templatePermissionService,
+        IPermissionCheckerService permissionCheckerService,
         ISender mediator,
         IUnitOfWork unitOfWork)
     {
@@ -151,12 +148,8 @@ public class CreateApplicationCommandHandlerTests
 
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
-        
-        templatePermissionService.CanUserCreateApplicationForTemplate(
-            user.Id!,
-            command.TemplateId,
-            Arg.Any<CancellationToken>())
-            .Returns(true);
+
+        permissionCheckerService.HasPermission(ResourceType.Template,command.TemplateId.ToString(), AccessType.Write).Returns(true);
 
         referenceProvider.GenerateReferenceAsync(Arg.Any<CancellationToken>())
             .Returns("APP-001");
@@ -185,8 +178,8 @@ public class CreateApplicationCommandHandlerTests
             userRepo,
             httpContextAccessor,
             referenceProvider,
-            templatePermissionService,
             applicationFactory,
+            permissionCheckerService,
             mediator,
             unitOfWork);
 
@@ -213,7 +206,7 @@ public class CreateApplicationCommandHandlerTests
         IEaRepository<User> userRepo,
         IApplicationReferenceProvider referenceProvider,
         IApplicationFactory applicationFactory,
-        ITemplatePermissionService templatePermissionService,
+        IPermissionCheckerService permissionCheckerService,
         ISender mediator,
         IUnitOfWork unitOfWork)
     {
@@ -228,8 +221,8 @@ public class CreateApplicationCommandHandlerTests
             userRepo,
             httpContextAccessor,
             referenceProvider,
-            templatePermissionService,
             applicationFactory,
+            permissionCheckerService,
             mediator,
             unitOfWork);
 
@@ -254,7 +247,7 @@ public class CreateApplicationCommandHandlerTests
         IEaRepository<User> userRepo,
         IApplicationReferenceProvider referenceProvider,
         IApplicationFactory applicationFactory,
-        ITemplatePermissionService templatePermissionService,
+        IPermissionCheckerService permissionCheckerService,
         ISender mediator,
         IUnitOfWork unitOfWork)
     {
@@ -273,8 +266,8 @@ public class CreateApplicationCommandHandlerTests
             userRepo,
             httpContextAccessor,
             referenceProvider,
-            templatePermissionService,
             applicationFactory,
+            permissionCheckerService,
             mediator,
             unitOfWork);
 
@@ -299,7 +292,7 @@ public class CreateApplicationCommandHandlerTests
         IEaRepository<User> userRepo,
         IApplicationReferenceProvider referenceProvider,
         IApplicationFactory applicationFactory,
-        ITemplatePermissionService templatePermissionService,
+        IPermissionCheckerService permissionCheckerService,
         ISender mediator,
         IUnitOfWork unitOfWork)
     {
@@ -322,8 +315,8 @@ public class CreateApplicationCommandHandlerTests
             userRepo,
             httpContextAccessor,
             referenceProvider,
-            templatePermissionService,
             applicationFactory,
+            permissionCheckerService,
             mediator,
             unitOfWork);
 
@@ -350,7 +343,7 @@ public class CreateApplicationCommandHandlerTests
         IEaRepository<User> userRepo,
         IApplicationReferenceProvider referenceProvider,
         IApplicationFactory applicationFactory,
-        ITemplatePermissionService templatePermissionService,
+        IPermissionCheckerService permissionCheckerService,
         ISender mediator,
         IUnitOfWork unitOfWork)
     {
@@ -380,19 +373,16 @@ public class CreateApplicationCommandHandlerTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
-        templatePermissionService.CanUserCreateApplicationForTemplate(
-            user.Id!,
-            command.TemplateId,
-            Arg.Any<CancellationToken>())
-            .Returns(false);
+        permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(false);
+
 
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
             userRepo,
             httpContextAccessor,
             referenceProvider,
-            templatePermissionService,
             applicationFactory,
+            permissionCheckerService,
             mediator,
             unitOfWork);
 
@@ -419,7 +409,7 @@ public class CreateApplicationCommandHandlerTests
         IEaRepository<User> userRepo,
         IApplicationReferenceProvider referenceProvider,
         IApplicationFactory applicationFactory,
-        ITemplatePermissionService templatePermissionService,
+        IPermissionCheckerService permissionCheckerService,
         ISender mediator,
         IUnitOfWork unitOfWork)
     {
@@ -449,11 +439,8 @@ public class CreateApplicationCommandHandlerTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
-        templatePermissionService.CanUserCreateApplicationForTemplate(
-            user.Id!,
-            command.TemplateId,
-            Arg.Any<CancellationToken>())
-            .Returns(true);
+        permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
+
 
         mediator.Send(Arg.Any<GetLatestTemplateSchemaByUserIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(Result<TemplateSchemaDto>.Failure("Template not found"));
@@ -463,8 +450,8 @@ public class CreateApplicationCommandHandlerTests
             userRepo,
             httpContextAccessor,
             referenceProvider,
-            templatePermissionService,
             applicationFactory,
+            permissionCheckerService,
             mediator,
             unitOfWork);
 

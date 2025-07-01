@@ -1,12 +1,20 @@
 ﻿using System.Security.Claims;
 using DfE.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.Users.Queries;
+using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace DfE.ExternalApplications.Api.Security
 {
-    public class PermissionsClaimProvider(ISender sender, ILogger<PermissionsClaimProvider> logger) : ICustomClaimProvider
+    public class PermissionsClaimProvider(
+        ISender sender, 
+        ILogger<PermissionsClaimProvider> logger,
+        IEaRepository<User> userRepo
+        ) : ICustomClaimProvider
     {
         public async Task<IEnumerable<Claim>> GetClaimsAsync(ClaimsPrincipal principal)
         {
@@ -26,7 +34,17 @@ namespace DfE.ExternalApplications.Api.Security
                 return Array.Empty<Claim>();
             }
 
-            var query = new GetAllUserPermissionsByExternalProviderIdQuery(clientId);
+            var dbUser = await (new GetUserByExternalProviderIdQueryObject(clientId))
+                    .Apply(userRepo.Query().AsNoTracking())
+                    .FirstOrDefaultAsync();
+
+            if (dbUser is null)
+            {
+                logger.LogWarning("PermissionsClaimProvider() > Service User not found.");
+                return Array.Empty<Claim>();
+            }
+
+            var query = new GetAllUserPermissionsQuery(dbUser.Id!);
             var result = await sender.Send(query);
 
             if (result is { IsSuccess: false })

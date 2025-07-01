@@ -29,7 +29,6 @@ namespace Microsoft.Extensions.DependencyInjection
                     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
                 }
             });
-            services.AddScoped<ITemplatePermissionService, TemplatePermissionService>();
             services.AddScoped<IPermissionCheckerService, ClaimBasedPermissionCheckerService>();
             services.AddTransient<IApplicationFactory, ApplicationFactory>();
 

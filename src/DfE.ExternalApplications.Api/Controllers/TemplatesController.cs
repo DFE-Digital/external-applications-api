@@ -5,7 +5,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -25,10 +24,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
         [FromRoute] Guid templateId, CancellationToken cancellationToken)
     {
-        var email = User.FindFirstValue(ClaimTypes.Email)
-                    ?? throw new InvalidOperationException("No email claim in token");
-
-        var query = new GetLatestTemplateSchemaQuery(templateId, email);
+        var query = new GetLatestTemplateSchemaQuery(templateId);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
