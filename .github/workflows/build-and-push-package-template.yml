@@ -1,6 +1,9 @@
 name: Build and Push NuGet Package
 
 on:
+  push:
+    branches:
+      - 'feature/**'
   workflow_dispatch:
     inputs:
       tag_name:
