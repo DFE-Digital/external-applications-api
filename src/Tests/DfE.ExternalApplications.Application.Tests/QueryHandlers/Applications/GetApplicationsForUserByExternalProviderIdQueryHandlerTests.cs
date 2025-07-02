@@ -142,4 +142,154 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         Assert.Contains("Boom", result.Error);
         userRepo.DidNotReceive().Query();
     }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization), typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenDatabaseExceptionOccurs(
+        string externalProviderId,
+        UserCustomization userCustom,
+        PermissionCustomization permCustom,
+        ApplicationCustomization appCustom,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
+        [Frozen] ICacheService<IMemoryCacheType> cache)
+    {
+        // Arrange
+        userCustom.OverrideExternalProviderId = externalProviderId;
+        userCustom.OverridePermissions = Array.Empty<Permission>();
+        var fixture = new Fixture().Customize(userCustom);
+        var user = fixture.Create<User>();
+
+        var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        backing.SetValue(user, new List<Permission>());
+
+        var app = new Fixture().Customize(appCustom).Create<Domain.Entities.Application>();
+        var perm = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm);
+
+        var userList = new List<User> { user };
+        userRepo.Query().Returns(userList.AsQueryable().BuildMock());
+
+        // Setup application repository to throw an exception
+        appRepo.Query().Throws(new InvalidOperationException("Database connection failed"));
+
+        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
+        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+            .Returns(call =>
+            {
+                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                return f();
+            });
+
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Database connection failed", result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization), typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldHandleApplicationWithNullTemplateVersion(
+        string externalProviderId,
+        UserCustomization userCustom,
+        PermissionCustomization permCustom,
+        ApplicationCustomization appCustom,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
+        [Frozen] ICacheService<IMemoryCacheType> cache)
+    {
+        // Arrange
+        userCustom.OverrideExternalProviderId = externalProviderId;
+        userCustom.OverridePermissions = Array.Empty<Permission>();
+        var fixture = new Fixture().Customize(userCustom);
+        var user = fixture.Create<User>();
+
+        var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        backing.SetValue(user, new List<Permission>());
+
+        // Create application with null template version (edge case)
+        var app = new Fixture().Customize(appCustom).Create<Domain.Entities.Application>();
+        
+        // Use reflection to set TemplateVersion to null to test the null template name scenario
+        var templateVersionField = typeof(Domain.Entities.Application).GetProperty("TemplateVersion");
+        templateVersionField?.SetValue(app, null);
+
+        var perm = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm);
+
+        var userList = new List<User> { user };
+        userRepo.Query().Returns(userList.AsQueryable().BuildMock());
+
+        var appList = new List<Domain.Entities.Application> { app };
+        appRepo.Query().Returns(appList.AsQueryable().BuildMock());
+
+        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
+        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+            .Returns(call =>
+            {
+                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                return f();
+            });
+
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value!);
+        Assert.Equal(string.Empty, result.Value!.First().TemplateName); // Should handle null template gracefully
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_ShouldReturnEmpty_WhenUserHasNoApplicationPermissions(
+        string externalProviderId,
+        UserCustomization userCustom,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
+        [Frozen] ICacheService<IMemoryCacheType> cache)
+    {
+        // Arrange
+        userCustom.OverrideExternalProviderId = externalProviderId;
+        userCustom.OverridePermissions = Array.Empty<Permission>();
+        var fixture = new Fixture().Customize(userCustom);
+        var user = fixture.Create<User>();
+
+        var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        backing.SetValue(user, new List<Permission>());
+
+        // Add permission that doesn't have ApplicationId (template permission)
+        var templatePerm = new Permission(
+            new PermissionId(Guid.NewGuid()), 
+            user.Id!, 
+            null, // No ApplicationId
+            "Template:Read", 
+            ResourceType.Template, 
+            AccessType.Read, 
+            DateTime.UtcNow, 
+            user.Id!);
+        ((List<Permission>)backing.GetValue(user)!).Add(templatePerm);
+
+        var userList = new List<User> { user };
+        userRepo.Query().Returns(userList.AsQueryable().BuildMock());
+
+        appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
+
+        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
+        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+            .Returns(call =>
+            {
+                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                return f();
+            });
+
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value!); // Should return empty since no application permissions
+    }
 } 

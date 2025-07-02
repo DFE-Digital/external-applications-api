@@ -441,9 +441,8 @@ public class CreateApplicationCommandHandlerTests
 
         permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
 
-
         mediator.Send(Arg.Any<GetLatestTemplateSchemaByUserIdQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<TemplateSchemaDto>.Failure("Template not found"));
+            .Returns(Result<TemplateSchemaDto>.Failure("Template schema not found"));
 
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
@@ -460,7 +459,160 @@ public class CreateApplicationCommandHandlerTests
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Equal("Template not found", result.Error);
+        Assert.Equal("Template schema not found", result.Error);
+
+        await applicationRepo.DidNotReceive()
+            .AddAsync(Arg.Any<Domain.Entities.Application>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive()
+            .CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenExceptionThrown(
+        CreateApplicationCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IApplicationReferenceProvider referenceProvider,
+        IApplicationFactory applicationFactory,
+        IPermissionCheckerService permissionCheckerService,
+        ISender mediator,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var externalId = "external-id";
+        var claims = new List<Claim>
+        {
+            new("appid", externalId),
+            new(ClaimTypes.Email, "test@example.com")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            "test@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null,
+            externalId);
+
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
+
+        // Setup an exception to be thrown during the mediator call
+        mediator.When(x => x.Send(Arg.Any<GetLatestTemplateSchemaByUserIdQuery>(), Arg.Any<CancellationToken>()))
+            .Do(x => throw new InvalidOperationException("Database connection failed"));
+
+        var handler = new CreateApplicationCommandHandler(
+            applicationRepo,
+            userRepo,
+            httpContextAccessor,
+            referenceProvider,
+            applicationFactory,
+            permissionCheckerService,
+            mediator,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Database connection failed", result.Error);
+
+        await applicationRepo.DidNotReceive()
+            .AddAsync(Arg.Any<Domain.Entities.Application>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive()
+            .CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenHttpContextIsNull(
+        CreateApplicationCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IApplicationReferenceProvider referenceProvider,
+        IApplicationFactory applicationFactory,
+        IPermissionCheckerService permissionCheckerService,
+        ISender mediator,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        httpContextAccessor.HttpContext.Returns((HttpContext?)null);
+
+        var handler = new CreateApplicationCommandHandler(
+            applicationRepo,
+            userRepo,
+            httpContextAccessor,
+            referenceProvider,
+            applicationFactory,
+            permissionCheckerService,
+            mediator,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Not authenticated", result.Error);
+
+        await applicationRepo.DidNotReceive()
+            .AddAsync(Arg.Any<Domain.Entities.Application>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive()
+            .CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenUserIdentityNotAuthenticated(
+        CreateApplicationCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IApplicationReferenceProvider referenceProvider,
+        IApplicationFactory applicationFactory,
+        IPermissionCheckerService permissionCheckerService,
+        ISender mediator,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new("appid", "external-id"),
+            new(ClaimTypes.Email, "test@example.com")
+        };
+        // Create an unauthenticated identity
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims)); // No authentication type = not authenticated
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var handler = new CreateApplicationCommandHandler(
+            applicationRepo,
+            userRepo,
+            httpContextAccessor,
+            referenceProvider,
+            applicationFactory,
+            permissionCheckerService,
+            mediator,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Not authenticated", result.Error);
 
         await applicationRepo.DidNotReceive()
             .AddAsync(Arg.Any<Domain.Entities.Application>(), Arg.Any<CancellationToken>());
