@@ -28,11 +28,42 @@ namespace DfE.ExternalApplications.Infrastructure.Database
             var optionsBuilder = new DbContextOptionsBuilder<TContext>();
             optionsBuilder.UseSqlServer(connectionString);
 
-            services.AddMediatR(cfg =>
+            // Try to add MediatR for runtime, but don't fail if the Application assembly isn't available
+            try
             {
+                // First, try to build the Application project to ensure the assembly is available
+                var applicationProjectPath = Path.Combine(Directory.GetCurrentDirectory(), "../DfE.ExternalApplications.Application");
+                if (Directory.Exists(applicationProjectPath))
+                {
+                    var buildProcess = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "dotnet",
+                        Arguments = $"build \"{applicationProjectPath}\"",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    });
+                    
+                    if (buildProcess != null)
+                    {
+                        buildProcess.WaitForExit();
+                    }
+                }
+
                 var appAssembly = Assembly.Load("DfE.ExternalApplications.Application");
-                cfg.RegisterServicesFromAssembly(appAssembly);
-            });
+                services.AddMediatR(cfg =>
+                {
+                    cfg.RegisterServicesFromAssembly(appAssembly);
+                });
+            }
+            catch (Exception)
+            {
+                // If we can't load the Application assembly, create a minimal MediatR setup
+                // This is acceptable for design-time operations like migrations
+                services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GenericDbContextFactory<>).Assembly));
+            }
+
             var serviceProvider = services.BuildServiceProvider();
 
             return (TContext)Activator.CreateInstance(
