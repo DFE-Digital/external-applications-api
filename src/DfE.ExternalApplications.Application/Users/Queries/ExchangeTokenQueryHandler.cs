@@ -42,7 +42,25 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 ? azureAuth.Principal.Claims.Where(c => c.Type == ClaimTypes.Role || c.Type == "roles")
                 : Enumerable.Empty<Claim>();
 
-            var identity = new ClaimsIdentity(externalUser.Identity!);
+            // Create new identity with only specific claims from external user
+            var identity = new ClaimsIdentity();
+            var allowedClaimTypes = new[]
+            {
+                ClaimTypes.NameIdentifier,
+                ClaimTypes.Email,
+                ClaimTypes.GivenName,
+                ClaimTypes.Surname,
+                "organisation"
+            };
+
+            foreach (var claim in externalUser.Claims)
+            {
+                if (allowedClaimTypes.Contains(claim.Type))
+                {
+                    identity.AddClaim(claim);
+                }
+            }
+            
             identity.AddClaims(svcRoles);
 
             var userWithPerms = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
