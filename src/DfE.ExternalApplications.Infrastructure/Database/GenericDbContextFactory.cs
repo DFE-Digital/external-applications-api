@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace DfE.ExternalApplications.Infrastructure.Database
 {
@@ -29,7 +30,8 @@ namespace DfE.ExternalApplications.Infrastructure.Database
 
             services.AddMediatR(cfg =>
             {
-                cfg.RegisterServicesFromAssembly(typeof(ApplicationServiceCollectionExtensions).Assembly);
+                var appAssembly = Assembly.Load("DfE.ExternalApplications.Application");
+                cfg.RegisterServicesFromAssembly(appAssembly);
             });
             var serviceProvider = services.BuildServiceProvider();
 

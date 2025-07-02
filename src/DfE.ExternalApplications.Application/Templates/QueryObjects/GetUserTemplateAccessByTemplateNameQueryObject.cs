@@ -5,14 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Templates.QueryObjects;
 
-public sealed class GetUserTemplateAccessByTemplateNameQueryObject(Guid userId, string templateName)
-    : IQueryObject<UserTemplateAccess>
+public sealed class GetTemplatePermissionByTemplateNameQueryObject(string email, Guid templateId)
+    : IQueryObject<TemplatePermission>
 {
-    private readonly UserId _userId = new(userId);
-    private readonly string _normalizedName = templateName.Trim().ToLowerInvariant();
+    private readonly string _normalizedEmail = email.Trim().ToLowerInvariant();
 
-    public IQueryable<UserTemplateAccess> Apply(IQueryable<UserTemplateAccess> query) =>
+    public IQueryable<TemplatePermission> Apply(IQueryable<TemplatePermission> query) =>
         query
             .Include(x => x.Template)
-            .Where(x => x.UserId == _userId && x.Template!.Name.ToLower() == _normalizedName);
+            .Include(x => x.User)
+            .Where(x => 
+                x.User != null
+                && x.User.Email.ToLower() == _normalizedEmail
+                && x.Template!.Id == new TemplateId(templateId));
 }

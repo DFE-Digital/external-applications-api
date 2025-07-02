@@ -20,6 +20,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
         public DateTime? OverrideLastModifiedOn { get; set; }
         public UserId? OverrideLastModifiedBy { get; set; }
         public IEnumerable<Permission>? OverridePermissions { get; set; }
+        public string? OverrideExternalProviderId { get; set; }
 
         public void Customize(IFixture fixture)
         {
@@ -37,6 +38,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
                     var createdBy = OverrideCreatedBy ?? null;
                     var lastModifiedOn = OverrideLastModifiedOn ?? null;
                     var lastModifiedBy = OverrideLastModifiedBy ?? null;
+                    var externalProviderId = OverrideExternalProviderId ?? null;
 
                     var perms = OverridePermissions ?? new List<Permission>();
 
@@ -49,6 +51,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
                         createdBy,
                         lastModifiedOn,
                         lastModifiedBy,
+                        externalProviderId,
                         perms);
                 }));
         }

@@ -38,12 +38,14 @@ namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Users
             userA.AddPermission(
                 new ApplicationId(Guid.NewGuid()),
                 "Resource:Read",
+                ResourceType.Field,
                 AccessType.Read,
                 grantedBy,
                 DateTime.UtcNow);
             userA.AddPermission(
                 new ApplicationId(Guid.NewGuid()),
                 "Resource:Write",
+                ResourceType.Field,
                 AccessType.Write,
                 grantedBy,
                 DateTime.UtcNow);
@@ -60,6 +62,7 @@ namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Users
             userB.AddPermission(
                 new ApplicationId(Guid.NewGuid()),
                 "Resource:Delete",
+                ResourceType.Field,
                 AccessType.Write,
                 grantedBy,
                 DateTime.UtcNow);
@@ -101,6 +104,7 @@ namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Users
             var perm = user.AddPermission(
                 new ApplicationId(Guid.NewGuid()),
                 "Some:Key",
+                ResourceType.Field,
                 AccessType.Read,
                 new UserId(Guid.NewGuid()),
                 DateTime.UtcNow);

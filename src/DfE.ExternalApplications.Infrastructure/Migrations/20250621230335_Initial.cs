@@ -39,7 +39,8 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     CreatedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     LastModifiedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastModifiedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    LastModifiedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ExternalProviderId = table.Column<string>(type: "varchar(100)", unicode: false, maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -121,6 +122,44 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "TemplatePermissions",
+                schema: "ea",
+                columns: table => new
+                {
+                    TemplatePermissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AccessType = table.Column<byte>(type: "tinyint", nullable: false),
+                    GrantedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
+                    GrantedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TemplatePermissions", x => x.TemplatePermissionId);
+                    table.ForeignKey(
+                        name: "FK_TemplatePermissions_Templates_TemplateId",
+                        column: x => x.TemplateId,
+                        principalSchema: "ea",
+                        principalTable: "Templates",
+                        principalColumn: "TemplateId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TemplatePermissions_Users_GrantedBy",
+                        column: x => x.GrantedBy,
+                        principalSchema: "ea",
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TemplatePermissions_Users_UserId",
+                        column: x => x.UserId,
+                        principalSchema: "ea",
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TemplateVersions",
                 schema: "ea",
                 columns: table => new
@@ -158,43 +197,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "UserTemplateAccess",
-                schema: "ea",
-                columns: table => new
-                {
-                    UserTemplateAccessId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    GrantedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    GrantedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserTemplateAccess", x => x.UserTemplateAccessId);
-                    table.ForeignKey(
-                        name: "FK_UserTemplateAccess_Templates_TemplateId",
-                        column: x => x.TemplateId,
-                        principalSchema: "ea",
-                        principalTable: "Templates",
-                        principalColumn: "TemplateId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_UserTemplateAccess_Users_GrantedBy",
-                        column: x => x.GrantedBy,
-                        principalSchema: "ea",
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_UserTemplateAccess_Users_UserId",
-                        column: x => x.UserId,
-                        principalSchema: "ea",
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -283,7 +285,8 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 {
                     PermissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ResourceType = table.Column<byte>(type: "tinyint", nullable: false),
                     ResourceKey = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     AccessType = table.Column<byte>(type: "tinyint", nullable: false),
                     GrantedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
@@ -297,8 +300,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         column: x => x.ApplicationId,
                         principalSchema: "ea",
                         principalTable: "Applications",
-                        principalColumn: "ApplicationId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ApplicationId");
                     table.ForeignKey(
                         name: "FK_Permissions_Users_GrantedBy",
                         column: x => x.GrantedBy,
@@ -389,6 +391,24 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TemplatePermissions_GrantedBy",
+                schema: "ea",
+                table: "TemplatePermissions",
+                column: "GrantedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TemplatePermissions_TemplateId",
+                schema: "ea",
+                table: "TemplatePermissions",
+                column: "TemplateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TemplatePermissions_UserId",
+                schema: "ea",
+                table: "TemplatePermissions",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Templates_CreatedBy",
                 schema: "ea",
                 table: "Templates",
@@ -426,6 +446,14 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Users_ExternalProviderId",
+                schema: "ea",
+                table: "Users",
+                column: "ExternalProviderId",
+                unique: true,
+                filter: "[ExternalProviderId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_LastModifiedBy",
                 schema: "ea",
                 table: "Users",
@@ -436,24 +464,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 schema: "ea",
                 table: "Users",
                 column: "RoleId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserTemplateAccess_GrantedBy",
-                schema: "ea",
-                table: "UserTemplateAccess",
-                column: "GrantedBy");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserTemplateAccess_TemplateId",
-                schema: "ea",
-                table: "UserTemplateAccess",
-                column: "TemplateId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserTemplateAccess_UserId",
-                schema: "ea",
-                table: "UserTemplateAccess",
-                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -472,7 +482,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 schema: "ea");
 
             migrationBuilder.DropTable(
-                name: "UserTemplateAccess",
+                name: "TemplatePermissions",
                 schema: "ea");
 
             migrationBuilder.DropTable(

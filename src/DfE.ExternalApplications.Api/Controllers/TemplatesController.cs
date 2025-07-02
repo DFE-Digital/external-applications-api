@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -16,20 +17,21 @@ public class TemplatesController(ISender sender) : ControllerBase
     /// <summary>
     /// Returns the latest template schema for the specified template name if the user has access.
     /// </summary>
-    [HttpGet("{templateName}/schema/{userId}")]
+    [HttpGet("{templateId}/schema")]
     [SwaggerResponse(200, "The latest template schema.", typeof(TemplateSchemaDto))]
     [SwaggerResponse(400, "Request was invalid or access denied.")]
-    [AllowAnonymous]
+    [Authorize(Policy = "CanReadTemplate")]
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
-        [FromRoute] string templateName,
-        [FromRoute] Guid userId,
-        CancellationToken cancellationToken)
+        [FromRoute] Guid templateId, CancellationToken cancellationToken)
     {
-        var query = new GetLatestTemplateSchemaQuery(templateName, userId);
+        var email = User.FindFirstValue(ClaimTypes.Email)
+                    ?? throw new InvalidOperationException("No email claim in token");
+
+        var query = new GetLatestTemplateSchemaQuery(templateId, email);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
-            return BadRequest((object?)result.Error);
+            return BadRequest(result.Error);
 
         return Ok(result.Value);
     }

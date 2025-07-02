@@ -7,7 +7,7 @@ public class GetLatestTemplateSchemaQueryValidatorTests
     [Fact]
     public void Validate_ShouldSucceed_ForValidData()
     {
-        var query = new GetLatestTemplateSchemaQuery("Template", Guid.NewGuid());
+        var query = new GetLatestTemplateSchemaQuery(Guid.NewGuid(), "test@example.com");
         var validator = new GetLatestTemplateSchemaQueryValidator();
 
         var result = validator.Validate(query);
@@ -18,7 +18,7 @@ public class GetLatestTemplateSchemaQueryValidatorTests
     [Fact]
     public void Validate_ShouldFail_WhenTemplateNameIsEmpty()
     {
-        var query = new GetLatestTemplateSchemaQuery(string.Empty, Guid.NewGuid());
+        var query = new GetLatestTemplateSchemaQuery(Guid.Empty, "test@example.com");
         var validator = new GetLatestTemplateSchemaQueryValidator();
 
         var result = validator.Validate(query);
@@ -29,7 +29,7 @@ public class GetLatestTemplateSchemaQueryValidatorTests
     [Fact]
     public void Validate_ShouldFail_WhenUserIdIsEmpty()
     {
-        var query = new GetLatestTemplateSchemaQuery("Template", Guid.Empty);
+        var query = new GetLatestTemplateSchemaQuery(Guid.NewGuid(), "");
         var validator = new GetLatestTemplateSchemaQueryValidator();
 
         var result = validator.Validate(query);

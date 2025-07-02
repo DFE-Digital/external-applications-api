@@ -1,9 +1,10 @@
+using DfE.CoreLibs.Security.Interfaces;
+using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Infrastructure;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Infrastructure.Repositories;
-using DfE.ExternalApplications.Infrastructure.Security.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -26,9 +27,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddDbContext<ExternalApplicationsContext>(options =>
                 options.UseSqlServer(connectionString));
-
-            // Authentication
-            services.AddCustomAuthorization(config);
 
             return services;
         }

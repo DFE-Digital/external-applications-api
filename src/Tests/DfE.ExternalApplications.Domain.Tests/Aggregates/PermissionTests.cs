@@ -15,6 +15,7 @@ public class PermissionTests
         UserId userId,
         ApplicationId appId,
         string resourceKey,
+        ResourceType resourceType,
         AccessType accessType,
         DateTime grantedOn,
         UserId grantedBy)
@@ -26,6 +27,7 @@ public class PermissionTests
                 userId,
                 appId,
                 resourceKey,
+                resourceType,
                 accessType,
                 grantedOn,
                 grantedBy));
@@ -40,6 +42,7 @@ public class PermissionTests
         UserId userId,
         ApplicationId appId,
         AccessType accessType,
+        ResourceType resourceType,
         DateTime grantedOn,
         UserId grantedBy)
     {
@@ -50,6 +53,7 @@ public class PermissionTests
                 userId,
                 appId,
                 null!,           // resourceKey is null
+                resourceType,
                 accessType,
                 grantedOn,
                 grantedBy));

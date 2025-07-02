@@ -1,7 +1,6 @@
 ﻿using DfE.CoreLibs.Caching.Helpers;
 using DfE.CoreLibs.Caching.Interfaces;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Common.Models;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -44,7 +43,8 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                         var dtoList = userWithPermissions.Permissions
                             .Select(p => new UserPermissionDto
                             {
-                                ApplicationId = p.ApplicationId.Value,
+                                ApplicationId = p.ApplicationId?.Value,
+                                ResourceType = p.ResourceType,
                                 ResourceKey = p.ResourceKey,
                                 AccessType = p.AccessType
                             })

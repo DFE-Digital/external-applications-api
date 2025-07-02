@@ -1,4 +1,5 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database.Interceptors;
@@ -35,8 +36,8 @@ public class ExternalApplicationsContext : DbContext
     public DbSet<Domain.Entities.Application> Applications { get; set; } = null!;
     public DbSet<ApplicationResponse> ApplicationResponses { get; set; } = null!;
     public DbSet<Permission> Permissions { get; set; } = null!;
-    public DbSet<UserTemplateAccess> UserTemplateAccesses { get; set; } = null!;
     public DbSet<TaskAssignmentLabel> TaskAssignmentLabels { get; set; } = null!;
+    public DbSet<TemplatePermission> TemplatePermissions { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -59,7 +60,7 @@ public class ExternalApplicationsContext : DbContext
         modelBuilder.Entity<Domain.Entities.Application>(ConfigureApplication);
         modelBuilder.Entity<ApplicationResponse>(ConfigureApplicationResponse);
         modelBuilder.Entity<Permission>(ConfigurePermission);
-        modelBuilder.Entity<UserTemplateAccess>(ConfigureUserTemplateAccess);
+        modelBuilder.Entity<TemplatePermission>(ConfigureTemplatePermission);
         modelBuilder.Entity<TaskAssignmentLabel>(ConfigureTaskAssignmentLabel);
 
         base.OnModelCreating(modelBuilder);
@@ -117,6 +118,10 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("LastModifiedBy")
             .HasConversion(v => v!.Value, v => new UserId(v))
             .IsRequired(false);
+        b.Property(u => u.ExternalProviderId)
+            .HasMaxLength(100)
+            .IsUnicode(false);
+        b.HasIndex(u => u.ExternalProviderId).IsUnique();
         b.HasIndex(e => e.Email).IsUnique();
         b.HasOne(e => e.Role)
             .WithMany()
@@ -130,6 +135,10 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(e => e.LastModifiedBy)
             .OnDelete(DeleteBehavior.Restrict);
         b.HasMany(u => u.Permissions)
+            .WithOne(p => p.User)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        b.HasMany(u => u.TemplatePermissions)
             .WithOne(p => p.User)
             .HasForeignKey(p => p.UserId)
             .OnDelete(DeleteBehavior.Cascade);
@@ -321,7 +330,12 @@ public class ExternalApplicationsContext : DbContext
             .IsRequired();
         b.Property(e => e.ApplicationId)
             .HasColumnName("ApplicationId")
-            .HasConversion(v => v.Value, v => new ApplicationId(v))
+            .HasConversion(v => v.Value, v => new ApplicationId(v));
+        b.Property(e => e.ResourceType)
+            .HasColumnName("ResourceType")
+            .HasConversion(
+                v => (byte)v,
+                v => (ResourceType)v)
             .IsRequired();
         b.Property(e => e.ResourceKey)
             .HasColumnName("ResourceKey")
@@ -348,44 +362,6 @@ public class ExternalApplicationsContext : DbContext
         b.HasOne(e => e.Application)
             .WithMany()
             .HasForeignKey(e => e.ApplicationId);
-        b.HasOne(e => e.GrantedByUser)
-            .WithMany()
-            .HasForeignKey(e => e.GrantedBy)
-            .OnDelete(DeleteBehavior.Restrict);
-    }
-
-    private static void ConfigureUserTemplateAccess(EntityTypeBuilder<UserTemplateAccess> b)
-    {
-        b.ToTable("UserTemplateAccess", DefaultSchema);
-        b.HasKey(e => e.Id);
-        b.Property(e => e.Id)
-            .HasColumnName("UserTemplateAccessId")
-            .ValueGeneratedOnAdd()
-            .HasConversion(v => v.Value, v => new UserTemplateAccessId(v))
-            .IsRequired();
-        b.Property(e => e.UserId)
-            .HasColumnName("UserId")
-            .HasConversion(v => v.Value, v => new UserId(v))
-            .IsRequired();
-        b.Property(e => e.TemplateId)
-            .HasColumnName("TemplateId")
-            .HasConversion(v => v.Value, v => new TemplateId(v))
-            .IsRequired();
-        b.Property(e => e.GrantedOn)
-            .HasColumnName("GrantedOn")
-            .HasDefaultValueSql("GETDATE()")
-            .IsRequired();
-        b.Property(e => e.GrantedBy)
-            .HasColumnName("GrantedBy")
-            .HasConversion(v => v.Value, v => new UserId(v))
-            .IsRequired();
-
-        b.HasOne(e => e.User)
-            .WithMany()
-            .HasForeignKey(e => e.UserId);
-        b.HasOne(e => e.Template)
-            .WithMany()
-            .HasForeignKey(e => e.TemplateId);
         b.HasOne(e => e.GrantedByUser)
             .WithMany()
             .HasForeignKey(e => e.GrantedBy)
@@ -431,4 +407,45 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(e => e.CreatedBy)
             .OnDelete(DeleteBehavior.Restrict);
     }
+
+    private static void ConfigureTemplatePermission(EntityTypeBuilder<TemplatePermission> b)
+    {
+        b.ToTable("TemplatePermissions", DefaultSchema);
+        b.HasKey(e => e.Id);
+        b.Property(e => e.Id)
+            .HasColumnName("TemplatePermissionId")
+            .ValueGeneratedOnAdd()
+            .HasConversion(v => v.Value, v => new TemplatePermissionId(v))
+            .IsRequired();
+        b.Property(e => e.UserId)
+            .HasColumnName("UserId")
+            .HasConversion(v => v.Value, v => new UserId(v))
+            .IsRequired();
+        b.Property(e => e.TemplateId)
+            .HasColumnName("TemplateId")
+            .HasConversion(v => v.Value, v => new TemplateId(v))
+            .IsRequired();
+        b.Property(e => e.AccessType)
+            .HasColumnName("AccessType")
+            .HasConversion(
+                v => (byte)v,
+                v => (AccessType)v)
+            .IsRequired();
+        b.Property(e => e.GrantedOn)
+            .HasColumnName("GrantedOn")
+            .HasDefaultValueSql("GETDATE()")
+            .IsRequired();
+        b.Property(e => e.GrantedBy)
+            .HasColumnName("GrantedBy")
+            .HasConversion(v => v.Value, v => new UserId(v))
+            .IsRequired();
+        b.HasOne(e => e.Template)
+            .WithMany()
+            .HasForeignKey(e => e.TemplateId);
+        b.HasOne(e => e.GrantedByUser)
+            .WithMany()
+            .HasForeignKey(e => e.GrantedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+
 }

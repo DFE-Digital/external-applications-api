@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DfE.ExternalApplications.Infrastructure.Migrations
 {
     [DbContext(typeof(ExternalApplicationsContext))]
-    [Migration("20250602161455_Initial")]
+    [Migration("20250621230335_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -131,7 +131,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnType("tinyint")
                         .HasColumnName("AccessType");
 
-                    b.Property<Guid>("ApplicationId")
+                    b.Property<Guid?>("ApplicationId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("ApplicationId");
 
@@ -150,6 +150,10 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("ResourceKey");
+
+                    b.Property<byte>("ResourceType")
+                        .HasColumnType("tinyint")
+                        .HasColumnName("ResourceType");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier")
@@ -259,6 +263,46 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.ToTable("Templates", "ea");
                 });
 
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.TemplatePermission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("TemplatePermissionId");
+
+                    b.Property<byte>("AccessType")
+                        .HasColumnType("tinyint")
+                        .HasColumnName("AccessType");
+
+                    b.Property<Guid>("GrantedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("GrantedBy");
+
+                    b.Property<DateTime>("GrantedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("GrantedOn")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<Guid>("TemplateId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("TemplateId");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GrantedBy");
+
+                    b.HasIndex("TemplateId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TemplatePermissions", "ea");
+                });
+
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.TemplateVersion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -333,6 +377,11 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)")
                         .HasColumnName("Email");
 
+                    b.Property<string>("ExternalProviderId")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<Guid?>("LastModifiedBy")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("LastModifiedBy");
@@ -358,47 +407,15 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("ExternalProviderId")
+                        .IsUnique()
+                        .HasFilter("[ExternalProviderId] IS NOT NULL");
+
                     b.HasIndex("LastModifiedBy");
 
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users", "ea");
-                });
-
-            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.UserTemplateAccess", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("UserTemplateAccessId");
-
-                    b.Property<Guid>("GrantedBy")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("GrantedBy");
-
-                    b.Property<DateTime>("GrantedOn")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("GrantedOn")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<Guid>("TemplateId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("TemplateId");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("UserId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GrantedBy");
-
-                    b.HasIndex("TemplateId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserTemplateAccess", "ea");
                 });
 
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Application", b =>
@@ -457,9 +474,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 {
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.Application", "Application")
                         .WithMany()
-                        .HasForeignKey("ApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ApplicationId");
 
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "GrantedByUser")
                         .WithMany()
@@ -507,6 +522,33 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.TemplatePermission", b =>
+                {
+                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "GrantedByUser")
+                        .WithMany()
+                        .HasForeignKey("GrantedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DfE.ExternalApplications.Domain.Entities.Template", "Template")
+                        .WithMany()
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "User")
+                        .WithMany("TemplatePermissions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GrantedByUser");
+
+                    b.Navigation("Template");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.TemplateVersion", b =>
@@ -560,36 +602,11 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.UserTemplateAccess", b =>
-                {
-                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "GrantedByUser")
-                        .WithMany()
-                        .HasForeignKey("GrantedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DfE.ExternalApplications.Domain.Entities.Template", "Template")
-                        .WithMany()
-                        .HasForeignKey("TemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("GrantedByUser");
-
-                    b.Navigation("Template");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.User", b =>
                 {
                     b.Navigation("Permissions");
+
+                    b.Navigation("TemplatePermissions");
                 });
 #pragma warning restore 612, 618
         }

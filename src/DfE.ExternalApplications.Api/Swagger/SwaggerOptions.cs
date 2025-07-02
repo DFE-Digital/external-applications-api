@@ -39,11 +39,32 @@ namespace DfE.ExternalApplications.Api.Swagger
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                Description = "User JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
                 Name = "Authorization",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
-                Scheme = "Bearer"
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            });
+
+            options.AddSecurityDefinition("ServiceBearer", new OpenApiSecurityScheme
+            {
+                Description = "Service-to-service bearer token. Example: X-Service-Authorization: {token}",
+                Name = "X-Service-Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ServiceBearer"
+                }
             });
 
             options.OperationFilter<AuthenticationHeaderOperationFilter>();

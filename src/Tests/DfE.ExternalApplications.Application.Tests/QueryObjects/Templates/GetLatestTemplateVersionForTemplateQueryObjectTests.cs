@@ -30,7 +30,7 @@ public class GetLatestTemplateVersionForTemplateQueryObjectTests
         var list = new List<TemplateVersion> { older, newer };
 
         var sut = new GetLatestTemplateVersionForTemplateQueryObject(templateId);
-        var result = sut.Apply(list.AsQueryable()).ToList();
+        var result = sut.Apply(list.AsQueryable()).Take(1).ToList();
 
         Assert.Single(result);
         Assert.Equal(newer, result[0]);

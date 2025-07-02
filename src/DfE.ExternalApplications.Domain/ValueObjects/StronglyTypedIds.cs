@@ -9,6 +9,6 @@ namespace DfE.ExternalApplications.Domain.ValueObjects
     public record ApplicationId(Guid Value) : IStronglyTypedId;
     public record ResponseId(Guid Value) : IStronglyTypedId;
     public record PermissionId(Guid Value) : IStronglyTypedId;
-    public record UserTemplateAccessId(Guid Value) : IStronglyTypedId;
     public record TaskAssignmentLabelId(Guid Value) : IStronglyTypedId;
+    public record TemplatePermissionId(Guid Value) : IStronglyTypedId;
 }

@@ -4,26 +4,32 @@
 		<TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="MappingProfiles\**" />
+    <Compile Remove="Permissions\**" />
+    <EmbeddedResource Remove="MappingProfiles\**" />
+    <EmbeddedResource Remove="Permissions\**" />
+    <None Remove="MappingProfiles\**" />
+    <None Remove="Permissions\**" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="DfE.CoreLibs.AsyncProcessing" Version="1.0.12" />
 		<PackageReference Include="DfE.CoreLibs.Caching" Version="1.0.10" />
-		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.12" />
+		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.17" />
+		<PackageReference Include="DfE.CoreLibs.Security" Version="1.1.13-prerelease-4" />
 		<PackageReference Include="FluentValidation" Version="12.0.0" />
 		<PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.16" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.10.0" />
 	</ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DfE.ExternalApplications.Domain\DfE.ExternalApplications.Domain.csproj" />
     <ProjectReference Include="..\DfE.ExternalApplications.Utils\DfE.ExternalApplications.Utils.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="MappingProfiles\" />
-    <Folder Include="Permissions\" />
   </ItemGroup>
 
 </Project>

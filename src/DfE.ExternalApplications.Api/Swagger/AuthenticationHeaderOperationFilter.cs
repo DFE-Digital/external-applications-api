@@ -9,14 +9,8 @@ namespace DfE.ExternalApplications.Api.Swagger
         {
             operation.Security ??= new List<OpenApiSecurityRequirement>();
 
-            var securityScheme = new OpenApiSecurityScheme
+            var userScheme = new OpenApiSecurityScheme
             {
-                Scheme = "Bearer",
-                BearerFormat = "JWT",
-                In = ParameterLocation.Header,
-                Name = "Authorization",
-                Type = SecuritySchemeType.Http,
-                Description = "Input your Bearer token in this format - Bearer {your token here}",
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
@@ -24,11 +18,21 @@ namespace DfE.ExternalApplications.Api.Swagger
                 }
             };
 
+            var svcScheme = new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ServiceBearer"
+                }
+            };
             operation.Security.Add(new OpenApiSecurityRequirement
             {
-                {
-                    securityScheme, new List<string>()
-                }
+                [userScheme] = Array.Empty<string>()
+            });
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [svcScheme] = Array.Empty<string>()
             });
         }
     }
