@@ -14,4 +14,4 @@ The API Client Library description.
 To install the API Client Library, use the following command in your .NET project:
 
 ```sh
-dotnet add package DfE.ExternalApplications.Api.Client
+dotnet add package GovUK.Dfe.ExternalApplications.Api.Client

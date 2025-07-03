@@ -1,4 +1,4 @@
-namespace DfE.ExternalApplications.Api.Client.Settings
+namespace GovUK.Dfe.ExternalApplications.Api.Client.Settings
 {
     public class ApiClientSettings
     {

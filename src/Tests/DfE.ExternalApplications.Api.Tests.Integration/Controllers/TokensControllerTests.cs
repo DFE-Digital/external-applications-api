@@ -1,12 +1,12 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
-using DfE.ExternalApplications.Client.Contracts;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Tests.Common.Customizations;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;

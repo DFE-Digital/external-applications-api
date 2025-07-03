@@ -28,7 +28,7 @@
 	</ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\DfE.ExternalApplications.Api.Client\DfE.ExternalApplications.Api.Client.csproj" />
+    <ProjectReference Include="..\..\GovUK.Dfe.ExternalApplications.Api.Client\GovUK.Dfe.ExternalApplications.Api.Client.csproj" />
     <ProjectReference Include="..\..\DfE.ExternalApplications.Api\DfE.ExternalApplications.Api.csproj" />
     <ProjectReference Include="..\..\DfE.ExternalApplications.Application\DfE.ExternalApplications.Application.csproj" />
     <ProjectReference Include="..\..\DfE.ExternalApplications.Infrastructure\DfE.ExternalApplications.Infrastructure.csproj" />

@@ -8,7 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmarks", "Benchmarks", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DfE.ExternalApplications.Api", "src\DfE.ExternalApplications.Api\DfE.ExternalApplications.Api.csproj", "{73E78F4A-9044-4D65-A759-9DD807023173}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DfE.ExternalApplications.Api.Client", "src\DfE.ExternalApplications.Api.Client\DfE.ExternalApplications.Api.Client.csproj", "{BDF158E6-B155-4DA2-BB64-8FE189E3D799}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GovUK.Dfe.ExternalApplications.Api.Client", "src\GovUK.Dfe.ExternalApplications.Api.Client\GovUK.Dfe.ExternalApplications.Api.Client.csproj", "{BDF158E6-B155-4DA2-BB64-8FE189E3D799}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DfE.ExternalApplications.Application", "src\DfE.ExternalApplications.Application\DfE.ExternalApplications.Application.csproj", "{E0680611-5014-4E61-B4E6-02E4B5FDD8C2}"
 EndProject

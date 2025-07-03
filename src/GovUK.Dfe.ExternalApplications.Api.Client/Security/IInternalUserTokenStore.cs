@@ -1,4 +1,4 @@
-﻿namespace DfE.ExternalApplications.Api.Client.Security
+﻿namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
 {
     public interface IInternalUserTokenStore
     {

@@ -2,9 +2,7 @@ using AutoFixture;
 using DfE.CoreLibs.Testing.Mocks.Authentication;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Api;
-using DfE.ExternalApplications.Api.Client.Extensions;
-using DfE.ExternalApplications.Client;
-using DfE.ExternalApplications.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Tests.Common.Seeders;
 using Microsoft.AspNetCore.Authentication;
@@ -21,6 +19,8 @@ using DfE.CoreLibs.Security.Interfaces;
 using DfE.CoreLibs.Security;
 using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Tests.Common.Helpers;
+using GovUK.Dfe.ExternalApplications.Api.Client;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations
 {

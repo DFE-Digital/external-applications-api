@@ -13,11 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="bin\Debug\net8.0\DfE.ExternalApplications.Api.Client.xml" />
+    <None Remove="bin\Debug\net8.0\GovUK.Dfe.ExternalApplications.Api.Client.xml" />
   </ItemGroup>
 
 	<ItemGroup>
-		<None Include="bin\$(Configuration)\$(TargetFramework)\DfE.ExternalApplications.Api.Client.xml" Pack="true" PackagePath="\" />
+		<None Include="bin\$(Configuration)\$(TargetFramework)\GovUK.Dfe.ExternalApplications.Api.Client.xml" Pack="true" PackagePath="\" />
 		<None Include="readme.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 

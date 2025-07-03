@@ -1,8 +1,8 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Api.Client.Security;
-using DfE.ExternalApplications.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
-namespace DfE.ExternalApplications.Api.Client.Extensions;
+namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
 
 public static class TokensClientExtensions
 {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.IdentityModel.Tokens.Jwt;
 
-namespace DfE.ExternalApplications.Api.Client.Security
+namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
 {
     public class HttpContextInternalUserTokenStore(IHttpContextAccessor httpContextAccessor) : IInternalUserTokenStore
     {

@@ -1,12 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
-using DfE.ExternalApplications.Api.Client.Security;
-using DfE.ExternalApplications.Api.Client.Settings;
-using DfE.ExternalApplications.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client.Security;
+using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DfE.ExternalApplications.Api.Client.Extensions
+namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
 {
     [ExcludeFromCodeCoverage]
     public static class ServiceCollectionExtensions

@@ -1,6 +1,6 @@
 {
   "runtime": "Net80",
-  "defaultVariables": "CSharpOutputPath=../DfE.ExternalApplications.Api.Client",
+  "defaultVariables": "CSharpOutputPath=../GovUK.Dfe.ExternalApplications.Api.Client",
   "documentGenerator": {
     "aspNetCoreToOpenApi": {
       "project": "../DfE.ExternalApplications.Api/DfE.ExternalApplications.Api.csproj",
@@ -30,7 +30,7 @@
       "serviceHost": null,
       "serviceBasePath": null,
       "serviceSchemes": [],
-      "infoTitle": "DfE.ExternalApplications",
+      "infoTitle": "GovUK.DfE.ExternalApplications",
       "infoDescription": "API documentation for API",
       "infoVersion": "1.0.0",
       "documentTemplate": null,
@@ -78,7 +78,7 @@
       "clientClassAccessModifier": "public",
       "typeAccessModifier": "public",
       "generateContractsOutput": true,
-      "contractsNamespace": "DfE.ExternalApplications.Client.Contracts",
+      "contractsNamespace": "GovUK.Dfe.ExternalApplications.Api.Client.Contracts",
       "contractsOutputFilePath": "$(CSharpOutputPath)/Generated/Contracts.g.cs",
       "parameterDateTimeFormat": "s",
       "parameterDateFormat": "yyyy-MM-dd",
@@ -108,7 +108,7 @@
       "wrapResponseMethods": [],
       "generateResponseClasses": true,
       "responseClass": "PersonsApiResponse",
-      "namespace": "DfE.ExternalApplications.Client",
+      "namespace": "GovUK.Dfe.ExternalApplications.Api.Client",
       "requiredPropertiesMustBeDefined": true,
       "dateType": "System.DateTime",
       "jsonConverters": null,

@@ -1,9 +1,9 @@
-﻿using DfE.ExternalApplications.Api.Client.Extensions;
-using DfE.ExternalApplications.Client.Contracts;
+﻿using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 
-namespace DfE.ExternalApplications.Api.Client.Security
+namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
 {
     /// <summary>
     /// Exchanges an external identity provider token for an internal user token

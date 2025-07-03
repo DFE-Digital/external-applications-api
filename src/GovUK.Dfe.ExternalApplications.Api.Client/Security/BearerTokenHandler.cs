@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 
-namespace DfE.ExternalApplications.Api.Client.Security
+namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
 {
     [ExcludeFromCodeCoverage]
     public class BearerTokenHandler(
