@@ -6,7 +6,111 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/v1/Templates/{templateName}/schema/{userId}": {
+    "/v1/Applications": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Creates a new application with initial response.",
+        "operationId": "Applications_CreateApplication",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplicationRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "The created application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          }
+        }
+      }
+    },
+    "/v1/me/applications": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Returns all applications the current user can access.",
+        "operationId": "Applications_GetMyApplications",
+        "responses": {
+          "200": {
+            "description": "A list of applications accessible to the user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized  no valid user token"
+          }
+        }
+      }
+    },
+    "/v1/Users/{email}/applications": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Returns all applications for the user by {email}.",
+        "operationId": "Applications_GetApplicationsForUser",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Applications for the user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email cannot be null or empty."
+          }
+        }
+      }
+    },
+    "/v1/Templates/{templateId}/schema": {
       "get": {
         "tags": [
           "Templates"
@@ -15,23 +119,14 @@
         "operationId": "Templates_GetLatestTemplateSchema",
         "parameters": [
           {
-            "name": "templateName",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "userId",
+            "name": "templateId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "guid"
             },
-            "x-position": 2
+            "x-position": 1
           }
         ],
         "responses": {
@@ -46,29 +141,54 @@
             }
           },
           "400": {
-            "description": "Request was invalid or access denied."
+            "description": "Request was invalid or template not found."
+          },
+          "403": {
+            "description": "Access denied."
           }
         }
       }
     },
-    "/v1/Users/{email}/permissions": {
+    "/v1/Tokens/exchange": {
+      "post": {
+        "tags": [
+          "Tokens"
+        ],
+        "summary": "Exchanges an DSI token for our ExternalApplications InternalUser JWT.",
+        "operationId": "Tokens_Exchange",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeTokenDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeTokenDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/permissions": {
       "get": {
         "tags": [
           "Users"
         ],
-        "summary": "Returns all permissions for the user by {email}.",
-        "operationId": "Users_GetAllPermissionsForUser",
-        "parameters": [
-          {
-            "name": "email",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          }
-        ],
+        "summary": "Returns all my permissions.",
+        "operationId": "Users_GetMyPermissions",
         "responses": {
           "200": {
             "description": "A UserPermission object representing the User's Permissions.",
@@ -83,8 +203,8 @@
               }
             }
           },
-          "400": {
-            "description": "Email cannot be null or empty."
+          "401": {
+            "description": "Unauthorized – no valid user token"
           }
         }
       }
@@ -92,19 +212,94 @@
   },
   "components": {
     "schemas": {
+      "ApplicationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "applicationId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "applicationReference": {
+            "type": "string"
+          },
+          "templateVersionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "templateName": {
+            "type": "string"
+          },
+          "status": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationStatus"
+              }
+            ]
+          },
+          "dateCreated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateSubmitted": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ApplicationStatus": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "InProgress",
+          "Submitted"
+        ],
+        "enum": [
+          "InProgress",
+          "Submitted"
+        ]
+      },
+      "CreateApplicationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "initialResponseBody": {
+            "type": "string"
+          }
+        }
+      },
       "TemplateSchemaDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "templateVersionId": {
+            "type": "string",
+            "format": "guid"
+          },
           "versionNumber": {
             "type": "string"
           },
           "jsonSchema": {
             "type": "string"
-          },
-          "templateId": {
-            "type": "string",
-            "format": "guid"
+          }
+        }
+      },
+      "ExchangeTokenDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accessToken": {
+            "type": "string"
           }
         }
       },
@@ -114,15 +309,41 @@
         "properties": {
           "applicationId": {
             "type": "string",
-            "format": "guid"
+            "format": "guid",
+            "nullable": true
           },
           "resourceKey": {
             "type": "string"
+          },
+          "resourceType": {
+            "$ref": "#/components/schemas/ResourceType"
           },
           "accessType": {
             "$ref": "#/components/schemas/AccessType"
           }
         }
+      },
+      "ResourceType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Application",
+          "User",
+          "Template",
+          "TaskGroup",
+          "Task",
+          "Page",
+          "Field"
+        ],
+        "enum": [
+          "Application",
+          "User",
+          "Template",
+          "TaskGroup",
+          "Task",
+          "Page",
+          "Field"
+        ]
       },
       "AccessType": {
         "type": "string",

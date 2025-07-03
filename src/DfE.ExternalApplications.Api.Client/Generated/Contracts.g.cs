@@ -5,6 +5,7 @@
 //----------------------
 
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 
 #pragma warning disable 108 // Disable "CS0108 '{derivedDto}.ToJson()' hides inherited member '{dtoBase}.ToJson()'. Use the new keyword if hiding was intended."
@@ -26,22 +27,90 @@ namespace DfE.ExternalApplications.Client.Contracts
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial interface IApplicationsClient
+    {
+        /// <summary>
+        /// Creates a new application with initial response.
+        /// </summary>
+        /// <returns>The created application.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ApplicationDto> CreateApplicationAsync(CreateApplicationRequest request);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Creates a new application with initial response.
+        /// </summary>
+        /// <returns>The created application.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ApplicationDto> CreateApplicationAsync(CreateApplicationRequest request, System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Returns all applications the current user can access.
+        /// </summary>
+        /// <returns>A list of applications accessible to the user.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync();
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Returns all applications the current user can access.
+        /// </summary>
+        /// <returns>A list of applications accessible to the user.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync(System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Returns all applications for the user by {email}.
+        /// </summary>
+        /// <returns>Applications for the user.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Returns all applications for the user by {email}.
+        /// </summary>
+        /// <returns>Applications for the user.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email, System.Threading.CancellationToken cancellationToken);
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial interface ITemplatesClient
     {
         /// <summary>
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(string templateName, System.Guid userId);
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId);
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(string templateName, System.Guid userId, System.Threading.CancellationToken cancellationToken);
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken);
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial interface ITokensClient
+    {
+        /// <summary>
+        /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
+        /// </summary>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
+        /// </summary>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request, System.Threading.CancellationToken cancellationToken);
 
     }
 
@@ -49,19 +118,19 @@ namespace DfE.ExternalApplications.Client.Contracts
     public partial interface IUsersClient
     {
         /// <summary>
-        /// Returns all permissions for the user by {email}.
+        /// Returns all my permissions.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetAllPermissionsForUserAsync(string email);
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync();
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Returns all permissions for the user by {email}.
+        /// Returns all my permissions.
         /// </summary>
         /// <returns>A UserPermission object representing the User's Permissions.</returns>
-        /// <exception cref="PersonsApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetAllPermissionsForUserAsync(string email, System.Threading.CancellationToken cancellationToken);
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken);
 
     }
 
@@ -70,7 +139,7 @@ namespace DfE.ExternalApplications.Client.Contracts
 
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PersonsApiException : System.Exception
+    public partial class ExternalApplicationsException : System.Exception
     {
         public int StatusCode { get; private set; }
 
@@ -78,7 +147,7 @@ namespace DfE.ExternalApplications.Client.Contracts
 
         public System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> Headers { get; private set; }
 
-        public PersonsApiException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception innerException)
+        public ExternalApplicationsException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception innerException)
             : base(message + "\n\nStatus: " + statusCode + "\nResponse: \n" + ((response == null) ? "(null)" : response.Substring(0, response.Length >= 512 ? 512 : response.Length)), innerException)
         {
             StatusCode = statusCode;
@@ -93,11 +162,11 @@ namespace DfE.ExternalApplications.Client.Contracts
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PersonsApiException<TResult> : PersonsApiException
+    public partial class ExternalApplicationsException<TResult> : ExternalApplicationsException
     {
         public TResult Result { get; private set; }
 
-        public PersonsApiException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception innerException)
+        public ExternalApplicationsException(string message, int statusCode, string response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception innerException)
             : base(message, statusCode, response, headers, innerException)
         {
             Result = result;

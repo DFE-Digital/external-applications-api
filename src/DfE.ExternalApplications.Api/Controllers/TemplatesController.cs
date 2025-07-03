@@ -16,20 +16,26 @@ public class TemplatesController(ISender sender) : ControllerBase
     /// <summary>
     /// Returns the latest template schema for the specified template name if the user has access.
     /// </summary>
-    [HttpGet("{templateName}/schema/{userId}")]
+    [HttpGet("{templateId}/schema")]
     [SwaggerResponse(200, "The latest template schema.", typeof(TemplateSchemaDto))]
-    [SwaggerResponse(400, "Request was invalid or access denied.")]
-    [AllowAnonymous]
+    [SwaggerResponse(400, "Request was invalid or template not found.")]
+    [SwaggerResponse(403, "Access denied.")]
+    [Authorize(Policy = "CanReadTemplate")]
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
-        [FromRoute] string templateName,
-        [FromRoute] Guid userId,
-        CancellationToken cancellationToken)
+        [FromRoute] Guid templateId, CancellationToken cancellationToken)
     {
-        var query = new GetLatestTemplateSchemaQuery(templateName, userId);
+        var query = new GetLatestTemplateSchemaQuery(templateId);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
-            return BadRequest((object?)result.Error);
+        {
+            return result.Error switch
+            {
+                "Template version not found" => BadRequest(result.Error),
+                "Access denied" => Forbid(),
+                _ => BadRequest(result.Error)
+            };
+        }
 
         return Ok(result.Value);
     }

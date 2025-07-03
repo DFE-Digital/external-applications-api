@@ -1,15 +1,16 @@
+using DfE.CoreLibs.Security.Interfaces;
+using MediatR;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using MediatR;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 
 namespace DfE.ExternalApplications.Application.Common.Behaviours
 {
     [ExcludeFromCodeCoverage]
     public class PerformanceBehaviour<TRequest, TResponse>(
         ILogger<TRequest> logger,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor context)
         : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -27,10 +28,8 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
 
             if (elapsedMilliseconds <= 500) return response;
 
-            var user = httpContextAccessor.HttpContext?.User;
-
             var requestName = typeof(TRequest).Name;
-            var identityName = user?.Identity?.Name;
+            var identityName = context.HttpContext?.User?.Identity?.Name;
 
             logger.LogWarning("PersonsAPI Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@IdentityName} {@Request}",
                 requestName, elapsedMilliseconds, identityName, request);

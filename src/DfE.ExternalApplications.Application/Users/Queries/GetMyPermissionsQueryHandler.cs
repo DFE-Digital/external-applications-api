@@ -1,0 +1,68 @@
+﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Services;
+using MediatR;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+
+namespace DfE.ExternalApplications.Application.Users.Queries
+{
+    public sealed record GetMyPermissionsQuery()
+        : IRequest<Result<IReadOnlyCollection<UserPermissionDto>>>;
+
+    public sealed class GetMyPermissionsQueryHandler(
+        IHttpContextAccessor httpContextAccessor,
+        IEaRepository<User> userRepo,
+        IPermissionCheckerService permissionCheckerService,
+        ISender mediator)
+        : IRequestHandler<GetMyPermissionsQuery, Result<IReadOnlyCollection<UserPermissionDto>>>
+    {
+        public async Task<Result<IReadOnlyCollection<UserPermissionDto>>> Handle(
+            GetMyPermissionsQuery request,
+            CancellationToken cancellationToken)
+        {
+            var user = httpContextAccessor.HttpContext?.User;
+            if (user is null || !user.Identity?.IsAuthenticated == true)
+                return Result<IReadOnlyCollection<UserPermissionDto>>.Failure("Not authenticated");
+
+            var principalId = user.FindFirstValue(ClaimTypes.Email);
+
+            if (string.IsNullOrEmpty(principalId))
+                principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
+
+            if (string.IsNullOrEmpty(principalId))
+                return Result<IReadOnlyCollection<UserPermissionDto>>.Failure("No user identifier");
+
+            User? dbUser;
+            if (principalId.Contains('@'))
+            {
+                dbUser = await (new GetUserByEmailQueryObject(principalId))
+                    .Apply(userRepo.Query().AsNoTracking())
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+            else
+            {
+                dbUser = await (new GetUserByExternalProviderIdQueryObject(principalId))
+                    .Apply(userRepo.Query().AsNoTracking())
+                .FirstOrDefaultAsync(cancellationToken);
+            }
+
+            if (dbUser is null)
+                return Result<IReadOnlyCollection<UserPermissionDto>>.Failure("User not found");
+
+            var canAccess = permissionCheckerService.HasPermission(ResourceType.User, dbUser.Id!.Value.ToString(), AccessType.Read);
+            var canAccessByEmail = permissionCheckerService.HasPermission(ResourceType.User, dbUser.Email, AccessType.Read);
+            var canAccessByExtId = permissionCheckerService.HasPermission(ResourceType.User, dbUser?.ExternalProviderId ?? "", AccessType.Read);
+
+            if (!canAccess && !canAccessByEmail && !canAccessByExtId)
+                return Result<IReadOnlyCollection<UserPermissionDto>>.Failure("User does not have permission to view permissions.");
+
+            return await mediator.Send(new GetAllUserPermissionsQuery(dbUser.Id), cancellationToken);
+
+        }
+    }
+}

@@ -12,6 +12,7 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
+using DfE.ExternalApplications.Api.Security;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
 namespace DfE.ExternalApplications.Api
@@ -20,9 +21,8 @@ namespace DfE.ExternalApplications.Api
     {
         public static async Task Main(string[] args)
         {
-
             var builder = WebApplication.CreateBuilder(args);
-
+            builder.Logging.AddConsole();
             builder.Host.UseSerilog((context, services, loggerConfiguration) =>
             {
                 loggerConfiguration
@@ -63,6 +63,7 @@ namespace DfE.ExternalApplications.Api
 
             builder.Services.AddApplicationDependencyGroup(builder.Configuration);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
+            builder.Services.AddCustomAuthorization(builder.Configuration);
 
             builder.Services.AddOptions<SwaggerUIOptions>()
                 .Configure<IHttpContextAccessor>((swaggerUiOptions, httpContextAccessor) =>

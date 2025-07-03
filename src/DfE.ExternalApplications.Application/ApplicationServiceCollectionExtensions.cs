@@ -1,4 +1,7 @@
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Services;
+using DfE.ExternalApplications.Domain.Factories;
+using DfE.ExternalApplications.Domain.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             var performanceLoggingEnabled = config.GetValue<bool>("Features:PerformanceLoggingEnabled");
 
-            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), includeInternalTypes: true);
 
             services.AddMediatR(cfg =>
             {
@@ -26,6 +29,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
                 }
             });
+            services.AddScoped<IPermissionCheckerService, ClaimBasedPermissionCheckerService>();
+            services.AddTransient<IApplicationFactory, ApplicationFactory>();
 
             services.AddBackgroundService();
 

@@ -10,6 +10,5 @@ public sealed class GetLatestTemplateVersionForTemplateQueryObject(TemplateId te
     public IQueryable<TemplateVersion> Apply(IQueryable<TemplateVersion> query) =>
         query
             .Where(tv => tv.TemplateId == templateId)
-            .OrderByDescending(tv => tv.CreatedOn)
-            .Take(1);
+            .OrderByDescending(tv => tv.CreatedOn);
 }

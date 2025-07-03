@@ -66,7 +66,7 @@
       "disposeHttpClient": false,
       "protectedMethods": [],
       "generateExceptionClasses": true,
-      "exceptionClass": "PersonsApiException",
+      "exceptionClass": "ExternalApplicationsException",
       "wrapDtoExceptions": true,
       "useHttpClientCreationMethod": false,
       "httpClientType": "System.Net.Http.HttpClient",
@@ -93,6 +93,7 @@
         "System.Collections.ObjectModel",
         "System.Threading.Tasks",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
+        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
         "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
       ],
       "generateOptionalParameters": false,
@@ -136,6 +137,7 @@
       "inlineNamedAny": false,
       "additionalContractNamespaceUsages": [
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
+        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
         "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
       ],
       "generateDtoTypes": false,

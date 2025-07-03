@@ -18,11 +18,16 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
     public DateTime? LastModifiedOn { get; private set; }
     public UserId? LastModifiedBy { get; private set; }
     public User? LastModifiedByUser { get; private set; }
+    public string? ExternalProviderId { get; private set; }
 
     private readonly List<Permission> _permissions = new();
+    private readonly List<TemplatePermission> _templatePermissions = new();
 
     public IReadOnlyCollection<Permission> Permissions
         => _permissions.AsReadOnly();
+
+    public IReadOnlyCollection<TemplatePermission> TemplatePermissions
+        => _templatePermissions.AsReadOnly();
 
     private User()
     {
@@ -42,7 +47,9 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
         UserId? createdBy,
         DateTime? lastModifiedOn,
         UserId? lastModifiedBy,
-        IEnumerable<Permission>? initialPermissions = null)
+        string? externalProviderId = null,
+        IEnumerable<Permission>? initialPermissions = null,
+        IEnumerable<TemplatePermission>? initialTemplatePermissions = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         RoleId = roleId ?? throw new ArgumentNullException(nameof(roleId));
@@ -52,10 +59,16 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
         CreatedBy = createdBy;
         LastModifiedOn = lastModifiedOn;
         LastModifiedBy = lastModifiedBy;
+        ExternalProviderId = externalProviderId;
 
         if (initialPermissions != null)
         {
             _permissions.AddRange(initialPermissions);
+        }
+
+        if (initialTemplatePermissions != null)
+        {
+            _templatePermissions.AddRange(initialTemplatePermissions);
         }
     }
 
@@ -65,6 +78,7 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
     public Permission AddPermission(
         ApplicationId applicationId,
         string resourceKey,
+        ResourceType resourceType,
         AccessType accessType,
         UserId grantedBy,
         DateTime? grantedOn = null)
@@ -80,6 +94,7 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
             this.Id ?? throw new InvalidOperationException("UserId must be set before adding a permission."),
             applicationId,
             resourceKey,
+            resourceType,
             accessType,
             when,
             grantedBy);

@@ -14,17 +14,16 @@ namespace DfE.ExternalApplications.Api.Controllers;
 public class UsersController(ISender sender) : ControllerBase
 {
     /// <summary>
-    /// Returns all permissions for the user by {email}.
+    /// Returns all my permissions.
     /// </summary>
-    [HttpGet("{email}/permissions")]
+    [HttpGet("/v{version:apiVersion}/me/permissions")]
     [SwaggerResponse(200, "A UserPermission object representing the User's Permissions.", typeof(IReadOnlyCollection<UserPermissionDto>))]
-    [SwaggerResponse(400, "Email cannot be null or empty.")]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetAllPermissionsForUserAsync(
-        [FromRoute] string email,
+    [SwaggerResponse(401, "Unauthorized – no valid user token")]
+    [Authorize(Policy = "CanReadUser")]
+    public async Task<IActionResult> GetMyPermissionsAsync(
         CancellationToken cancellationToken)
     {
-        var query = new GetAllUserPermissionsQuery(email);
+        var query = new GetMyPermissionsQuery();
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)

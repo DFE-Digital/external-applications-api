@@ -1,4 +1,5 @@
 ﻿using AutoFixture;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
@@ -11,7 +12,7 @@ public class ApplicationCustomization : ICustomization
     public TemplateVersionId? OverrideTemplateVersionId { get; set; }
     public DateTime? OverrideCreatedOn { get; set; }
     public UserId? OverrideCreatedBy { get; set; }
-    public int? OverrideStatus { get; set; }
+    public ApplicationStatus? OverrideStatus { get; set; }
     public DateTime? OverrideLastModifiedOn { get; set; }
     public UserId? OverrideLastModifiedBy { get; set; }
 

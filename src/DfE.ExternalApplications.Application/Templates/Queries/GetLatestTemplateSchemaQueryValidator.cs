@@ -8,9 +8,7 @@ namespace DfE.ExternalApplications.Application.Templates.Queries
     {
         public GetLatestTemplateSchemaQueryValidator()
         {
-            RuleFor(x => x.TemplateName)
-                .NotEmpty();
-            RuleFor(x => x.UserId)
+            RuleFor(x => x.TemplateId)
                 .NotEmpty();
         }
     }

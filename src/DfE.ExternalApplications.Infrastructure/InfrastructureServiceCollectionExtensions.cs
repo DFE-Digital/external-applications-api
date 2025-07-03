@@ -1,9 +1,10 @@
-using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Interfaces;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Infrastructure;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Infrastructure.Repositories;
-using DfE.ExternalApplications.Infrastructure.Security.Authorization;
+using DfE.ExternalApplications.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -21,14 +22,13 @@ namespace Microsoft.Extensions.DependencyInjection
             //Cache service
             services.AddServiceCaching(config);
 
+            services.AddTransient<IApplicationReferenceProvider, DefaultApplicationReferenceProvider>();
+
             //Db
             var connectionString = config.GetConnectionString("DefaultConnection");
 
             services.AddDbContext<ExternalApplicationsContext>(options =>
                 options.UseSqlServer(connectionString));
-
-            // Authentication
-            services.AddCustomAuthorization(config);
 
             return services;
         }

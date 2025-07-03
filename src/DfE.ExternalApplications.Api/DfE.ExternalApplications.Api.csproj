@@ -3,14 +3,14 @@
   <PropertyGroup>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<NoWarn>$(NoWarn);1591</NoWarn>
-		<UserSecretsId>8c1ad605-0dd4-443a-ad18-dd22bbb2a9d9</UserSecretsId>
 		<TargetFramework>net8.0</TargetFramework>
+    <UserSecretsId>f714ca7a-fc08-46ff-b0cc-373d6f04cf4c</UserSecretsId>
   </PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
 		<PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
-		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.12" />
+		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.21" />
 		<PackageReference Include="DfE.CoreLibs.Http" Version="1.0.8" />
 		<PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.16" />

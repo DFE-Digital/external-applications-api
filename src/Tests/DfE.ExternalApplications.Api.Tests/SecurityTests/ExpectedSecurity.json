@@ -1,0 +1,34 @@
+{
+  "Endpoints": [
+    {
+      "Controller": "UsersController",
+      "Action": "GetMyPermissionsAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadUser"
+    },
+    {
+      "Controller": "TemplatesController",
+      "Action": "GetLatestTemplateSchemaAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadTemplate"
+    },
+    {
+      "Controller": "TokensController",
+      "Action": "Exchange",
+      "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "GetMyApplicationsAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "GetApplicationsForUserAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "CreateApplicationAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanCreateAnyApplication"
+    }
+  ]
+}

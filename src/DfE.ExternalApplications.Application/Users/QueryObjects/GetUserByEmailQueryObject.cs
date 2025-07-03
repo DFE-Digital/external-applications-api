@@ -8,6 +8,6 @@ namespace DfE.ExternalApplications.Application.Users.QueryObjects
         private readonly string _email = email.Trim().ToLowerInvariant();
 
         public IQueryable<User> Apply(IQueryable<User> query) =>
-            query.Where(u => u.Email.ToLowerInvariant() == _email);
+            query.Where(u => u.Email.ToLower() == _email);
     }
 }
