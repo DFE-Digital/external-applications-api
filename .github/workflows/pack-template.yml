@@ -75,7 +75,16 @@ jobs:
             --name github \
             https://nuget.pkg.github.com/DFE-Digital/index.json
 
-      - name: Build, pack and push
+      - name: Verify API Key
+        run: |
+          if [ -z "${{ secrets.NUGET_API_KEY }}" ]; then
+            echo "❌ NUGET_API_KEY secret is not available"
+            exit 1
+          else
+            echo "✅ NUGET_API_KEY secret is available"
+          fi
+
+      - name: Build and pack
         run: |
           dotnet build ${{ inputs.project_path }} -c Release
           dotnet pack ${{ inputs.project_path }} \
@@ -83,9 +92,12 @@ jobs:
             -p:PackageVersion=${{ env.VERSION }} \
             --no-build \
             --output ./artifacts
+
+      - name: Push to NuGet.org
+        run: |
           dotnet nuget push ./artifacts/*.nupkg \
             --api-key "${{ secrets.NUGET_API_KEY }}" \
-            --source https://api.nuget.org/v3/index.json \
+            --source "https://api.nuget.org/v3/index.json" \
             --skip-duplicate
 
       - name: Extract release notes
