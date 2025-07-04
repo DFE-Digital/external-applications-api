@@ -32,4 +32,4 @@ public interface IPermissionCheckerService
     /// <param name="accessType">Type of access required</param>
     /// <returns>Collection of resource IDs the user has permission to access</returns>
     IReadOnlyCollection<string> GetResourceIdsWithPermission(ResourceType resourceType, AccessType accessType);
-} 
+}

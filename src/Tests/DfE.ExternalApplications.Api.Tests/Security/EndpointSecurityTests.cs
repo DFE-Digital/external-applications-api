@@ -2,7 +2,7 @@
 using DfE.CoreLibs.Testing.Authorization.Helpers;
 using Xunit;
 
-namespace DfE.ExternalApplications.Api.Tests.SecurityTests
+namespace DfE.ExternalApplications.Api.Tests.Security
 {
     public class EndpointSecurityTests
     {
@@ -19,7 +19,7 @@ namespace DfE.ExternalApplications.Api.Tests.SecurityTests
 
         public static IEnumerable<object[]> GetEndpointTestData()
         {
-            var configFilePath = "SecurityTests/ExpectedSecurity.json";
+            var configFilePath = "Security/ExpectedSecurity.json";
             return EndpointTestDataProvider.GetEndpointTestDataFromFile(typeof(Program).Assembly, configFilePath);
         }
     }

@@ -1,5 +1,6 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Common;
+using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
@@ -58,5 +59,25 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
             throw new InvalidOperationException("Response's ApplicationId must match the Application's Id");
 
         _responses.Add(response);
+    }
+
+    /// <summary>
+    /// Updates the LastModified tracking for this application.
+    /// </summary>
+    public void UpdateLastModified(DateTime lastModifiedOn, UserId lastModifiedBy)
+    {
+        if (lastModifiedBy == null)
+            throw new ArgumentNullException(nameof(lastModifiedBy));
+
+        LastModifiedOn = lastModifiedOn;
+        LastModifiedBy = lastModifiedBy;
+    }
+
+    /// <summary>
+    /// Gets the most recent response for this application.
+    /// </summary>
+    public ApplicationResponse? GetLatestResponse()
+    {
+        return _responses.OrderByDescending(r => r.CreatedOn).FirstOrDefault();
     }
 }

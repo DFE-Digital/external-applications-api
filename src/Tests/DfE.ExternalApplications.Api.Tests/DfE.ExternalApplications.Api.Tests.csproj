@@ -20,7 +20,7 @@
 		<ProjectReference Include="..\DfE.ExternalApplications.Tests.Common\DfE.ExternalApplications.Tests.Common.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-	  <None Update="SecurityTests\ExpectedSecurity.json">
+	  <None Update="Security\ExpectedSecurity.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>

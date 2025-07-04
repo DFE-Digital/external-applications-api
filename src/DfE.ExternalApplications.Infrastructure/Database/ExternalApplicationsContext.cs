@@ -276,7 +276,7 @@ public class ExternalApplicationsContext : DbContext
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("ResponseId")
-            .ValueGeneratedOnAdd()
+            .ValueGeneratedNever()
             .HasConversion(v => v.Value, v => new ResponseId(v))
             .IsRequired();
         b.Property(e => e.ApplicationId)

@@ -1,7 +1,10 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Domain.Tests.Aggregates;
 
@@ -55,5 +58,129 @@ public class ApplicationTests
                 lastModifiedBy));
 
         Assert.Equal("applicationReference", ex.ParamName);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void UpdateLastModified_ShouldUpdateTracking_WhenValidParameters(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime lastModifiedOn,
+        UserId lastModifiedBy)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy);
+
+        // Act
+        application.UpdateLastModified(lastModifiedOn, lastModifiedBy);
+
+        // Assert
+        Assert.Equal(lastModifiedOn, application.LastModifiedOn);
+        Assert.Equal(lastModifiedBy, application.LastModifiedBy);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void UpdateLastModified_ShouldThrowArgumentNullException_WhenLastModifiedByIsNull(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime lastModifiedOn)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy);
+
+        // Act & Assert
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+            application.UpdateLastModified(lastModifiedOn, null!));
+
+        Assert.Equal("lastModifiedBy", ex.ParamName);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void GetLatestResponse_ShouldReturnNull_WhenNoResponsesExist(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy);
+
+        // Act
+        var result = application.GetLatestResponse();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void GetLatestResponse_ShouldReturnLatestResponse_WhenMultipleResponsesExist(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        string firstResponseBody,
+        string secondResponseBody,
+        UserId responseCreatedBy)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy);
+
+        // Add responses manually using the AddResponse method
+        var firstResponse = new ApplicationResponse(
+            new ResponseId(Guid.NewGuid()),
+            applicationId,
+            firstResponseBody,
+            createdOn,
+            responseCreatedBy);
+
+        var secondResponse = new ApplicationResponse(
+            new ResponseId(Guid.NewGuid()),
+            applicationId,
+            secondResponseBody,
+            createdOn.AddMinutes(1), // Ensure different timestamp
+            responseCreatedBy);
+
+        application.AddResponse(firstResponse);
+        application.AddResponse(secondResponse);
+
+        // Act
+        var result = application.GetLatestResponse();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(secondResponse.Id, result.Id);
+        Assert.Equal(secondResponseBody, result.ResponseBody);
+        Assert.True(result.CreatedOn >= firstResponse.CreatedOn);
     }
 }

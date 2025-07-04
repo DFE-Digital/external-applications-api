@@ -39,4 +39,43 @@ public class ApplicationFactory : IApplicationFactory
 
         return (application, response);
     }
+
+    public ApplicationResponse AddResponseToApplication(
+        Application application,
+        string responseBody,
+        UserId addedBy)
+    {
+        if (application == null)
+            throw new ArgumentNullException(nameof(application));
+
+        if (string.IsNullOrWhiteSpace(responseBody))
+            throw new ArgumentException("Response body cannot be null or empty", nameof(responseBody));
+
+        if (addedBy == null)
+            throw new ArgumentNullException(nameof(addedBy));
+
+        var now = DateTime.UtcNow;
+        var responseId = new ResponseId(Guid.NewGuid());
+        
+        var response = new ApplicationResponse(
+            responseId,
+            application.Id!,
+            responseBody,
+            now,
+            addedBy);
+
+        application.AddResponse(response);
+        
+        // Update application's LastModified tracking
+        application.UpdateLastModified(now, addedBy);
+        
+        // Raise domain event
+        application.AddDomainEvent(new ApplicationResponseAddedEvent(
+            application.Id!,
+            responseId,
+            addedBy,
+            now));
+
+        return response;
+    }
 } 

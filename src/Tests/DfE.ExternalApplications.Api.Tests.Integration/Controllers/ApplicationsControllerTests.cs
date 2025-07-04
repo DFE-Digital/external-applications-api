@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
+using DfE.ExternalApplications.Application.Applications.Commands;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
@@ -42,6 +43,106 @@ public class ApplicationsControllerTests
         // Assert
         Assert.NotNull(result);
         Assert.StartsWith("APP-", result.ApplicationReference);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddApplicationResponseAsync_ShouldAddResponse_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string responseBody)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var request = new AddApplicationResponseRequest(responseBody);
+
+        // Act
+        var response = await applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request);
+
+        // Assert
+        Assert.NotNull(response);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddApplicationResponseAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+
+        HttpClient httpClient,
+        string responseBody)
+    {
+        // Arrange
+        var request = new AddApplicationResponseRequest(responseBody);
+        var requestJson = System.Text.Json.JsonSerializer.Serialize(request);
+        var content = new StringContent(requestJson, System.Text.Encoding.UTF8, "application/json");
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddApplicationResponseAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+
+        HttpClient httpClient,
+        string responseBody)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            // No permission claim
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        var request = new AddApplicationResponseRequest(responseBody);
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddApplicationResponseAsync_ShouldReturnBadRequest_WhenInvalidData(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var request = new AddApplicationResponseRequest(string.Empty); // Invalid empty response body
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
+        Assert.Equal(400, ex.StatusCode);
     }
 
     [Theory]
