@@ -37,9 +37,34 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
+    /// Adds a new response version to an existing application.
+    /// </summary>
+    [HttpPost("{applicationId}/responses")]
+    [SwaggerResponse(201, "Response version created.", typeof(ApplicationResponseDto))]
+    [SwaggerResponse(400, "Invalid request data.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(403, "User does not have permission to update this application")]
+    [SwaggerResponse(404, "Application not found")]
+    [Authorize(Policy = "CanUpdateApplication")]
+    public async Task<IActionResult> AddApplicationResponseAsync(
+        [FromRoute] Guid applicationId,
+        [FromBody] AddApplicationResponseRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AddApplicationResponseCommand(applicationId, request.ResponseBody);
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
+
+        return StatusCode(201, result.Value);
+    }
+
+    /// <summary>
     /// Returns all applications the current user can access.
     /// </summary>
-    [HttpGet("/v{version:apiVersion}/me/applications")]
+    [HttpGet]
+    [Route("/v{version:apiVersion}/me/applications")]
     [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
     [SwaggerResponse(401, "Unauthorized  no valid user token")]
     [Authorize(Policy = "CanReadAnyApplication")]
@@ -58,7 +83,8 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// <summary>
     /// Returns all applications for the user by {email}.
     /// </summary>
-    [HttpGet("/v{version:apiVersion}/Users/{email}/applications")]
+    [HttpGet]
+    [Route("/v{version:apiVersion}/Users/{email}/applications")]
     [SwaggerResponse(200, "Applications for the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
     [SwaggerResponse(400, "Email cannot be null or empty.")]
     [Authorize(Policy = "CanReadAnyApplication")]

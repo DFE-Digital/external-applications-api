@@ -13,4 +13,9 @@ public interface IApplicationFactory
         string initialResponseBody,
         DateTime createdOn,
         UserId createdBy);
+
+    ApplicationResponse AddResponseToApplication(
+        Application application,
+        string responseBody,
+        UserId addedBy);
 } 
