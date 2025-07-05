@@ -1,10 +1,11 @@
-using System.Diagnostics.CodeAnalysis;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using GovUK.Dfe.ExternalApplications.Api.Client.Security;
 using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
 {
@@ -24,10 +25,23 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
             services.AddSingleton(apiSettings);
             services.AddSingleton<ITokenAcquisitionService, TokenAcquisitionService>();
             services.AddHttpContextAccessor();
-            services.AddSingleton<IInternalUserTokenStore, HttpContextInternalUserTokenStore>();
+            
+            // Register handlers
+            services.AddTransient<AzureBearerTokenHandler>();
+            
             if (apiSettings.RequestTokenExchange)
             {
-                services.AddTransient<TokenExchangeHandler>();
+                // Frontend clients need internal token storage and exchange handler
+                services.AddScoped<IInternalUserTokenStore, CachedInternalUserTokenStore>();
+                services.AddTransient<TokenExchangeHandler>(serviceProvider =>
+                {
+                    return new TokenExchangeHandler(
+                        serviceProvider.GetRequiredService<IHttpContextAccessor>(),
+                        serviceProvider.GetRequiredService<IInternalUserTokenStore>(),
+                        serviceProvider.GetRequiredService<ITokensClient>(),
+                        serviceProvider.GetRequiredService<ITokenAcquisitionService>(),
+                        serviceProvider.GetRequiredService<ILogger<TokenExchangeHandler>>());
+                });
             }
 
             if (existingHttpClient != null)
@@ -49,19 +63,27 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
                         serviceProvider, httpClient, apiSettings.BaseUrl!);
                 });
 
-                if (typeof(TClientInterface) != typeof(ITokensClient) && apiSettings.RequestTokenExchange)
+                if (apiSettings.RequestTokenExchange)
                 {
-                    builder.AddHttpMessageHandler<TokenExchangeHandler>();
+                    // Frontend clients: Use exchange flow
+                    if (typeof(TClientInterface) == typeof(ITokensClient))
+                    {
+                        // Tokens client always uses Azure token (for exchange endpoint authentication)
+                        builder.AddHttpMessageHandler<AzureBearerTokenHandler>();
+                    }
+                    else
+                    {
+                        // Other clients use token exchange to get internal tokens
+                        builder.AddHttpMessageHandler<TokenExchangeHandler>();
+                    }
                 }
-
-                builder.AddHttpMessageHandler(serviceProvider =>
+                else
                 {
-                    var tokenService = serviceProvider.GetRequiredService<ITokenAcquisitionService>();
-                    var tokenStore = serviceProvider.GetRequiredService<IInternalUserTokenStore>();
-
-                    return new BearerTokenHandler(tokenService, tokenStore);
-                });
+                    // Service clients: Use Azure token for everything (no exchange needed)
+                    builder.AddHttpMessageHandler<AzureBearerTokenHandler>();
+                }
             }
+
             return services;
         }
     }
