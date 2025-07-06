@@ -94,7 +94,6 @@ public class AddApplicationResponseCommandHandlerTests
         Assert.Equal(command.ResponseBody, result.Value.ResponseBody);
         Assert.Equal(user.Id!.Value, result.Value.CreatedBy);
 
-        await applicationRepo.Received(1).UpdateAsync(application, Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 

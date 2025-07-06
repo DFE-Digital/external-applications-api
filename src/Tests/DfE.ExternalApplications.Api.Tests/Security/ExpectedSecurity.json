@@ -27,6 +27,11 @@
     },
     {
       "Controller": "ApplicationsController",
+      "Action": "GetApplicationByReferenceAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
       "Action": "CreateApplicationAsync",
       "ExpectedSecurity": "Authorize: Policy=CanCreateAnyApplication"
     },

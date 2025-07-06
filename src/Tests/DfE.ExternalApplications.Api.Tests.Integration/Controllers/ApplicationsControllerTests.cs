@@ -8,6 +8,7 @@ using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
 
@@ -267,5 +268,89 @@ public class ApplicationsControllerTests
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => applicationsClient.GetMyApplicationsAsync());
         Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetApplicationByReferenceAsync_ShouldReturnApplicationDetails_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var result = await applicationsClient.GetApplicationByReferenceAsync(EaContextSeeder.ApplicationReference);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(EaContextSeeder.ApplicationReference, result.ApplicationReference);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetApplicationByReferenceAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Act
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.GetApplicationByReferenceAsync(EaContextSeeder.ApplicationReference));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetApplicationByReferenceAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            // No permission claim
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.GetApplicationByReferenceAsync(EaContextSeeder.ApplicationReference));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetApplicationByReferenceAsync_ShouldReturnNotFound_WhenApplicationNotExists(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.GetApplicationByReferenceAsync("InvalidAppRef"));
+        Assert.Equal(404, ex.StatusCode);
     }
 } 

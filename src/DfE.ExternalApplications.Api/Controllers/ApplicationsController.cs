@@ -3,7 +3,6 @@ using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
-using DfE.ExternalApplications.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -97,6 +96,37 @@ public class ApplicationsController(ISender sender) : ControllerBase
 
         if (!result.IsSuccess)
             return BadRequest(result.Error);
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Returns application details with its latest response by application reference.
+    /// </summary>
+    [HttpGet("reference/{applicationReference}")]
+    [SwaggerResponse(200, "Application details with latest response.", typeof(ApplicationDto))]
+    [SwaggerResponse(400, "Invalid application reference or application not found.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(403, "User does not have permission to read this application")]
+    [SwaggerResponse(404, "Application not found")]
+    [Authorize(Policy = "CanReadAnyApplication")]
+    public async Task<IActionResult> GetApplicationByReferenceAsync(
+        [FromRoute] string applicationReference,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetApplicationByReferenceQuery(applicationReference);
+        var result = await sender.Send(query, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "User does not have permission to read this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                _ => BadRequest(result.Error)
+            };
+        }
 
         return Ok(result.Value);
     }

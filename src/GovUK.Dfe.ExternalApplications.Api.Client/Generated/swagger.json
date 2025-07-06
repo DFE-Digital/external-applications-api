@@ -167,6 +167,50 @@
         }
       }
     },
+    "/v1/Applications/reference/{applicationReference}": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Returns application details with its latest response by application reference.",
+        "operationId": "Applications_GetApplicationByReference",
+        "parameters": [
+          {
+            "name": "applicationReference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Application details with latest response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid application reference or application not found."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          },
+          "403": {
+            "description": "User does not have permission to read this application"
+          },
+          "404": {
+            "description": "Application not found"
+          }
+        }
+      }
+    },
     "/v1/Templates/{templateId}/schema": {
       "get": {
         "tags": [
@@ -303,6 +347,14 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "latestResponse": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationResponseDetailsDto"
+              }
+            ]
           }
         }
       },
@@ -317,6 +369,37 @@
           "InProgress",
           "Submitted"
         ]
+      },
+      "ApplicationResponseDetailsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "responseId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "responseBody": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "guid"
+          },
+          "lastModifiedOn": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          }
+        }
       },
       "CreateApplicationRequest": {
         "type": "object",

@@ -1,5 +1,4 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database;
@@ -14,6 +13,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
         public const string BobExternalId = "a1d3d871-ce57-47b9-807d-de5c1551f9f7";
         public const string BobEmail = "bob@example.com";
         public const string ApplicationId = "9816b822-56e3-4b65-852a-00a4a3294e11";
+        public const string ApplicationReference = "APP-001";
         public const string PermissionId1 = "02ce58d2-051f-4fe7-a545-d63acca93752";
         public const string PermissionId2 = "02ce58d2-051f-4fe7-a545-d63acca93753";
         public const string PermissionId3 = "02ce58d2-051f-4fe7-a545-d63acca93754";
@@ -94,7 +94,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
             var applicationId = new ApplicationId(new Guid(ApplicationId));
             var application = new Domain.Entities.Application(
                 applicationId,
-                applicationReference: "APP-001",
+                applicationReference: ApplicationReference,
                 templateVersionId: templateVersionId,
                 createdOn: now,
                 createdBy: bobId,
