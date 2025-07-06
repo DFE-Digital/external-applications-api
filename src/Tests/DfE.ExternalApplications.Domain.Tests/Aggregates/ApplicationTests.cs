@@ -183,4 +183,122 @@ public class ApplicationTests
         Assert.Equal(secondResponseBody, result.ResponseBody);
         Assert.True(result.CreatedOn >= firstResponse.CreatedOn);
     }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Submit_ShouldUpdateStatusAndLastModified_WhenValidParameters(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime submittedOn,
+        UserId submittedBy)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy,
+            ApplicationStatus.InProgress); // Start with InProgress status
+
+        // Act
+        application.Submit(submittedOn, submittedBy);
+
+        // Assert
+        Assert.Equal(ApplicationStatus.Submitted, application.Status);
+        Assert.Equal(submittedOn, application.LastModifiedOn);
+        Assert.Equal(submittedBy, application.LastModifiedBy);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Submit_ShouldThrowArgumentNullException_WhenSubmittedByIsNull(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime submittedOn)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy,
+            ApplicationStatus.InProgress);
+
+        // Act & Assert
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+            application.Submit(submittedOn, null!));
+
+        Assert.Equal("submittedBy", ex.ParamName);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Submit_ShouldThrowInvalidOperationException_WhenApplicationAlreadySubmitted(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime submittedOn,
+        UserId submittedBy)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy,
+            ApplicationStatus.Submitted); // Already submitted
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            application.Submit(submittedOn, submittedBy));
+
+        Assert.Equal("Application has already been submitted", ex.Message);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Submit_ShouldWorkFromDifferentStatuses_WhenNotAlreadySubmitted(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime submittedOn,
+        UserId submittedBy)
+    {
+        // Test submitting from null status
+        var applicationWithNullStatus = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy,
+            null); // null status
+
+        applicationWithNullStatus.Submit(submittedOn, submittedBy);
+        Assert.Equal(ApplicationStatus.Submitted, applicationWithNullStatus.Status);
+
+        // Test submitting from InProgress status
+        var applicationWithInProgress = new Entities.Application(
+            new ApplicationId(Guid.NewGuid()),
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy,
+            ApplicationStatus.InProgress);
+
+        applicationWithInProgress.Submit(submittedOn, submittedBy);
+        Assert.Equal(ApplicationStatus.Submitted, applicationWithInProgress.Status);
+    }
 }

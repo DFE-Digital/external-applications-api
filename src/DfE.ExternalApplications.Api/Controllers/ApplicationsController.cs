@@ -130,4 +130,35 @@ public class ApplicationsController(ISender sender) : ControllerBase
 
         return Ok(result.Value);
     }
+
+    /// <summary>
+    /// Submits an application, changing its status to Submitted.
+    /// </summary>
+    [HttpPost("{applicationId}/submit")]
+    [SwaggerResponse(200, "Application submitted successfully.", typeof(ApplicationDto))]
+    [SwaggerResponse(400, "Invalid request data or application already submitted.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(403, "User does not have permission to submit this application")]
+    [SwaggerResponse(404, "Application not found")]
+    [Authorize(Policy = "CanUpdateApplication")]
+    public async Task<IActionResult> SubmitApplicationAsync(
+        [FromRoute] Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var command = new SubmitApplicationCommand(applicationId);
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "User does not have permission to submit this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return Ok(result.Value);
+    }
 }

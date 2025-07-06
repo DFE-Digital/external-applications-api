@@ -80,4 +80,20 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
     {
         return _responses.OrderByDescending(r => r.CreatedOn).FirstOrDefault();
     }
+
+    /// <summary>
+    /// Submits the application, setting its status to Submitted and updating last modified tracking.
+    /// </summary>
+    public void Submit(DateTime submittedOn, UserId submittedBy)
+    {
+        if (submittedBy == null)
+            throw new ArgumentNullException(nameof(submittedBy));
+
+        if (Status == ApplicationStatus.Submitted)
+            throw new InvalidOperationException("Application has already been submitted");
+
+        Status = ApplicationStatus.Submitted;
+        LastModifiedOn = submittedOn;
+        LastModifiedBy = submittedBy;
+    }
 }

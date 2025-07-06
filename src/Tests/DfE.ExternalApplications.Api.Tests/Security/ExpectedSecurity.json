@@ -39,6 +39,11 @@
       "Controller": "ApplicationsController",
       "Action": "AddApplicationResponseAsync",
       "ExpectedSecurity": "Authorize: Policy=CanUpdateApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "SubmitApplicationAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanUpdateApplication"
     }
   ]
 }
