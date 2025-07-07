@@ -1,3 +1,5 @@
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
@@ -5,13 +7,10 @@ using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
-using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
@@ -34,7 +33,6 @@ public sealed class AddApplicationResponseCommandHandler(
     {
         try
         {
-
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
                 return Result<ApplicationResponseDto>.Failure("Not authenticated");
@@ -68,7 +66,7 @@ public sealed class AddApplicationResponseCommandHandler(
             var canAccess = permissionCheckerService.HasPermission(ResourceType.Application, request.ApplicationId.ToString(), AccessType.Write);
 
             if (!canAccess)
-                return Result<ApplicationResponseDto>.Failure($"User does not have permission to update this application: UserId: {dbUser.Id} - ApplicationId: {request.ApplicationId.ToString()}");
+                return Result<ApplicationResponseDto>.Failure("User does not have permission to update this application");
 
             // Get the application using query object
             var applicationId = new ApplicationId(request.ApplicationId);

@@ -65,7 +65,10 @@ public class ApplicationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
-        var request = new AddApplicationResponseRequest(responseBody);
+        var request = new AddApplicationResponseRequest
+        {
+            ResponseBody = responseBody
+        };
 
         // Act
         var response = await applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request);
@@ -84,7 +87,10 @@ public class ApplicationsControllerTests
         string responseBody)
     {
         // Arrange
-        var request = new AddApplicationResponseRequest(responseBody);
+        var request = new AddApplicationResponseRequest
+        {
+            ResponseBody = responseBody
+        };
         var requestJson = System.Text.Json.JsonSerializer.Serialize(request);
         var content = new StringContent(requestJson, System.Text.Encoding.UTF8, "application/json");
 
@@ -113,8 +119,10 @@ public class ApplicationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "test-token");
 
-        var request = new AddApplicationResponseRequest(responseBody);
-
+        var request = new AddApplicationResponseRequest
+        {
+            ResponseBody = responseBody
+        };
         // Act
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
@@ -139,8 +147,10 @@ public class ApplicationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
-        var request = new AddApplicationResponseRequest(string.Empty); // Invalid empty response body
-
+        var request = new AddApplicationResponseRequest
+        {
+            ResponseBody = string.Empty
+        };
         // Act
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));

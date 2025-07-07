@@ -57,7 +57,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
         if (!result.IsSuccess)
             return BadRequest(result.Error);
 
-        return Ok(result.Value);
+        return StatusCode(201, result.Value);
     }
 
     /// <summary>
