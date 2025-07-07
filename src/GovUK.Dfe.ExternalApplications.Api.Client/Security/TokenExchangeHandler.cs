@@ -107,14 +107,14 @@ public class TokenExchangeHandler(
     {
         if (ctx == null) return;
 
-        try
-        {
-            await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            await ctx.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
-        }
-        catch
-        {
-            // Ignore sign-out errors
-        }
+        //try
+        //{
+        //    await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        //    await ctx.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+        //}
+        //catch
+        //{
+        //    // Ignore sign-out errors
+        //}
     }
 }
