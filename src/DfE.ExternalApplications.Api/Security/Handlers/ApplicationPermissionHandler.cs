@@ -16,7 +16,7 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             ApplicationPermissionRequirement requirement)
         {
-            _logger.LogWarning("ApplicationPermissionHandler > Entry");
+            _logger.LogInformation("ApplicationPermissionHandler > Entry");
 
             var applicationId = accessor.HttpContext?.Request.RouteValues["applicationId"]?.ToString();
             if (string.IsNullOrWhiteSpace(applicationId))
@@ -32,13 +32,13 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
                 .Select(c => $"{c.Type}:{c.Value}")
                 .ToList();
 
-            _logger.LogWarning("ApplicationPermissionHandler > Expected: {expected}", expected);
-            _logger.LogWarning("ApplicationPermissionHandler > Claims : {claimStrings}", claimStrings);
+            _logger.LogInformation("ApplicationPermissionHandler > Expected: {expected}", expected);
+            _logger.LogInformation("ApplicationPermissionHandler > Claims : {claimStrings}", claimStrings);
 
 
             if (hasClaim)
             {
-                _logger.LogWarning("ApplicationPermissionHandler > Has claim");
+                _logger.LogInformation("ApplicationPermissionHandler > Has claim");
                 context.Succeed(requirement);
             }
 

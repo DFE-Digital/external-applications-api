@@ -102,6 +102,198 @@
         }
       }
     },
+    "/v1/Applications/{applicationId}/responses2": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Adds a new response version to an existing application.",
+        "operationId": "Applications_AddApplicationResponse2",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddApplicationResponseRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "201": {
+            "description": "Response version created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token."
+          },
+          "403": {
+            "description": "User does not have permission to update this application."
+          },
+          "404": {
+            "description": "Application not found."
+          }
+        }
+      }
+    },
+    "/v1/Applications/{applicationId}/responses3": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Adds a new response version to an existing application.",
+        "operationId": "Applications_AddApplicationResponse3",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddApplicationResponseRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "201": {
+            "description": "Response version created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token."
+          },
+          "403": {
+            "description": "User does not have permission to update this application."
+          },
+          "404": {
+            "description": "Application not found."
+          }
+        }
+      }
+    },
+    "/v1/Applications/{applicationId}/responses4": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Adds a new response version to an existing application.",
+        "operationId": "Applications_AddApplicationResponse4",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddApplicationResponseRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "201": {
+            "description": "Response version created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/Applications/{applicationId}/responses5": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Adds a new response version to an existing application.",
+        "operationId": "Applications_AddApplicationResponse5",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Response version created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/applications": {
       "get": {
         "tags": [

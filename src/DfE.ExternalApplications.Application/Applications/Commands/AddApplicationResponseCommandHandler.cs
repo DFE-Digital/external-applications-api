@@ -34,6 +34,7 @@ public sealed class AddApplicationResponseCommandHandler(
     {
         try
         {
+
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
                 return Result<ApplicationResponseDto>.Failure("Not authenticated");
