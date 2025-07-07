@@ -67,7 +67,7 @@ public sealed class AddApplicationResponseCommandHandler(
             var canAccess = permissionCheckerService.HasPermission(ResourceType.Application, request.ApplicationId.ToString(), AccessType.Write);
 
             if (!canAccess)
-                return Result<ApplicationResponseDto>.Failure("User does not have permission to update this application");
+                return Result<ApplicationResponseDto>.Failure($"User does not have permission to update this application: UserId: {dbUser.Id} - ApplicationId: {request.ApplicationId.ToString()}");
 
             // Get the application using query object
             var applicationId = new ApplicationId(request.ApplicationId);

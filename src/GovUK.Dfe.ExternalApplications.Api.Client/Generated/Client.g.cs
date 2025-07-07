@@ -267,19 +267,19 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                         if (status_ == 401)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ExternalApplicationsException("Unauthorized - no valid user token", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("Unauthorized - no valid user token.", status_, responseText_, headers_, null);
                         }
                         else
                         if (status_ == 403)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ExternalApplicationsException("User does not have permission to update this application", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("User does not have permission to update this application.", status_, responseText_, headers_, null);
                         }
                         else
                         if (status_ == 404)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ExternalApplicationsException("Application not found", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("Application not found.", status_, responseText_, headers_, null);
                         }
                         else
                         {

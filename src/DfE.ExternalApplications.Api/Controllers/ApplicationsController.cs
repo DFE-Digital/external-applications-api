@@ -41,9 +41,9 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [HttpPost("{applicationId}/responses")]
     [SwaggerResponse(201, "Response version created.", typeof(ApplicationResponseDto))]
     [SwaggerResponse(400, "Invalid request data.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
-    [SwaggerResponse(403, "User does not have permission to update this application")]
-    [SwaggerResponse(404, "Application not found")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token.")]
+    [SwaggerResponse(403, "User does not have permission to update this application.")]
+    [SwaggerResponse(404, "Application not found.")]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> AddApplicationResponseAsync(
         [FromRoute] Guid applicationId,
