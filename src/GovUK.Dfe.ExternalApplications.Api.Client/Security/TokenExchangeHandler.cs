@@ -30,14 +30,14 @@ public class TokenExchangeHandler(
         var internalToken = tokenStore.GetToken();
         if (!string.IsNullOrEmpty(internalToken) && IsTokenValid(internalToken))
         {
-            logger.LogDebug("Using cached internal token for API request");
+            logger.LogWarning("Using cached internal token for API request");
             // We have a valid internal token, use it and continue
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", internalToken);
             return await base.SendAsync(request, cancellationToken);
         }
 
         // No valid internal token, need to exchange
-        logger.LogDebug("No valid internal token, starting exchange process");
+        logger.LogWarning("No valid internal token, starting exchange process");
 
         try
         {
@@ -51,11 +51,11 @@ public class TokenExchangeHandler(
             }
 
             // Azure token (for authorization to call exchange endpoint)
-            logger.LogDebug("Getting Azure token for exchange endpoint authorization");
+            logger.LogWarning("Getting Azure token for exchange endpoint authorization");
             var azureToken = await tokenAcquisitionService.GetTokenAsync();
 
             // Call exchange endpoint with DSI token in body
-            logger.LogDebug("Calling exchange endpoint with External IDP token");
+            logger.LogWarning("Calling exchange endpoint with External IDP token");
             var exchangeResult = await tokensClient.ExchangeAndStoreAsync(externalIdpToken, tokenStore, cancellationToken);
             
             if (string.IsNullOrEmpty(exchangeResult.AccessToken))
@@ -65,7 +65,7 @@ public class TokenExchangeHandler(
                 return UnauthorizedResponse(request);
             }
 
-            logger.LogDebug("Token exchange successful, internal token cached");
+            logger.LogWarning("Token exchange successful, internal token cached");
 
             // Use the new internal token for the current request
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", exchangeResult.AccessToken);
