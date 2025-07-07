@@ -38,7 +38,8 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// <summary>
     /// Adds a new response version to an existing application.
     /// </summary>
-    [HttpPost("{applicationId}/responses")]
+    [HttpPost]
+    [Route(("{applicationId}/responses"))]
     [SwaggerResponse(201, "Response version created.", typeof(ApplicationResponseDto))]
     [SwaggerResponse(400, "Invalid request data.")]
     [SwaggerResponse(401, "Unauthorized - no valid user token.")]
