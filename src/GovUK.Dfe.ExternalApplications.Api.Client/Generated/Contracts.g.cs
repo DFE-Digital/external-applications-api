@@ -89,6 +89,36 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email, System.Threading.CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Returns application details with its latest response by application reference.
+        /// </summary>
+        /// <returns>Application details with latest response.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ApplicationDto> GetApplicationByReferenceAsync(string applicationReference);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Returns application details with its latest response by application reference.
+        /// </summary>
+        /// <returns>Application details with latest response.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ApplicationDto> GetApplicationByReferenceAsync(string applicationReference, System.Threading.CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Submits an application, changing its status to Submitted.
+        /// </summary>
+        /// <returns>Application submitted successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ApplicationDto> SubmitApplicationAsync(System.Guid applicationId);
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Submits an application, changing its status to Submitted.
+        /// </summary>
+        /// <returns>Application submitted successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ApplicationDto> SubmitApplicationAsync(System.Guid applicationId, System.Threading.CancellationToken cancellationToken);
+
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]

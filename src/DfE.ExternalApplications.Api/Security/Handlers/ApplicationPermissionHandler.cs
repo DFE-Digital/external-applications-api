@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers
 {
     /// <summary>
     /// Authorization handler that checks user permission claims for a specific application resource.
     /// </summary>
-    public sealed class ApplicationPermissionHandler(IHttpContextAccessor accessor)
+    public sealed class ApplicationPermissionHandler(
+        IHttpContextAccessor accessor)
         : AuthorizationHandler<ApplicationPermissionRequirement>
     {
         protected override Task HandleRequirementAsync(
@@ -21,6 +21,11 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             var hasClaim = context.User.Claims.Any(c =>
                 c.Type == "permission" &&
                 string.Equals(c.Value, expected, StringComparison.OrdinalIgnoreCase));
+
+            var claimStrings = context.User.Claims
+                .OrderBy(c => c.Type)
+                .Select(c => $"{c.Type}:{c.Value}")
+                .ToList();
 
             if (hasClaim)
                 context.Succeed(requirement);

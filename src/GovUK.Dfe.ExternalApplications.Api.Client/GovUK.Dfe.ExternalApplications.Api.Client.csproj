@@ -22,7 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.22" />
+		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.24" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Abstractions" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.0" />
@@ -35,12 +35,6 @@
 		<PackageReference Include="Microsoft.Identity.Client" Version="4.72.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.10.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Reference Include="Microsoft.AspNetCore.Authentication.Abstractions">
-	    <HintPath>..\..\..\..\..\..\..\Program Files\dotnet\packs\Microsoft.AspNetCore.App.Ref\8.0.7\ref\net8.0\Microsoft.AspNetCore.Authentication.Abstractions.dll</HintPath>
-	  </Reference>
 	</ItemGroup>
 
 </Project>
