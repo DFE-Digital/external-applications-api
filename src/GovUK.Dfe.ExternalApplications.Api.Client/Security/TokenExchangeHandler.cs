@@ -1,15 +1,15 @@
 ﻿using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
+[ExcludeFromCodeCoverage]
 public class TokenExchangeHandler(
     IHttpContextAccessor httpContextAccessor,
     IInternalUserTokenStore tokenStore,
@@ -30,14 +30,11 @@ public class TokenExchangeHandler(
         var internalToken = tokenStore.GetToken();
         if (!string.IsNullOrEmpty(internalToken) && IsTokenValid(internalToken))
         {
-            logger.LogWarning("Using cached internal token for API request");
+            logger.LogDebug("Using cached internal token for API request");
             // We have a valid internal token, use it and continue
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", internalToken);
             return await base.SendAsync(request, cancellationToken);
         }
-
-        // No valid internal token, need to exchange
-        logger.LogWarning("No valid internal token, starting exchange process");
 
         try
         {
@@ -46,26 +43,20 @@ public class TokenExchangeHandler(
             if (string.IsNullOrEmpty(externalIdpToken) || !IsTokenValid(externalIdpToken))
             {
                 logger.LogWarning("No valid DSI token found");
-                await ForceSignOut(httpContext);
                 return UnauthorizedResponse(request);
             }
 
             // Azure token (for authorization to call exchange endpoint)
-            logger.LogWarning("Getting Azure token for exchange endpoint authorization");
             var azureToken = await tokenAcquisitionService.GetTokenAsync();
 
             // Call exchange endpoint with DSI token in body
-            logger.LogWarning("Calling exchange endpoint with External IDP token");
             var exchangeResult = await tokensClient.ExchangeAndStoreAsync(externalIdpToken, tokenStore, cancellationToken);
             
             if (string.IsNullOrEmpty(exchangeResult.AccessToken))
             {
-                logger.LogWarning("Token exchange returned empty internal token");
-                await ForceSignOut(httpContext);
+                logger.LogDebug("Token exchange returned empty internal token");
                 return UnauthorizedResponse(request);
             }
-
-            logger.LogWarning("Token exchange successful, internal token cached");
 
             // Use the new internal token for the current request
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", exchangeResult.AccessToken);
@@ -73,7 +64,6 @@ public class TokenExchangeHandler(
         catch (Exception ex)
         {
             logger.LogError(ex, "Token exchange process failed");
-            await ForceSignOut(httpContext);
             return UnauthorizedResponse(request);
         }
 
@@ -101,20 +91,5 @@ public class TokenExchangeHandler(
             RequestMessage = request,
             ReasonPhrase = "Token exchange failed - user needs to re-authenticate"
         };
-    }
-
-    private static async Task ForceSignOut(HttpContext? ctx)
-    {
-        if (ctx == null) return;
-
-        //try
-        //{
-        //    await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        //    await ctx.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
-        //}
-        //catch
-        //{
-        //    // Ignore sign-out errors
-        //}
     }
 }
