@@ -293,14 +293,12 @@
             "description": "Access denied."
           }
         }
-      }
-    },
-    "/v1/Templates/{templateId}/versions": {
+      },
       "post": {
         "tags": [
           "Templates"
         ],
-        "summary": "Creates a new version for the specified template.",
+        "summary": "Creates a new schema version for the specified template.",
         "operationId": "Templates_CreateTemplateVersion",
         "parameters": [
           {

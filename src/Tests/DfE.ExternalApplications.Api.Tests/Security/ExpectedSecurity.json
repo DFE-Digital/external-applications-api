@@ -11,6 +11,11 @@
       "ExpectedSecurity": "Authorize: Policy=CanReadTemplate"
     },
     {
+      "Controller": "TemplatesController",
+      "Action": "CreateTemplateVersionAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteTemplate"
+    },
+    {
       "Controller": "TokensController",
       "Action": "Exchange",
       "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"

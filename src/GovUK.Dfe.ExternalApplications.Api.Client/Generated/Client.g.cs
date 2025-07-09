@@ -974,7 +974,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         }
 
         /// <summary>
-        /// Creates a new version for the specified template.
+        /// Creates a new schema version for the specified template.
         /// </summary>
         /// <returns>The template version was created successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -985,7 +985,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Creates a new version for the specified template.
+        /// Creates a new schema version for the specified template.
         /// </summary>
         /// <returns>The template version was created successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -1012,10 +1012,10 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
-                    // Operation Path: "v1/Templates/{templateId}/versions"
+                    // Operation Path: "v1/Templates/{templateId}/schema"
                     urlBuilder_.Append("v1/Templates/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture)));
-                    urlBuilder_.Append("/versions");
+                    urlBuilder_.Append("/schema");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 

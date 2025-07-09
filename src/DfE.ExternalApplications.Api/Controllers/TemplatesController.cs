@@ -43,9 +43,9 @@ public class TemplatesController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new version for the specified template.
+    /// Creates a new schema version for the specified template.
     /// </summary>
-    [HttpPost("{templateId}/versions")]
+    [HttpPost("{templateId}/schema")]
     [SwaggerResponse(201, "The template version was created successfully.", typeof(TemplateSchemaDto))]
     [SwaggerResponse(400, "Request was invalid or template not found.")]
     [SwaggerResponse(403, "Access denied.")]

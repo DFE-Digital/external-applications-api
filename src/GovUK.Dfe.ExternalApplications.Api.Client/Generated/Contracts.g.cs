@@ -140,7 +140,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken);
 
         /// <summary>
-        /// Creates a new version for the specified template.
+        /// Creates a new schema version for the specified template.
         /// </summary>
         /// <returns>The template version was created successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -148,7 +148,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Creates a new version for the specified template.
+        /// Creates a new schema version for the specified template.
         /// </summary>
         /// <returns>The template version was created successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
