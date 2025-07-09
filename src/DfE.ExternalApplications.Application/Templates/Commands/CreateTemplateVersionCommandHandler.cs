@@ -64,6 +64,9 @@ public sealed class CreateTemplateVersionCommandHandler(
             if (dbUser is null)
                 return Result<TemplateSchemaDto>.Failure("User not found");
 
+            var base64EncodedBytes = System.Convert.FromBase64String(request.JsonSchema);
+            var decodedJsonSchema = System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
+
             var template = await new GetTemplateByIdQueryObject(new TemplateId(request.TemplateId))
                 .Apply(templateRepo.Query())
                 .FirstOrDefaultAsync(cancellationToken);
@@ -78,10 +81,15 @@ public sealed class CreateTemplateVersionCommandHandler(
                 return Result<TemplateSchemaDto>.Failure("Access denied");
             }
 
+            if (template.TemplateVersions?.Any(v => v.VersionNumber == request.VersionNumber) == true)
+            {
+                return Result<TemplateSchemaDto>.Failure($"Version {request.VersionNumber} already exists");
+            }
+
             var newVersion = templateFactory.AddVersionToTemplate(
                 template,
                 request.VersionNumber,
-                request.JsonSchema,
+                decodedJsonSchema,
                 dbUser.Id!);
 
             await unitOfWork.CommitAsync(cancellationToken);
@@ -93,6 +101,10 @@ public sealed class CreateTemplateVersionCommandHandler(
                 VersionNumber = newVersion.VersionNumber,
                 JsonSchema = newVersion.JsonSchema
             });
+        }
+        catch (FormatException)
+        {
+            return Result<TemplateSchemaDto>.Failure("Invalid Base64 format for JsonSchema");
         }
         catch (ArgumentException ex)
         {

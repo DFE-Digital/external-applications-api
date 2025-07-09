@@ -178,7 +178,7 @@ public class ExternalApplicationsContext : DbContext
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("TemplateVersionId")
-            .ValueGeneratedOnAdd()
+            .ValueGeneratedNever()
             .HasConversion(v => v.Value, v => new TemplateVersionId(v))
             .IsRequired();
         b.Property(e => e.TemplateId)
