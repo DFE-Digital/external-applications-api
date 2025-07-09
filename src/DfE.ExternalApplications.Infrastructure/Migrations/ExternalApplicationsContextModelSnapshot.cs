@@ -75,7 +75,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.ApplicationResponse", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("ResponseId");
 
@@ -444,7 +443,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.ApplicationResponse", b =>
                 {
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.Application", "Application")
-                        .WithMany()
+                        .WithMany("Responses")
                         .HasForeignKey("ApplicationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -562,9 +561,9 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.Template", "Template")
-                        .WithMany()
+                        .WithMany("TemplateVersions")
                         .HasForeignKey("TemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("CreatedByUser");
@@ -597,6 +596,16 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.Navigation("LastModifiedByUser");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Application", b =>
+                {
+                    b.Navigation("Responses");
+                });
+
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Template", b =>
+                {
+                    b.Navigation("TemplateVersions");
                 });
 
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.User", b =>

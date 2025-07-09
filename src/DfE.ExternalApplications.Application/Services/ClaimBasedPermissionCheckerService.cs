@@ -25,6 +25,18 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
     }
 
     /// <inheritdoc />
+    public bool HasTemplatePermission(string templateId, AccessType accessType)
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        if (user == null) return false;
+
+        var expectedClaim = FormatPermissionClaim(ResourceType.Template, templateId, accessType);
+        return user.Claims.Any(c =>
+            c.Type == "permission" &&
+            string.Equals(c.Value, expectedClaim, StringComparison.OrdinalIgnoreCase));
+    }
+    
+    /// <inheritdoc />
     public bool HasAnyPermission(ResourceType resourceType, AccessType accessType)
     {
         var user = _httpContextAccessor.HttpContext?.User;

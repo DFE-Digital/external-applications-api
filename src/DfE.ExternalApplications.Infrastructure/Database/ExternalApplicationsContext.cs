@@ -209,8 +209,9 @@ public class ExternalApplicationsContext : DbContext
             .IsRequired(false);
 
         b.HasOne(e => e.Template)
-            .WithMany()
-            .HasForeignKey(e => e.TemplateId);
+            .WithMany(a => a.TemplateVersions)
+            .HasForeignKey(e => e.TemplateId)
+            .OnDelete(DeleteBehavior.NoAction);
         b.HasOne(e => e.CreatedByUser)
             .WithMany()
             .HasForeignKey(e => e.CreatedBy)
