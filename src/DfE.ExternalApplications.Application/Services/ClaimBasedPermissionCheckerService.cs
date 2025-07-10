@@ -71,4 +71,13 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
 
     private static string FormatPermissionClaim(ResourceType resourceType, string resourceId, AccessType accessType)
         => $"{resourceType}:{resourceId}:{accessType}";
+
+    /// <inheritdoc />
+    public bool IsAdmin()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        if (user == null) return false;
+
+        return user.IsInRole("Admin");
+    }
 } 

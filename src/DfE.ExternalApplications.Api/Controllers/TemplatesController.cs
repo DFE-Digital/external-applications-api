@@ -50,6 +50,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     [SwaggerResponse(400, "Request was invalid or template not found.")]
     [SwaggerResponse(403, "Access denied.")]
     [Authorize(Policy = "CanWriteTemplate")]
+    [Authorize(Policy = "IsAdmin")]
     public async Task<IActionResult> CreateTemplateVersionAsync(
         [FromRoute] Guid templateId,
         [FromBody] CreateTemplateVersionRequest request,

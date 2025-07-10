@@ -40,4 +40,10 @@ public interface IPermissionCheckerService
     /// <param name="accessType">Type of access required</param>
     /// <returns>True if the user has the specified permission, false otherwise</returns>
     bool HasTemplatePermission(string templateId, AccessType accessType);
+
+    /// <summary>
+    /// Checks if the current user has the Admin role.
+    /// </summary>
+    /// <returns>True if the user is an Admin, false otherwise</returns>
+    bool IsAdmin();
 }

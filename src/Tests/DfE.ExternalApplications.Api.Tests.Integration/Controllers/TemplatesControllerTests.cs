@@ -84,7 +84,8 @@ public class TemplatesControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write"),
+            new(ClaimTypes.Role, "Admin")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -103,6 +104,30 @@ public class TemplatesControllerTests
         Assert.NotNull(result);
         Assert.Equal("1.0.1", result.VersionNumber);
         Assert.Equal(jsonSchema, result.JsonSchema);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateTemplateVersionAsync_ShouldReturnForbidden_WhenUserIsNotAdmin(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITemplatesClient templatesClient,
+        HttpClient httpClient,
+        CreateTemplateVersionRequest request)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => templatesClient.CreateTemplateVersionAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
+        Assert.Equal(403, ex.StatusCode);
     }
 
     [Theory]
@@ -152,7 +177,8 @@ public class TemplatesControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write"),
+            new(ClaimTypes.Role, "Admin"),
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -180,7 +206,9 @@ public class TemplatesControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write"),
+            new(ClaimTypes.Role, "Admin"),
+
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -208,7 +236,8 @@ public class TemplatesControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write"),
+            new(ClaimTypes.Role, "Admin"),
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
