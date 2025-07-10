@@ -87,7 +87,7 @@ public class PermissionsClaimProviderTests
         userRepo.Query().Returns(users);
 
         sender.Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == userId))
-            .Returns(Task.FromResult(Result<IReadOnlyCollection<UserPermissionDto>>.Failure("err")));
+            .Returns(Task.FromResult(Result<UserAuthorizationDto>.Failure("err")));
         var logger = Substitute.For<ILogger<PermissionsClaimProvider>>();
         var provider = new PermissionsClaimProvider(sender, logger, userRepo);
 
@@ -127,8 +127,13 @@ public class PermissionsClaimProviderTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
+        var emptyAuth = new UserAuthorizationDto
+        {
+            Permissions = Array.Empty<UserPermissionDto>(),
+            Roles = Array.Empty<string>()
+        };
         sender.Send(Arg.Any<GetAllUserPermissionsQuery>())
-            .Returns(Task.FromResult(Result<IReadOnlyCollection<UserPermissionDto>>.Success(null)));
+            .Returns(Task.FromResult(Result<UserAuthorizationDto>.Success(emptyAuth)));
         var logger = Substitute.For<ILogger<PermissionsClaimProvider>>();
         var provider = new PermissionsClaimProvider(sender, logger, userRepo);
 
@@ -207,12 +212,16 @@ public class PermissionsClaimProviderTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
-        var perms = new[]
+        var authDto = new UserAuthorizationDto
         {
-            new UserPermissionDto { ResourceType = ResourceType.Application, ResourceKey = key, AccessType = AccessType.Read }
+            Permissions = new[]
+            {
+                new UserPermissionDto { ResourceType = ResourceType.Application, ResourceKey = key, AccessType = AccessType.Read }
+            },
+            Roles = new[] { "TestRole" }
         };
         sender.Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == userId), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(Result<IReadOnlyCollection<UserPermissionDto>>.Success(perms)));
+            .Returns(Task.FromResult(Result<UserAuthorizationDto>.Success(authDto)));
         var logger = Substitute.For<ILogger<PermissionsClaimProvider>>();
         var provider = new PermissionsClaimProvider(sender, logger, userRepo);
 

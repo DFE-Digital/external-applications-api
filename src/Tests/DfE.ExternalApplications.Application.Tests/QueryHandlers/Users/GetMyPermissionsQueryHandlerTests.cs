@@ -197,7 +197,7 @@ public class GetMyPermissionsQueryHandlerTests
     public async Task Handle_ValidRequest_WithEmail_ShouldReturnPermissions(
         string emailName,
         UserCustomization userCustom,
-        IReadOnlyCollection<UserPermissionDto> permissions,
+        UserAuthorizationDto authorizationData,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IPermissionCheckerService permissionCheckerService,
@@ -224,7 +224,7 @@ public class GetMyPermissionsQueryHandlerTests
             .Returns(true);
 
         mediator.Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == user.Id), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<UserPermissionDto>>.Success(permissions));
+            .Returns(Result<UserAuthorizationDto>.Success(authorizationData));
 
         var handler = new GetMyPermissionsQueryHandler(
             httpContextAccessor,
@@ -237,8 +237,7 @@ public class GetMyPermissionsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(permissions, result.Value);
-        await mediator.Received(1).Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == user.Id), Arg.Any<CancellationToken>());
+        Assert.Equal(authorizationData, result.Value);
     }
 
     [Theory]
@@ -246,7 +245,7 @@ public class GetMyPermissionsQueryHandlerTests
     public async Task Handle_ValidRequest_WithExternalId_ShouldReturnPermissions(
         string externalProviderId,
         UserCustomization userCustom,
-        IReadOnlyCollection<UserPermissionDto> permissions,
+        UserAuthorizationDto authorizationData,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IPermissionCheckerService permissionCheckerService,
@@ -272,7 +271,7 @@ public class GetMyPermissionsQueryHandlerTests
             .Returns(true);
 
         mediator.Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == user.Id), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<UserPermissionDto>>.Success(permissions));
+            .Returns(Result<UserAuthorizationDto>.Success(authorizationData));
 
         var handler = new GetMyPermissionsQueryHandler(
             httpContextAccessor,
@@ -285,7 +284,6 @@ public class GetMyPermissionsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(permissions, result.Value);
-        await mediator.Received(1).Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == user.Id), Arg.Any<CancellationToken>());
+        Assert.Equal(authorizationData, result.Value);
     }
 }

@@ -17,8 +17,8 @@ public class UsersController(ISender sender) : ControllerBase
     /// Returns all my permissions.
     /// </summary>
     [HttpGet("/v{version:apiVersion}/me/permissions")]
-    [SwaggerResponse(200, "A UserPermission object representing the User's Permissions.", typeof(IReadOnlyCollection<UserPermissionDto>))]
-    [SwaggerResponse(401, "Unauthorized – no valid user token")]
+    [SwaggerResponse(200, "A UserAuthorizationDto object representing the User's Permissions and Roles.", typeof(UserAuthorizationDto))]
+    [SwaggerResponse(401, "Unauthorized no valid user token")]
     [Authorize(Policy = "CanReadUser")]
     public async Task<IActionResult> GetMyPermissionsAsync(
         CancellationToken cancellationToken)

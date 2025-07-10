@@ -54,30 +54,43 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
                     .SetProperty(p => p.AccessType, AccessType.Read)
                 );
 
-            var expected = dbContext.Users
+            var expectedUser = dbContext.Users
                 .Include(u => u.Permissions)
-                .FirstOrDefault(u => u.ExternalProviderId == externalId.ToString())!
-                .Permissions
-                .ToList();
+                .Include(u => u.Role)
+                .FirstOrDefault(u => u.ExternalProviderId == externalId.ToString())!;
 
-            var resultCollection = await usersClient
-                .GetMyPermissionsAsync();
+            var expectedPermissions = expectedUser.Permissions.ToList();
 
-            var actual = resultCollection
+            var result = await usersClient.GetMyPermissionsAsync();
+
+            // Assert: Check permissions
+            Assert.NotNull(result);
+            Assert.NotNull(result.Permissions);
+            Assert.Equal(expectedPermissions.Count, result.Permissions.Count());
+
+            var actual = result.Permissions
                 .Select(dto => (dto.ResourceKey, dto.AccessType))
                 .OrderBy(x => x.ResourceKey)
                 .ThenBy(x => x.AccessType)
                 .ToList();
 
-            // Assert: both lists have same count
-            Assert.NotNull(resultCollection);
-            Assert.Equal(expected.Count, actual.Count);
-
             // Compare element by element
-            for (int i = 0; i < expected.Count; i++)
+            for (int i = 0; i < expectedPermissions.Count; i++)
             {
-                Assert.Equal(expected[i].ResourceKey, actual[i].ResourceKey);
-                Assert.Equal((AccessType)expected[i].AccessType, actual[i].AccessType);
+                Assert.Equal(expectedPermissions[i].ResourceKey, actual[i].ResourceKey);
+                Assert.Equal((AccessType)expectedPermissions[i].AccessType, actual[i].AccessType);
+            }
+
+            // Assert: Check roles
+            Assert.NotNull(result.Roles);
+            if (expectedUser.Role != null)
+            {
+                Assert.Single(result.Roles);
+                Assert.Equal(expectedUser.Role.Name, result.Roles.First());
+            }
+            else
+            {
+                Assert.Empty(result.Roles);
             }
         }
 
@@ -118,30 +131,43 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
                     .SetProperty(p => p.AccessType, AccessType.Read)
                 );
 
-            var expected = dbContext.Users
+            var expectedUser = dbContext.Users
                 .Include(u => u.Permissions)
-                .FirstOrDefault(u => u.Email == "alice1@example.com")!
-                .Permissions
-                .ToList();
+                .Include(u => u.Role)
+                .FirstOrDefault(u => u.Email == "alice1@example.com")!;
 
-            var resultCollection = await usersClient
-                .GetMyPermissionsAsync();
+            var expectedPermissions = expectedUser.Permissions.ToList();
 
-            var actual = resultCollection
+            var result = await usersClient.GetMyPermissionsAsync();
+
+            // Assert: Check permissions
+            Assert.NotNull(result);
+            Assert.NotNull(result.Permissions);
+            Assert.Equal(expectedPermissions.Count, result.Permissions.Count());
+
+            var actual = result.Permissions
                 .Select(dto => (dto.ResourceKey, dto.AccessType))
                 .OrderBy(x => x.ResourceKey)
                 .ThenBy(x => x.AccessType)
                 .ToList();
 
-            // Assert: both lists have same count
-            Assert.NotNull(resultCollection);
-            Assert.Equal(expected.Count, actual.Count);
-
             // Compare element by element
-            for (int i = 0; i < expected.Count; i++)
+            for (int i = 0; i < expectedPermissions.Count; i++)
             {
-                Assert.Equal(expected[i].ResourceKey, actual[i].ResourceKey);
-                Assert.Equal((AccessType)expected[i].AccessType, actual[i].AccessType);
+                Assert.Equal(expectedPermissions[i].ResourceKey, actual[i].ResourceKey);
+                Assert.Equal((AccessType)expectedPermissions[i].AccessType, actual[i].AccessType);
+            }
+
+            // Assert: Check roles
+            Assert.NotNull(result.Roles);
+            if (expectedUser.Role != null)
+            {
+                Assert.Single(result.Roles);
+                Assert.Equal(expectedUser.Role.Name, result.Roles.First());
+            }
+            else
+            {
+                Assert.Empty(result.Roles);
             }
         }
 

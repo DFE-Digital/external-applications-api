@@ -63,7 +63,7 @@ namespace DfE.ExternalApplications.Api.Security
 
             if(result.Value is not null)
             {
-                claims.AddRange(result.Value.Select(p =>
+                claims.AddRange(result.Value.Permissions.Select(p =>
                     new Claim(
                         "permission",
                         $"{p.ResourceType}:{p.ResourceKey}:{p.AccessType}"

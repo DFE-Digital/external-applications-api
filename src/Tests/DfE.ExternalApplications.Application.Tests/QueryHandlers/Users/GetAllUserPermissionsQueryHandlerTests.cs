@@ -20,7 +20,7 @@ public class GetAllUserPermissionsQueryHandlerTests
 {
     [Theory]
     [CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization))]
-    public async Task Handle_UserWithPermissions_ShouldReturnPermissions(
+    public async Task Handle_UserWithPermissions_ShouldReturnAuthorizationData(
         UserId userId,
         UserCustomization userCustom,
         PermissionCustomization permCustom,
@@ -33,6 +33,10 @@ public class GetAllUserPermissionsQueryHandlerTests
         var fixture = new Fixture().Customize(userCustom);
         var user = fixture.Create<User>();
 
+        // Set up the role using reflection
+        var role = new Role(user.RoleId, "TestRole");
+        user.GetType().GetProperty("Role")!.SetValue(user, role);
+
         // Add permissions to user
         var permissions = fixture.Customize(permCustom).CreateMany<Permission>().ToList();
         var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
@@ -44,11 +48,11 @@ public class GetAllUserPermissionsQueryHandlerTests
         var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
             cacheKey,
-            Arg.Any<Func<Task<Result<IReadOnlyCollection<UserPermissionDto>>>>>(),
+            Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
             .Returns(call =>
             {
-                var func = call.Arg<Func<Task<Result<IReadOnlyCollection<UserPermissionDto>>>>>();
+                var func = call.Arg<Func<Task<Result<UserAuthorizationDto>>>>();
                 return func();
             });
 
@@ -59,9 +63,13 @@ public class GetAllUserPermissionsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.NotEmpty(result.Value!);
-        Assert.Equal(permissions.Count, result.Value.Count);
-        Assert.All(result.Value, dto =>
+        Assert.NotNull(result.Value);
+        Assert.NotEmpty(result.Value.Permissions);
+        Assert.NotEmpty(result.Value.Roles);
+        Assert.Equal(permissions.Count, result.Value.Permissions.Count());
+        Assert.Single(result.Value.Roles);
+        Assert.Equal("TestRole", result.Value.Roles.First());
+        Assert.All(result.Value.Permissions, dto =>
         {
             var permission = permissions.First(p => p.ApplicationId?.Value == dto.ApplicationId);
             Assert.Equal(permission.ResourceType, dto.ResourceType);
@@ -72,7 +80,7 @@ public class GetAllUserPermissionsQueryHandlerTests
 
     [Theory]
     [CustomAutoData]
-    public async Task Handle_UserNotFound_ShouldReturnEmptyCollection(
+    public async Task Handle_UserNotFound_ShouldReturnEmptyData(
         UserId userId,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] ICacheService<IMemoryCacheType> cacheService)
@@ -84,11 +92,11 @@ public class GetAllUserPermissionsQueryHandlerTests
         var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
             cacheKey,
-            Arg.Any<Func<Task<Result<IReadOnlyCollection<UserPermissionDto>>>>>(),
+            Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
             .Returns(call =>
             {
-                var func = call.Arg<Func<Task<Result<IReadOnlyCollection<UserPermissionDto>>>>>();
+                var func = call.Arg<Func<Task<Result<UserAuthorizationDto>>>>();
                 return func();
             });
 
@@ -99,7 +107,9 @@ public class GetAllUserPermissionsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Empty(result.Value!);
+        Assert.NotNull(result.Value);
+        Assert.Empty(result.Value.Permissions);
+        Assert.Empty(result.Value.Roles);
     }
 
     [Theory]
@@ -115,11 +125,11 @@ public class GetAllUserPermissionsQueryHandlerTests
         var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
             cacheKey,
-            Arg.Any<Func<Task<Result<IReadOnlyCollection<UserPermissionDto>>>>>(),
+            Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
             .Returns(call =>
             {
-                var func = call.Arg<Func<Task<Result<IReadOnlyCollection<UserPermissionDto>>>>>();
+                var func = call.Arg<Func<Task<Result<UserAuthorizationDto>>>>();
                 return func();
             });
 
@@ -137,7 +147,7 @@ public class GetAllUserPermissionsQueryHandlerTests
     [CustomAutoData]
     public async Task Handle_CacheHit_ShouldReturnCachedResult(
         UserId userId,
-        IReadOnlyCollection<UserPermissionDto> cachedPermissions,
+        UserAuthorizationDto cachedAuthorization,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] ICacheService<IMemoryCacheType> cacheService)
     {
@@ -145,9 +155,9 @@ public class GetAllUserPermissionsQueryHandlerTests
         var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
             cacheKey,
-            Arg.Any<Func<Task<Result<IReadOnlyCollection<UserPermissionDto>>>>>(),
+            Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
-            .Returns(Result<IReadOnlyCollection<UserPermissionDto>>.Success(cachedPermissions));
+            .Returns(Result<UserAuthorizationDto>.Success(cachedAuthorization));
 
         var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService);
 
@@ -156,7 +166,7 @@ public class GetAllUserPermissionsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(cachedPermissions, result.Value);
+        Assert.Equal(cachedAuthorization, result.Value);
         userRepo.DidNotReceive().Query();
     }
 } 
