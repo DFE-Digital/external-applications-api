@@ -350,4 +350,74 @@ public class ClaimBasedPermissionCheckerServiceTests
         // Assert
         Assert.True(result);
     }
+    
+    [Fact]
+    public void IsAdmin_WhenUserIsAdmin_ReturnsTrue()
+    {
+        // Arrange
+        var claim = new Claim(ClaimTypes.Role, "Admin");
+        _user.AddIdentity(new ClaimsIdentity(new[] { claim }));
+
+        // Act
+        var result = _service.IsAdmin();
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsAdmin_WhenUserIsNotAdmin_ReturnsFalse()
+    {
+        // Arrange
+        var claim = new Claim(ClaimTypes.Role, "User");
+        _user.AddIdentity(new ClaimsIdentity(new[] { claim }));
+
+        // Act
+        var result = _service.IsAdmin();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsAdmin_WhenUserHasNoRoleClaims_ReturnsFalse()
+    {
+        // Act
+        var result = _service.IsAdmin();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsAdmin_WhenHttpContextIsNull_ReturnsFalse()
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        httpContextAccessor.HttpContext.Returns((HttpContext?)null);
+        var service = new ClaimBasedPermissionCheckerService(httpContextAccessor);
+
+        // Act
+        var result = service.IsAdmin();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsAdmin_WhenUserIsNull_ReturnsFalse()
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = Substitute.For<HttpContext>();
+        httpContext.User.Returns((ClaimsPrincipal?)null);
+        httpContextAccessor.HttpContext.Returns(httpContext);
+        var service = new ClaimBasedPermissionCheckerService(httpContextAccessor);
+
+        // Act
+        var result = service.IsAdmin();
+
+        // Assert
+        Assert.False(result);
+    }
 } 

@@ -32,4 +32,18 @@ public interface IPermissionCheckerService
     /// <param name="accessType">Type of access required</param>
     /// <returns>Collection of resource IDs the user has permission to access</returns>
     IReadOnlyCollection<string> GetResourceIdsWithPermission(ResourceType resourceType, AccessType accessType);
+
+    /// <summary>
+    /// Checks if the current user has a specific permission for a template
+    /// </summary>
+    /// <param name="templateId">Identifier of the template</param>
+    /// <param name="accessType">Type of access required</param>
+    /// <returns>True if the user has the specified permission, false otherwise</returns>
+    bool HasTemplatePermission(string templateId, AccessType accessType);
+
+    /// <summary>
+    /// Checks if the current user has the Admin role.
+    /// </summary>
+    /// <returns>True if the user is an Admin, false otherwise</returns>
+    bool IsAdmin();
 }

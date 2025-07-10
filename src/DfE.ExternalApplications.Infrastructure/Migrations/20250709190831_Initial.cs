@@ -181,8 +181,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         column: x => x.TemplateId,
                         principalSchema: "ea",
                         principalTable: "Templates",
-                        principalColumn: "TemplateId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "TemplateId");
                     table.ForeignKey(
                         name: "FK_TemplateVersions_Users_CreatedBy",
                         column: x => x.CreatedBy,

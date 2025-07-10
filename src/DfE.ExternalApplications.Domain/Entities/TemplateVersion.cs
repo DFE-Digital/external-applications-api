@@ -19,9 +19,6 @@ public sealed class TemplateVersion : BaseAggregateRoot, IEntity<TemplateVersion
 
     private TemplateVersion() { /* For EF Core */ }
 
-    /// <summary>
-    /// Constructs a new TemplateVersion.
-    /// </summary>
     public TemplateVersion(
         TemplateVersionId id,
         TemplateId templateId,

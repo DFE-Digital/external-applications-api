@@ -1,43 +1,67 @@
 ﻿using AutoFixture;
-using AutoFixture.Xunit2;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 
-namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Users
+namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Users;
+
+public class GetUserByEmailQueryObjectTests
 {
-    public class GetUserByEmailQueryObjectTests
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public void Apply_ShouldReturnMatchingUser_WhenEmailMatches(
+        string email)
     {
-        [Theory, CustomAutoData(typeof(UserCustomization))]
-        public void Apply_ShouldReturnOnlyUsersWithMatchingEmail_IgnoringCase(
-            string rawEmail,
-            [Frozen] IList<User> userList,
-            UserCustomization customization)
-        {
-            var normalized = rawEmail.Trim().ToLowerInvariant();
+        // Arrange
+        var matchingUser = new Fixture()
+            .Customize(new UserCustomization { OverrideEmail = email })
+            .Create<User>();
 
-            customization.OverrideEmail = rawEmail;
-            var fixtureMatching = new Fixture().Customize(customization);
-            var matchingUser = fixtureMatching.Create<User>();
+        var role = new Role(matchingUser.RoleId, "Test Role");
+        matchingUser.GetType().GetProperty("Role")!.SetValue(matchingUser, role);
 
-            // Two additional random users (email doesn’t matter)
-            var otherFixture = new Fixture().Customize(new UserCustomization());
-            var other1 = otherFixture.Create<User>();
-            var other2 = otherFixture.Create<User>();
+        var otherUser1 = new Fixture()
+            .Customize(new UserCustomization { OverrideEmail = "other-email-1@test.com" })
+            .Create<User>();
 
-            // Populate the frozen list
-            userList.Clear();
-            userList.Add(matchingUser);
-            userList.Add(other1);
-            userList.Add(other2);
+        var otherUser2 = new Fixture()
+            .Customize(new UserCustomization { OverrideEmail = "other-email-2@test.com" })
+            .Create<User>();
 
-            var sut = new GetUserByEmailQueryObject(rawEmail);
+        var users = new[] { matchingUser, otherUser1, otherUser2 }.AsQueryable();
+        var queryObject = new GetUserByEmailQueryObject(email);
 
-            var result = sut.Apply(userList.AsQueryable()).ToList();
+        // Act
+        var result = queryObject.Apply(users).ToList();
 
-            Assert.Single(result);
-            Assert.Equal(normalized, result[0].Email.ToLowerInvariant());
-        }
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(email.ToLowerInvariant(), result[0].Email.ToLowerInvariant());
+        Assert.NotNull(result[0].Role);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public void Apply_ShouldReturnEmpty_WhenNoUserMatches(
+        string email)
+    {
+        // Arrange
+        var user1 = new Fixture()
+            .Customize(new UserCustomization { OverrideEmail = "other-email-1@test.com" })
+            .Create<User>();
+
+        var user2 = new Fixture()
+            .Customize(new UserCustomization { OverrideEmail = "other-email-2@test.com" })
+            .Create<User>();
+
+        var users = new[] { user1, user2 }.AsQueryable();
+        var queryObject = new GetUserByEmailQueryObject(email);
+
+        // Act
+        var result = queryObject.Apply(users).ToList();
+
+        // Assert
+        Assert.Empty(result);
     }
 }

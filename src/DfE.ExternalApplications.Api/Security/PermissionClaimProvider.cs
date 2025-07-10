@@ -44,6 +44,12 @@ namespace DfE.ExternalApplications.Api.Security
                 return Array.Empty<Claim>();
             }
 
+            if (dbUser.Role is null)
+            {
+                logger.LogWarning($"PermissionsClaimProvider() > Service User {dbUser.Id} has no role assigned");
+                return Array.Empty<Claim>();
+            }
+
             var query = new GetAllUserPermissionsQuery(dbUser.Id!);
             var result = await sender.Send(query);
 
@@ -53,14 +59,19 @@ namespace DfE.ExternalApplications.Api.Security
                 return Array.Empty<Claim>();
             }
 
-            return result.Value == null ? 
-                Array.Empty<Claim>() : 
-                result.Value.Select(p =>
-                new Claim(
-                    "permission",
-                    $"{p.ResourceType}:{p.ResourceKey}:{p.AccessType}"
-                )
-            );
+            var claims = new List<Claim> { new(ClaimTypes.Role, dbUser.Role.Name) };
+
+            if(result.Value is not null)
+            {
+                claims.AddRange(result.Value.Select(p =>
+                    new Claim(
+                        "permission",
+                        $"{p.ResourceType}:{p.ResourceKey}:{p.AccessType}"
+                    )
+                ));
+            }
+
+            return claims;
         }
     }
 }

@@ -62,9 +62,10 @@ public class ApplicationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
+        var encodedBody = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(responseBody));
         var request = new AddApplicationResponseRequest
         {
-            ResponseBody = responseBody
+            ResponseBody = encodedBody
         };
 
         // Act
@@ -148,6 +149,34 @@ public class ApplicationsControllerTests
         {
             ResponseBody = string.Empty
         };
+        // Act
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
+        Assert.Equal(400, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddApplicationResponseAsync_ShouldReturnBadRequest_WhenBodyIsNotBase64(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var request = new AddApplicationResponseRequest
+        {
+            ResponseBody = "this is not base64"
+        };
+        
         // Act
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));

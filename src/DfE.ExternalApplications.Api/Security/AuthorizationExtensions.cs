@@ -81,6 +81,12 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.TemplatePermissionRequirement(AccessType.Read.ToString()));
                 },
+                ["CanWriteTemplate"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.TemplatePermissionRequirement(AccessType.Write.ToString()));
+                },
                 ["CanReadUser"] = pb =>
                 {
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);

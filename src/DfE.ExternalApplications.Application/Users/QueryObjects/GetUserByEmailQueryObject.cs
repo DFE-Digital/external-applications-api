@@ -1,5 +1,6 @@
 ﻿using DfE.ExternalApplications.Application.Common.QueriesObjects;
 using DfE.ExternalApplications.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Users.QueryObjects
 {
@@ -8,6 +9,8 @@ namespace DfE.ExternalApplications.Application.Users.QueryObjects
         private readonly string _email = email.Trim().ToLowerInvariant();
 
         public IQueryable<User> Apply(IQueryable<User> query) =>
-            query.Where(u => u.Email.ToLower() == _email);
+            query
+                .Include(u => u.Role)
+                .Where(u => u.Email.ToLower() == _email);
     }
 }

@@ -2,28 +2,26 @@ using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
+using FluentValidation.TestHelper;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandValidators.Applications;
 
 public class AddApplicationResponseCommandValidatorTests
 {
-    [Theory]
-    [CustomAutoData(typeof(ApplicationCustomization))]
-    public void Validate_ShouldSucceed_WhenAllPropertiesValid(
-        Guid applicationId,
-        string responseBody)
+    private readonly AddApplicationResponseCommandValidator _validator = new();
+    
+    [Fact]
+    public void Validate_ShouldSucceed_WhenAllPropertiesValid()
     {
         // Arrange
-        var command = new AddApplicationResponseCommand(
-            applicationId,
-            responseBody);
-        var validator = new AddApplicationResponseCommandValidator();
-
+        var encodedBody = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("some body"));
+        var command = new AddApplicationResponseCommand(Guid.NewGuid(), encodedBody);
+        
         // Act
-        var result = validator.Validate(command);
+        var result = _validator.TestValidate(command);
 
         // Assert
-        Assert.True(result.IsValid);
+        result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Theory]
@@ -32,33 +30,40 @@ public class AddApplicationResponseCommandValidatorTests
     public void Validate_ShouldFail_WhenResponseBodyEmpty(string responseBody)
     {
         // Arrange
-        var command = new AddApplicationResponseCommand(
-            Guid.NewGuid(),
-            responseBody);
-        var validator = new AddApplicationResponseCommandValidator();
+        var command = new AddApplicationResponseCommand(Guid.NewGuid(), responseBody);
 
         // Act
-        var result = validator.Validate(command);
+        var result = _validator.TestValidate(command);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == nameof(command.ResponseBody));
+        result.ShouldHaveValidationErrorFor(c => c.ResponseBody);
     }
 
+    [Fact]
+    public void Validate_ShouldFail_WhenResponseBodyIsNotBase64()
+    {
+        // Arrange
+        var command = new AddApplicationResponseCommand(Guid.NewGuid(), "this is not a base64 string");
+
+        // Act
+        var result = _validator.TestValidate(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(c => c.ResponseBody)
+            .WithErrorMessage("ResponseBody must be a valid Base64 encoded string.");
+    }
+    
     [Fact]
     public void Validate_ShouldFail_WhenApplicationIdEmpty()
     {
         // Arrange
-        var command = new AddApplicationResponseCommand(
-            Guid.Empty,
-            "Valid response body");
-        var validator = new AddApplicationResponseCommandValidator();
+        var encodedBody = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("some body"));
+        var command = new AddApplicationResponseCommand(Guid.Empty, encodedBody);
 
         // Act
-        var result = validator.Validate(command);
+        var result = _validator.TestValidate(command);
 
         // Assert
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == nameof(command.ApplicationId));
+        result.ShouldHaveValidationErrorFor(c => c.ApplicationId);
     }
 } 

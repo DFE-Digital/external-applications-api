@@ -77,8 +77,10 @@ public sealed class AddApplicationResponseCommandHandler(
             if (application is null)
                 return Result<ApplicationResponseDto>.Failure("Application not found");
 
+            var decodedResponseBody = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(request.ResponseBody));
+
             // Add the new response version using factory
-            var newResponse = applicationFactory.AddResponseToApplication(application, request.ResponseBody, dbUser.Id!);
+            var newResponse = applicationFactory.AddResponseToApplication(application, decodedResponseBody, dbUser.Id!);
 
             await unitOfWork.CommitAsync(cancellationToken);
 
@@ -89,6 +91,10 @@ public sealed class AddApplicationResponseCommandHandler(
                 newResponse.ResponseBody,
                 newResponse.CreatedOn,
                 newResponse.CreatedBy.Value));
+        }
+        catch (FormatException)
+        {
+            return Result<ApplicationResponseDto>.Failure("Invalid Base64 format for ResponseBody");
         }
         catch (Exception e)
         {

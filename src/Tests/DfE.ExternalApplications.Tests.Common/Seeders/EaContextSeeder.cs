@@ -27,8 +27,6 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
         public const string SubmitterRoleId = "a5d3d871-ce57-47b9-807d-de5c1551f9f2";
 
 
-
-        
         public static void SeedTestData(ExternalApplicationsContext ctx)
         {
             var roleAdmin = new Role(new RoleId(new Guid(AdminRoleId)), "Administrator");
@@ -80,7 +78,7 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
             var templateVersion = new TemplateVersion(
                 templateVersionId,
                 templateId,
-                versionNumber: "v1.0",
+                versionNumber: "1.0.0",
                 jsonSchema: "{ \"type\": \"object\", \"properties\": { \"name\": { \"type\": \"string\" } } }",
                 createdOn: now,
                 createdBy: aliceId,

@@ -22,7 +22,8 @@ public class AddApplicationResponseCommandHandlerTests
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization))]
     public async Task Handle_ShouldAddResponseVersion_WhenValidRequest(
-        AddApplicationResponseCommand command,
+        Guid applicationId,
+        string responseBody,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
@@ -30,59 +31,32 @@ public class AddApplicationResponseCommandHandlerTests
         IUnitOfWork unitOfWork)
     {
         // Arrange
+        var encodedBody = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(responseBody));
+        var command = new AddApplicationResponseCommand(applicationId, encodedBody);
+        
         var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         var httpContext = new DefaultHttpContext();
         var email = "test@example.com";
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Email, email)
-        };
+        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var user = new User(
-            new UserId(Guid.NewGuid()),
-            new RoleId(Guid.NewGuid()),
-            "Test User",
-            email,
-            DateTime.UtcNow,
-            null,
-            null,
-            null);
-
+        var user = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", email, DateTime.UtcNow, null, null, null);
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
         permissionCheckerService.HasPermission(ResourceType.Application, command.ApplicationId.ToString(), AccessType.Write).Returns(true);
 
-        var applicationId = new ApplicationId(command.ApplicationId);
-        var application = new Domain.Entities.Application(
-            applicationId,
-            "APP-001",
-            new TemplateVersionId(Guid.NewGuid()),
-            DateTime.UtcNow,
-            user.Id!);
-
+        var appDomainId = new ApplicationId(command.ApplicationId);
+        var application = new Domain.Entities.Application(appDomainId, "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, user.Id!);
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
+        
+        var newResponse = new ApplicationResponse(new ResponseId(Guid.NewGuid()), appDomainId, responseBody, DateTime.UtcNow, user.Id!);
 
-        var newResponse = new ApplicationResponse(
-            new ResponseId(Guid.NewGuid()),
-            applicationId,
-            command.ResponseBody,
-            DateTime.UtcNow,
-            user.Id!);
+        applicationFactory.AddResponseToApplication(application, responseBody, user.Id!).Returns(newResponse);
 
-        applicationFactory.AddResponseToApplication(application, command.ResponseBody, user.Id!)
-            .Returns(newResponse);
-
-        var handler = new AddApplicationResponseCommandHandler(
-            applicationRepo,
-            userRepo,
-            httpContextAccessor,
-            permissionCheckerService,
-            applicationFactory,
-            unitOfWork);
+        var handler = new AddApplicationResponseCommandHandler(applicationRepo, userRepo, httpContextAccessor, permissionCheckerService, applicationFactory, unitOfWork);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -91,16 +65,16 @@ public class AddApplicationResponseCommandHandlerTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal(command.ApplicationId, result.Value.ApplicationId);
-        Assert.Equal(command.ResponseBody, result.Value.ResponseBody);
+        Assert.Equal(responseBody, result.Value.ResponseBody);
         Assert.Equal(user.Id!.Value, result.Value.CreatedBy);
-
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization))]
     public async Task Handle_ShouldAddResponseVersion_WhenValidRequestWithExternalId(
-        AddApplicationResponseCommand command,
+        Guid applicationId,
+        string responseBody,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
@@ -108,61 +82,32 @@ public class AddApplicationResponseCommandHandlerTests
         IUnitOfWork unitOfWork)
     {
         // Arrange
+        var encodedBody = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(responseBody));
+        var command = new AddApplicationResponseCommand(applicationId, encodedBody);
+
         var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         var httpContext = new DefaultHttpContext();
         var externalId = "external-id";
-        var claims = new List<Claim>
-        {
-            new("appid", externalId),
-            new(ClaimTypes.Email, "test@example.com")
-        };
+        var claims = new List<Claim> { new("appid", externalId), new(ClaimTypes.Email, "test@example.com") };
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var user = new User(
-            new UserId(Guid.NewGuid()),
-            new RoleId(Guid.NewGuid()),
-            "Test User",
-            "test@example.com",
-            DateTime.UtcNow,
-            null,
-            null,
-            null,
-            externalId);
-
+        var user = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", "test@example.com", DateTime.UtcNow, null, null, null, externalId);
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
         permissionCheckerService.HasPermission(ResourceType.Application, command.ApplicationId.ToString(), AccessType.Write).Returns(true);
 
-        var applicationId = new ApplicationId(command.ApplicationId);
-        var application = new Domain.Entities.Application(
-            applicationId,
-            "APP-001",
-            new TemplateVersionId(Guid.NewGuid()),
-            DateTime.UtcNow,
-            user.Id!);
-
+        var appDomainId = new ApplicationId(command.ApplicationId);
+        var application = new Domain.Entities.Application(appDomainId, "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, user.Id!);
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
 
-        var newResponse = new ApplicationResponse(
-            new ResponseId(Guid.NewGuid()),
-            applicationId,
-            command.ResponseBody,
-            DateTime.UtcNow,
-            user.Id!);
+        var newResponse = new ApplicationResponse(new ResponseId(Guid.NewGuid()), appDomainId, responseBody, DateTime.UtcNow, user.Id!);
 
-        applicationFactory.AddResponseToApplication(application, command.ResponseBody, user.Id!)
-            .Returns(newResponse);
+        applicationFactory.AddResponseToApplication(application, responseBody, user.Id!).Returns(newResponse);
 
-        var handler = new AddApplicationResponseCommandHandler(
-            applicationRepo,
-            userRepo,
-            httpContextAccessor,
-            permissionCheckerService,
-            applicationFactory,
-            unitOfWork);
+        var handler = new AddApplicationResponseCommandHandler(applicationRepo, userRepo, httpContextAccessor, permissionCheckerService, applicationFactory, unitOfWork);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -171,7 +116,7 @@ public class AddApplicationResponseCommandHandlerTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal(command.ApplicationId, result.Value.ApplicationId);
-        Assert.Equal(command.ResponseBody, result.Value.ResponseBody);
+        Assert.Equal(responseBody, result.Value.ResponseBody);
     }
 
     [Theory]
@@ -351,5 +296,56 @@ public class AddApplicationResponseCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Application not found", result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenBodyIsInvalidBase64(
+        Guid applicationId,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IApplicationFactory applicationFactory,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var command = new AddApplicationResponseCommand(applicationId, "this is not base64");
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", email, DateTime.UtcNow, null, null, null);
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        permissionCheckerService.HasPermission(ResourceType.Application, command.ApplicationId.ToString(), AccessType.Write).Returns(true);
+
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        var handler = new AddApplicationResponseCommandHandler(
+            applicationRepo,
+            userRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            applicationFactory,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Invalid Base64 format for ResponseBody", result.Error);
     }
 } 

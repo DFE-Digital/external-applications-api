@@ -1,5 +1,7 @@
 using Asp.Versioning;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Templates.Commands;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -38,5 +40,39 @@ public class TemplatesController(ISender sender) : ControllerBase
         }
 
         return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Creates a new schema version for the specified template.
+    /// </summary>
+    [HttpPost("{templateId}/schema")]
+    [SwaggerResponse(201, "The template version was created successfully.", typeof(TemplateSchemaDto))]
+    [SwaggerResponse(400, "Request was invalid or template not found.")]
+    [SwaggerResponse(403, "Access denied.")]
+    [Authorize(Policy = "CanWriteTemplate")]
+    [Authorize(Policy = "IsAdmin")]
+    public async Task<IActionResult> CreateTemplateVersionAsync(
+        [FromRoute] Guid templateId,
+        [FromBody] CreateTemplateVersionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new CreateTemplateVersionCommand(
+            templateId,
+            request.VersionNumber,
+            request.JsonSchema);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Template not found" => NotFound(result.Error),
+                "Access denied" => Forbid(),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return StatusCode(201, result.Value);
     }
 }
