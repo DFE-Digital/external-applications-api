@@ -36,6 +36,9 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             if (dbUser is null)
                 throw new SecurityTokenException($"ExchangeTokenQueryHandler > User not found for email {email}");
 
+            if (dbUser.Role is null)
+                throw new SecurityTokenException($"ExchangeTokenQueryHandler > User {email} has no role assigned");
+
             var httpCtx = httpCtxAcc.HttpContext!;
             var azureAuth = await httpCtx.AuthenticateAsync("AzureEntra");
             var svcRoles = azureAuth.Succeeded
@@ -60,6 +63,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                     identity.AddClaim(claim);
                 }
             }
+            identity.AddClaim(new Claim(ClaimTypes.Role, dbUser.Role.Name));
             
             identity.AddClaims(svcRoles);
 

@@ -12,6 +12,7 @@ using MockQueryable.NSubstitute;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using System.Security.Claims;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using MockQueryable;
 using Microsoft.AspNetCore.Authentication;
 
@@ -43,6 +44,9 @@ public class ExchangeTokenQueryHandlerTests
 
         userCustom.OverrideEmail = email;
         var user = new Fixture().Customize(userCustom).Create<User>();
+        var role = new Role(user.RoleId, "TestRole");
+        user.GetType().GetProperty("Role")!.SetValue(user, role);
+        
         var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
         userRepo.Query().Returns(userQueryable);
 
@@ -71,7 +75,47 @@ public class ExchangeTokenQueryHandlerTests
         // Assert
         Assert.NotNull(result);
         await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, Arg.Any<CancellationToken>());
+        await tokenService.Received(1).GetUserTokenAsync(Arg.Is<ClaimsPrincipal>(p => p.HasClaim(ClaimTypes.Role, user.Role.Name)));
     }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_UserWithNoRole_ShouldThrowException(
+        string subjectToken,
+        string email,
+        [Frozen] IExternalIdentityValidator externalValidator,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IUserTokenService tokenService,
+        [Frozen] IHttpContextAccessor httpContextAccessor)
+    {
+        // Arrange
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        var identity = new ClaimsIdentity(claims);
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+
+        externalValidator.ValidateIdTokenAsync(subjectToken, Arg.Any<CancellationToken>())
+            .Returns(claimsPrincipal);
+
+        var user = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "test user", email, DateTime.UtcNow,
+            null, null, null);
+        var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
+        userRepo.Query().Returns(userQueryable);
+        
+        var handler = new ExchangeTokenQueryHandler(
+            externalValidator,
+            userRepo,
+            tokenService,
+            httpContextAccessor);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<SecurityTokenException>(
+                   () => handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None));
+        Assert.Equal($"ExchangeTokenQueryHandler > User {email} has no role assigned", exception.Message);
+    }
+
 
     [Theory]
     [CustomAutoData]

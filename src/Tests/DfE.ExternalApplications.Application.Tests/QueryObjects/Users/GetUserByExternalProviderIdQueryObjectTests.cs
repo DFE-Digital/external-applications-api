@@ -17,6 +17,9 @@ public class GetUserByExternalProviderIdQueryObjectTests
         var matchingUser = new Fixture()
             .Customize(new UserCustomization { OverrideExternalProviderId = externalProviderId })
             .Create<User>();
+            
+        var role = new Role(matchingUser.RoleId, "Test Role");
+        matchingUser.GetType().GetProperty("Role")!.SetValue(matchingUser, role);
 
         var otherUser1 = new Fixture()
             .Customize(new UserCustomization { OverrideExternalProviderId = "other-id-1" })
@@ -35,6 +38,7 @@ public class GetUserByExternalProviderIdQueryObjectTests
         // Assert
         Assert.Single(result);
         Assert.Equal(externalProviderId, result[0].ExternalProviderId);
+        Assert.NotNull(result[0].Role);
     }
 
     [Theory]
