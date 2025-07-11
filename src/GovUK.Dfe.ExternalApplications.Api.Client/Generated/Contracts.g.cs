@@ -180,17 +180,17 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <summary>
         /// Returns all my permissions.
         /// </summary>
-        /// <returns>A UserPermission object representing the User's Permissions.</returns>
+        /// <returns>A UserAuthorizationDto object representing the User's Permissions and Roles.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync();
+        System.Threading.Tasks.Task<UserAuthorizationDto> GetMyPermissionsAsync();
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns all my permissions.
         /// </summary>
-        /// <returns>A UserPermission object representing the User's Permissions.</returns>
+        /// <returns>A UserAuthorizationDto object representing the User's Permissions and Roles.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task<UserAuthorizationDto> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken);
 
     }
 

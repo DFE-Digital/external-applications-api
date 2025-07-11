@@ -12,7 +12,8 @@ namespace DfE.ExternalApplications.Application.Users.QueryObjects
 
             return query
                 .Where(u => u.ExternalProviderId == externalProviderId)
-                .Include(u => u.Permissions);
+                .Include(u => u.Permissions)
+                .Include(u => u.Role);
         }
     }
 }

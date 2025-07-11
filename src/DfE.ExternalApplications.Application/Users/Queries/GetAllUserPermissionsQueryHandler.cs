@@ -11,14 +11,14 @@ using Microsoft.EntityFrameworkCore;
 namespace DfE.ExternalApplications.Application.Users.Queries
 {
     public sealed record GetAllUserPermissionsQuery(UserId UserId)
-        : IRequest<Result<IReadOnlyCollection<UserPermissionDto>>>;
+        : IRequest<Result<UserAuthorizationDto>>;
 
     public sealed class GetAllUserPermissionsQueryHandler(
         IEaRepository<User> userRepo,
         ICacheService<IMemoryCacheType> cacheService)
-        : IRequestHandler<GetAllUserPermissionsQuery, Result<IReadOnlyCollection<UserPermissionDto>>>
+        : IRequestHandler<GetAllUserPermissionsQuery, Result<UserAuthorizationDto>>
     {
-        public async Task<Result<IReadOnlyCollection<UserPermissionDto>>> Handle(
+        public async Task<Result<UserAuthorizationDto>> Handle(
             GetAllUserPermissionsQuery request,
             CancellationToken cancellationToken)
         {
@@ -38,27 +38,34 @@ namespace DfE.ExternalApplications.Application.Users.Queries
 
                         if (userWithPermissions is null)
                         {
-                            return Result<IReadOnlyCollection<UserPermissionDto>>.Success(Array.Empty<UserPermissionDto>());
+                            return Result<UserAuthorizationDto>.Success(new UserAuthorizationDto()
+                            {
+                                Permissions = Array.Empty<UserPermissionDto>(),
+                                Roles = Array.Empty<string>(),
+                            });
                         }
 
-                        var dtoList = userWithPermissions.Permissions
-                            .Select(p => new UserPermissionDto
-                            {
-                                ApplicationId = p.ApplicationId?.Value,
-                                ResourceType = p.ResourceType,
-                                ResourceKey = p.ResourceKey,
-                                AccessType = p.AccessType
-                            })
-                            .ToList()
-                            .AsReadOnly();
+                        var userAuthzDto = new UserAuthorizationDto
+                        {
+                            Permissions = userWithPermissions.Permissions
+                                .Select(p => new UserPermissionDto
+                                {
+                                    ApplicationId = p.ApplicationId?.Value,
+                                    ResourceType = p.ResourceType,
+                                    ResourceKey = p.ResourceKey,
+                                    AccessType = p.AccessType
+                                })
+                                .ToArray(),
+                            Roles = new List<string>(){ userWithPermissions.Role?.Name! }
+                        };
 
-                        return Result<IReadOnlyCollection<UserPermissionDto>>.Success(dtoList);
+                        return Result<UserAuthorizationDto>.Success(userAuthzDto);
                     },
                     methodName);
             }
             catch (Exception e)
             {
-                return Result<IReadOnlyCollection<UserPermissionDto>>.Failure(e.ToString());
+                return Result<UserAuthorizationDto>.Failure(e.ToString());
             }
         }
     }

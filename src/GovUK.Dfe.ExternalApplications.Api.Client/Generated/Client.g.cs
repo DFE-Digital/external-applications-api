@@ -1493,9 +1493,9 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// <summary>
         /// Returns all my permissions.
         /// </summary>
-        /// <returns>A UserPermission object representing the User's Permissions.</returns>
+        /// <returns>A UserAuthorizationDto object representing the User's Permissions and Roles.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync()
+        public virtual System.Threading.Tasks.Task<UserAuthorizationDto> GetMyPermissionsAsync()
         {
             return GetMyPermissionsAsync(System.Threading.CancellationToken.None);
         }
@@ -1504,9 +1504,9 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// <summary>
         /// Returns all my permissions.
         /// </summary>
-        /// <returns>A UserPermission object representing the User's Permissions.</returns>
+        /// <returns>A UserAuthorizationDto object representing the User's Permissions and Roles.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<UserAuthorizationDto> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken)
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -1547,7 +1547,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.ObjectModel.ObservableCollection<UserPermissionDto>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<UserAuthorizationDto>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -1558,7 +1558,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                         if (status_ == 401)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ExternalApplicationsException("Unauthorized \u2013 no valid user token", status_, responseText_, headers_, null);
+                            throw new ExternalApplicationsException("Unauthorized no valid user token", status_, responseText_, headers_, null);
                         }
                         else
                         {
