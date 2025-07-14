@@ -78,23 +78,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
-        /// <summary>
-        /// Creates a new application with initial response.
-        /// </summary>
-        /// <returns>The created application.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<ApplicationDto> CreateApplicationAsync(CreateApplicationRequest request)
-        {
-            return CreateApplicationAsync(request, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Creates a new application with initial response.
         /// </summary>
         /// <returns>The created application.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ApplicationDto> CreateApplicationAsync(CreateApplicationRequest request, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ApplicationDto> CreateApplicationAsync(CreateApplicationRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (request == null)
                 throw new System.ArgumentNullException("request");
@@ -181,23 +171,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
             }
         }
 
-        /// <summary>
-        /// Adds a new response version to an existing application.
-        /// </summary>
-        /// <returns>Response version created.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<ApplicationResponseDto> AddApplicationResponseAsync(System.Guid applicationId, AddApplicationResponseRequest request)
-        {
-            return AddApplicationResponseAsync(applicationId, request, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Adds a new response version to an existing application.
         /// </summary>
         /// <returns>Response version created.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ApplicationResponseDto> AddApplicationResponseAsync(System.Guid applicationId, AddApplicationResponseRequest request, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ApplicationResponseDto> AddApplicationResponseAsync(System.Guid applicationId, AddApplicationResponseRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (applicationId == null)
                 throw new System.ArgumentNullException("applicationId");
@@ -301,23 +281,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
             }
         }
 
-        /// <summary>
-        /// Returns all applications the current user can access.
-        /// </summary>
-        /// <returns>A list of applications accessible to the user.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync()
-        {
-            return GetMyApplicationsAsync(System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns all applications the current user can access.
         /// </summary>
         /// <returns>A list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync(bool? includeSchema = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -332,6 +302,12 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                     // Operation Path: "v1/me/applications"
                     urlBuilder_.Append("v1/me/applications");
+                    urlBuilder_.Append('?');
+                    if (includeSchema != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("includeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -391,23 +367,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
             }
         }
 
-        /// <summary>
-        /// Returns all applications for the user by {email}.
-        /// </summary>
-        /// <returns>Applications for the user.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email)
-        {
-            return GetApplicationsForUserAsync(email, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns all applications for the user by {email}.
         /// </summary>
         /// <returns>Applications for the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email, bool? includeSchema = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (email == null)
                 throw new System.ArgumentNullException("email");
@@ -427,6 +393,12 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     urlBuilder_.Append("v1/Users/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(email, System.Globalization.CultureInfo.InvariantCulture)));
                     urlBuilder_.Append("/applications");
+                    urlBuilder_.Append('?');
+                    if (includeSchema != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("includeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -486,23 +458,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
             }
         }
 
-        /// <summary>
-        /// Returns application details with its latest response by application reference.
-        /// </summary>
-        /// <returns>Application details with latest response.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<ApplicationDto> GetApplicationByReferenceAsync(string applicationReference)
-        {
-            return GetApplicationByReferenceAsync(applicationReference, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns application details with its latest response by application reference.
         /// </summary>
         /// <returns>Application details with latest response.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ApplicationDto> GetApplicationByReferenceAsync(string applicationReference, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ApplicationDto> GetApplicationByReferenceAsync(string applicationReference, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (applicationReference == null)
                 throw new System.ArgumentNullException("applicationReference");
@@ -598,23 +560,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
             }
         }
 
-        /// <summary>
-        /// Submits an application, changing its status to Submitted.
-        /// </summary>
-        /// <returns>Application submitted successfully.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<ApplicationDto> SubmitApplicationAsync(System.Guid applicationId)
-        {
-            return SubmitApplicationAsync(applicationId, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Submits an application, changing its status to Submitted.
         /// </summary>
         /// <returns>Application submitted successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ApplicationDto> SubmitApplicationAsync(System.Guid applicationId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ApplicationDto> SubmitApplicationAsync(System.Guid applicationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (applicationId == null)
                 throw new System.ArgumentNullException("applicationId");
@@ -872,23 +824,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
-        /// <summary>
-        /// Returns the latest template schema for the specified template name if the user has access.
-        /// </summary>
-        /// <returns>The latest template schema.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId)
-        {
-            return GetLatestTemplateSchemaAsync(templateId, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<TemplateSchemaDto> GetLatestTemplateSchemaAsync(System.Guid templateId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (templateId == null)
                 throw new System.ArgumentNullException("templateId");
@@ -973,23 +915,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
             }
         }
 
-        /// <summary>
-        /// Creates a new schema version for the specified template.
-        /// </summary>
-        /// <returns>The template version was created successfully.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<TemplateSchemaDto> CreateTemplateVersionAsync(System.Guid templateId, CreateTemplateVersionRequest request)
-        {
-            return CreateTemplateVersionAsync(templateId, request, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Creates a new schema version for the specified template.
         /// </summary>
         /// <returns>The template version was created successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<TemplateSchemaDto> CreateTemplateVersionAsync(System.Guid templateId, CreateTemplateVersionRequest request, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<TemplateSchemaDto> CreateTemplateVersionAsync(System.Guid templateId, CreateTemplateVersionRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (templateId == null)
                 throw new System.ArgumentNullException("templateId");
@@ -1241,21 +1173,12 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
-        /// <summary>
-        /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
-        /// </summary>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request)
-        {
-            return ExchangeAsync(request, System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
         /// </summary>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (request == null)
                 throw new System.ArgumentNullException("request");
@@ -1490,23 +1413,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
-        /// <summary>
-        /// Returns all my permissions.
-        /// </summary>
-        /// <returns>A UserAuthorizationDto object representing the User's Permissions and Roles.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<UserAuthorizationDto> GetMyPermissionsAsync()
-        {
-            return GetMyPermissionsAsync(System.Threading.CancellationToken.None);
-        }
-
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns all my permissions.
         /// </summary>
         /// <returns>A UserAuthorizationDto object representing the User's Permissions and Roles.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<UserAuthorizationDto> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<UserAuthorizationDto> GetMyPermissionsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;

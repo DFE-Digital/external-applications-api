@@ -98,7 +98,8 @@ public sealed class CreateApplicationCommandHandler(
                 ApplicationReference = application.ApplicationReference,
                 TemplateVersionId = application.TemplateVersionId.Value,
                 DateCreated = application.CreatedOn,
-                Status = application.Status
+                Status = application.Status,
+                TemplateSchema = templateSchemaResult.Value
             });
         }
         catch (Exception e)

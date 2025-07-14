@@ -96,7 +96,7 @@
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
         "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
       ],
-      "generateOptionalParameters": false,
+      "generateOptionalParameters": true,
       "generateJsonMethods": true,
       "generateXmlDocumentation": true,
       "enforceFlagEnums": false,

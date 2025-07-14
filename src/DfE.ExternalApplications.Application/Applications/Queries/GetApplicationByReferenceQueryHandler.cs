@@ -69,7 +69,14 @@ public sealed class GetApplicationByReferenceQueryHandler(
                 Status = application.Status,
                 DateCreated = application.CreatedOn,
                 DateSubmitted = application.Status == ApplicationStatus.Submitted ? application.LastModifiedOn : null,
-                LatestResponse = responseDto
+                LatestResponse = responseDto,
+                TemplateSchema = application.TemplateVersion != null ? new TemplateSchemaDto
+                {
+                    TemplateId = application.TemplateVersion.Template?.Id?.Value ?? Guid.Empty,
+                    TemplateVersionId = application.TemplateVersion.Id!.Value,
+                    VersionNumber = application.TemplateVersion.VersionNumber,
+                    JsonSchema = application.TemplateVersion.JsonSchema
+                } : null
             };
 
             return Result<ApplicationDto>.Success(result);

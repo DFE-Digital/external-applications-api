@@ -109,6 +109,17 @@
         ],
         "summary": "Returns all applications the current user can access.",
         "operationId": "Applications_GetMyApplications",
+        "parameters": [
+          {
+            "name": "includeSchema",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
         "responses": {
           "200": {
             "description": "A list of applications accessible to the user.",
@@ -145,6 +156,15 @@
               "type": "string"
             },
             "x-position": 1
+          },
+          {
+            "name": "includeSchema",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -446,6 +466,14 @@
                 "$ref": "#/components/schemas/ApplicationResponseDetailsDto"
               }
             ]
+          },
+          "templateSchema": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TemplateSchemaDto"
+              }
+            ]
           }
         }
       },
@@ -489,6 +517,26 @@
             "type": "string",
             "format": "guid",
             "nullable": true
+          }
+        }
+      },
+      "TemplateSchemaDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "templateVersionId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "versionNumber": {
+            "type": "string"
+          },
+          "jsonSchema": {
+            "type": "string"
           }
         }
       },
@@ -538,26 +586,6 @@
         "additionalProperties": false,
         "properties": {
           "responseBody": {
-            "type": "string"
-          }
-        }
-      },
-      "TemplateSchemaDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "templateId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "templateVersionId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "versionNumber": {
-            "type": "string"
-          },
-          "jsonSchema": {
             "type": "string"
           }
         }

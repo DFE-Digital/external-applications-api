@@ -28,7 +28,7 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
-        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email), Arg.Any<CancellationToken>())
+        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false), Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
@@ -39,7 +39,7 @@ public class GetMyApplicationsQueryHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(applications.Count, result.Value!.Count);
-        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email), Arg.Any<CancellationToken>());
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -57,7 +57,7 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
-        mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId), Arg.Any<CancellationToken>())
+        mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == false), Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
@@ -68,7 +68,98 @@ public class GetMyApplicationsQueryHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(applications.Count, result.Value!.Count);
-        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId), Arg.Any<CancellationToken>());
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == false), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldReturnApplicationsWithoutSchema_WhenIncludeSchemaIsFalse(
+        string emailName,
+        List<ApplicationDto> applications,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var email = $"{emailName}@example.com";
+        var context = Substitute.For<HttpContext>();
+        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }, "TestAuth");
+        identity.AddClaim(new Claim("authenticated", "true"));
+        var principal = new ClaimsPrincipal(identity);
+        context.User.Returns(principal);
+        httpContextAccessor.HttpContext.Returns(context);
+
+        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+
+        var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetMyApplicationsQuery(), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(applications.Count, result.Value!.Count);
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldReturnApplicationsWithSchema_WhenIncludeSchemaIsTrue(
+        string emailName,
+        List<ApplicationDto> applications,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var email = $"{emailName}@example.com";
+        var context = Substitute.For<HttpContext>();
+        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }, "TestAuth");
+        identity.AddClaim(new Claim("authenticated", "true"));
+        var principal = new ClaimsPrincipal(identity);
+        context.User.Returns(principal);
+        httpContextAccessor.HttpContext.Returns(context);
+
+        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == true), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+
+        var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetMyApplicationsQuery(true), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(applications.Count, result.Value!.Count);
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == true), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldReturnApplicationsWithSchema_WhenUserHasExternalIdAndIncludeSchemaIsTrue(
+        string externalId,
+        List<ApplicationDto> applications,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var identity = new ClaimsIdentity(new[] { new Claim("appid", externalId) }, "TestAuth", ClaimTypes.Email, ClaimTypes.Role);
+        var principal = new ClaimsPrincipal(identity);
+        var context = Substitute.For<HttpContext>();
+        context.User.Returns(principal);
+        httpContextAccessor.HttpContext.Returns(context);
+
+        mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == true), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+
+        var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetMyApplicationsQuery(true), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(applications.Count, result.Value!.Count);
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == true), Arg.Any<CancellationToken>());
     }
 
     [Theory]

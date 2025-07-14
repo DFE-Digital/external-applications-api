@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetApplicationsForUserQuery(string Email)
+public sealed record GetApplicationsForUserQuery(string Email, bool IncludeSchema = false)
     : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserQueryHandler(
@@ -67,7 +67,14 @@ public sealed class GetApplicationsForUserQueryHandler(
                         TemplateVersionId = a.TemplateVersionId.Value,
                         DateCreated = a.CreatedOn,
                         DateSubmitted = a.Status == ApplicationStatus.Submitted ? a.LastModifiedOn : null,
-                        Status = a.Status
+                        Status = a.Status,
+                        TemplateSchema = request.IncludeSchema && a.TemplateVersion != null ? new TemplateSchemaDto
+                        {
+                            TemplateId = a.TemplateVersion.Template?.Id?.Value ?? Guid.Empty,
+                            TemplateVersionId = a.TemplateVersion.Id!.Value,
+                            VersionNumber = a.TemplateVersion.VersionNumber,
+                            JsonSchema = a.TemplateVersion.JsonSchema
+                        } : null
                     }).ToList().AsReadOnly();
 
                     return Result<IReadOnlyCollection<ApplicationDto>>.Success(dtoList);

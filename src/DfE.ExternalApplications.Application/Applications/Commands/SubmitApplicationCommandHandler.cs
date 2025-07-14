@@ -96,7 +96,8 @@ public sealed class SubmitApplicationCommandHandler(
                 Status = application.Status,
                 DateCreated = application.CreatedOn,
                 DateSubmitted = application.LastModifiedOn,
-                LatestResponse = null
+                LatestResponse = null,
+                TemplateSchema = null
             });
         }
         catch (Exception e)
