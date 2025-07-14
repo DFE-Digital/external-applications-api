@@ -101,6 +101,11 @@ public class GetApplicationByReferenceQueryHandlerTests
         Assert.NotNull(result.Value.LatestResponse);
         Assert.Equal(responseId.Value, result.Value.LatestResponse.ResponseId);
         Assert.Equal("Test response body", result.Value.LatestResponse.ResponseBody);
+        Assert.NotNull(result.Value.TemplateSchema);
+        Assert.Equal(template.Id!.Value, result.Value.TemplateSchema.TemplateId);
+        Assert.Equal(templateVersionId.Value, result.Value.TemplateSchema.TemplateVersionId);
+        Assert.Equal("1.0", result.Value.TemplateSchema.VersionNumber);
+        Assert.Equal("{}", result.Value.TemplateSchema.JsonSchema);
     }
 
     [Theory]
@@ -123,12 +128,31 @@ public class GetApplicationByReferenceQueryHandlerTests
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         var applicationId = new ApplicationId(Guid.NewGuid());
+        var templateVersionId = new TemplateVersionId(Guid.NewGuid());
+        
+        var template = new Template(
+            new TemplateId(Guid.NewGuid()),
+            "Test Template",
+            DateTime.UtcNow,
+            user.Id!);
+
+        var templateVersion = new TemplateVersion(
+            templateVersionId,
+            template.Id!,
+            "1.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
+        templateVersion.GetType().GetProperty("Template")?.SetValue(templateVersion, template);
+
         var application = new Domain.Entities.Application(
             applicationId,
             query.ApplicationReference,
-            new TemplateVersionId(Guid.NewGuid()),
+            templateVersionId,
             DateTime.UtcNow,
             user.Id!);
+
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
 
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
@@ -152,6 +176,11 @@ public class GetApplicationByReferenceQueryHandlerTests
         Assert.NotNull(result.Value);
         Assert.Equal(query.ApplicationReference, result.Value.ApplicationReference);
         Assert.Null(result.Value.LatestResponse); // No responses added
+        Assert.NotNull(result.Value.TemplateSchema);
+        Assert.Equal(template.Id!.Value, result.Value.TemplateSchema.TemplateId);
+        Assert.Equal(templateVersionId.Value, result.Value.TemplateSchema.TemplateVersionId);
+        Assert.Equal("1.0", result.Value.TemplateSchema.VersionNumber);
+        Assert.Equal("{}", result.Value.TemplateSchema.JsonSchema);
     }
 
     [Theory]

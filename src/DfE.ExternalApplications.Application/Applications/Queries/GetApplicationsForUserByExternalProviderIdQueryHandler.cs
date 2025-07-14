@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetApplicationsForUserByExternalProviderIdQuery(string ExternalProviderId)
+public sealed record GetApplicationsForUserByExternalProviderIdQuery(string ExternalProviderId, bool IncludeSchema = false)
     : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
@@ -61,7 +61,14 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                         DateCreated = a.CreatedOn,
                         DateSubmitted = a.Status == ApplicationStatus.Submitted ? a.LastModifiedOn : null,
                         TemplateName = a.TemplateVersion?.Template?.Name ?? string.Empty,
-                        Status = a.Status
+                        Status = a.Status,
+                        TemplateSchema = request.IncludeSchema && a.TemplateVersion != null ? new TemplateSchemaDto
+                        {
+                            TemplateId = a.TemplateVersion.Template?.Id?.Value ?? Guid.Empty,
+                            TemplateVersionId = a.TemplateVersion.Id!.Value,
+                            VersionNumber = a.TemplateVersion.VersionNumber,
+                            JsonSchema = a.TemplateVersion.JsonSchema
+                        } : null
                     }).ToList().AsReadOnly();
 
                     return Result<IReadOnlyCollection<ApplicationDto>>.Success(dtoList);

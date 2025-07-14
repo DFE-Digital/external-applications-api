@@ -69,9 +69,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized  no valid user token")]
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetMyApplicationsAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] bool? includeSchema = null)
     {
-        var query = new GetMyApplicationsQuery();
+        var query = new GetMyApplicationsQuery(includeSchema ?? false);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
@@ -90,9 +91,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetApplicationsForUserAsync(
         [FromRoute] string email,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] bool? includeSchema = null)
     {
-        var query = new GetApplicationsForUserQuery(email);
+        var query = new GetApplicationsForUserQuery(email, includeSchema ?? false);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)

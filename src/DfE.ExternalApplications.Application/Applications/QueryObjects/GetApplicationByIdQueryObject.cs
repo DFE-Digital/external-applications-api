@@ -9,5 +9,7 @@ public sealed class GetApplicationByIdQueryObject(ApplicationId applicationId)
 {
     public IQueryable<Domain.Entities.Application> Apply(IQueryable<Domain.Entities.Application> query) =>
         query.Where(a => a.Id == applicationId)
-             .Include(a => a.Responses);
+             .Include(a => a.Responses)
+             .Include(a => a.TemplateVersion)
+             .ThenInclude(tv => tv!.Template);
 } 

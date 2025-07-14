@@ -42,6 +42,11 @@ public class ApplicationsControllerTests
         // Assert
         Assert.NotNull(result);
         Assert.StartsWith("APP-", result.ApplicationReference);
+        Assert.NotNull(result.TemplateSchema);
+        Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateId);
+        Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateVersionId);
+        Assert.NotEmpty(result.TemplateSchema.VersionNumber);
+        Assert.NotEmpty(result.TemplateSchema.JsonSchema);
     }
 
     [Theory]
@@ -248,30 +253,7 @@ public class ApplicationsControllerTests
         Assert.Equal(400, ex.StatusCode);
     }
 
-    [Theory]
-    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-    public async Task GetMyApplicationsAsync_ShouldReturnApplications_WhenUserHasAccess(
-        CustomWebApplicationDbContextFactory<Program> factory,
-        IApplicationsClient applicationsClient,
-        HttpClient httpClient)
-    {
-        // Arrange
-        factory.TestClaims = new List<Claim>
-        {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "Application:Read")
-        };
 
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "test-token");
-
-        // Act
-        var result = await applicationsClient.GetMyApplicationsAsync();
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.NotEmpty(result);
-    }
 
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
@@ -281,7 +263,7 @@ public class ApplicationsControllerTests
     {
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-            () => applicationsClient.GetMyApplicationsAsync());
+            () => applicationsClient.GetMyApplicationsAsync(includeSchema: null));
         Assert.Equal(403, ex.StatusCode);
     }
 
@@ -303,7 +285,7 @@ public class ApplicationsControllerTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-            () => applicationsClient.GetMyApplicationsAsync());
+            () => applicationsClient.GetMyApplicationsAsync(includeSchema: null));
         Assert.Equal(403, ex.StatusCode);
     }
 
@@ -330,6 +312,11 @@ public class ApplicationsControllerTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(EaContextSeeder.ApplicationReference, result.ApplicationReference);
+        Assert.NotNull(result.TemplateSchema);
+        Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateId);
+        Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateVersionId);
+        Assert.NotEmpty(result.TemplateSchema.VersionNumber);
+        Assert.NotEmpty(result.TemplateSchema.JsonSchema);
     }
 
     [Theory]
@@ -538,4 +525,157 @@ public class ApplicationsControllerTests
              () => applicationsClient.SubmitApplicationAsync(applicationId));
          Assert.Equal(400, ex.StatusCode); // Should be 400 Bad Request with our error message
      }
- }  
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnApplicationsWithoutSchema_WhenIncludeSchemaIsDefault(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act - Testing default behavior (includeSchema defaults to false when null)
+        var result = await applicationsClient.GetMyApplicationsAsync(includeSchema: null);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        Assert.All(result, app => 
+        {
+            Assert.Null(app.TemplateSchema);
+        });
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnApplicationsWithSchema_WhenIncludeSchemaIsTrue(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act
+        var result = await applicationsClient.GetMyApplicationsAsync(includeSchema: true);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        Assert.All(result, app => 
+        {
+            Assert.NotNull(app.TemplateSchema);
+            Assert.NotEqual(Guid.Empty, app.TemplateSchema.TemplateId);
+            Assert.NotEqual(Guid.Empty, app.TemplateSchema.TemplateVersionId);
+            Assert.NotEmpty(app.TemplateSchema.VersionNumber);
+            Assert.NotEmpty(app.TemplateSchema.JsonSchema);
+        });
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnApplicationsWithoutSchema_WhenIncludeSchemaIsFalse(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act
+        var result = await applicationsClient.GetMyApplicationsAsync(includeSchema: false);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        Assert.All(result, app => 
+        {
+            Assert.Null(app.TemplateSchema);
+        });
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetApplicationsForUserAsync_ShouldReturnApplicationsWithSchema_WhenIncludeSchemaIsTrue(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act
+        var result = await applicationsClient.GetApplicationsForUserAsync(EaContextSeeder.BobEmail, includeSchema: true);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        Assert.All(result, app => 
+        {
+            Assert.NotNull(app.TemplateSchema);
+            Assert.NotEqual(Guid.Empty, app.TemplateSchema.TemplateId);
+            Assert.NotEqual(Guid.Empty, app.TemplateSchema.TemplateVersionId);
+            Assert.NotEmpty(app.TemplateSchema.VersionNumber);
+            Assert.NotEmpty(app.TemplateSchema.JsonSchema);
+        });
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetApplicationsForUserAsync_ShouldReturnApplicationsWithoutSchema_WhenIncludeSchemaIsFalse(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act
+        var result = await applicationsClient.GetApplicationsForUserAsync(EaContextSeeder.BobEmail, includeSchema: false);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+        Assert.All(result, app => 
+        {
+            Assert.Null(app.TemplateSchema);
+        });
+    }
+  }  

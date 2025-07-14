@@ -1,15 +1,13 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
-using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Tests.Common.Customizations;
+using DfE.ExternalApplications.Tests.Common.Seeders;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using DfE.ExternalApplications.Tests.Common.Seeders;
-using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
 {
@@ -251,7 +249,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             )
         {
             var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-                () => appsClient.GetMyApplicationsAsync());
+                () => appsClient.GetMyApplicationsAsync(includeSchema: null));
             Assert.Equal(403, ex.StatusCode);
         }
 
@@ -271,7 +269,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
                 new AuthenticationHeaderValue("Bearer", "azure-token");
 
             var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-                () => appsClient.GetApplicationsForUserAsync("bob@example.com"));
+                () => appsClient.GetApplicationsForUserAsync("bob@example.com", includeSchema: null));
 
             Assert.Equal(403, ex.StatusCode);
         }

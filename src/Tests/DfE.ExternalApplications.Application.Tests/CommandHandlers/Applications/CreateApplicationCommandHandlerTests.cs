@@ -104,6 +104,11 @@ public class CreateApplicationCommandHandlerTests
         Assert.NotNull(result.Value);
         Assert.Equal("APP-001", result.Value.ApplicationReference);
         Assert.Equal(templateSchema.TemplateVersionId, result.Value.TemplateVersionId);
+        Assert.NotNull(result.Value.TemplateSchema);
+        Assert.Equal(templateSchema.TemplateId, result.Value.TemplateSchema.TemplateId);
+        Assert.Equal(templateSchema.TemplateVersionId, result.Value.TemplateSchema.TemplateVersionId);
+        Assert.Equal(templateSchema.VersionNumber, result.Value.TemplateSchema.VersionNumber);
+        Assert.Equal(templateSchema.JsonSchema, result.Value.TemplateSchema.JsonSchema);
 
         await applicationRepo.Received(1)
             .AddAsync(Arg.Any<Domain.Entities.Application>(), Arg.Any<CancellationToken>());
@@ -191,6 +196,11 @@ public class CreateApplicationCommandHandlerTests
         Assert.NotNull(result.Value);
         Assert.Equal("APP-001", result.Value.ApplicationReference);
         Assert.Equal(templateSchema.TemplateVersionId, result.Value.TemplateVersionId);
+        Assert.NotNull(result.Value.TemplateSchema);
+        Assert.Equal(templateSchema.TemplateId, result.Value.TemplateSchema.TemplateId);
+        Assert.Equal(templateSchema.TemplateVersionId, result.Value.TemplateSchema.TemplateVersionId);
+        Assert.Equal(templateSchema.VersionNumber, result.Value.TemplateSchema.VersionNumber);
+        Assert.Equal(templateSchema.JsonSchema, result.Value.TemplateSchema.JsonSchema);
 
         await applicationRepo.Received(1)
             .AddAsync(Arg.Any<Domain.Entities.Application>(), Arg.Any<CancellationToken>());
