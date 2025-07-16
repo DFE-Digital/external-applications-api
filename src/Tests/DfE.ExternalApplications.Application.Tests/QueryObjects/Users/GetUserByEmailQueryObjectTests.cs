@@ -6,8 +6,8 @@ using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Users;
 
-public class GetUserByEmailQueryObjectTests
-{
+    public class GetUserByEmailQueryObjectTests
+    {
     [Theory]
     [CustomAutoData(typeof(UserCustomization))]
     public void Apply_ShouldReturnMatchingUser_WhenEmailMatches(
@@ -36,7 +36,7 @@ public class GetUserByEmailQueryObjectTests
         var result = queryObject.Apply(users).ToList();
 
         // Assert
-        Assert.Single(result);
+            Assert.Single(result);
         Assert.Equal(email.ToLowerInvariant(), result[0].Email.ToLowerInvariant());
         Assert.NotNull(result[0].Role);
     }

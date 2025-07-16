@@ -102,4 +102,6 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
         _permissions.Add(permission);
         return permission;
     }
+
+
 }
