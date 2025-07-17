@@ -49,7 +49,7 @@ public class AddContributorCommandHandlerTests
         _user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim(ClaimTypes.Email, "test@example.com")
-        }));
+        }, "TestAuth"));
         _httpContext.User.Returns(_user);
         _httpContextAccessor.HttpContext.Returns(_httpContext);
         
@@ -74,15 +74,12 @@ public class AddContributorCommandHandlerTests
         var application = new Domain.Entities.Application(new ApplicationId(applicationId), "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, dbUser.Id!);
         var contributor = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "John Doe", "newuser@example.com", DateTime.UtcNow, dbUser.Id!, null, null);
 
-        var usersQuery = new[] { dbUser }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(usersQuery);
+        // Set up a single mock that returns all users
+        var allUsers = new[] { dbUser }.AsQueryable().BuildMockDbSet();
+        _userRepo.Query().Returns(allUsers);
 
         var applicationsQuery = new[] { application }.AsQueryable().BuildMockDbSet();
         _applicationRepo.Query().Returns(applicationsQuery);
-
-        // No existing contributor
-        var existingUsersQuery = new List<User>().AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(existingUsersQuery);
 
         _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
         _permissionCheckerService.IsAdmin().Returns(false);
@@ -164,7 +161,7 @@ public class AddContributorCommandHandlerTests
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim("someclaim", "value") // No email or appid claim
-        }));
+        }, "TestAuth"));
         _httpContext.User.Returns(user);
 
         // Act
@@ -232,15 +229,12 @@ public class AddContributorCommandHandlerTests
         var application = new Domain.Entities.Application(new ApplicationId(applicationId), "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, dbUser.Id!);
         var existingContributor = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "John Doe", "existing@example.com", DateTime.UtcNow, null, null, null);
 
-        var usersQuery = new[] { dbUser }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(usersQuery);
+        // Set up a single mock that returns all users
+        var allUsers = new[] { dbUser, existingContributor }.AsQueryable().BuildMockDbSet();
+        _userRepo.Query().Returns(allUsers);
 
         var applicationsQuery = new[] { application }.AsQueryable().BuildMockDbSet();
         _applicationRepo.Query().Returns(applicationsQuery);
-
-        // Existing contributor with permissions
-        var existingUsersQuery = new[] { existingContributor }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(existingUsersQuery);
 
         _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
         _permissionCheckerService.IsAdmin().Returns(false);
@@ -267,15 +261,12 @@ public class AddContributorCommandHandlerTests
         var application = new Domain.Entities.Application(new ApplicationId(applicationId), "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, dbUser.Id!);
         var contributor = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "John Doe", "newuser@example.com", DateTime.UtcNow, dbUser.Id!, null, null);
 
-        var usersQuery = new[] { dbUser }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(usersQuery);
+        // Set up a single mock that returns all users
+        var allUsers = new[] { dbUser }.AsQueryable().BuildMockDbSet();
+        _userRepo.Query().Returns(allUsers);
 
         var applicationsQuery = new[] { application }.AsQueryable().BuildMockDbSet();
         _applicationRepo.Query().Returns(applicationsQuery);
-
-        // No existing contributor
-        var existingUsersQuery = new List<User>().AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(existingUsersQuery);
 
         _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
         _permissionCheckerService.IsAdmin().Returns(false);

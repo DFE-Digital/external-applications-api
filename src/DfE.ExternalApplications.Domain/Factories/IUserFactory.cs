@@ -24,4 +24,8 @@ public interface IUserFactory
         UserId grantedBy,
         ApplicationId? applicationId = null,
         DateTime? grantedOn = null);
+
+    bool RemovePermissionFromUser(
+        User user,
+        Permission permission);
 } 

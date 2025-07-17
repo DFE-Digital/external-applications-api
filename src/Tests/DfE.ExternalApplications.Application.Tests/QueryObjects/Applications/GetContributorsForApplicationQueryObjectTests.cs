@@ -16,7 +16,7 @@ public class GetContributorsForApplicationQueryObjectTests
 
     public GetContributorsForApplicationQueryObjectTests()
     {
-        _userFactory = Substitute.For<IUserFactory>();
+        _userFactory = new UserFactory();
     }
 
     [Fact]

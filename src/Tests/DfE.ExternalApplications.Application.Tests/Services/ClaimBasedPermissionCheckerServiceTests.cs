@@ -515,7 +515,8 @@ public class ClaimBasedPermissionCheckerServiceTests
         var applicationId = "123";
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
-            new Claim(ClaimTypes.Role, "Admin")
+            new Claim(ClaimTypes.Role, "Admin"),
+            new Claim("permission", $"Application:{applicationId}:Write")
         }));
         _httpContext.User.Returns(user);
 

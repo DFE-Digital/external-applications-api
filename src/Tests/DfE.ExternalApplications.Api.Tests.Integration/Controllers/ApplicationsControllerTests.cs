@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
@@ -42,7 +43,7 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.StartsWith("APP-", result.ApplicationReference);
+        Assert.StartsWith("TRF-", result.ApplicationReference);
         Assert.NotNull(result.TemplateSchema);
         Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateId);
         Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateVersionId);
@@ -703,7 +704,7 @@ public class ApplicationsControllerTests
         // Assert
         Assert.NotNull(result);
         // Note: This will be empty initially since no contributors are seeded
-        Assert.IsType<List<UserDto>>(result);
+        Assert.IsType<ObservableCollection<UserDto>>(result);
     }
 
     [Theory]

@@ -27,9 +27,9 @@ public class DefaultApplicationReferenceProviderTests
 
         // Assert
         Assert.NotNull(reference);
-        Assert.StartsWith("APP-", reference);
+        Assert.StartsWith("TRF-", reference);
         Assert.EndsWith("-001", reference);
-        Assert.Equal($"APP-{today:yyyyMMdd}-001", reference);
+        Assert.Equal($"TRF-{today:yyyyMMdd}-001", reference);
     }
 
     [Theory]
@@ -41,7 +41,7 @@ public class DefaultApplicationReferenceProviderTests
         // Arrange
         var today = DateTime.UtcNow.Date;
         appCustom.OverrideCreatedOn = today;
-        appCustom.OverrideReference = $"APP-{today:yyyyMMdd}-002";
+        appCustom.OverrideReference = $"TRF-{today:yyyyMMdd}-002";
 
         var fixture = new Fixture().Customize(appCustom);
         var existingApp = fixture.Create<Domain.Entities.Application>();
@@ -56,9 +56,9 @@ public class DefaultApplicationReferenceProviderTests
 
         // Assert
         Assert.NotNull(reference);
-        Assert.StartsWith("APP-", reference);
+        Assert.StartsWith("TRF-", reference);
         Assert.EndsWith("-003", reference);
-        Assert.Equal($"APP-{today:yyyyMMdd}-003", reference);
+        Assert.Equal($"TRF-{today:yyyyMMdd}-003", reference);
     }
 
     [Theory]
@@ -70,7 +70,7 @@ public class DefaultApplicationReferenceProviderTests
         // Arrange
         var yesterday = DateTime.UtcNow.Date.AddDays(-1);
         appCustom.OverrideCreatedOn = yesterday;
-        appCustom.OverrideReference = $"APP-{yesterday:yyyyMMdd}-002";
+        appCustom.OverrideReference = $"TRF-{yesterday:yyyyMMdd}-002";
 
         var fixture = new Fixture().Customize(appCustom);
         var existingApp = fixture.Create<Domain.Entities.Application>();
@@ -86,9 +86,9 @@ public class DefaultApplicationReferenceProviderTests
 
         // Assert
         Assert.NotNull(reference);
-        Assert.StartsWith("APP-", reference);
+        Assert.StartsWith("TRF-", reference);
         Assert.EndsWith("-001", reference);
-        Assert.Equal($"APP-{today:yyyyMMdd}-001", reference);
+        Assert.Equal($"TRF-{today:yyyyMMdd}-001", reference);
     }
 
     [Theory]
@@ -115,8 +115,8 @@ public class DefaultApplicationReferenceProviderTests
 
         // Assert
         Assert.NotNull(reference);
-        Assert.StartsWith("APP-", reference);
+        Assert.StartsWith("TRF-", reference);
         Assert.EndsWith("-001", reference);
-        Assert.Equal($"APP-{today:yyyyMMdd}-001", reference);
+        Assert.Equal($"TRF-{today:yyyyMMdd}-001", reference);
     }
 } 

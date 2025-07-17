@@ -1,6 +1,7 @@
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
@@ -24,6 +25,7 @@ public sealed class RemoveContributorCommandHandler(
     IEaRepository<User> userRepo,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
+    IUserFactory userFactory,
     IUnitOfWork unitOfWork) : IRequestHandler<RemoveContributorCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(
@@ -93,8 +95,11 @@ public sealed class RemoveContributorCommandHandler(
             if (permission is null)
                 return Result<bool>.Failure("Contributor does not have permission for this application");
 
-            // Remove the permission
-            contributor.Permissions.ToList().Remove(permission);
+            // Remove the permission using the factory
+            var removed = userFactory.RemovePermissionFromUser(contributor, permission);
+
+            if (!removed)
+                return Result<bool>.Failure("Failed to remove contributor permission");
 
             await unitOfWork.CommitAsync(cancellationToken);
 

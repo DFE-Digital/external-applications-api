@@ -15,6 +15,7 @@ using MediatR;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using Microsoft.EntityFrameworkCore;
 using MockQueryable.NSubstitute;
+using DfE.ExternalApplications.Domain.Factories;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Applications;
 
@@ -27,7 +28,8 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IUserFactory userFactory)
     {
         // Arrange
         var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
@@ -50,20 +52,12 @@ public class RemoveContributorCommandHandlerTests
             null,
             null);
 
-        var users = new[] { user }.AsQueryable().BuildMockDbSet();
-        userRepo.Query().Returns(users);
-
-        permissionCheckerService.CanManageContributors(command.ApplicationId.ToString()).Returns(true);
-
         var application = new Domain.Entities.Application(
             new ApplicationId(command.ApplicationId),
             "APP-001",
             new TemplateVersionId(Guid.NewGuid()),
             DateTime.UtcNow,
             user.Id!);
-
-        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
-        applicationRepo.Query().Returns(applications);
 
         // Contributor with permission for this application
         var contributor = new User(
@@ -76,29 +70,45 @@ public class RemoveContributorCommandHandlerTests
             null,
             null);
 
-        // Add permission for this application
-        contributor.AddPermission(
+        // Add permission for this application using real factory
+        var realUserFactory = new UserFactory();
+        realUserFactory.AddPermissionToUser(
+            contributor,
             command.ApplicationId.ToString(),
             ResourceType.Application,
-            AccessType.Read,
+            new[] { AccessType.Read },
             user.Id!,
-            new ApplicationId(command.ApplicationId));
+            new ApplicationId(command.ApplicationId),
+            DateTime.UtcNow);
 
-        var contributorUsers = new[] { contributor }.AsQueryable().BuildMockDbSet();
-        userRepo.Query().Returns(contributorUsers);
+        // Create a mock query that returns different results based on the query
+        // First query: find current user by email (returns user)
+        // Second query: get contributor with all permissions (returns contributor)
+        var allUsers = new[] { user, contributor }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(allUsers);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        // Mock the RemovePermissionFromUser method to return true
+        userFactory.RemovePermissionFromUser(Arg.Any<User>(), Arg.Any<Permission>()).Returns(true);
 
         var handler = new RemoveContributorCommandHandler(
             applicationRepo,
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, $"Result was not successful. Error: {result.Error}");
         Assert.True(result.Value);
 
         await unitOfWork.Received(1)
@@ -112,6 +122,7 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -125,6 +136,7 @@ public class RemoveContributorCommandHandlerTests
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act
@@ -145,6 +157,7 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -162,6 +175,7 @@ public class RemoveContributorCommandHandlerTests
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act
@@ -182,6 +196,7 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -195,6 +210,7 @@ public class RemoveContributorCommandHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
+        // No users found
         var users = new List<User>().AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
@@ -203,6 +219,7 @@ public class RemoveContributorCommandHandlerTests
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act
@@ -223,6 +240,7 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -246,16 +264,28 @@ public class RemoveContributorCommandHandlerTests
             null,
             null);
 
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
+
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
-        permissionCheckerService.CanManageContributors(command.ApplicationId.ToString()).Returns(false);
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(false);
+        permissionCheckerService.IsAdmin().Returns(false);
 
         var handler = new RemoveContributorCommandHandler(
             applicationRepo,
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act
@@ -263,7 +293,7 @@ public class RemoveContributorCommandHandlerTests
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Equal("User does not have permission to manage contributors for this application", result.Error);
+        Assert.Equal("Only the application owner or admin can remove contributors", result.Error);
 
         await unitOfWork.DidNotReceive()
             .CommitAsync(Arg.Any<CancellationToken>());
@@ -276,6 +306,7 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -302,8 +333,7 @@ public class RemoveContributorCommandHandlerTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
-        permissionCheckerService.CanManageContributors(command.ApplicationId.ToString()).Returns(true);
-
+        // No application found
         var applications = new List<Domain.Entities.Application>().AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
 
@@ -312,6 +342,7 @@ public class RemoveContributorCommandHandlerTests
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act
@@ -332,6 +363,7 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -355,11 +387,6 @@ public class RemoveContributorCommandHandlerTests
             null,
             null);
 
-        var users = new[] { user }.AsQueryable().BuildMockDbSet();
-        userRepo.Query().Returns(users);
-
-        permissionCheckerService.CanManageContributors(command.ApplicationId.ToString()).Returns(true);
-
         var application = new Domain.Entities.Application(
             new ApplicationId(command.ApplicationId),
             "APP-001",
@@ -367,18 +394,21 @@ public class RemoveContributorCommandHandlerTests
             DateTime.UtcNow,
             user.Id!);
 
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
 
-        // No contributor found
-        var contributorUsers = new List<User>().AsQueryable().BuildMockDbSet();
-        userRepo.Query().Returns(contributorUsers);
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
 
         var handler = new RemoveContributorCommandHandler(
             applicationRepo,
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act
@@ -399,6 +429,7 @@ public class RemoveContributorCommandHandlerTests
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
         IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -422,20 +453,12 @@ public class RemoveContributorCommandHandlerTests
             null,
             null);
 
-        var users = new[] { user }.AsQueryable().BuildMockDbSet();
-        userRepo.Query().Returns(users);
-
-        permissionCheckerService.CanManageContributors(command.ApplicationId.ToString()).Returns(true);
-
         var application = new Domain.Entities.Application(
             new ApplicationId(command.ApplicationId),
             "APP-001",
             new TemplateVersionId(Guid.NewGuid()),
             DateTime.UtcNow,
             user.Id!);
-
-        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
-        applicationRepo.Query().Returns(applications);
 
         // Contributor without permission for this application
         var contributor = new User(
@@ -448,14 +471,24 @@ public class RemoveContributorCommandHandlerTests
             null,
             null);
 
-        var contributorUsers = new[] { contributor }.AsQueryable().BuildMockDbSet();
-        userRepo.Query().Returns(contributorUsers);
+        // Create a mock query that returns different results based on the query
+        // First query: find current user by email (returns user)
+        // Second query: get contributor with all permissions (returns contributor without permissions)
+        var allUsers = new[] { user, contributor }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(allUsers);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
 
         var handler = new RemoveContributorCommandHandler(
             applicationRepo,
             userRepo,
             httpContextAccessor,
             permissionCheckerService,
+            userFactory,
             unitOfWork);
 
         // Act

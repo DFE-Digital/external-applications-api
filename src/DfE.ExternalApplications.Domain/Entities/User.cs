@@ -104,5 +104,15 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
         return permission;
     }
 
+    /// <summary>
+    /// Internal method to remove a Permission from this User.
+    /// This should only be called by the UserFactory.
+    /// </summary>
+    internal bool RemovePermission(Permission permission)
+    {
+        if (permission == null)
+            throw new ArgumentNullException(nameof(permission));
 
+        return _permissions.Remove(permission);
+    }
 }
