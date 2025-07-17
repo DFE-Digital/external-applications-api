@@ -78,11 +78,11 @@ public class RemoveContributorCommandHandlerTests
 
         // Add permission for this application
         contributor.AddPermission(
-            new ApplicationId(command.ApplicationId),
             command.ApplicationId.ToString(),
             ResourceType.Application,
             AccessType.Read,
-            user.Id!);
+            user.Id!,
+            new ApplicationId(command.ApplicationId));
 
         var contributorUsers = new[] { contributor }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(contributorUsers);

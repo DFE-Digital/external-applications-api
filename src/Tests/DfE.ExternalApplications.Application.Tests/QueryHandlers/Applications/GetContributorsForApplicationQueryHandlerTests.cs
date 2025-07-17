@@ -88,18 +88,18 @@ public class GetContributorsForApplicationQueryHandlerTests
 
         // Add permissions for this application
         contributor1.AddPermission(
-            new ApplicationId(query.ApplicationId),
             query.ApplicationId.ToString(),
             ResourceType.Application,
             AccessType.Read,
-            user.Id!);
+            user.Id!,
+            new ApplicationId(query.ApplicationId));
 
         contributor2.AddPermission(
-            new ApplicationId(query.ApplicationId),
             query.ApplicationId.ToString(),
             ResourceType.Application,
             AccessType.Read,
-            user.Id!);
+            user.Id!,
+            new ApplicationId(query.ApplicationId));
 
         var contributorUsers = new[] { contributor1, contributor2 }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(contributorUsers);

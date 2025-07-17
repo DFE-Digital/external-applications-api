@@ -4,6 +4,7 @@ using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Factories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +12,8 @@ namespace DfE.ExternalApplications.Application.Applications.EventHandlers;
 
 public sealed class ContributorAddedEventHandler(
     ILogger<ContributorAddedEventHandler> logger,
-    IEaRepository<User> userRepo) : BaseEventHandler<ContributorAddedEvent>(logger)
+    IEaRepository<User> userRepo,
+    IUserFactory userFactory) : BaseEventHandler<ContributorAddedEvent>(logger)
 {
     protected override async Task HandleEvent(ContributorAddedEvent notification, CancellationToken cancellationToken)
     {
@@ -37,27 +39,14 @@ public sealed class ContributorAddedEventHandler(
                      p.ResourceType == ResourceType.Application && 
                      p.AccessType == AccessType.Write);
 
-        // Add missing permissions using the aggregate's method
-        if (!hasReadPermission)
-        {
-            user.AddPermission(
-                notification.ApplicationId,
-                notification.ApplicationId.Value.ToString(),
-                ResourceType.Application,
-                AccessType.Read,
-                notification.AddedBy,
-                notification.AddedOn);
-        }
+        // Add missing permissions using the factory method
+        var missingAccessTypes = new List<AccessType>();
+        if (!hasReadPermission) missingAccessTypes.Add(AccessType.Read);
+        if (!hasWritePermission) missingAccessTypes.Add(AccessType.Write);
 
-        if (!hasWritePermission)
+        if (missingAccessTypes.Any())
         {
-            user.AddPermission(
-                notification.ApplicationId,
-                notification.ApplicationId.Value.ToString(),
-                ResourceType.Application,
-                AccessType.Write,
-                notification.AddedBy,
-                notification.AddedOn);
+            userFactory.AddApplicationPermissionsToUser(user, notification.ApplicationId, missingAccessTypes.ToArray(), notification.AddedBy, notification.AddedOn);
         }
 
         // Note: The unit of work will be committed by the command handler that raised the event

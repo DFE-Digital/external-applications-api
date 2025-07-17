@@ -76,11 +76,11 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
     /// Factory method to create and attach a new Permission to this User.
     /// </summary>
     public Permission AddPermission(
-        ApplicationId applicationId,
         string resourceKey,
         ResourceType resourceType,
         AccessType accessType,
         UserId grantedBy,
+        ApplicationId? applicationId = null,
         DateTime? grantedOn = null)
     {
         if (string.IsNullOrWhiteSpace(resourceKey))

@@ -18,7 +18,7 @@ public class UserFactory : IUserFactory
         DateTime? createdOn = null)
     {
         var when = createdOn ?? DateTime.UtcNow;
-        
+
         var contributor = new User(
             id,
             roleId,
@@ -30,20 +30,12 @@ public class UserFactory : IUserFactory
             null);
 
         // Add Read and Write permissions to access the application
-        contributor.AddPermission(
-            applicationId,
-            applicationId.Value.ToString(),
-            ResourceType.Application,
-            AccessType.Read,
-            createdBy,
-            when);
-
-        contributor.AddPermission(
-            applicationId,
-            applicationId.Value.ToString(),
-            ResourceType.Application,
-            AccessType.Write,
-            createdBy,
+        AddPermissionToUser(contributor, 
+            applicationId.Value.ToString(), 
+            ResourceType.Application, 
+            new[] { AccessType.Read, AccessType.Write },
+            createdBy, 
+            applicationId, 
             when);
 
         // Raise domain event for contributor addition
@@ -55,4 +47,27 @@ public class UserFactory : IUserFactory
 
         return contributor;
     }
-} 
+
+    public void AddPermissionToUser(
+        User user,
+        string resourceKey,
+        ResourceType resourceType,
+        AccessType[] accessTypes,
+        UserId grantedBy,
+        ApplicationId? applicationId = null,
+        DateTime? grantedOn = null)
+    {
+        var when = grantedOn ?? DateTime.UtcNow;
+
+        foreach (var accessType in accessTypes)
+        {
+            user.AddPermission(
+                resourceKey,
+                resourceType,
+                accessType,
+                grantedBy,
+                applicationId,
+                when);
+        }
+    }
+}

@@ -26,10 +26,8 @@ public class AddContributorCommandHandlerTests
     [CustomAutoData(typeof(ApplicationCustomization))]
     public async Task Handle_ShouldAddNewContributor_WhenValidRequest(
         AddContributorCommand command,
-        Role defaultRole,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -75,15 +73,10 @@ public class AddContributorCommandHandlerTests
         var existingUsers = new List<User>().AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(existingUsers);
 
-        defaultRole.Id = new RoleId(RoleConstants.UserRoleId);
-        defaultRole.Name = "User";
-        var roles = new[] { defaultRole }.AsQueryable().BuildMockDbSet();
-        roleRepo.Query().Returns(roles);
-
         // Mock the factory to return a contributor
         var contributor = new User(
             new UserId(Guid.NewGuid()),
-            defaultRole.Id!,
+            new RoleId(RoleConstants.UserRoleId),
             command.Name,
             command.Email,
             DateTime.UtcNow,
@@ -103,7 +96,7 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
+            null!, // roleRepo is no longer needed
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
@@ -129,10 +122,8 @@ public class AddContributorCommandHandlerTests
     [CustomAutoData(typeof(ApplicationCustomization))]
     public async Task Handle_ShouldAddPermissionToExistingUser_WhenUserExists(
         AddContributorCommand command,
-        Role defaultRole,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)

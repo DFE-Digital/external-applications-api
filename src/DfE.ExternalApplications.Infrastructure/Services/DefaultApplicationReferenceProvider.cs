@@ -26,6 +26,6 @@ public class DefaultApplicationReferenceProvider(IEaRepository<Application> appl
         }
 
         // Generate new reference in format "APP-YYYYMMDD-NNN"
-        return $"APP-{today:yyyyMMdd}-{currentNumber:000}";
+        return $"TRF-{today:yyyyMMdd}-{currentNumber:000}";
     }
 } 
