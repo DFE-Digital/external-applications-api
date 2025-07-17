@@ -178,9 +178,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetContributorsAsync(
         [FromRoute] Guid applicationId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] bool? includePermissionDetails = null)
     {
-        var query = new GetContributorsForApplicationQuery(applicationId);
+        var query = new GetContributorsForApplicationQuery(applicationId, includePermissionDetails ?? false);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
@@ -188,7 +189,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
             return result.Error switch
             {
                 "Application not found" => NotFound(result.Error),
-                "User does not have permission to read this application" => Forbid(),
+                "Only the application owner or admin can view contributors" => Forbid(),
                 "Not authenticated" => Unauthorized(),
                 _ => BadRequest(result.Error)
             };

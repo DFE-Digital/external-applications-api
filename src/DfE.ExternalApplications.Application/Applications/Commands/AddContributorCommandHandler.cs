@@ -129,7 +129,7 @@ public sealed class AddContributorCommandHandler(
                 }
 
                 // Add missing permissions using factory method
-                userFactory.AddApplicationPermissionsToUser(existingContributor, applicationId, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!);
+                userFactory.AddPermissionToUser(existingContributor, applicationId.Value.ToString(), ResourceType.Application, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, applicationId);
 
                 await unitOfWork.CommitAsync(cancellationToken);
 

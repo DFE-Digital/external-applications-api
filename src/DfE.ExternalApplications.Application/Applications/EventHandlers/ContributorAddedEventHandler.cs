@@ -1,11 +1,9 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Application.Common.EventHandlers;
-using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
-using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Factories;
-using Microsoft.EntityFrameworkCore;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace DfE.ExternalApplications.Application.Applications.EventHandlers;
@@ -17,40 +15,18 @@ public sealed class ContributorAddedEventHandler(
 {
     protected override async Task HandleEvent(ContributorAddedEvent notification, CancellationToken cancellationToken)
     {
-        // Load the user aggregate
-        var user = await (new GetUserWithAllPermissionsByUserIdQueryObject(notification.ContributorId))
-            .Apply(userRepo.Query())
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (user == null)
-        {
-            logger.LogWarning("User {UserId} not found when handling ContributorAddedEvent", notification.ContributorId.Value);
-            return;
-        }
-
-        // Check if permissions already exist (idempotent check)
-        var hasReadPermission = user.Permissions
-            .Any(p => p.ApplicationId == notification.ApplicationId && 
-                     p.ResourceType == ResourceType.Application && 
-                     p.AccessType == AccessType.Read);
-
-        var hasWritePermission = user.Permissions
-            .Any(p => p.ApplicationId == notification.ApplicationId && 
-                     p.ResourceType == ResourceType.Application && 
-                     p.AccessType == AccessType.Write);
-
-        // Add missing permissions using the factory method
-        var missingAccessTypes = new List<AccessType>();
-        if (!hasReadPermission) missingAccessTypes.Add(AccessType.Read);
-        if (!hasWritePermission) missingAccessTypes.Add(AccessType.Write);
-
-        if (missingAccessTypes.Any())
-        {
-            userFactory.AddApplicationPermissionsToUser(user, notification.ApplicationId, missingAccessTypes.ToArray(), notification.AddedBy, notification.AddedOn);
-        }
+        // Add permissions to the contributor using the factory
+        userFactory.AddPermissionToUser(
+            notification.Contributor,
+            notification.ApplicationId.Value.ToString(),
+            ResourceType.Application,
+            new[] { AccessType.Read, AccessType.Write },
+            notification.AddedBy,
+            notification.ApplicationId,
+            notification.AddedOn);
 
         // Note: The unit of work will be committed by the command handler that raised the event
         logger.LogInformation("Added permissions for contributor {ContributorId} to application {ApplicationId}", 
-            notification.ContributorId.Value, notification.ApplicationId.Value);
+            notification.Contributor.Id!.Value, notification.ApplicationId.Value);
     }
 } 

@@ -11,8 +11,13 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
+
+public sealed record RemoveContributorCommand(
+    Guid ApplicationId,
+    Guid UserId) : IRequest<Result<bool>>;
 
 public sealed class RemoveContributorCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,

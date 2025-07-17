@@ -1,20 +1,20 @@
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
-using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
-using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
+public sealed record GetContributorsForApplicationQuery(
+    Guid ApplicationId,
+    bool IncludePermissionDetails = false) : IRequest<Result<IReadOnlyCollection<UserDto>>>;
 
 public sealed class GetContributorsForApplicationQueryHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,
@@ -57,12 +57,6 @@ public sealed class GetContributorsForApplicationQueryHandler(
             if (dbUser is null)
                 return Result<IReadOnlyCollection<UserDto>>.Failure("User not found");
 
-            // Check if user has permission to read this application
-            var canAccess = permissionCheckerService.HasPermission(ResourceType.Application, request.ApplicationId.ToString(), AccessType.Read);
-
-            if (!canAccess)
-                return Result<IReadOnlyCollection<UserDto>>.Failure("User does not have permission to read this application");
-
             // Get the application to verify it exists
             var applicationId = new ApplicationId(request.ApplicationId);
             var application = await (new GetApplicationByIdQueryObject(applicationId))
@@ -72,11 +66,16 @@ public sealed class GetContributorsForApplicationQueryHandler(
             if (application is null)
                 return Result<IReadOnlyCollection<UserDto>>.Failure("Application not found");
 
-            // Get all users with permissions for this application
-            var contributors = await userRepo.Query()
-                .Include(u => u.Permissions)
-                .Include(u => u.Role)
-                .Where(u => u.Permissions.Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application))
+            // Check if user is the application owner or admin
+            var isOwner = permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString());
+            var isAdmin = permissionCheckerService.IsAdmin();
+
+            if (!isOwner && !isAdmin)
+                return Result<IReadOnlyCollection<UserDto>>.Failure("Only the application owner or admin can view contributors");
+
+            // Get all contributors
+            var contributors = await (new GetContributorsForApplicationQueryObject(applicationId))
+                .Apply(userRepo.Query().AsNoTracking())
                 .ToListAsync(cancellationToken);
 
             var contributorDtos = contributors.Select(c => new UserDto
@@ -85,7 +84,7 @@ public sealed class GetContributorsForApplicationQueryHandler(
                 Name = c.Name,
                 Email = c.Email,
                 RoleId = c.RoleId.Value,
-                Authorization = new UserAuthorizationDto
+                Authorization = request.IncludePermissionDetails ? new UserAuthorizationDto
                 {
                     Permissions = c.Permissions
                         .Select(p => new UserPermissionDto
@@ -97,7 +96,7 @@ public sealed class GetContributorsForApplicationQueryHandler(
                         })
                         .ToArray(),
                     Roles = new List<string> { c.Role?.Name! }
-                }
+                } : null
             }).ToList().AsReadOnly();
 
             return Result<IReadOnlyCollection<UserDto>>.Success(contributorDtos);

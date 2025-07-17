@@ -276,6 +276,166 @@
         }
       }
     },
+    "/v1/Applications/{applicationId}/contributors": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Gets all contributors for a specific application.",
+        "operationId": "Applications_GetContributors",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "includePermissionDetails",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of contributors for the application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          },
+          "403": {
+            "description": "User does not have permission to read this application"
+          },
+          "404": {
+            "description": "Application not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Adds a contributor to an application.",
+        "operationId": "Applications_AddContributor",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddContributorRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "Contributor added successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data or contributor already exists."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          },
+          "403": {
+            "description": "User does not have permission to manage contributors for this application"
+          },
+          "404": {
+            "description": "Application not found"
+          }
+        }
+      }
+    },
+    "/v1/Applications/{applicationId}/contributors/{userId}": {
+      "delete": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Removes a contributor from an application.",
+        "operationId": "Applications_RemoveContributor",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contributor removed successfully."
+          },
+          "400": {
+            "description": "Invalid request data."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          },
+          "403": {
+            "description": "User does not have permission to manage contributors for this application"
+          },
+          "404": {
+            "description": "Application or contributor not found"
+          }
+        }
+      }
+    },
     "/v1/Templates/{templateId}/schema": {
       "get": {
         "tags": [
@@ -590,24 +750,31 @@
           }
         }
       },
-      "CreateTemplateVersionRequest": {
+      "UserDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "versionNumber": {
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
             "type": "string"
           },
-          "jsonSchema": {
+          "email": {
             "type": "string"
-          }
-        }
-      },
-      "ExchangeTokenDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "accessToken": {
-            "type": "string"
+          },
+          "roleId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "authorization": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserAuthorizationDto"
+              }
+            ]
           }
         }
       },
@@ -682,6 +849,39 @@
           "Read",
           "Write"
         ]
+      },
+      "AddContributorRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTemplateVersionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "versionNumber": {
+            "type": "string"
+          },
+          "jsonSchema": {
+            "type": "string"
+          }
+        }
+      },
+      "ExchangeTokenDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        }
       }
     }
   }

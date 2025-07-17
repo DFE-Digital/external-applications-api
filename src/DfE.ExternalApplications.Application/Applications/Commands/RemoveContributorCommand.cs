@@ -3,6 +3,3 @@ using MediatR;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
-public sealed record RemoveContributorCommand(
-    Guid ApplicationId,
-    Guid UserId) : IRequest<Result<bool>>; 

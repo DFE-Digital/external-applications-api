@@ -18,7 +18,7 @@ public class UserFactory : IUserFactory
         DateTime? createdOn = null)
     {
         var when = createdOn ?? DateTime.UtcNow;
-
+        
         var contributor = new User(
             id,
             roleId,
@@ -29,19 +29,10 @@ public class UserFactory : IUserFactory
             null,
             null);
 
-        // Add Read and Write permissions to access the application
-        AddPermissionToUser(contributor, 
-            applicationId.Value.ToString(), 
-            ResourceType.Application, 
-            new[] { AccessType.Read, AccessType.Write },
-            createdBy, 
-            applicationId, 
-            when);
-
-        // Raise domain event for contributor addition
+        // Raise domain event for contributor addition (permissions will be added in the event handler)
         contributor.AddDomainEvent(new ContributorAddedEvent(
             applicationId,
-            id,
+            contributor,
             createdBy,
             when));
 

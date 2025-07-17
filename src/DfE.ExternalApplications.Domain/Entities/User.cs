@@ -73,9 +73,10 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
     }
 
     /// <summary>
-    /// Factory method to create and attach a new Permission to this User.
+    /// Internal method to create and attach a new Permission to this User.
+    /// This should only be called by the UserFactory.
     /// </summary>
-    public Permission AddPermission(
+    internal Permission AddPermission(
         string resourceKey,
         ResourceType resourceType,
         AccessType accessType,
