@@ -867,19 +867,40 @@ public class ApplicationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write"),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
-        var userId = Guid.NewGuid();
+        // First, add a contributor
+        var addRequest = new AddContributorRequest
+        {
+            Name = "John Doe",
+            Email = "john.doe@example.com"
+        };
 
-        // Act
-        await applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), userId);
+        var addedContributor = await applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), addRequest);
+        Assert.NotNull(addedContributor);
+
+        // Act - Remove the contributor we just added
+        await applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), addedContributor.UserId);
 
         // Assert
         // The endpoint should return 200 OK if successful
+        // We can also verify the contributor was removed by trying to get contributors
+        var contributors = await applicationsClient.GetContributorsAsync(new Guid(EaContextSeeder.ApplicationId));
+        
+        // Check if our specific contributor was removed
+        var removedContributor = contributors.FirstOrDefault(c => c.UserId == addedContributor.UserId);
+        Assert.Null(removedContributor);
+        
+        // Also verify that other contributors (if any) are still there
+        var otherContributors = contributors.Where(c => c.UserId != addedContributor.UserId).ToList();
+        // The seeded contributors should still be there
+        Assert.Contains(otherContributors, c => c.Email == "bob@example.com");
+        Assert.Contains(otherContributors, c => c.Email == "alice@example.com");
     }
 
     [Theory]

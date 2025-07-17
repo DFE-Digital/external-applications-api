@@ -49,6 +49,21 @@
       "Controller": "ApplicationsController",
       "Action": "SubmitApplicationAsync",
       "ExpectedSecurity": "Authorize: Policy=CanUpdateApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "AddContributorAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanUpdateApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "RemoveContributorAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanUpdateApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "GetContributorsAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
     }
   ]
 }

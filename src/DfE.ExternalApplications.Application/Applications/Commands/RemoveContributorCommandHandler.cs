@@ -89,17 +89,27 @@ public sealed class RemoveContributorCommandHandler(
                 return Result<bool>.Failure("Contributor not found");
 
             // Check if contributor has permission for this application
-            var permission = contributor.Permissions
-                .FirstOrDefault(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application);
+            var permissions = contributor.Permissions
+                .Where(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application)
+                .ToList();
 
-            if (permission is null)
+            if (!permissions.Any())
                 return Result<bool>.Failure("Contributor does not have permission for this application");
 
-            // Remove the permission using the factory
-            var removed = userFactory.RemovePermissionFromUser(contributor, permission);
+            // Remove all permissions for this application
+            var allRemoved = true;
+            foreach (var permission in permissions)
+            {
+                var removed = userFactory.RemovePermissionFromUser(contributor, permission);
+                if (!removed)
+                {
+                    allRemoved = false;
+                    break;
+                }
+            }
 
-            if (!removed)
-                return Result<bool>.Failure("Failed to remove contributor permission");
+            if (!allRemoved)
+                return Result<bool>.Failure("Failed to remove contributor permissions");
 
             await unitOfWork.CommitAsync(cancellationToken);
 
