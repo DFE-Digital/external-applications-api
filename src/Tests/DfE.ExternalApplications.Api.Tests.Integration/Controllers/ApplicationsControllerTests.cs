@@ -7,6 +7,7 @@ using DfE.ExternalApplications.Tests.Common.Seeders;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
 

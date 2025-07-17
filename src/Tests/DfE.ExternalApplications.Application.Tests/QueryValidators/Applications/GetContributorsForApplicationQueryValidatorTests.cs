@@ -1,5 +1,4 @@
 using DfE.ExternalApplications.Application.Applications.Queries;
-using FluentValidation.TestHelper;
 using Xunit;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryValidators.Applications;
@@ -14,28 +13,57 @@ public class GetContributorsForApplicationQueryValidatorTests
     }
 
     [Fact]
-    public void Should_Pass_When_Valid_Request()
+    public void Validate_WithValidQuery_ShouldPass()
     {
         // Arrange
-        var query = new GetContributorsForApplicationQuery(Guid.NewGuid());
+        var query = new GetContributorsForApplicationQuery(Guid.NewGuid(), true);
 
         // Act
-        var result = _validator.TestValidate(query);
+        var result = _validator.Validate(query);
 
         // Assert
-        result.ShouldNotHaveAnyValidationErrors();
+        Assert.True(result.IsValid);
     }
 
     [Fact]
-    public void Should_Fail_When_ApplicationId_Is_Empty()
+    public void Validate_WithEmptyApplicationId_ShouldFail()
     {
         // Arrange
-        var query = new GetContributorsForApplicationQuery(Guid.Empty);
+        var query = new GetContributorsForApplicationQuery(Guid.Empty, true);
 
         // Act
-        var result = _validator.TestValidate(query);
+        var result = _validator.Validate(query);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.ApplicationId);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(GetContributorsForApplicationQuery.ApplicationId));
+    }
+
+    [Fact]
+    public void Validate_WithDefaultIncludePermissionDetails_ShouldPass()
+    {
+        // Arrange
+        var query = new GetContributorsForApplicationQuery(Guid.NewGuid(), false);
+
+        // Act
+        var result = _validator.Validate(query);
+
+        // Assert
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void Validate_WithMultipleValidationErrors_ShouldReturnAllErrors()
+    {
+        // Arrange
+        var query = new GetContributorsForApplicationQuery(Guid.Empty, false);
+
+        // Act
+        var result = _validator.Validate(query);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Single(result.Errors);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(GetContributorsForApplicationQuery.ApplicationId));
     }
 } 

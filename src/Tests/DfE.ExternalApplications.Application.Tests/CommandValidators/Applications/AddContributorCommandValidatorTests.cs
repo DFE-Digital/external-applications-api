@@ -1,5 +1,4 @@
 using DfE.ExternalApplications.Application.Applications.Commands;
-using FluentValidation.TestHelper;
 using Xunit;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandValidators.Applications;
@@ -14,77 +13,80 @@ public class AddContributorCommandValidatorTests
     }
 
     [Fact]
-    public void Should_Pass_When_Valid_Request()
+    public void Validate_WithValidCommand_ShouldPass()
     {
         // Arrange
         var command = new AddContributorCommand(
             Guid.NewGuid(),
             "John Doe",
-            "john.doe@example.com");
+            "test@example.com");
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldNotHaveAnyValidationErrors();
+        Assert.True(result.IsValid);
     }
 
     [Fact]
-    public void Should_Fail_When_ApplicationId_Is_Empty()
+    public void Validate_WithEmptyApplicationId_ShouldFail()
     {
         // Arrange
         var command = new AddContributorCommand(
             Guid.Empty,
             "John Doe",
-            "john.doe@example.com");
+            "test@example.com");
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.ApplicationId);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.ApplicationId));
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
     [InlineData("   ")]
-    public void Should_Fail_When_Name_Is_Empty(string name)
+    public void Validate_WithInvalidName_ShouldFail(string name)
     {
         // Arrange
         var command = new AddContributorCommand(
             Guid.NewGuid(),
             name,
-            "john.doe@example.com");
+            "test@example.com");
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Name);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.Name));
     }
 
     [Fact]
-    public void Should_Fail_When_Name_Exceeds_Maximum_Length()
+    public void Validate_WithNameExceedingMaximumLength_ShouldFail()
     {
         // Arrange
         var command = new AddContributorCommand(
             Guid.NewGuid(),
             new string('A', 101), // 101 characters
-            "john.doe@example.com");
+            "test@example.com");
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Name);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.Name));
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
     [InlineData("   ")]
-    public void Should_Fail_When_Email_Is_Empty(string email)
+    public void Validate_WithInvalidEmail_ShouldFail(string email)
     {
         // Arrange
         var command = new AddContributorCommand(
@@ -93,10 +95,11 @@ public class AddContributorCommandValidatorTests
             email);
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Email);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.Email));
     }
 
     [Theory]
@@ -104,7 +107,7 @@ public class AddContributorCommandValidatorTests
     [InlineData("test@")]
     [InlineData("@example.com")]
     [InlineData("test.example.com")]
-    public void Should_Fail_When_Email_Is_Invalid(string email)
+    public void Validate_WithInvalidEmailFormat_ShouldFail(string email)
     {
         // Arrange
         var command = new AddContributorCommand(
@@ -113,14 +116,15 @@ public class AddContributorCommandValidatorTests
             email);
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Email);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.Email));
     }
 
     [Fact]
-    public void Should_Fail_When_Email_Exceeds_Maximum_Length()
+    public void Validate_WithEmailExceedingMaximumLength_ShouldFail()
     {
         // Arrange
         var command = new AddContributorCommand(
@@ -129,17 +133,39 @@ public class AddContributorCommandValidatorTests
             new string('A', 250) + "@example.com"); // 257 characters
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Email);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.Email));
+    }
+
+    [Fact]
+    public void Validate_WithMultipleValidationErrors_ShouldReturnAllErrors()
+    {
+        // Arrange
+        var command = new AddContributorCommand(
+            Guid.Empty,
+            "",
+            "");
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Equal(3, result.Errors.Count);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.ApplicationId));
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.Name));
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(AddContributorCommand.Email));
     }
 
     [Theory]
     [InlineData("test@example.com")]
     [InlineData("user.name@domain.co.uk")]
     [InlineData("user+tag@example.org")]
-    public void Should_Pass_When_Email_Is_Valid(string email)
+    [InlineData("user123@test-domain.com")]
+    public void Validate_WithValidEmailFormats_ShouldPass(string email)
     {
         // Arrange
         var command = new AddContributorCommand(
@@ -148,9 +174,29 @@ public class AddContributorCommandValidatorTests
             email);
 
         // Act
-        var result = _validator.TestValidate(command);
+        var result = _validator.Validate(command);
 
         // Assert
-        result.ShouldNotHaveValidationErrorFor(x => x.Email);
+        Assert.True(result.IsValid);
+    }
+
+    [Theory]
+    [InlineData("John Doe")]
+    [InlineData("Mary-Jane Smith")]
+    [InlineData("O'Connor")]
+    [InlineData("José García")]
+    public void Validate_WithValidNames_ShouldPass(string name)
+    {
+        // Arrange
+        var command = new AddContributorCommand(
+            Guid.NewGuid(),
+            name,
+            "test@example.com");
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        Assert.True(result.IsValid);
     }
 } 
