@@ -15,6 +15,11 @@ locals {
   container_scale_http_concurrency             = var.container_scale_http_concurrency
   container_min_replicas                       = var.container_min_replicas
   container_port                               = var.container_port
+  enable_container_app_file_share              = var.enable_container_app_file_share
+  storage_account_file_share_quota_gb          = var.storage_account_file_share_quota_gb
+  container_app_file_share_mount_path          = var.container_app_file_share_mount_path
+  storage_account_public_access_enabled        = var.storage_account_public_access_enabled
+  storage_account_ipv4_allow_list              = var.storage_account_ipv4_allow_list
   enable_dns_zone                              = var.enable_dns_zone
   dns_zone_domain_name                         = var.dns_zone_domain_name
   dns_ns_records                               = var.dns_ns_records

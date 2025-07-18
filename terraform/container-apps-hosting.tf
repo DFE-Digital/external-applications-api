@@ -12,13 +12,17 @@ module "azure_container_apps_hosting" {
   registry_managed_identity_assign_role = local.registry_managed_identity_assign_role
   registry_server                       = local.registry_server
 
-  enable_dns_zone      = local.enable_dns_zone
-  dns_zone_domain_name = local.dns_zone_domain_name
-  dns_ns_records       = local.dns_ns_records
-  dns_txt_records      = local.dns_txt_records
-  dns_mx_records       = local.dns_mx_records
-  dns_alias_records    = local.dns_alias_records
-
+  enable_dns_zone                        = local.enable_dns_zone
+  dns_zone_domain_name                   = local.dns_zone_domain_name
+  dns_ns_records                         = local.dns_ns_records
+  dns_txt_records                        = local.dns_txt_records
+  dns_mx_records                         = local.dns_mx_records
+  dns_alias_records                      = local.dns_alias_records
+  enable_container_app_file_share        = local.enable_container_app_file_share
+  storage_account_file_share_quota_gb    = local.storage_account_file_share_quota_gb
+  container_app_file_share_mount_path    = local.container_app_file_share_mount_path
+  storage_account_public_access_enabled  = local.storage_account_public_access_enabled
+  storage_account_ipv4_allow_list        = local.storage_account_ipv4_allow_list
   image_name                             = local.image_name
   container_command                      = local.container_command
   container_secret_environment_variables = local.container_secret_environment_variables
@@ -26,9 +30,10 @@ module "azure_container_apps_hosting" {
   container_apps_allow_ips_inbound       = local.container_apps_allow_ips_inbound
   container_min_replicas                 = local.container_min_replicas
   container_port                         = local.container_port
-  enable_health_insights_api             = local.enable_health_insights_api
-  health_insights_api_cors_origins       = local.health_insights_api_cors_origins
-  health_insights_api_ipv4_allow_list    = local.health_insights_api_ipv4_allow_list
+
+  enable_health_insights_api          = local.enable_health_insights_api
+  health_insights_api_cors_origins    = local.health_insights_api_cors_origins
+  health_insights_api_ipv4_allow_list = local.health_insights_api_ipv4_allow_list
 
   existing_container_app_environment = local.existing_container_app_environment
   existing_virtual_network           = local.existing_virtual_network
