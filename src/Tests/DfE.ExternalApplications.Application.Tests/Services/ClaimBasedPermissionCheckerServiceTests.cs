@@ -420,4 +420,230 @@ public class ClaimBasedPermissionCheckerServiceTests
         // Assert
         Assert.False(result);
     }
+
+    [Fact]
+    public void CanManageContributors_WhenUserIsAdmin_ReturnsTrue()
+    {
+        // Arrange
+        var applicationId = "123";
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "Admin")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.CanManageContributors(applicationId);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void CanManageContributors_WhenUserHasApplicationWritePermission_ReturnsTrue()
+    {
+        // Arrange
+        var applicationId = "123";
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("permission", $"Application:{applicationId}:Write")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.CanManageContributors(applicationId);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void CanManageContributors_WhenUserHasNoRelevantPermissions_ReturnsFalse()
+    {
+        // Arrange
+        var applicationId = "123";
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "User"),
+            new Claim("permission", "Application:456:Read")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.CanManageContributors(applicationId);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void CanManageContributors_WhenHttpContextIsNull_ReturnsFalse()
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        httpContextAccessor.HttpContext.Returns((HttpContext?)null);
+        var service = new ClaimBasedPermissionCheckerService(httpContextAccessor);
+
+        // Act
+        var result = service.CanManageContributors("123");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void CanManageContributors_WhenUserIsNull_ReturnsFalse()
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = Substitute.For<HttpContext>();
+        httpContext.User.Returns((ClaimsPrincipal?)null);
+        httpContextAccessor.HttpContext.Returns(httpContext);
+        var service = new ClaimBasedPermissionCheckerService(httpContextAccessor);
+
+        // Act
+        var result = service.CanManageContributors("123");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenUserIsAdmin_ReturnsTrue()
+    {
+        // Arrange
+        var applicationId = "123";
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "Admin"),
+            new Claim("permission", $"Application:{applicationId}:Write")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.IsApplicationOwner(applicationId);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenUserHasApplicationWritePermission_ReturnsTrue()
+    {
+        // Arrange
+        var applicationId = "123";
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("permission", $"Application:{applicationId}:Write")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.IsApplicationOwner(applicationId);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenUserHasReadPermissionOnly_ReturnsFalse()
+    {
+        // Arrange
+        var applicationId = "123";
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("permission", $"Application:{applicationId}:Read")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.IsApplicationOwner(applicationId);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenUserHasNoPermissions_ReturnsFalse()
+    {
+        // Arrange
+        var applicationId = "123";
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "User")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.IsApplicationOwner(applicationId);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenApplicationIdIsNull_ReturnsFalse()
+    {
+        // Arrange
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "Admin")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.IsApplicationOwner(null!);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenApplicationIdIsEmpty_ReturnsFalse()
+    {
+        // Arrange
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "Admin")
+        }));
+        _httpContext.User.Returns(user);
+
+        // Act
+        var result = _service.IsApplicationOwner("");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenHttpContextIsNull_ReturnsFalse()
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        httpContextAccessor.HttpContext.Returns((HttpContext?)null);
+        var service = new ClaimBasedPermissionCheckerService(httpContextAccessor);
+
+        // Act
+        var result = service.IsApplicationOwner("123");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsApplicationOwner_WhenUserIsNull_ReturnsFalse()
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = Substitute.For<HttpContext>();
+        httpContext.User.Returns((ClaimsPrincipal?)null);
+        httpContextAccessor.HttpContext.Returns(httpContext);
+        var service = new ClaimBasedPermissionCheckerService(httpContextAccessor);
+
+        // Act
+        var result = service.IsApplicationOwner("123");
+
+        // Assert
+        Assert.False(result);
+    }
 } 

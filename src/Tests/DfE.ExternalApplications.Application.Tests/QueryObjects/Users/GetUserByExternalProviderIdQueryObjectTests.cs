@@ -17,7 +17,7 @@ public class GetUserByExternalProviderIdQueryObjectTests
         var matchingUser = new Fixture()
             .Customize(new UserCustomization { OverrideExternalProviderId = externalProviderId })
             .Create<User>();
-            
+
         var role = new Role(matchingUser.RoleId, "Test Role");
         matchingUser.GetType().GetProperty("Role")!.SetValue(matchingUser, role);
 

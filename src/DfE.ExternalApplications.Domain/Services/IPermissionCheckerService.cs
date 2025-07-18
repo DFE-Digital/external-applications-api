@@ -42,6 +42,28 @@ public interface IPermissionCheckerService
     bool HasTemplatePermission(string templateId, AccessType accessType);
 
     /// <summary>
+    /// Checks if the current user is the owner of an application
+    /// </summary>
+    /// <param name="applicationId">Identifier of the application</param>
+    /// <returns>True if the user is the owner of the application, false otherwise</returns>
+    bool IsApplicationOwner(string applicationId);
+
+    /// <summary>
+    /// Checks if the current user is the owner of an application by comparing with the application's CreatedBy property
+    /// </summary>
+    /// <param name="application">The application entity</param>
+    /// <param name="currentUserId">The current user's ID</param>
+    /// <returns>True if the user is the owner of the application, false otherwise</returns>
+    bool IsApplicationOwner(DfE.ExternalApplications.Domain.Entities.Application application, string currentUserId);
+
+    /// <summary>
+    /// Checks if the current user can manage contributors for an application
+    /// </summary>
+    /// <param name="applicationId">Identifier of the application</param>
+    /// <returns>True if the user can manage contributors, false otherwise</returns>
+    bool CanManageContributors(string applicationId);
+
+    /// <summary>
     /// Checks if the current user has the Admin role.
     /// </summary>
     /// <returns>True if the user is an Admin, false otherwise</returns>

@@ -69,6 +69,39 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
             .AsReadOnly();
     }
 
+    /// <inheritdoc />
+    public bool IsApplicationOwner(string applicationId)
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        if (user == null) return false;
+
+        // Check if user has write permission for the application (owner has write access)
+        return HasPermission(ResourceType.Application, applicationId, AccessType.Write);
+    }
+
+    /// <inheritdoc />
+    public bool IsApplicationOwner(DfE.ExternalApplications.Domain.Entities.Application application, string currentUserId)
+    {
+        if (application == null) return false;
+        if (string.IsNullOrEmpty(currentUserId)) return false;
+
+        // Check if the current user is the creator of the application
+        return application.CreatedBy.Value.ToString() == currentUserId;
+    }
+
+    /// <inheritdoc />
+    public bool CanManageContributors(string applicationId)
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        if (user == null) return false;
+
+        // Admin can manage contributors for any application
+        if (IsAdmin()) return true;
+
+        // Application owner can manage contributors
+        return IsApplicationOwner(applicationId);
+    }
+
     private static string FormatPermissionClaim(ResourceType resourceType, string resourceId, AccessType accessType)
         => $"{resourceType}:{resourceId}:{accessType}";
 

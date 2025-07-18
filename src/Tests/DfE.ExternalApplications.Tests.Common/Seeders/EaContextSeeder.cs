@@ -1,4 +1,5 @@
 ﻿using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database;
@@ -23,15 +24,15 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
         public const string ResponseId2 = "f08a670f-ae0f-407d-ba3d-935d3e642363";
         public const string TemplatePermissionId1 = "08a25ca0-5890-4bd5-a441-552ec9c13ee1";
         public const string TemplatePermissionId2 = "08a25ca0-5890-4bd5-a441-552ec9c13ee2";
-        public const string AdminRoleId = "e0546efd-d85e-452a-8232-06a84d1b8513";
         public const string SubmitterRoleId = "a5d3d871-ce57-47b9-807d-de5c1551f9f2";
 
 
         public static void SeedTestData(ExternalApplicationsContext ctx)
         {
-            var roleAdmin = new Role(new RoleId(new Guid(AdminRoleId)), "Administrator");
+            var roleAdmin = new Role(new RoleId(RoleConstants.AdminRoleId), "Administrator");
             var roleSubmitter = new Role(new RoleId(new Guid(SubmitterRoleId)), "Submitter");
-            ctx.Roles.AddRange(roleAdmin, roleSubmitter);
+            var roleUser = new Role(new RoleId(RoleConstants.UserRoleId), "User");
+            ctx.Roles.AddRange(roleAdmin, roleSubmitter, roleUser);
 
             var now = DateTime.UtcNow;
 

@@ -2,6 +2,7 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
+using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -163,5 +164,103 @@ public class ApplicationsController(ISender sender) : ControllerBase
         }
 
         return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Gets all contributors for a specific application.
+    /// </summary>
+    [HttpGet("{applicationId}/contributors")]
+    [SwaggerResponse(200, "List of contributors for the application.", typeof(IReadOnlyCollection<UserDto>))]
+    [SwaggerResponse(400, "Invalid request data.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(403, "User does not have permission to read this application")]
+    [SwaggerResponse(404, "Application not found")]
+    [Authorize(Policy = "CanReadAnyApplication")]
+    public async Task<IActionResult> GetContributorsAsync(
+        [FromRoute] Guid applicationId,
+        CancellationToken cancellationToken,
+        [FromQuery] bool? includePermissionDetails = null)
+    {
+        var query = new GetContributorsForApplicationQuery(applicationId, includePermissionDetails ?? false);
+        var result = await sender.Send(query, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "Only the application owner or admin can view contributors" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Adds a contributor to an application.
+    /// </summary>
+    [HttpPost("{applicationId}/contributors")]
+    [SwaggerResponse(200, "Contributor added successfully.", typeof(UserDto))]
+    [SwaggerResponse(400, "Invalid request data or contributor already exists.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(403, "User does not have permission to manage contributors for this application")]
+    [SwaggerResponse(404, "Application not found")]
+    [Authorize(Policy = "CanUpdateApplication")]
+    public async Task<IActionResult> AddContributorAsync(
+        [FromRoute] Guid applicationId,
+        [FromBody] AddContributorRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AddContributorCommand(applicationId, request.Name, request.Email);
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "User does not have permission to manage contributors for this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                "Contributor already exists for this application" => BadRequest(result.Error),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Removes a contributor from an application.
+    /// </summary>
+    [HttpDelete("{applicationId}/contributors/{userId}")]
+    [SwaggerResponse(200, "Contributor removed successfully.")]
+    [SwaggerResponse(400, "Invalid request data.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(403, "User does not have permission to manage contributors for this application")]
+    [SwaggerResponse(404, "Application or contributor not found")]
+    [Authorize(Policy = "CanUpdateApplication")]
+    public async Task<IActionResult> RemoveContributorAsync(
+        [FromRoute] Guid applicationId,
+        [FromRoute] Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveContributorCommand(applicationId, userId);
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "Contributor not found" => NotFound(result.Error),
+                "User does not have permission to manage contributors for this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return Ok();
     }
 }

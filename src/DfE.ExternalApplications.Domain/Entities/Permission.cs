@@ -25,7 +25,7 @@ public sealed class Permission : BaseAggregateRoot, IEntity<PermissionId>
     public Permission(
         PermissionId id,
         UserId userId,
-        ApplicationId applicationId,
+        ApplicationId? applicationId,
         string resourceKey,
         ResourceType resourceType,
         AccessType accessType,

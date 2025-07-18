@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
@@ -7,6 +8,7 @@ using DfE.ExternalApplications.Tests.Common.Seeders;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
 
@@ -41,7 +43,7 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.StartsWith("APP-", result.ApplicationReference);
+        Assert.StartsWith("TRF-", result.ApplicationReference);
         Assert.NotNull(result.TemplateSchema);
         Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateId);
         Assert.NotEqual(Guid.Empty, result.TemplateSchema.TemplateVersionId);
@@ -677,5 +679,267 @@ public class ApplicationsControllerTests
         {
             Assert.Null(app.TemplateSchema);
         });
+     }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetContributorsAsync_ShouldReturnContributors_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var result = await applicationsClient.GetContributorsAsync(new Guid(EaContextSeeder.ApplicationId));
+
+        // Assert
+        Assert.NotNull(result);
+        // Note: This will be empty initially since no contributors are seeded
+        Assert.IsType<ObservableCollection<UserDto>>(result);
     }
-  }  
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetContributorsAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient)
+    {
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.GetContributorsAsync(new Guid(EaContextSeeder.ApplicationId)));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetContributorsAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            // No permission claim
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.GetContributorsAsync(new Guid(EaContextSeeder.ApplicationId)));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddContributorAsync_ShouldAddContributor_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var request = new AddContributorRequest
+        {
+            Name = "John Doe",
+            Email = "john.doe@example.com"
+        };
+
+        // Act
+        var result = await applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("John Doe", result.Name);
+        Assert.Equal("john.doe@example.com", result.Email);
+        Assert.NotNull(result.Authorization);
+        Assert.NotNull(result.Authorization.Permissions);
+        Assert.NotNull(result.Authorization.Roles);
+        Assert.NotEmpty(result.Authorization.Permissions);
+        Assert.NotEmpty(result.Authorization.Roles);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddContributorAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient)
+    {
+        // Arrange
+        var request = new AddContributorRequest
+        {
+            Name = "John Doe",
+            Email = "john.doe@example.com"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddContributorAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            // No permission claim
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var request = new AddContributorRequest
+        {
+            Name = "John Doe",
+            Email = "john.doe@example.com"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddContributorAsync_ShouldReturnBadRequest_WhenInvalidData(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var request = new AddContributorRequest
+        {
+            Name = "",
+            Email = "invalid-email"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request));
+        Assert.Equal(400, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task RemoveContributorAsync_ShouldRemoveContributor_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write"),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // First, add a contributor
+        var addRequest = new AddContributorRequest
+        {
+            Name = "John Doe",
+            Email = "john.doe@example.com"
+        };
+
+        var addedContributor = await applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), addRequest);
+        Assert.NotNull(addedContributor);
+
+        // Act - Remove the contributor we just added
+        await applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), addedContributor.UserId);
+
+        // Assert
+        // The endpoint should return 200 OK if successful
+        // We can also verify the contributor was removed by trying to get contributors
+        var contributors = await applicationsClient.GetContributorsAsync(new Guid(EaContextSeeder.ApplicationId));
+        
+        // Check if our specific contributor was removed
+        var removedContributor = contributors.FirstOrDefault(c => c.UserId == addedContributor.UserId);
+        Assert.Null(removedContributor);
+        
+        // Also verify that other contributors (if any) are still there
+        var otherContributors = contributors.Where(c => c.UserId != addedContributor.UserId).ToList();
+        // The seeded contributors should still be there
+        Assert.Contains(otherContributors, c => c.Email == "bob@example.com");
+        Assert.Contains(otherContributors, c => c.Email == "alice@example.com");
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task RemoveContributorAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient)
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), userId));
+        Assert.Equal(403, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task RemoveContributorAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            // No permission claim
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var userId = Guid.NewGuid();
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), userId));
+        Assert.Equal(403, ex.StatusCode);
+    }
+ }  
