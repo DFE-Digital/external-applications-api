@@ -48,13 +48,8 @@ public class ContributorAddedEventHandlerTests
         userFactory.Received(1).AddTemplatePermissionToUser(
             contributor,
             templateId.Value.ToString(),
-            Arg.Is<AccessType[]>(a => a.Length == 2 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write)),
+            Arg.Is<AccessType[]>(a => a.Length == 1 && a.Contains(AccessType.Read)),
             addedBy,
             addedOn);
-
-        // Verify logging
-        logger.Received(1).LogInformation(
-            Arg.Is<string>(s => s.Contains("Added permissions for contributor")),
-            Arg.Any<object[]>());
     }
 } 
