@@ -118,7 +118,7 @@ public class UserFactoryTests
             null,
             null);
 
-        var templateId = "template-123";
+        var templateId = Guid.NewGuid().ToString();
         var grantedBy = new UserId(Guid.NewGuid());
         var grantedOn = DateTime.UtcNow;
 
