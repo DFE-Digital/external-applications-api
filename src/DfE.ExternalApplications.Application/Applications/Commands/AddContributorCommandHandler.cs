@@ -86,7 +86,7 @@ public sealed class AddContributorCommandHandler(
 
             // Check if contributor already exists
             var existingContributor = await (new GetUserByEmailQueryObject(request.Email))
-                .Apply(userRepo.Query().AsNoTracking())
+                .Apply(userRepo.Query())
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (existingContributor != null)

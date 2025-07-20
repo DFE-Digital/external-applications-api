@@ -13,5 +13,6 @@ public sealed class GetContributorsForApplicationQueryObject(ApplicationId appli
         query
             .Include(u => u.Permissions)
             .Include(u => u.Role)
-            .Where(u => u.Permissions.Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application));
+            .Where(u => u.Permissions.Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application))
+            .Where(u => u.Permissions.Any(p => p.ApplicationId == applicationId && p.Application!.CreatedBy != u.Id));
 } 
