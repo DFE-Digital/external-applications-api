@@ -49,7 +49,7 @@ public class UserFactoryTests
         Assert.Equal(createdBy, contributor.CreatedBy);
 
         // Check that domain event was raised (permissions will be added in the event handler)
-        var domainEvents = contributor.GetDomainEvents().ToList();
+        var domainEvents = contributor.DomainEvents.ToList();
         Assert.Single(domainEvents);
         var contributorAddedEvent = domainEvents.First() as ContributorAddedEvent;
         Assert.NotNull(contributorAddedEvent);
