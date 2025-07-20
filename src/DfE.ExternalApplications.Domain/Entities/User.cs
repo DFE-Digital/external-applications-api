@@ -115,4 +115,32 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
 
         return _permissions.Remove(permission);
     }
+
+    /// <summary>
+    /// Internal method to create and attach a new TemplatePermission to this User.
+    /// This should only be called by the UserFactory.
+    /// </summary>
+    internal TemplatePermission AddTemplatePermission(
+        string templateId,
+        AccessType accessType,
+        UserId grantedBy,
+        DateTime? grantedOn = null)
+    {
+        if (string.IsNullOrWhiteSpace(templateId))
+            throw new ArgumentException("TemplateId cannot be empty", nameof(templateId));
+
+        var id = new TemplatePermissionId(Guid.NewGuid());
+        var when = grantedOn ?? DateTime.UtcNow;
+
+        var templatePermission = new TemplatePermission(
+            id,
+            this.Id ?? throw new InvalidOperationException("UserId must be set before adding a template permission."),
+            new TemplateId(new Guid(templateId)),
+            accessType,
+            when,
+            grantedBy);
+
+        _templatePermissions.Add(templatePermission);
+        return templatePermission;
+    }
 }

@@ -130,6 +130,7 @@ public sealed class AddContributorCommandHandler(
 
                 // Add missing permissions using factory method
                 userFactory.AddPermissionToUser(existingContributor, applicationId.Value.ToString(), ResourceType.Application, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, applicationId);
+                userFactory.AddTemplatePermissionToUser(existingContributor, application.TemplateVersion!.TemplateId.Value.ToString(), new[] { AccessType.Read }, dbUser.Id!, DateTime.UtcNow);
 
                 await unitOfWork.CommitAsync(cancellationToken);
 
@@ -173,6 +174,7 @@ public sealed class AddContributorCommandHandler(
                 request.Email,
                 dbUser.Id!,
                 applicationId,
+                application.TemplateVersion!.TemplateId,
                 now);
 
             await userRepo.AddAsync(contributor, cancellationToken);

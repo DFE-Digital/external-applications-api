@@ -16,6 +16,7 @@ public class UserFactory : IUserFactory
         string email,
         UserId createdBy,
         ApplicationId applicationId,
+        TemplateId templateId,
         DateTime? createdOn = null)
     {
         if (id == null)
@@ -36,6 +37,9 @@ public class UserFactory : IUserFactory
         if (applicationId == null)
             throw new ArgumentException("ApplicationId cannot be null", nameof(applicationId));
 
+        if (templateId == null)
+            throw new ArgumentException("TemplateId cannot be null", nameof(templateId));
+
         var when = createdOn ?? DateTime.UtcNow;
         
         var contributor = new User(
@@ -51,6 +55,7 @@ public class UserFactory : IUserFactory
         // Raise domain event for contributor addition (permissions will be added in the event handler)
         contributor.AddDomainEvent(new ContributorAddedEvent(
             applicationId,
+            templateId,
             contributor,
             createdBy,
             when));
@@ -89,6 +94,37 @@ public class UserFactory : IUserFactory
                 accessType,
                 grantedBy,
                 applicationId,
+                when);
+        }
+    }
+
+    public void AddTemplatePermissionToUser(
+        User user,
+        string templateId,
+        AccessType[] accessTypes,
+        UserId grantedBy,
+        DateTime? grantedOn = null)
+    {
+        if (user == null)
+            throw new ArgumentException("User cannot be null", nameof(user));
+        
+        if (string.IsNullOrWhiteSpace(templateId))
+            throw new ArgumentException("TemplateId cannot be null or empty", nameof(templateId));
+        
+        if (accessTypes == null)
+            throw new ArgumentException("AccessTypes cannot be null", nameof(accessTypes));
+        
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        var when = grantedOn ?? DateTime.UtcNow;
+
+        foreach (var accessType in accessTypes)
+        {
+            user.AddTemplatePermission(
+                templateId,
+                accessType,
+                grantedBy,
                 when);
         }
     }

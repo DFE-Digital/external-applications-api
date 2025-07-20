@@ -416,7 +416,7 @@ public class ExternalApplicationsContext : DbContext
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("TemplatePermissionId")
-            .ValueGeneratedOnAdd()
+            .ValueGeneratedNever()
             .HasConversion(v => v.Value, v => new TemplatePermissionId(v))
             .IsRequired();
         b.Property(e => e.UserId)

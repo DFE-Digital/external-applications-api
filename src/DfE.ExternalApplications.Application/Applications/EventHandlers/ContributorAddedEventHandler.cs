@@ -15,7 +15,7 @@ public sealed class ContributorAddedEventHandler(
 {
     protected override async Task HandleEvent(ContributorAddedEvent notification, CancellationToken cancellationToken)
     {
-        // Add permissions to the contributor using the factory
+        // Add application permissions as side effect
         userFactory.AddPermissionToUser(
             notification.Contributor,
             notification.ApplicationId.Value.ToString(),
@@ -25,8 +25,18 @@ public sealed class ContributorAddedEventHandler(
             notification.ApplicationId,
             notification.AddedOn);
 
-        // Note: The unit of work will be committed by the command handler that raised the event
-        logger.LogInformation("Added permissions for contributor {ContributorId} to application {ApplicationId}", 
-            notification.Contributor.Id!.Value, notification.ApplicationId.Value);
+        // Add template permissions as side effect
+        userFactory.AddTemplatePermissionToUser(
+            notification.Contributor,
+            notification.TemplateId.Value.ToString(),
+            new[] { AccessType.Read },
+            notification.AddedBy,
+            notification.AddedOn);
+
+        logger.LogInformation("Added permissions for contributor {ContributorId} to application {ApplicationId} and template {TemplateId} by {AddedBy}", 
+            notification.Contributor.Id!.Value, 
+            notification.ApplicationId.Value, 
+            notification.TemplateId.Value,
+            notification.AddedBy.Value);
     }
 } 

@@ -84,7 +84,7 @@ public class AddContributorCommandHandlerTests
         _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
         _permissionCheckerService.IsAdmin().Returns(false);
 
-        _userFactory.CreateContributor(Arg.Any<UserId>(), Arg.Any<RoleId>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>(), Arg.Any<DateTime?>())
+        _userFactory.CreateContributor(Arg.Any<UserId>(), Arg.Any<RoleId>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>(), Arg.Any<TemplateId>(), Arg.Any<DateTime?>())
             .Returns(contributor);
 
         // Act
@@ -271,7 +271,7 @@ public class AddContributorCommandHandlerTests
         _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
         _permissionCheckerService.IsAdmin().Returns(false);
 
-        _userFactory.CreateContributor(Arg.Any<UserId>(), Arg.Any<RoleId>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>(), Arg.Any<DateTime?>())
+        _userFactory.CreateContributor(Arg.Any<UserId>(), Arg.Any<RoleId>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>(), Arg.Any<TemplateId>(), Arg.Any<DateTime?>())
             .Returns(contributor);
 
         _unitOfWork.CommitAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<int>(new Exception("Database error")));
