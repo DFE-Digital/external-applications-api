@@ -91,76 +91,7 @@ public sealed class AddContributorCommandHandler(
 
             if (existingContributor != null)
             {
-                // Check if they already have both Read and Write permissions for this application
-                var hasReadPermission = existingContributor.Permissions
-                    .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Read);
-                var hasWritePermission = existingContributor.Permissions
-                    .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Write);
-
-                if (hasReadPermission && hasWritePermission)
-                {
-                    // Contributor already exists with all needed permissions, return their details
-                    var userWithPermissions = await (new GetUserWithAllPermissionsByUserIdQueryObject(existingContributor.Id!))
-                        .Apply(userRepo.Query().AsNoTracking())
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    var authorization = userWithPermissions != null ? new UserAuthorizationDto
-                    {
-                        Permissions = userWithPermissions.Permissions
-                            .Select(p => new UserPermissionDto
-                            {
-                                ApplicationId = p.ApplicationId?.Value,
-                                ResourceType = p.ResourceType,
-                                ResourceKey = p.ResourceKey,
-                                AccessType = p.AccessType
-                            })
-                            .ToArray(),
-                        Roles = new List<string> { userWithPermissions.Role?.Name! }
-                    } : null;
-
-                    return Result<UserDto>.Success(new UserDto
-                    {
-                        UserId = existingContributor.Id!.Value,
-                        Name = existingContributor.Name,
-                        Email = existingContributor.Email,
-                        RoleId = existingContributor.RoleId.Value,
-                        Authorization = authorization
-                    });
-                }
-
-                // Add missing permissions using factory method
-                userFactory.AddPermissionToUser(existingContributor, applicationId.Value.ToString(), ResourceType.Application, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, applicationId);
-                userFactory.AddTemplatePermissionToUser(existingContributor, application.TemplateVersion!.TemplateId.Value.ToString(), new[] { AccessType.Read }, dbUser.Id!, DateTime.UtcNow);
-
-                await unitOfWork.CommitAsync(cancellationToken);
-
-                // Get user with all permissions for authorization data
-                var updatedUserWithPermissions = await (new GetUserWithAllPermissionsByUserIdQueryObject(existingContributor.Id!))
-                    .Apply(userRepo.Query().AsNoTracking())
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                var updatedAuthorization = updatedUserWithPermissions != null ? new UserAuthorizationDto
-                {
-                    Permissions = updatedUserWithPermissions.Permissions
-                        .Select(p => new UserPermissionDto
-                        {
-                            ApplicationId = p.ApplicationId?.Value,
-                            ResourceType = p.ResourceType,
-                            ResourceKey = p.ResourceKey,
-                            AccessType = p.AccessType
-                        })
-                        .ToArray(),
-                    Roles = new List<string> { updatedUserWithPermissions.Role?.Name! }
-                } : null;
-
-                return Result<UserDto>.Success(new UserDto
-                {
-                    UserId = existingContributor.Id!.Value,
-                    Name = existingContributor.Name,
-                    Email = existingContributor.Email,
-                    RoleId = existingContributor.RoleId.Value,
-                    Authorization = updatedAuthorization
-                });
+                return await HandleExistingContributor(existingContributor, applicationId, application, dbUser, cancellationToken);
             }
 
             // Create new contributor using factory with User role
@@ -180,24 +111,8 @@ public sealed class AddContributorCommandHandler(
             await userRepo.AddAsync(contributor, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
 
-            // Get user with all permissions for authorization data
-            var newUserWithPermissions = await (new GetUserWithAllPermissionsByUserIdQueryObject(contributorId))
-                .Apply(userRepo.Query().AsNoTracking())
-                .FirstOrDefaultAsync(cancellationToken);
-
-            var newAuthorization = newUserWithPermissions != null ? new UserAuthorizationDto
-            {
-                Permissions = newUserWithPermissions.Permissions
-                    .Select(p => new UserPermissionDto
-                    {
-                        ApplicationId = p.ApplicationId?.Value,
-                        ResourceType = p.ResourceType,
-                        ResourceKey = p.ResourceKey,
-                        AccessType = p.AccessType
-                    })
-                    .ToArray(),
-                Roles = new List<string> { newUserWithPermissions.Role?.Name! }
-            } : null;
+            // Create authorization data directly from the contributor instead of querying
+            var authorization = CreateAuthorizationFromUser(contributor);
 
             return Result<UserDto>.Success(new UserDto
             {
@@ -205,12 +120,79 @@ public sealed class AddContributorCommandHandler(
                 Name = contributor.Name,
                 Email = contributor.Email,
                 RoleId = contributor.RoleId.Value,
-                Authorization = newAuthorization
+                Authorization = authorization
             });
         }
         catch (Exception e)
         {
             return Result<UserDto>.Failure(e.Message);
         }
+    }
+
+    private async Task<Result<UserDto>> HandleExistingContributor(
+        User existingContributor,
+        ApplicationId applicationId,
+        Domain.Entities.Application application,
+        User dbUser,
+        CancellationToken cancellationToken)
+    {
+        // Check if they already have both Read and Write permissions for this application
+        var hasReadPermission = existingContributor.Permissions
+            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Read);
+        var hasWritePermission = existingContributor.Permissions
+            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Write);
+
+        if (hasReadPermission && hasWritePermission)
+        {
+            // Contributor already exists with all needed permissions, return their details
+            var authorization = CreateAuthorizationFromUser(existingContributor);
+
+            return Result<UserDto>.Success(new UserDto
+            {
+                UserId = existingContributor.Id!.Value,
+                Name = existingContributor.Name,
+                Email = existingContributor.Email,
+                RoleId = existingContributor.RoleId.Value,
+                Authorization = authorization
+            });
+        }
+
+        // Add missing permissions using factory method
+        userFactory.AddPermissionToUser(existingContributor, applicationId.Value.ToString(), ResourceType.Application, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, applicationId);
+        userFactory.AddTemplatePermissionToUser(existingContributor, application.TemplateVersion!.TemplateId.Value.ToString(), new[] { AccessType.Read }, dbUser.Id!, DateTime.UtcNow);
+
+        await unitOfWork.CommitAsync(cancellationToken);
+
+        // Create authorization data directly from the updated contributor
+        var updatedAuthorization = CreateAuthorizationFromUser(existingContributor);
+
+        return Result<UserDto>.Success(new UserDto
+        {
+            UserId = existingContributor.Id!.Value,
+            Name = existingContributor.Name,
+            Email = existingContributor.Email,
+            RoleId = existingContributor.RoleId.Value,
+            Authorization = updatedAuthorization
+        });
+    }
+
+    private UserAuthorizationDto? CreateAuthorizationFromUser(User user)
+    {
+        if (user.Permissions == null || !user.Permissions.Any())
+            return null;
+
+        return new UserAuthorizationDto
+        {
+            Permissions = user.Permissions
+                .Select(p => new UserPermissionDto
+                {
+                    ApplicationId = p.ApplicationId?.Value,
+                    ResourceType = p.ResourceType,
+                    ResourceKey = p.ResourceKey,
+                    AccessType = p.AccessType
+                })
+                .ToArray(),
+            Roles = new List<string> { user.Role?.Name ?? "User" }
+        };
     }
 } 
