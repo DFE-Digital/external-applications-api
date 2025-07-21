@@ -78,7 +78,12 @@ public sealed class GetContributorsForApplicationQueryHandler(
                 .Apply(userRepo.Query().AsNoTracking())
                 .ToListAsync(cancellationToken);
 
-            var contributorDtos = contributors.Select(c => new UserDto
+            // Filter out the application creator
+            var contributorsWithoutCreator = contributors
+                .Where(c => c.Id != application.CreatedBy)
+                .ToList();
+
+            var contributorDtos = contributorsWithoutCreator.Select(c => new UserDto
             {
                 UserId = c.Id!.Value,
                 Name = c.Name,

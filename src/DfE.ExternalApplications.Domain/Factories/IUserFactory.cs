@@ -14,6 +14,7 @@ public interface IUserFactory
         string email,
         UserId createdBy,
         ApplicationId applicationId,
+        TemplateId templateId,
         DateTime? createdOn = null);
 
     void AddPermissionToUser(
@@ -23,6 +24,13 @@ public interface IUserFactory
         AccessType[] accessTypes,
         UserId grantedBy,
         ApplicationId? applicationId = null,
+        DateTime? grantedOn = null);
+
+    void AddTemplatePermissionToUser(
+        User user,
+        string templateId,
+        AccessType[] accessTypes,
+        UserId grantedBy,
         DateTime? grantedOn = null);
 
     bool RemovePermissionFromUser(

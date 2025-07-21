@@ -898,9 +898,8 @@ public class ApplicationsControllerTests
         
         // Also verify that other contributors (if any) are still there
         var otherContributors = contributors.Where(c => c.UserId != addedContributor.UserId).ToList();
-        // The seeded contributors should still be there
-        Assert.Contains(otherContributors, c => c.Email == "bob@example.com");
         Assert.Contains(otherContributors, c => c.Email == "alice@example.com");
+        Assert.DoesNotContain(otherContributors, c => c.Email == "bob@example.com");
     }
 
     [Theory]

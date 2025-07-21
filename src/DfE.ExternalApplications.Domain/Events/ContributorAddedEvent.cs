@@ -7,6 +7,7 @@ namespace DfE.ExternalApplications.Domain.Events;
 
 public sealed record ContributorAddedEvent(
     ApplicationId ApplicationId,
+    TemplateId TemplateId,
     User Contributor,
     UserId AddedBy,
     DateTime AddedOn) : IDomainEvent

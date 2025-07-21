@@ -1,286 +1,1105 @@
+using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
-using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
-using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
-using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.ValueObjects;
-using MediatR;
+using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Domain.Factories;
+using MediatR;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using Microsoft.EntityFrameworkCore;
 using MockQueryable.NSubstitute;
-using NSubstitute;
-using Xunit;
+using DfE.ExternalApplications.Domain.Factories;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Domain.Common;
+using NSubstitute.ExceptionExtensions;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Applications;
 
 public class AddContributorCommandHandlerTests
 {
-    private readonly AddContributorCommandHandler _handler;
-    private readonly IEaRepository<Domain.Entities.Application> _applicationRepo;
-    private readonly IEaRepository<User> _userRepo;
-    private readonly IEaRepository<Role> _roleRepo;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IPermissionCheckerService _permissionCheckerService;
-    private readonly IUserFactory _userFactory;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly HttpContext _httpContext;
-    private readonly ClaimsPrincipal _user;
-
-    public AddContributorCommandHandlerTests()
-    {
-        _applicationRepo = Substitute.For<IEaRepository<Domain.Entities.Application>>();
-        _userRepo = Substitute.For<IEaRepository<User>>();
-        _roleRepo = Substitute.For<IEaRepository<Role>>();
-        _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
-        _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
-        _userFactory = Substitute.For<IUserFactory>();
-        _unitOfWork = Substitute.For<IUnitOfWork>();
-        
-        _httpContext = Substitute.For<HttpContext>();
-        _user = new ClaimsPrincipal(new ClaimsIdentity(new[]
-        {
-            new Claim(ClaimTypes.Email, "test@example.com")
-        }, "TestAuth"));
-        _httpContext.User.Returns(_user);
-        _httpContextAccessor.HttpContext.Returns(_httpContext);
-        
-        _handler = new AddContributorCommandHandler(
-            _applicationRepo,
-            _userRepo,
-            _roleRepo,
-            _httpContextAccessor,
-            _permissionCheckerService,
-            _userFactory,
-            _unitOfWork);
-    }
-
-    [Fact]
-    public async Task Handle_WithValidRequest_ShouldAddContributorSuccessfully()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldAddNewContributor_WhenValidRequest(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUnitOfWork unitOfWork,
+        IUserFactory userFactory)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "newuser@example.com");
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var dbUser = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", "test@example.com", DateTime.UtcNow, null, null, null);
-        var application = new Domain.Entities.Application(new ApplicationId(applicationId), "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, dbUser.Id!);
-        var contributor = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "John Doe", "newuser@example.com", DateTime.UtcNow, dbUser.Id!, null, null);
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
 
-        // Set up a single mock that returns all users
-        var allUsers = new[] { dbUser }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(allUsers);
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
 
-        var applicationsQuery = new[] { application }.AsQueryable().BuildMockDbSet();
-        _applicationRepo.Query().Returns(applicationsQuery);
+        // Mock template version with template ID
+        var templateVersion = new TemplateVersion(
+            new TemplateVersionId(Guid.NewGuid()),
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
 
-        _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
-        _permissionCheckerService.IsAdmin().Returns(false);
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
 
-        _userFactory.CreateContributor(Arg.Any<UserId>(), Arg.Any<RoleId>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>(), Arg.Any<DateTime?>())
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        // Mock the CreateContributor method
+        var contributor = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.UserRoleId),
+            command.Name,
+            command.Email,
+            DateTime.UtcNow,
+            user.Id!,
+            null,
+            null);
+
+        userFactory.CreateContributor(
+            Arg.Any<UserId>(),
+            Arg.Any<RoleId>(),
+            command.Name,
+            command.Email,
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            templateVersion.TemplateId,
+            Arg.Any<DateTime>())
             .Returns(contributor);
 
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
+
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, $"Result was not successful. Error: {result.Error}");
         Assert.NotNull(result.Value);
         Assert.Equal(contributor.Id!.Value, result.Value.UserId);
-        Assert.Equal(contributor.Name, result.Value.Name);
-        Assert.Equal(contributor.Email, result.Value.Email);
+        Assert.Equal(command.Name, result.Value.Name);
+        Assert.Equal(command.Email, result.Value.Email);
+        Assert.Equal(contributor.RoleId.Value, result.Value.RoleId);
+
+        await userRepo.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Handle_WhenApplicationNotFound_ShouldReturnFailure()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldAddExistingContributorWithMissingPermissions_WhenContributorExists(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUnitOfWork unitOfWork,
+        IUserFactory userFactory)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "newuser@example.com");
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var dbUser = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", "test@example.com", DateTime.UtcNow, null, null, null);
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
 
-        var usersQuery = new[] { dbUser }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(usersQuery);
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
 
-        // No application found
-        var applicationsQuery = new List<Domain.Entities.Application>().AsQueryable().BuildMockDbSet();
-        _applicationRepo.Query().Returns(applicationsQuery);
+        // Mock template version with template ID
+        var templateVersion = new TemplateVersion(
+            new TemplateVersionId(Guid.NewGuid()),
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
+
+        // Existing contributor with only Read permission
+        var existingContributor = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.UserRoleId),
+            command.Name,
+            command.Email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        // Add only Read permission using real factory
+        var realUserFactory = new UserFactory();
+        realUserFactory.AddPermissionToUser(
+            existingContributor,
+            command.ApplicationId.ToString(),
+            ResourceType.Application,
+            new[] { AccessType.Read },
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            DateTime.UtcNow);
+
+        var users = new[] { user, existingContributor }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Contains("Application not found", result.Error);
+        Assert.True(result.IsSuccess, $"Result was not successful. Error: {result.Error}");
+        Assert.NotNull(result.Value);
+        Assert.Equal(existingContributor.Id!.Value, result.Value.UserId);
+        Assert.Equal(command.Name, result.Value.Name);
+        Assert.Equal(command.Email, result.Value.Email);
+
+        // Verify that permissions were added to existing contributor
+        userFactory.Received(1).AddPermissionToUser(
+            existingContributor,
+            command.ApplicationId.ToString(),
+            ResourceType.Application,
+            Arg.Is<AccessType[]>(a => a.Length == 2 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write)),
+            user.Id!,
+            new ApplicationId(command.ApplicationId));
+
+        userFactory.Received(1).AddTemplatePermissionToUser(
+            existingContributor,
+            templateVersion.TemplateId.Value.ToString(),
+            Arg.Is<AccessType[]>(a => a.Length == 1 && a.Contains(AccessType.Read)),
+            user.Id!,
+            Arg.Any<DateTime>());
+
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Handle_WhenUserNotAuthenticated_ShouldReturnFailure()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnExistingContributor_WhenContributorExistsWithAllPermissions(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUnitOfWork unitOfWork,
+        IUserFactory userFactory)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "newuser@example.com");
-
         var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
-        var httpContext = Substitute.For<HttpContext>();
-        httpContext.User.Returns((ClaimsPrincipal?)null);
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
+
+        // Mock template version with template ID
+        var templateVersion = new TemplateVersion(
+            new TemplateVersionId(Guid.NewGuid()),
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
+
+        // Existing contributor with both Read and Write permissions
+        var existingContributor = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.UserRoleId),
+            command.Name,
+            command.Email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        // Add both Read and Write permissions using real factory
+        var realUserFactory = new UserFactory();
+        realUserFactory.AddPermissionToUser(
+            existingContributor,
+            command.ApplicationId.ToString(),
+            ResourceType.Application,
+            new[] { AccessType.Read, AccessType.Write },
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            DateTime.UtcNow);
+
+        var users = new[] { user, existingContributor }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess, $"Result was not successful. Error: {result.Error}");
+        Assert.NotNull(result.Value);
+        Assert.Equal(existingContributor.Id!.Value, result.Value.UserId);
+        Assert.Equal(command.Name, result.Value.Name);
+        Assert.Equal(command.Email, result.Value.Email);
+
+        // Verify that no new permissions were added since contributor already has all needed permissions
+        userFactory.DidNotReceive().AddPermissionToUser(Arg.Any<User>(), Arg.Any<string>(), Arg.Any<ResourceType>(), Arg.Any<AccessType[]>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>());
+        userFactory.DidNotReceive().AddTemplatePermissionToUser(Arg.Any<User>(), Arg.Any<string>(), Arg.Any<AccessType[]>(), Arg.Any<UserId>(), Arg.Any<DateTime>());
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenUserNotAuthenticated(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         var handler = new AddContributorCommandHandler(
-            _applicationRepo,
-            _userRepo,
-            _roleRepo,
+            applicationRepo,
+            userRepo,
+            roleRepo,
             httpContextAccessor,
-            _permissionCheckerService,
-            _userFactory,
-            _unitOfWork);
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Contains("Not authenticated", result.Error);
+        Assert.Equal("Not authenticated", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Handle_WhenNoUserIdentifier_ShouldReturnFailure()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenNoUserIdentifier(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "newuser@example.com");
-
-        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
         {
-            new Claim("someclaim", "value") // No email or appid claim
-        }, "TestAuth"));
-        _httpContext.User.Returns(user);
+            new("someclaim", "value")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Contains("No user identifier", result.Error);
+        Assert.Equal("No user identifier", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Handle_WhenUserNotFound_ShouldReturnFailure()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenUserNotFound(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "newuser@example.com");
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
 
         // No users found
-        var usersQuery = new List<User>().AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(usersQuery);
+        var users = new List<User>().AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Contains("User not found", result.Error);
+        Assert.Equal("User not found", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Handle_WhenUserNotAuthorized_ShouldReturnFailure()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenApplicationNotFound(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "newuser@example.com");
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var dbUser = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", "test@example.com", DateTime.UtcNow, null, null, null);
-        var application = new Domain.Entities.Application(new ApplicationId(applicationId), "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, dbUser.Id!);
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
 
-        var usersQuery = new[] { dbUser }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(usersQuery);
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
 
-        var applicationsQuery = new[] { application }.AsQueryable().BuildMockDbSet();
-        _applicationRepo.Query().Returns(applicationsQuery);
+        // No application found
+        var applications = new List<Domain.Entities.Application>().AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
 
-        _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(false);
-        _permissionCheckerService.IsAdmin().Returns(false);
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Contains("Only the application owner or admin can add contributors", result.Error);
+        Assert.Equal("Application not found", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Handle_WhenContributorAlreadyExists_ShouldReturnExistingContributor()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenUserDoesNotHavePermission(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "existing@example.com");
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var dbUser = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", "test@example.com", DateTime.UtcNow, null, null, null);
-        var application = new Domain.Entities.Application(new ApplicationId(applicationId), "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, dbUser.Id!);
-        var existingContributor = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "John Doe", "existing@example.com", DateTime.UtcNow, null, null, null);
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
 
-        // Set up a single mock that returns all users
-        var allUsers = new[] { dbUser, existingContributor }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(allUsers);
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
 
-        var applicationsQuery = new[] { application }.AsQueryable().BuildMockDbSet();
-        _applicationRepo.Query().Returns(applicationsQuery);
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
 
-        _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
-        _permissionCheckerService.IsAdmin().Returns(false);
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(false);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.NotNull(result.Value);
-        Assert.Equal(existingContributor.Id!.Value, result.Value.UserId);
-        Assert.Equal(existingContributor.Name, result.Value.Name);
-        Assert.Equal(existingContributor.Email, result.Value.Email);
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Only the application owner or admin can add contributors", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Handle_WhenUnitOfWorkFails_ShouldReturnFailure()
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenHttpContextIsNull(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
     {
         // Arrange
-        var applicationId = Guid.NewGuid();
-        var command = new AddContributorCommand(applicationId, "John Doe", "newuser@example.com");
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        httpContextAccessor.HttpContext.Returns((HttpContext?)null);
 
-        var dbUser = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test User", "test@example.com", DateTime.UtcNow, null, null, null);
-        var application = new Domain.Entities.Application(new ApplicationId(applicationId), "APP-001", new TemplateVersionId(Guid.NewGuid()), DateTime.UtcNow, dbUser.Id!);
-        var contributor = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "John Doe", "newuser@example.com", DateTime.UtcNow, dbUser.Id!, null, null);
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
-        // Set up a single mock that returns all users
-        var allUsers = new[] { dbUser }.AsQueryable().BuildMockDbSet();
-        _userRepo.Query().Returns(allUsers);
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
 
-        var applicationsQuery = new[] { application }.AsQueryable().BuildMockDbSet();
-        _applicationRepo.Query().Returns(applicationsQuery);
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Not authenticated", result.Error);
 
-        _permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString()).Returns(true);
-        _permissionCheckerService.IsAdmin().Returns(false);
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
 
-        _userFactory.CreateContributor(Arg.Any<UserId>(), Arg.Any<RoleId>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>(), Arg.Any<DateTime?>())
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenUserIdentityNotAuthenticated(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, "test@example.com")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims)); // Not authenticated
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Not authenticated", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenExceptionThrown(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        // Mock to throw exception
+        userRepo.Query().Throws(new InvalidOperationException("Database error"));
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Database error", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldUseAppIdClaim_WhenEmailClaimNotAvailable(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUnitOfWork unitOfWork,
+        IUserFactory userFactory)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var externalId = "external-user-id";
+        var claims = new List<Claim>
+        {
+            new("appid", externalId)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            "test@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null,
+            externalId);
+
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
+
+        // Mock template version with template ID
+        var templateVersion = new TemplateVersion(
+            new TemplateVersionId(Guid.NewGuid()),
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
+
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        // Mock the CreateContributor method
+        var contributor = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.UserRoleId),
+            command.Name,
+            command.Email,
+            DateTime.UtcNow,
+            user.Id!,
+            null,
+            null);
+
+        userFactory.CreateContributor(
+            Arg.Any<UserId>(),
+            Arg.Any<RoleId>(),
+            command.Name,
+            command.Email,
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            templateVersion.TemplateId,
+            Arg.Any<DateTime>())
             .Returns(contributor);
 
-        _unitOfWork.CommitAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<int>(new Exception("Database error")));
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess, $"Result was not successful. Error: {result.Error}");
+        Assert.NotNull(result.Value);
+        Assert.Equal(contributor.Id!.Value, result.Value.UserId);
+
+        await userRepo.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldUseAzpClaim_WhenAppIdClaimNotAvailable(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUnitOfWork unitOfWork,
+        IUserFactory userFactory)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var externalId = "external-user-id";
+        var claims = new List<Claim>
+        {
+            new("azp", externalId)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            "test@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null,
+            externalId);
+
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
+
+        // Mock template version with template ID
+        var templateVersion = new TemplateVersion(
+            new TemplateVersionId(Guid.NewGuid()),
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
+
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        // Mock the CreateContributor method
+        var contributor = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.UserRoleId),
+            command.Name,
+            command.Email,
+            DateTime.UtcNow,
+            user.Id!,
+            null,
+            null);
+
+        userFactory.CreateContributor(
+            Arg.Any<UserId>(),
+            Arg.Any<RoleId>(),
+            command.Name,
+            command.Email,
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            templateVersion.TemplateId,
+            Arg.Any<DateTime>())
+            .Returns(contributor);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess, $"Result was not successful. Error: {result.Error}");
+        Assert.NotNull(result.Value);
+        Assert.Equal(contributor.Id!.Value, result.Value.UserId);
+
+        await userRepo.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFailure_WhenAdminUserDoesNotHavePermission(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUserFactory userFactory,
+        IUnitOfWork unitOfWork)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
+
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(false);
+        permissionCheckerService.IsAdmin().Returns(false);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Contains("Database error", result.Error);
+        Assert.Equal("Only the application owner or admin can add contributors", result.Error);
+
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldSucceed_WhenAdminUserHasPermission(
+        AddContributorCommand command,
+        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IEaRepository<User> userRepo,
+        IEaRepository<Role> roleRepo,
+        IPermissionCheckerService permissionCheckerService,
+        IUnitOfWork unitOfWork,
+        IUserFactory userFactory)
+    {
+        // Arrange
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            email,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        var application = new Domain.Entities.Application(
+            new ApplicationId(command.ApplicationId),
+            "APP-001",
+            new TemplateVersionId(Guid.NewGuid()),
+            DateTime.UtcNow,
+            user.Id!);
+
+        // Mock template version with template ID
+        var templateVersion = new TemplateVersion(
+            new TemplateVersionId(Guid.NewGuid()),
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
+
+        var users = new[] { user }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        var applications = new[] { application }.AsQueryable().BuildMockDbSet();
+        applicationRepo.Query().Returns(applications);
+
+        permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(false);
+        permissionCheckerService.IsAdmin().Returns(true);
+
+        // Mock the CreateContributor method
+        var contributor = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.UserRoleId),
+            command.Name,
+            command.Email,
+            DateTime.UtcNow,
+            user.Id!,
+            null,
+            null);
+
+        userFactory.CreateContributor(
+            Arg.Any<UserId>(),
+            Arg.Any<RoleId>(),
+            command.Name,
+            command.Email,
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            templateVersion.TemplateId,
+            Arg.Any<DateTime>())
+            .Returns(contributor);
+
+        var handler = new AddContributorCommandHandler(
+            applicationRepo,
+            userRepo,
+            roleRepo,
+            httpContextAccessor,
+            permissionCheckerService,
+            userFactory,
+            unitOfWork);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess, $"Result was not successful. Error: {result.Error}");
+        Assert.NotNull(result.Value);
+        Assert.Equal(contributor.Id!.Value, result.Value.UserId);
+        Assert.Equal(command.Name, result.Value.Name);
+        Assert.Equal(command.Email, result.Value.Email);
+
+        await userRepo.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 } 
