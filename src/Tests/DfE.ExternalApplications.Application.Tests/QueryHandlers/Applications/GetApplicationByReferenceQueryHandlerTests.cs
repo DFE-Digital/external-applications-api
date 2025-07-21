@@ -72,6 +72,8 @@ public class GetApplicationByReferenceQueryHandlerTests
             DateTime.UtcNow,
             user.Id!);
 
+        application.GetType().GetProperty("CreatedByUser")?.SetValue(application, user);
+
         application.AddResponse(response);
 
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
@@ -106,6 +108,11 @@ public class GetApplicationByReferenceQueryHandlerTests
         Assert.Equal(templateVersionId.Value, result.Value.TemplateSchema.TemplateVersionId);
         Assert.Equal("1.0", result.Value.TemplateSchema.VersionNumber);
         Assert.Equal("{}", result.Value.TemplateSchema.JsonSchema);
+
+        Assert.NotNull(result.Value.CreatedBy);
+        Assert.Equal(user.Id.Value, result.Value.CreatedBy.UserId);
+        Assert.Equal(user.Name, result.Value.CreatedBy.Name);
+        Assert.Equal(user.Email, result.Value.CreatedBy.Email);
     }
 
     [Theory]

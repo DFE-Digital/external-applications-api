@@ -619,6 +619,14 @@
             "format": "date-time",
             "nullable": true
           },
+          "createdBy": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserDto"
+              }
+            ]
+          },
           "latestResponse": {
             "nullable": true,
             "oneOf": [
@@ -647,6 +655,106 @@
         "enum": [
           "InProgress",
           "Submitted"
+        ]
+      },
+      "UserDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "authorization": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserAuthorizationDto"
+              }
+            ]
+          }
+        }
+      },
+      "UserAuthorizationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserPermissionDto"
+            }
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UserPermissionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "applicationId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "resourceKey": {
+            "type": "string"
+          },
+          "resourceType": {
+            "$ref": "#/components/schemas/ResourceType"
+          },
+          "accessType": {
+            "$ref": "#/components/schemas/AccessType"
+          }
+        }
+      },
+      "ResourceType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Application",
+          "User",
+          "Template",
+          "TaskGroup",
+          "Task",
+          "Page",
+          "Field"
+        ],
+        "enum": [
+          "Application",
+          "User",
+          "Template",
+          "TaskGroup",
+          "Task",
+          "Page",
+          "Field"
+        ]
+      },
+      "AccessType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Read",
+          "Write"
+        ],
+        "enum": [
+          "Read",
+          "Write"
         ]
       },
       "ApplicationResponseDetailsDto": {
@@ -749,106 +857,6 @@
             "type": "string"
           }
         }
-      },
-      "UserDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "userId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "roleId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "authorization": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/UserAuthorizationDto"
-              }
-            ]
-          }
-        }
-      },
-      "UserAuthorizationDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "permissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserPermissionDto"
-            }
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "UserPermissionDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "applicationId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "resourceKey": {
-            "type": "string"
-          },
-          "resourceType": {
-            "$ref": "#/components/schemas/ResourceType"
-          },
-          "accessType": {
-            "$ref": "#/components/schemas/AccessType"
-          }
-        }
-      },
-      "ResourceType": {
-        "type": "string",
-        "description": "",
-        "x-enumNames": [
-          "Application",
-          "User",
-          "Template",
-          "TaskGroup",
-          "Task",
-          "Page",
-          "Field"
-        ],
-        "enum": [
-          "Application",
-          "User",
-          "Template",
-          "TaskGroup",
-          "Task",
-          "Page",
-          "Field"
-        ]
-      },
-      "AccessType": {
-        "type": "string",
-        "description": "",
-        "x-enumNames": [
-          "Read",
-          "Write"
-        ],
-        "enum": [
-          "Read",
-          "Write"
-        ]
       },
       "AddContributorRequest": {
         "type": "object",

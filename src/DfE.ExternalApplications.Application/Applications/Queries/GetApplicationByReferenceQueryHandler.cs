@@ -1,7 +1,6 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
-using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using MediatR;
@@ -76,7 +75,13 @@ public sealed class GetApplicationByReferenceQueryHandler(
                     TemplateVersionId = application.TemplateVersion.Id!.Value,
                     VersionNumber = application.TemplateVersion.VersionNumber,
                     JsonSchema = application.TemplateVersion.JsonSchema
-                } : null
+                } : null,
+                CreatedBy = application.CreatedByUser == null ? null : new UserDto
+                {
+                    UserId = application.CreatedByUser.Id!.Value,
+                    Name = application.CreatedByUser.Name,
+                    Email = application.CreatedByUser.Email
+                }
             };
 
             return Result<ApplicationDto>.Success(result);

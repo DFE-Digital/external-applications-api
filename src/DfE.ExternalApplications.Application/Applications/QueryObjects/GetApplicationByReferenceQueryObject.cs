@@ -10,5 +10,6 @@ public sealed class GetApplicationByReferenceQueryObject(string applicationRefer
         query.Where(a => a.ApplicationReference == applicationReference)
              .Include(a => a.Responses)
              .Include(a => a.TemplateVersion)
-             .ThenInclude(tv => tv!.Template);
-} 
+             .ThenInclude(tv => tv!.Template)
+             .Include(a => a.CreatedByUser);
+}

@@ -6,7 +6,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="DfE.CoreLibs.Caching" Version="1.0.10" />
-		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.28" />
+		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.29" />
 		<PackageReference Include="FluentValidation" Version="12.0.0" />
 		<PackageReference Include="MediatR" Version="12.5.0" />
 	</ItemGroup>

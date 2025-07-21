@@ -1,6 +1,8 @@
 using AutoFixture;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
 
@@ -89,5 +91,31 @@ public class GetApplicationByReferenceQueryObjectTests
         Assert.NotNull(result);
         var application_result = result.First();
         Assert.Equal(targetReference, application_result.ApplicationReference);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Apply_ShouldIncludeUser_WhenApplicationFound(
+        ApplicationCustomization appCustomization)
+    {
+        // Arrange
+        const string targetReference = "APP-20250101-001";
+        appCustomization.OverrideReference = targetReference;
+        var fixture = new Fixture().Customize(appCustomization);
+        var application = fixture.Create<Domain.Entities.Application>();
+        // Simulate a user entity
+        var user = new User(application.CreatedBy, new RoleId(Guid.NewGuid()), "User 1", "test@example.com",
+            DateTime.UtcNow, null, null, null);
+        application.GetType().GetProperty("CreatedByUser")?.SetValue(application, user);
+        var applications = new[] { application };
+        var queryable = applications.AsQueryable().BuildMock();
+        var queryObject = new GetApplicationByReferenceQueryObject(targetReference);
+        // Act
+        var result = queryObject.Apply(queryable).FirstOrDefault();
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotNull(result.CreatedByUser);
+        Assert.Equal("User 1", result.CreatedByUser.Name);
+        Assert.Equal("test@example.com", result.CreatedByUser.Email);
     }
 } 
