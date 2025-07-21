@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using File = DfE.ExternalApplications.Domain.Entities.File;
@@ -27,5 +28,14 @@ public class FileFactory : IFileFactory
             uploadedOn,
             uploadedBy
         );
+    }
+
+    public void DeleteFile(File file)
+    {
+        file.Delete();
+
+        var when = DateTime.UtcNow;
+
+        file.AddDomainEvent(new FileDeletedEvent(file.Id!, when));
     }
 } 

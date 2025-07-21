@@ -462,6 +462,7 @@ public class ExternalApplicationsContext : DbContext
             .ValueGeneratedOnAdd()
             .HasConversion(v => v.Value, v => new FileId(v))
             .IsRequired();
+        b.Ignore(f => f.IsDeleted);
         b.Property(e => e.ApplicationId)
             .HasColumnName("ApplicationId")
             .HasConversion(v => v.Value, v => new ApplicationId(v))

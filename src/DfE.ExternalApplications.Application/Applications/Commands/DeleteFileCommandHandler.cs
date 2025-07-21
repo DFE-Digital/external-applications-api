@@ -12,6 +12,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using DfE.ExternalApplications.Domain.Factories;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using File = DfE.ExternalApplications.Domain.Entities.File;
 
@@ -20,13 +21,14 @@ namespace DfE.ExternalApplications.Application.Applications.Commands;
 public sealed record DeleteFileCommand(Guid FileId, Guid ApplicationId) : IRequest<Result<bool>>;
 
 public class DeleteFileCommandHandler(
-    IEaRepository<File> uploadRepository,
+    IEaRepository<File> fileRepository,
     IEaRepository<User> userRepository,
     IUnitOfWork unitOfWork,
     IEaRepository<Domain.Entities.Application> applicationRepo,
     IFileStorageService fileStorageService,
     IPermissionCheckerService permissionCheckerService,
-    IHttpContextAccessor httpContextAccessor)
+    IHttpContextAccessor httpContextAccessor,
+    IFileFactory fileFactory)
     : IRequestHandler<DeleteFileCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(DeleteFileCommand request, CancellationToken cancellationToken)
@@ -81,7 +83,7 @@ public class DeleteFileCommandHandler(
                 return Result<bool>.Failure("User does not have permission to delete this file");
 
             var upload = new GetFileByIdQueryObject(new FileId(request.FileId))
-                .Apply(uploadRepository.Query())
+                .Apply(fileRepository.Query())
                 .FirstOrDefault();
             if (upload == null)
                 return Result<bool>.Failure("File not found");
@@ -89,7 +91,10 @@ public class DeleteFileCommandHandler(
             var storagePath = $"uploads/{application.ApplicationReference}/{upload.FileName}";
             await fileStorageService.DeleteAsync(storagePath, cancellationToken);
 
-            uploadRepository.Remove(upload);
+            fileFactory.DeleteFile(upload);
+
+            await fileRepository.RemoveAsync(upload, cancellationToken);
+            
             await unitOfWork.CommitAsync(cancellationToken);
 
             return Result<bool>.Success(true);

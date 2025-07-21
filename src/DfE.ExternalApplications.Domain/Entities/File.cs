@@ -17,6 +17,7 @@ public sealed class File : BaseAggregateRoot, IEntity<FileId>
     public DateTime UploadedOn { get; private set; }
     public UserId UploadedBy { get; private set; }
     public User? UploadedByUser { get; private set; }
+    public bool IsDeleted { get; private set; }
 
     private File() { /* For EF Core */ }
 
@@ -38,5 +39,12 @@ public sealed class File : BaseAggregateRoot, IEntity<FileId>
         FileName = fileName ?? throw new ArgumentNullException(nameof(fileName));
         UploadedOn = uploadedOn;
         UploadedBy = uploadedBy ?? throw new ArgumentNullException(nameof(uploadedBy));
+    }
+
+    public void Delete()
+    {
+        if (IsDeleted)
+            throw new InvalidOperationException("File is already deleted.");
+        IsDeleted = true;
     }
 } 

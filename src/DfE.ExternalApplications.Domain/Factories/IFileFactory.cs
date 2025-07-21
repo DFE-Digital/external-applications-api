@@ -1,6 +1,4 @@
-using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
-using System;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using File = DfE.ExternalApplications.Domain.Entities.File;
 
@@ -17,4 +15,5 @@ public interface IFileFactory
         string fileName,
         DateTime uploadedOn,
         UserId uploadedBy);
+    void DeleteFile(File file);
 } 
