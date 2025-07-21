@@ -9,6 +9,7 @@ namespace DfE.ExternalApplications.Domain.Entities;
 public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
 {
     private readonly List<ApplicationResponse> _responses = new();
+    private readonly List<Upload> _uploads = new();
 
     public ApplicationId? Id { get; private set; }
     public string ApplicationReference { get; private set; }
@@ -22,6 +23,7 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
     public UserId? LastModifiedBy { get; private set; }
     public User? LastModifiedByUser { get; private set; }
     public IReadOnlyCollection<ApplicationResponse> Responses => _responses.AsReadOnly();
+    public IReadOnlyCollection<Upload> Uploads => _uploads.AsReadOnly();
 
     private Application() { /* For EF Core */ }
 

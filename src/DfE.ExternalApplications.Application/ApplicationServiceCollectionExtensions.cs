@@ -6,6 +6,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
+using DfE.CoreLibs.FileStorage;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -35,6 +36,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<ITemplateFactory, TemplateFactory>();
 
             services.AddBackgroundService();
+
+            services.AddFileStorage(config);
 
             return services;
         }
