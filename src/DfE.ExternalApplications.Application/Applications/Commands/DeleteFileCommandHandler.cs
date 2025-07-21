@@ -7,19 +7,20 @@ using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
 public sealed record DeleteFileCommand(Guid FileId, Guid ApplicationId) : IRequest<Result<bool>>;
 
 public class DeleteFileCommandHandler(
-    IEaRepository<Upload> uploadRepository,
+    IEaRepository<File> uploadRepository,
     IEaRepository<User> userRepository,
     IUnitOfWork unitOfWork,
     IEaRepository<Domain.Entities.Application> applicationRepo,
@@ -38,7 +39,7 @@ public class DeleteFileCommandHandler(
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
             if (string.IsNullOrEmpty(principalId))
-                principalId = user.FindFirstValue(JwtRegisteredClaimNames.Email);
+                principalId = user.FindFirstValue(ClaimTypes.Email);
             if (string.IsNullOrEmpty(principalId))
                 return Result<bool>.Failure("No user identifier");
 
@@ -79,13 +80,13 @@ public class DeleteFileCommandHandler(
                     AccessType.Delete))
                 return Result<bool>.Failure("User does not have permission to delete this file");
 
-            var upload = new GetUploadByIdQueryObject(request.FileId)
+            var upload = new GetFileByIdQueryObject(new FileId(request.FileId))
                 .Apply(uploadRepository.Query())
                 .FirstOrDefault();
             if (upload == null)
                 return Result<bool>.Failure("File not found");
 
-            var storagePath = $"/uploads/{application.ApplicationReference}/{upload.FileName}";
+            var storagePath = $"uploads/{application.ApplicationReference}/{upload.FileName}";
             await fileStorageService.DeleteAsync(storagePath, cancellationToken);
 
             uploadRepository.Remove(upload);

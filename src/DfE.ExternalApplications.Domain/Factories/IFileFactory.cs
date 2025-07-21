@@ -2,13 +2,14 @@ using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using System;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Domain.Factories;
 
-public interface IUploadFactory
+public interface IFileFactory
 {
-    Upload CreateUpload(
-        UploadId id,
+    File CreateUpload(
+        FileId id,
         ApplicationId applicationId,
         string name,
         string? description,

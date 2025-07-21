@@ -13,7 +13,9 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using DfE.ExternalApplications.Utils.File;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
@@ -26,12 +28,12 @@ public sealed record UploadFileCommand(
 ) : IRequest<Result<UploadDto>>;
 
 public class UploadFileCommandHandler(
-    IEaRepository<Upload> uploadRepository,
+    IEaRepository<File> uploadRepository,
     IEaRepository<Domain.Entities.Application> applicationRepository,
     IEaRepository<User> userRepository,
     IUnitOfWork unitOfWork,
     IFileStorageService fileStorageService,
-    IUploadFactory uploadFactory,
+    IFileFactory fileFactory,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService)
     : IRequestHandler<UploadFileCommand, Result<UploadDto>>
@@ -78,16 +80,15 @@ public class UploadFileCommandHandler(
                 return Result<UploadDto>.Failure("User does not have permission to upload files for this application");
 
             // Generate hashed file name
-            var ext = Path.GetExtension(request.OriginalFileName);
-            var hashedFileName = $"{Guid.NewGuid():N}{ext}";
-            var storagePath = $"/uploads/{application.ApplicationReference}/{hashedFileName}";
+            var hashedFileName = FileNameHasher.HashFileName(request.OriginalFileName);
+            var storagePath = $"uploads/{application.ApplicationReference}/{hashedFileName}";
 
-            // Upload file to storage
+            // File file to storage
             await fileStorageService.UploadAsync(storagePath, request.FileContent, cancellationToken);
 
-            // Create Upload entity using factory
-            var upload = uploadFactory.CreateUpload(
-                new UploadId(Guid.NewGuid()),
+            // Create File entity using factory
+            var upload = fileFactory.CreateUpload(
+                new FileId(Guid.NewGuid()),
                 request.ApplicationId,
                 request.Name,
                 request.Description,

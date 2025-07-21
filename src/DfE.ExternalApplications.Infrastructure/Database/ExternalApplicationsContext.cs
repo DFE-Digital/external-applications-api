@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Infrastructure.Database;
 
@@ -38,7 +39,7 @@ public class ExternalApplicationsContext : DbContext
     public DbSet<Permission> Permissions { get; set; } = null!;
     public DbSet<TaskAssignmentLabel> TaskAssignmentLabels { get; set; } = null!;
     public DbSet<TemplatePermission> TemplatePermissions { get; set; } = null!;
-    public DbSet<Upload> Uploads { get; set; } = null!;
+    public DbSet<File> Files { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -63,7 +64,7 @@ public class ExternalApplicationsContext : DbContext
         modelBuilder.Entity<Permission>(ConfigurePermission);
         modelBuilder.Entity<TemplatePermission>(ConfigureTemplatePermission);
         modelBuilder.Entity<TaskAssignmentLabel>(ConfigureTaskAssignmentLabel);
-        modelBuilder.Entity<Upload>(ConfigureUpload);
+        modelBuilder.Entity<File>(ConfigureFile);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -452,14 +453,14 @@ public class ExternalApplicationsContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
     }
 
-    private static void ConfigureUpload(EntityTypeBuilder<Upload> b)
+    private static void ConfigureFile(EntityTypeBuilder<File> b)
     {
-        b.ToTable("Uploads", DefaultSchema);
+        b.ToTable("Files", DefaultSchema);
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
-            .HasColumnName("UploadId")
+            .HasColumnName("FileId")
             .ValueGeneratedOnAdd()
-            .HasConversion(v => v.Value, v => new UploadId(v))
+            .HasConversion(v => v.Value, v => new FileId(v))
             .IsRequired();
         b.Property(e => e.ApplicationId)
             .HasColumnName("ApplicationId")
@@ -490,7 +491,7 @@ public class ExternalApplicationsContext : DbContext
             .HasConversion(v => v.Value, v => new UserId(v))
             .IsRequired();
         b.HasOne(e => e.Application)
-            .WithMany(a => a.Uploads)
+            .WithMany(a => a.Files)
             .HasForeignKey(e => e.ApplicationId)
             .OnDelete(DeleteBehavior.Cascade);
         b.HasOne(e => e.UploadedByUser)

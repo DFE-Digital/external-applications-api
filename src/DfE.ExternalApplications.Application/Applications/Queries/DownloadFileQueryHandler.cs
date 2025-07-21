@@ -11,14 +11,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
 public sealed record DownloadFileQuery(Guid FileId, ApplicationId ApplicationId) : IRequest<Result<DownloadFileResult>>;
 
 public class DownloadFileQueryHandler(
-    IEaRepository<Upload> uploadRepository,
+    IEaRepository<File> uploadRepository,
     IEaRepository<User> userRepository,
     IFileStorageService fileStorageService,
     IEaRepository<Domain.Entities.Application> applicationRepository,
@@ -36,7 +38,7 @@ public class DownloadFileQueryHandler(
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
             if (string.IsNullOrEmpty(principalId))
-                principalId = user.FindFirstValue(JwtRegisteredClaimNames.Email);
+                principalId = user.FindFirstValue(ClaimTypes.Email);
             if (string.IsNullOrEmpty(principalId))
                 return Result<DownloadFileResult>.Failure("No user identifier");
 
@@ -66,13 +68,13 @@ public class DownloadFileQueryHandler(
             if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read))
                 return Result<DownloadFileResult>.Failure("User does not have permission to download this file");
 
-            var upload = new GetUploadByIdQueryObject(request.FileId)
+            var upload = new GetFileByIdQueryObject(new FileId(request.FileId))
                 .Apply(uploadRepository.Query())
                 .FirstOrDefault();
             if (upload == null)
                 return Result<DownloadFileResult>.Failure("File not found");
 
-            var storagePath = $"/uploads/{application.ApplicationReference}/{upload.FileName}";
+            var storagePath = $"uploads/{application.ApplicationReference}/{upload.FileName}";
             var fileStream = await fileStorageService.DownloadAsync(storagePath, cancellationToken);
 
             // Infer content type from file extension (simple approach)

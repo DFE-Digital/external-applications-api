@@ -10,20 +10,21 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetUploadsForApplicationQuery(ApplicationId ApplicationId) : IRequest<Result<IReadOnlyCollection<UploadDto>>>;
+public sealed record GetFilesForApplicationQuery(ApplicationId ApplicationId) : IRequest<Result<IReadOnlyCollection<UploadDto>>>;
 
-public class GetUploadsForApplicationQueryHandler(
-    IEaRepository<Upload> uploadRepository,
+public class GetFilesForApplicationQueryHandler(
+    IEaRepository<File> uploadRepository,
     IEaRepository<Domain.Entities.Application> applicationRepository,
     IEaRepository<User> userRepository,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService)
-    : IRequestHandler<GetUploadsForApplicationQuery, Result<IReadOnlyCollection<UploadDto>>>
+    : IRequestHandler<GetFilesForApplicationQuery, Result<IReadOnlyCollection<UploadDto>>>
 {
-    public async Task<Result<IReadOnlyCollection<UploadDto>>> Handle(GetUploadsForApplicationQuery request, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyCollection<UploadDto>>> Handle(GetFilesForApplicationQuery request, CancellationToken cancellationToken)
     {
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
@@ -62,7 +63,7 @@ public class GetUploadsForApplicationQueryHandler(
         if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read))
             return Result<IReadOnlyCollection<UploadDto>>.Failure("User does not have permission to list files for this application");
 
-        var uploads = (await new GetUploadsByApplicationIdQueryObject(request.ApplicationId)
+        var uploads = (await new GetFilesByApplicationIdQueryObject(request.ApplicationId)
             .Apply(uploadRepository.Query())
             .Select(u => new UploadDto
             {

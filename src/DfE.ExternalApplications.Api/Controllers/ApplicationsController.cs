@@ -2,7 +2,6 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
-using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -269,26 +268,25 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// Uploads a file for a specific application.
     /// </summary>
     [HttpPost("{applicationId}/files")]
+    [Consumes("multipart/form-data")]
     [SwaggerResponse(201, "File uploaded successfully.")]
     [SwaggerResponse(400, "Invalid request data.")]
     [SwaggerResponse(401, "Unauthorized - no valid user token")]
     [Authorize(Policy = "CanWriteApplicationFiles")]
     public async Task<IActionResult> UploadFileAsync(
         [FromRoute] Guid applicationId,
-        [FromForm] string name,
-        [FromForm] string? description,
-        [FromForm] IFormFile file,
+        [FromForm] UploadFileRequest dto,
         CancellationToken cancellationToken)
     {
-        if (file == null || file.Length == 0)
+        if (dto.File == null || dto.File.Length == 0)
             return BadRequest("No file provided.");
 
         var command = new UploadFileCommand(
             new ApplicationId(applicationId),
-            name,
-            description,
-            file.FileName,
-            file.OpenReadStream()
+            dto.Name,
+            dto.Description,
+            dto.File.FileName,
+            dto.File.OpenReadStream()
         );
         var result = await sender.Send(command, cancellationToken);
 
@@ -308,17 +306,17 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Gets all uploads for a specific application.
+    /// Gets all files for a specific application.
     /// </summary>
     [HttpGet("{applicationId}/files")]
-    [SwaggerResponse(200, "List of uploads for the application.")]
+    [SwaggerResponse(200, "List of files for the application.")]
     [SwaggerResponse(401, "Unauthorized - no valid user token")]
     [Authorize(Policy = "CanReadApplicationFiles")]
-    public async Task<IActionResult> GetUploadsForApplicationAsync(
+    public async Task<IActionResult> GetFilesForApplicationAsync(
         [FromRoute] Guid applicationId,
         CancellationToken cancellationToken)
     {
-        var query = new GetUploadsForApplicationQuery(new ApplicationId(applicationId));
+        var query = new GetFilesForApplicationQuery(new ApplicationId(applicationId));
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
@@ -333,8 +331,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
             };
         }
 
-
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     /// <summary>
@@ -394,6 +391,6 @@ public class ApplicationsController(ISender sender) : ControllerBase
             };
         }
 
-        return Ok();
+        return Ok(result.Value);
     }
 }

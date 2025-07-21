@@ -116,6 +116,64 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.ToTable("ApplicationResponses", "ea");
                 });
 
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.File", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("FileId");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ApplicationId");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("Description");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("FileName");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Name");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("OriginalFileName");
+
+                    b.Property<Guid>("UploadedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("UploadedBy");
+
+                    b.Property<DateTime>("UploadedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("UploadedOn")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("UploadedBy");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Files", "ea");
+                });
+
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -347,64 +405,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.ToTable("TemplateVersions", "ea");
                 });
 
-            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Upload", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("UploadId");
-
-                    b.Property<Guid>("ApplicationId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ApplicationId");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
-                        .HasColumnName("Description");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("FileName");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("Name");
-
-                    b.Property<string>("OriginalFileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("OriginalFileName");
-
-                    b.Property<Guid>("UploadedBy")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("UploadedBy");
-
-                    b.Property<DateTime>("UploadedOn")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("UploadedOn")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApplicationId");
-
-                    b.HasIndex("UploadedBy");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Uploads", "ea");
-                });
-
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -521,6 +521,29 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.Navigation("LastModifiedByUser");
                 });
 
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.File", b =>
+                {
+                    b.HasOne("DfE.ExternalApplications.Domain.Entities.Application", "Application")
+                        .WithMany("Files")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "UploadedByUser")
+                        .WithMany()
+                        .HasForeignKey("UploadedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", null)
+                        .WithMany("Files")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Application");
+
+                    b.Navigation("UploadedByUser");
+                });
+
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Permission", b =>
                 {
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.Application", "Application")
@@ -628,29 +651,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.Navigation("Template");
                 });
 
-            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Upload", b =>
-                {
-                    b.HasOne("DfE.ExternalApplications.Domain.Entities.Application", "Application")
-                        .WithMany("Uploads")
-                        .HasForeignKey("ApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "UploadedByUser")
-                        .WithMany()
-                        .HasForeignKey("UploadedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", null)
-                        .WithMany("Uploads")
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("Application");
-
-                    b.Navigation("UploadedByUser");
-                });
-
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.User", b =>
                 {
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "CreatedByUser")
@@ -678,9 +678,9 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
 
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Application", b =>
                 {
-                    b.Navigation("Responses");
+                    b.Navigation("Files");
 
-                    b.Navigation("Uploads");
+                    b.Navigation("Responses");
                 });
 
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Template", b =>
@@ -690,11 +690,11 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
 
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.User", b =>
                 {
+                    b.Navigation("Files");
+
                     b.Navigation("Permissions");
 
                     b.Navigation("TemplatePermissions");
-
-                    b.Navigation("Uploads");
                 });
 #pragma warning restore 612, 618
         }

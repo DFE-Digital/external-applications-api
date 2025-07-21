@@ -2,9 +2,9 @@ using FluentValidation;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public class GetUploadsForApplicationQueryValidator : AbstractValidator<GetUploadsForApplicationQuery>
+public class GetFilesForApplicationQueryValidator : AbstractValidator<GetFilesForApplicationQuery>
 {
-    public GetUploadsForApplicationQueryValidator()
+    public GetFilesForApplicationQueryValidator()
     {
         RuleFor(x => x.ApplicationId).NotNull();
     }

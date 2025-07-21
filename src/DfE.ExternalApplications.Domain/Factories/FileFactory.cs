@@ -1,13 +1,14 @@
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Domain.Factories;
 
-public class UploadFactory : IUploadFactory
+public class FileFactory : IFileFactory
 {
-    public Upload CreateUpload(
-        UploadId id,
+    public File CreateUpload(
+        FileId id,
         ApplicationId applicationId,
         string name,
         string? description,
@@ -16,7 +17,7 @@ public class UploadFactory : IUploadFactory
         DateTime uploadedOn,
         UserId uploadedBy)
     {
-        return new Upload(
+        return new File(
             id,
             applicationId,
             name,

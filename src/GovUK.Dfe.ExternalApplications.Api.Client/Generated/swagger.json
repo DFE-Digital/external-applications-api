@@ -459,6 +459,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "type": "object",
                 "properties": {
                   "name": {
                     "type": "string",
@@ -468,29 +469,9 @@
                     "type": "string",
                     "nullable": true
                   },
-                  "ContentType": {
+                  "file": {
                     "type": "string",
-                    "nullable": true
-                  },
-                  "ContentDisposition": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "Headers": {
-                    "type": "array",
-                    "nullable": true,
-                    "items": {}
-                  },
-                  "Length": {
-                    "type": "integer",
-                    "format": "int64"
-                  },
-                  "Name": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "FileName": {
-                    "type": "string",
+                    "format": "binary",
                     "nullable": true
                   }
                 }
@@ -514,8 +495,8 @@
         "tags": [
           "Applications"
         ],
-        "summary": "Gets all uploads for a specific application.",
-        "operationId": "Applications_GetUploadsForApplication",
+        "summary": "Gets all files for a specific application.",
+        "operationId": "Applications_GetFilesForApplication",
         "parameters": [
           {
             "name": "applicationId",
@@ -530,7 +511,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of uploads for the application."
+            "description": "List of files for the application."
           },
           "401": {
             "description": "Unauthorized - no valid user token"

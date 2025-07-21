@@ -5,9 +5,9 @@ using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId
 
 namespace DfE.ExternalApplications.Domain.Entities;
 
-public sealed class Upload : BaseAggregateRoot, IEntity<UploadId>
+public sealed class File : BaseAggregateRoot, IEntity<FileId>
 {
-    public UploadId? Id { get; private set; }
+    public FileId? Id { get; private set; }
     public ApplicationId ApplicationId { get; private set; }
     public Application? Application { get; private set; }
     public string Name { get; private set; } = null!;
@@ -18,10 +18,10 @@ public sealed class Upload : BaseAggregateRoot, IEntity<UploadId>
     public UserId UploadedBy { get; private set; }
     public User? UploadedByUser { get; private set; }
 
-    private Upload() { /* For EF Core */ }
+    private File() { /* For EF Core */ }
 
-    public Upload(
-        UploadId id,
+    public File(
+        FileId id,
         ApplicationId applicationId,
         string name,
         string? description,

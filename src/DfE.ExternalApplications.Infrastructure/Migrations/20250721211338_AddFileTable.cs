@@ -6,17 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DfE.ExternalApplications.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddUploadsTable : Migration
+    public partial class AddFileTable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Uploads",
+                name: "Files",
                 schema: "ea",
                 columns: table => new
                 {
-                    UploadId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
@@ -28,23 +28,23 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Uploads", x => x.UploadId);
+                    table.PrimaryKey("PK_Files", x => x.FileId);
                     table.ForeignKey(
-                        name: "FK_Uploads_Applications_ApplicationId",
+                        name: "FK_Files_Applications_ApplicationId",
                         column: x => x.ApplicationId,
                         principalSchema: "ea",
                         principalTable: "Applications",
                         principalColumn: "ApplicationId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Uploads_Users_UploadedBy",
+                        name: "FK_Files_Users_UploadedBy",
                         column: x => x.UploadedBy,
                         principalSchema: "ea",
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Uploads_Users_UserId",
+                        name: "FK_Files_Users_UserId",
                         column: x => x.UserId,
                         principalSchema: "ea",
                         principalTable: "Users",
@@ -52,21 +52,21 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Uploads_ApplicationId",
+                name: "IX_Files_ApplicationId",
                 schema: "ea",
-                table: "Uploads",
+                table: "Files",
                 column: "ApplicationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Uploads_UploadedBy",
+                name: "IX_Files_UploadedBy",
                 schema: "ea",
-                table: "Uploads",
+                table: "Files",
                 column: "UploadedBy");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Uploads_UserId",
+                name: "IX_Files_UserId",
                 schema: "ea",
-                table: "Uploads",
+                table: "Files",
                 column: "UserId");
         }
 
@@ -74,7 +74,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Uploads",
+                name: "Files",
                 schema: "ea");
         }
     }
