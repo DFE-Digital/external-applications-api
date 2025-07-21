@@ -436,6 +436,186 @@
         }
       }
     },
+    "/v1/Applications/{applicationId}/files": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Uploads a file for a specific application.",
+        "operationId": "Applications_UploadFile",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "ContentType": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "ContentDisposition": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Headers": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {}
+                  },
+                  "Length": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "Name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "FileName": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File uploaded successfully."
+          },
+          "400": {
+            "description": "Invalid request data."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Gets all uploads for a specific application.",
+        "operationId": "Applications_GetUploadsForApplication",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of uploads for the application."
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token"
+          }
+        }
+      }
+    },
+    "/v1/Applications/{applicationId}/files/{fileId}/download": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Downloads a file by fileId.",
+        "operationId": "Applications_DownloadFile",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File stream."
+          },
+          "404": {
+            "description": "File not found."
+          }
+        }
+      }
+    },
+    "/v1/Applications/{applicationId}/files/{fileId}": {
+      "delete": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Deletes a file by fileId.",
+        "operationId": "Applications_DeleteFile",
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "applicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File deleted successfully."
+          },
+          "404": {
+            "description": "File not found."
+          }
+        }
+      }
+    },
     "/v1/Templates/{templateId}/schema": {
       "get": {
         "tags": [
@@ -733,7 +913,9 @@
           "TaskGroup",
           "Task",
           "Page",
-          "Field"
+          "Field",
+          "File",
+          "ApplicationFiles"
         ],
         "enum": [
           "Application",
@@ -742,7 +924,9 @@
           "TaskGroup",
           "Task",
           "Page",
-          "Field"
+          "Field",
+          "File",
+          "File"
         ]
       },
       "AccessType": {
@@ -750,11 +934,13 @@
         "description": "",
         "x-enumNames": [
           "Read",
-          "Write"
+          "Write",
+          "Delete"
         ],
         "enum": [
           "Read",
-          "Write"
+          "Write",
+          "Delete"
         ]
       },
       "ApplicationResponseDetailsDto": {

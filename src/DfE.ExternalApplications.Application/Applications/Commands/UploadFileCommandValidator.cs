@@ -2,7 +2,6 @@ using FluentValidation;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
-
 public class UploadFileCommandValidator : AbstractValidator<UploadFileCommand>
 {
     public UploadFileCommandValidator()

@@ -25,7 +25,6 @@ public sealed record UploadFileCommand(
     Stream FileContent
 ) : IRequest<Result<UploadDto>>;
 
-
 public class UploadFileCommandHandler(
     IEaRepository<Upload> uploadRepository,
     IEaRepository<Domain.Entities.Application> applicationRepository,
@@ -74,19 +73,14 @@ public class UploadFileCommandHandler(
             if (application == null)
                 return Result<UploadDto>.Failure("Application not found");
 
-            var appReference = application.ApplicationReference;
-
-            if (string.IsNullOrWhiteSpace(appReference))
-                return Result<UploadDto>.Failure("Application reference is required");
-
             // Permission check: user must have write permission for this application (File resource)
-            if (!permissionCheckerService.HasPermission(ResourceType.File, appReference, AccessType.Write))
+            if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Write))
                 return Result<UploadDto>.Failure("User does not have permission to upload files for this application");
 
             // Generate hashed file name
             var ext = Path.GetExtension(request.OriginalFileName);
             var hashedFileName = $"{Guid.NewGuid():N}{ext}";
-            var storagePath = $"{appReference}/{hashedFileName}";
+            var storagePath = $"/uploads/{application.ApplicationReference}/{hashedFileName}";
 
             // Upload file to storage
             await fileStorageService.UploadAsync(storagePath, request.FileContent, cancellationToken);
@@ -103,7 +97,8 @@ public class UploadFileCommandHandler(
                 dbUser.Id!
             );
 
-            uploadRepository.Add(upload);
+            await uploadRepository.AddAsync(upload, cancellationToken);
+
             await unitOfWork.CommitAsync(cancellationToken);
 
             var dto = new UploadDto

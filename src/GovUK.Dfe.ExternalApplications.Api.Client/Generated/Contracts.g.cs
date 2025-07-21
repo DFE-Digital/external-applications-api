@@ -102,6 +102,38 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task RemoveContributorAsync(System.Guid applicationId, System.Guid userId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Uploads a file for a specific application.
+        /// </summary>
+        /// <returns>File uploaded successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task UploadFileAsync(System.Guid applicationId, string name = null, string description = null, string contentType = null, string contentDisposition = null, System.Collections.Generic.IEnumerable<object> headers = null, long? length = null, string name = null, string fileName = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Gets all uploads for a specific application.
+        /// </summary>
+        /// <returns>List of uploads for the application.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task GetUploadsForApplicationAsync(System.Guid applicationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Downloads a file by fileId.
+        /// </summary>
+        /// <returns>File stream.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task DownloadFileAsync(System.Guid fileId, System.Guid applicationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Deletes a file by fileId.
+        /// </summary>
+        /// <returns>File deleted successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task DeleteFileAsync(System.Guid fileId, System.Guid applicationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.1.0.0 (NJsonSchema v11.0.2.0 (Newtonsoft.Json v13.0.0.0))")]

@@ -11,15 +11,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record DownloadFileQuery(Guid FileId) : IRequest<Result<DownloadFileResult>>;
+public sealed record DownloadFileQuery(Guid FileId, ApplicationId ApplicationId) : IRequest<Result<DownloadFileResult>>;
 
 public class DownloadFileQueryHandler(
     IEaRepository<Upload> uploadRepository,
     IEaRepository<User> userRepository,
     IFileStorageService fileStorageService,
+    IEaRepository<Domain.Entities.Application> applicationRepository,
     IPermissionCheckerService permissionCheckerService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<DownloadFileQuery, Result<DownloadFileResult>>
@@ -54,17 +56,23 @@ public class DownloadFileQueryHandler(
             if (dbUser is null)
                 return Result<DownloadFileResult>.Failure("User not found");
 
+            var application = new GetApplicationByIdQueryObject(request.ApplicationId)
+                .Apply(applicationRepository.Query())
+                .FirstOrDefault();
+            if (application == null)
+                return Result<DownloadFileResult>.Failure("Application not found");
+
+            // Permission check: user must have read permission for this file
+            if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read))
+                return Result<DownloadFileResult>.Failure("User does not have permission to download this file");
+
             var upload = new GetUploadByIdQueryObject(request.FileId)
                 .Apply(uploadRepository.Query())
                 .FirstOrDefault();
             if (upload == null)
                 return Result<DownloadFileResult>.Failure("File not found");
 
-            // Permission check: user must have read permission for this file
-            if (!permissionCheckerService.HasPermission(ResourceType.File, request.FileId.ToString(), AccessType.Read))
-                return Result<DownloadFileResult>.Failure("User does not have permission to download this file");
-
-            var storagePath = $"applications/{upload.ApplicationId.Value}/uploads/{upload.FileName}";
+            var storagePath = $"/uploads/{application.ApplicationReference}/{upload.FileName}";
             var fileStream = await fileStorageService.DownloadAsync(storagePath, cancellationToken);
 
             // Infer content type from file extension (simple approach)

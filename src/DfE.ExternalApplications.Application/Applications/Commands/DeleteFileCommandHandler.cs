@@ -1,30 +1,28 @@
-using MediatR;
-using DfE.ExternalApplications.Domain.Entities;
-using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using DfE.ExternalApplications.Domain.Interfaces;
-using DfE.ExternalApplications.Application.Users.QueryObjects;
-using Microsoft.EntityFrameworkCore;
-using DfE.CoreLibs.Contracts;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.FileStorage.Interfaces;
+using DfE.ExternalApplications.Application.Applications.QueryObjects;
+using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Interfaces;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
-public sealed record DeleteFileCommand(Guid FileId) : IRequest;
+public sealed record DeleteFileCommand(Guid FileId, Guid ApplicationId) : IRequest<Result<bool>>;
 
 public class DeleteFileCommandHandler(
     IEaRepository<Upload> uploadRepository,
     IEaRepository<User> userRepository,
     IUnitOfWork unitOfWork,
+    IEaRepository<Domain.Entities.Application> applicationRepo,
     IFileStorageService fileStorageService,
     IPermissionCheckerService permissionCheckerService,
     IHttpContextAccessor httpContextAccessor)
@@ -60,15 +58,34 @@ public class DeleteFileCommandHandler(
             if (dbUser is null)
                 return Result<bool>.Failure("User not found");
 
+            // Get the application to verify it exists
+            var applicationId = new ApplicationId(request.ApplicationId);
+            var application = await (new GetApplicationByIdQueryObject(applicationId))
+                .Apply(applicationRepo.Query().AsNoTracking())
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (application is null)
+                return Result<bool>.Failure("Application not found");
+
+            // Check if user is the application owner or admin
+            var isOwner = permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString());
+            var isAdmin = permissionCheckerService.IsAdmin();
+
+            if (!isOwner && !isAdmin)
+                return Result<bool>.Failure("Only the application owner or admin can remove files");
+
             // Permission check: user must have delete permission for this file
-            if (!permissionCheckerService.HasPermission(ResourceType.File, request.FileId.ToString(), AccessType.Delete))
+            if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, request.ApplicationId.ToString(),
+                    AccessType.Delete))
                 return Result<bool>.Failure("User does not have permission to delete this file");
 
-            var upload = uploadRepository.Query().FirstOrDefault(u => u.Id!.Value == request.FileId);
+            var upload = new GetUploadByIdQueryObject(request.FileId)
+                .Apply(uploadRepository.Query())
+                .FirstOrDefault();
             if (upload == null)
                 return Result<bool>.Failure("File not found");
 
-            var storagePath = $"applications/{upload.ApplicationId.Value}/uploads/{upload.FileName}";
+            var storagePath = $"/uploads/{application.ApplicationReference}/{upload.FileName}";
             await fileStorageService.DeleteAsync(storagePath, cancellationToken);
 
             uploadRepository.Remove(upload);

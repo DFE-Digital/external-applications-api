@@ -117,23 +117,23 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.AnyTemplatePermissionRequirement(AccessType.Write.ToString()));
                 },
-                ["CanReadFile"] = pb =>
+                ["CanReadApplicationFiles"] = pb =>
                 {
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
-                    pb.AddRequirements(new Handlers.FilePermissionRequirement(AccessType.Read.ToString()));
+                    pb.AddRequirements(new Handlers.ApplicationFilesPermissionRequirement(AccessType.Read.ToString()));
                 },
-                ["CanWriteFile"] = pb =>
+                ["CanWriteApplicationFiles"] = pb =>
                 {
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
-                    pb.AddRequirements(new Handlers.FilePermissionRequirement(AccessType.Write.ToString()));
+                    pb.AddRequirements(new Handlers.ApplicationFilesPermissionRequirement(AccessType.Write.ToString()));
                 },
-                ["CanDeleteFile"] = pb =>
+                ["CanDeleteApplicationFiles"] = pb =>
                 {
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
-                    pb.AddRequirements(new Handlers.FilePermissionRequirement(AccessType.Delete.ToString()));
+                    pb.AddRequirements(new Handlers.ApplicationFilesPermissionRequirement(AccessType.Delete.ToString()));
                 }
             };
 
@@ -148,7 +148,7 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, ApplicationPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationListPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, AnyTemplatePermissionHandler>();
-            services.AddSingleton<IAuthorizationHandler, Handlers.FilePermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, ApplicationFilesPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
 

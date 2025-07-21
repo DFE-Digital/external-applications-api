@@ -1,24 +1,23 @@
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers
 {
     /// <summary>
-    /// Authorization handler that checks user permission claims for a specific file resource (by fileId).
+    /// Authorization handler that checks user permission claims for application files resource 
     /// </summary>
-    public sealed class FilePermissionHandler(IHttpContextAccessor accessor)
-        : AuthorizationHandler<FilePermissionRequirement>
+    public sealed class ApplicationFilesPermissionHandler(IHttpContextAccessor accessor)
+        : AuthorizationHandler<ApplicationFilesPermissionRequirement>
     {
         protected override Task HandleRequirementAsync(
             AuthorizationHandlerContext context,
-            FilePermissionRequirement requirement)
+            ApplicationFilesPermissionRequirement requirement)
         {
-            var fileId = accessor.HttpContext?.Request.RouteValues["fileId"]?.ToString();
-            if (string.IsNullOrWhiteSpace(fileId))
+            var applicationId = accessor.HttpContext?.Request.RouteValues["applicationId"]?.ToString();
+            if (string.IsNullOrWhiteSpace(applicationId))
                 return Task.CompletedTask;
 
-            var expected = $"{ResourceType.File}:{fileId}:{requirement.Action}";
+            var expected = $"{ResourceType.ApplicationFiles}:{applicationId}:{requirement.Action}";
             var hasClaim = context.User.Claims.Any(c =>
                 c.Type == "permission" &&
                 string.Equals(c.Value, expected, StringComparison.OrdinalIgnoreCase));
