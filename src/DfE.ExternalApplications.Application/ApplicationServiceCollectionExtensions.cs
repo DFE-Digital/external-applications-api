@@ -34,6 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<IApplicationFactory, ApplicationFactory>();
             services.AddTransient<IUserFactory, UserFactory>();
             services.AddTransient<ITemplateFactory, TemplateFactory>();
+            services.AddTransient<IUploadFactory, UploadFactory>();
 
             services.AddBackgroundService();
 

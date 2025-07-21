@@ -22,7 +22,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.29" />
+		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.32" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Abstractions" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.0" />

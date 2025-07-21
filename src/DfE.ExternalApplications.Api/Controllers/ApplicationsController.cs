@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -261,6 +262,85 @@ public class ApplicationsController(ISender sender) : ControllerBase
             };
         }
 
+        return Ok();
+    }
+
+    /// <summary>
+    /// Uploads a file for a specific application.
+    /// </summary>
+    [HttpPost("{applicationId}/uploads")]
+    [SwaggerResponse(201, "File uploaded successfully.")]
+    [SwaggerResponse(400, "Invalid request data.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [Authorize(Policy = "CanWriteFile")]
+    public async Task<IActionResult> UploadFileAsync(
+        [FromRoute] Guid applicationId,
+        [FromForm] string name,
+        [FromForm] string? description,
+        [FromForm] IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file provided.");
+
+        var command = new UploadFileCommand(
+            new ApplicationId(applicationId),
+            name,
+            description,
+            file.FileName,
+            file.OpenReadStream()
+        );
+        var fileId = await sender.Send(command, cancellationToken);
+        return StatusCode(201, new { FileId = fileId });
+    }
+
+    /// <summary>
+    /// Gets all uploads for a specific application.
+    /// </summary>
+    [HttpGet("{applicationId}/uploads")]
+    [SwaggerResponse(200, "List of uploads for the application.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [Authorize(Policy = "CanReadAnyApplication")]
+    public async Task<IActionResult> GetUploadsForApplicationAsync(
+        [FromRoute] Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetUploadsForApplicationQuery(new ApplicationId(applicationId));
+        var result = await sender.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Downloads a file by fileId.
+    /// </summary>
+    [HttpGet("uploads/{fileId}/download")]
+    [SwaggerResponse(200, "File stream.")]
+    [SwaggerResponse(404, "File not found.")]
+    [Authorize(Policy = "CanReadFile")]
+    public async Task<IActionResult> DownloadFileAsync(
+        [FromRoute] Guid fileId,
+        CancellationToken cancellationToken)
+    {
+        var query = new DownloadFileQuery(fileId);
+        var result = await sender.Send(query, cancellationToken);
+        if (result == null || result.FileStream == null)
+            return NotFound();
+        return File(result.FileStream, result.ContentType, result.FileName);
+    }
+
+    /// <summary>
+    /// Deletes a file by fileId.
+    /// </summary>
+    [HttpDelete("uploads/{fileId}")]
+    [SwaggerResponse(200, "File deleted successfully.")]
+    [SwaggerResponse(404, "File not found.")]
+    [Authorize(Policy = "CanDeleteFile")]
+    public async Task<IActionResult> DeleteFileAsync(
+        [FromRoute] Guid fileId,
+        CancellationToken cancellationToken)
+    {
+        var command = new DeleteFileCommand(fileId);
+        await sender.Send(command, cancellationToken);
         return Ok();
     }
 }
