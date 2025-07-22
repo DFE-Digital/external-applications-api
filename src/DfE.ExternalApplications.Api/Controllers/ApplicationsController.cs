@@ -2,12 +2,12 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
-using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -262,5 +262,135 @@ public class ApplicationsController(ISender sender) : ControllerBase
         }
 
         return Ok();
+    }
+
+    /// <summary>
+    /// Uploads a file for a specific application.
+    /// </summary>
+    [HttpPost("{applicationId}/files")]
+    [Consumes("multipart/form-data")]
+    [SwaggerResponse(201, "File uploaded successfully.")]
+    [SwaggerResponse(400, "Invalid request data.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [Authorize(Policy = "CanWriteApplicationFiles")]
+    public async Task<IActionResult> UploadFileAsync(
+        [FromRoute] Guid applicationId,
+        [FromForm] UploadFileRequest dto,
+        CancellationToken cancellationToken)
+    {
+        if (dto.File == null || dto.File.Length == 0)
+            return BadRequest("No file provided.");
+
+        var command = new UploadFileCommand(
+            new ApplicationId(applicationId),
+            dto.Name,
+            dto.Description,
+            dto.File.FileName,
+            dto.File.OpenReadStream()
+        );
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "User does not have permission to manage files for this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                "File already exists for this application" => BadRequest(result.Error),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return StatusCode(201, result.Value);
+    }
+
+    /// <summary>
+    /// Gets all files for a specific application.
+    /// </summary>
+    [HttpGet("{applicationId}/files")]
+    [SwaggerResponse(200, "List of files for the application.")]
+    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [Authorize(Policy = "CanReadApplicationFiles")]
+    public async Task<IActionResult> GetFilesForApplicationAsync(
+        [FromRoute] Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetFilesForApplicationQuery(new ApplicationId(applicationId));
+        var result = await sender.Send(query, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "User does not have permission to manage files for this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                "File already exists for this application" => BadRequest(result.Error),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Downloads a file by fileId.
+    /// </summary>
+    [HttpGet("{applicationId}/files/{fileId}/download")]
+    [SwaggerResponse(200, "File stream.")]
+    [SwaggerResponse(404, "File not found.")]
+    [Authorize(Policy = "CanReadApplicationFiles")]
+    public async Task<IActionResult> DownloadFileAsync(
+        [FromRoute] Guid fileId,
+        [FromRoute] Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var query = new DownloadFileQuery(fileId, new ApplicationId(applicationId));
+        var result = await sender.Send(query, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "User does not have permission to manage files for this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                "File already exists for this application" => BadRequest(result.Error),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return File(result.Value?.FileStream!, result.Value?.ContentType!, result.Value?.FileName);
+    }
+
+    /// <summary>
+    /// Deletes a file by fileId.
+    /// </summary>
+    [HttpDelete("{applicationId}/files/{fileId}")]
+    [SwaggerResponse(200, "File deleted successfully.")]
+    [SwaggerResponse(404, "File not found.")]
+    [Authorize(Policy = "CanDeleteApplicationFiles")]
+    public async Task<IActionResult> DeleteFileAsync(
+        [FromRoute] Guid fileId,
+        [FromRoute] Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var command = new DeleteFileCommand(fileId, applicationId);
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return result.Error switch
+            {
+                "Application not found" => NotFound(result.Error),
+                "User does not have permission to manage files for this application" => Forbid(),
+                "Not authenticated" => Unauthorized(),
+                "File already exists for this application" => BadRequest(result.Error),
+                _ => BadRequest(result.Error)
+            };
+        }
+
+        return Ok(result.Value);
     }
 }

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Infrastructure.Database;
 
@@ -38,6 +39,7 @@ public class ExternalApplicationsContext : DbContext
     public DbSet<Permission> Permissions { get; set; } = null!;
     public DbSet<TaskAssignmentLabel> TaskAssignmentLabels { get; set; } = null!;
     public DbSet<TemplatePermission> TemplatePermissions { get; set; } = null!;
+    public DbSet<File> Files { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -62,6 +64,7 @@ public class ExternalApplicationsContext : DbContext
         modelBuilder.Entity<Permission>(ConfigurePermission);
         modelBuilder.Entity<TemplatePermission>(ConfigureTemplatePermission);
         modelBuilder.Entity<TaskAssignmentLabel>(ConfigureTaskAssignmentLabel);
+        modelBuilder.Entity<File>(ConfigureFile);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -447,6 +450,57 @@ public class ExternalApplicationsContext : DbContext
         b.HasOne(e => e.GrantedByUser)
             .WithMany()
             .HasForeignKey(e => e.GrantedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+
+    private static void ConfigureFile(EntityTypeBuilder<File> b)
+    {
+        b.ToTable("Files", DefaultSchema);
+        b.HasKey(e => e.Id);
+        b.Property(e => e.Id)
+            .HasColumnName("FileId")
+            .ValueGeneratedOnAdd()
+            .HasConversion(v => v.Value, v => new FileId(v))
+            .IsRequired();
+        b.Ignore(f => f.IsDeleted);
+        b.Property(e => e.ApplicationId)
+            .HasColumnName("ApplicationId")
+            .HasConversion(v => v.Value, v => new ApplicationId(v))
+            .IsRequired();
+        b.Property(e => e.Name)
+            .HasColumnName("Name")
+            .HasMaxLength(255)
+            .IsRequired();
+        b.Property(e => e.Description)
+            .HasColumnName("Description")
+            .HasMaxLength(1000)
+            .IsRequired(false);
+        b.Property(e => e.OriginalFileName)
+            .HasColumnName("OriginalFileName")
+            .HasMaxLength(255)
+            .IsRequired();
+        b.Property(e => e.FileName)
+            .HasColumnName("FileName")
+            .HasMaxLength(255)
+            .IsRequired();
+        b.Property(e => e.Path)
+            .HasColumnName("Path")
+            .HasMaxLength(255);
+        b.Property(e => e.UploadedOn)
+            .HasColumnName("UploadedOn")
+            .HasDefaultValueSql("GETDATE()")
+            .IsRequired();
+        b.Property(e => e.UploadedBy)
+            .HasColumnName("UploadedBy")
+            .HasConversion(v => v.Value, v => new UserId(v))
+            .IsRequired();
+        b.HasOne(e => e.Application)
+            .WithMany(a => a.Files)
+            .HasForeignKey(e => e.ApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(e => e.UploadedByUser)
+            .WithMany(a => a.Files)
+            .HasForeignKey(e => e.UploadedBy)
             .OnDelete(DeleteBehavior.Restrict);
     }
 

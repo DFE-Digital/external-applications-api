@@ -116,6 +116,24 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.AnyTemplatePermissionRequirement(AccessType.Write.ToString()));
+                },
+                ["CanReadApplicationFiles"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.ApplicationFilesPermissionRequirement(AccessType.Read.ToString()));
+                },
+                ["CanWriteApplicationFiles"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.ApplicationFilesPermissionRequirement(AccessType.Write.ToString()));
+                },
+                ["CanDeleteApplicationFiles"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.ApplicationFilesPermissionRequirement(AccessType.Delete.ToString()));
                 }
             };
 
@@ -130,6 +148,7 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, ApplicationPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationListPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, AnyTemplatePermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, ApplicationFilesPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
 

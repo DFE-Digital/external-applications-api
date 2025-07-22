@@ -33,6 +33,15 @@ public sealed class ContributorAddedEventHandler(
             notification.AddedBy,
             notification.AddedOn);
 
+        userFactory.AddPermissionToUser(
+            notification.Contributor,
+            notification.ApplicationId.Value.ToString(),
+            ResourceType.ApplicationFiles,
+            new[] { AccessType.Read, AccessType.Write },
+            notification.AddedBy,
+            notification.ApplicationId,
+            notification.AddedOn);
+
         logger.LogInformation("Added permissions for contributor {ContributorId} to application {ApplicationId} and template {TemplateId} by {AddedBy}", 
             notification.Contributor.Id!.Value, 
             notification.ApplicationId.Value, 

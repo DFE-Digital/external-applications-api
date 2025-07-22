@@ -35,7 +35,29 @@ public sealed class ApplicationCreatedEventHandler(
             notification.CreatedOn,
             notification.CreatedBy);
 
+        var filesWritePermission = new Permission(
+            new PermissionId(Guid.NewGuid()),
+            notification.CreatedBy,
+            notification.ApplicationId,
+            notification.ApplicationId.Value.ToString(),
+            ResourceType.ApplicationFiles,
+            AccessType.Write,
+            notification.CreatedOn,
+            notification.CreatedBy);
+
+        var filesReadPermission = new Permission(
+            new PermissionId(Guid.NewGuid()),
+            notification.CreatedBy,
+            notification.ApplicationId,
+            notification.ApplicationId.Value.ToString(),
+            ResourceType.ApplicationFiles,
+            AccessType.Read,
+            notification.CreatedOn,
+            notification.CreatedBy);
+
         await permissionRepo.AddAsync(readPermission, cancellationToken);
         await permissionRepo.AddAsync(writePermission, cancellationToken);
+        await permissionRepo.AddAsync(filesReadPermission, cancellationToken);
+        await permissionRepo.AddAsync(filesWritePermission, cancellationToken);
     }
 } 

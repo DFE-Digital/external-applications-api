@@ -22,12 +22,15 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
 
     private readonly List<Permission> _permissions = new();
     private readonly List<TemplatePermission> _templatePermissions = new();
+    private readonly List<File> _files = new();
 
     public IReadOnlyCollection<Permission> Permissions
         => _permissions.AsReadOnly();
 
     public IReadOnlyCollection<TemplatePermission> TemplatePermissions
         => _templatePermissions.AsReadOnly();
+
+    public IReadOnlyCollection<File> Files => _files.AsReadOnly();
 
     private User()
     {
