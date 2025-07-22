@@ -15,6 +15,7 @@ public class FileFactory : IFileFactory
         string? description,
         string originalFileName,
         string fileName,
+        string path,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
@@ -25,6 +26,7 @@ public class FileFactory : IFileFactory
             description,
             originalFileName,
             fileName,
+            path,
             uploadedOn,
             uploadedBy
         );

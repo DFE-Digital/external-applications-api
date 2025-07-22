@@ -81,7 +81,7 @@ public class UploadFileCommandHandler(
 
             // Generate hashed file name
             var hashedFileName = FileNameHasher.HashFileName(request.OriginalFileName);
-            var storagePath = $"uploads/{application.ApplicationReference}/{hashedFileName}";
+            var storagePath = $"{application.ApplicationReference}/{hashedFileName}";
 
             // File file to storage
             await fileStorageService.UploadAsync(storagePath, request.FileContent, cancellationToken);
@@ -94,6 +94,7 @@ public class UploadFileCommandHandler(
                 request.Description,
                 request.OriginalFileName,
                 hashedFileName,
+                application.ApplicationReference,
                 DateTime.UtcNow,
                 dbUser.Id!
             );

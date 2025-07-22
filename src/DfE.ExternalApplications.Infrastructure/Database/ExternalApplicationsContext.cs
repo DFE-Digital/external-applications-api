@@ -483,6 +483,9 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("FileName")
             .HasMaxLength(255)
             .IsRequired();
+        b.Property(e => e.Path)
+            .HasColumnName("Path")
+            .HasMaxLength(255);
         b.Property(e => e.UploadedOn)
             .HasColumnName("UploadedOn")
             .HasDefaultValueSql("GETDATE()")
@@ -496,7 +499,7 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(e => e.ApplicationId)
             .OnDelete(DeleteBehavior.Cascade);
         b.HasOne(e => e.UploadedByUser)
-            .WithMany()
+            .WithMany(a => a.Files)
             .HasForeignKey(e => e.UploadedBy)
             .OnDelete(DeleteBehavior.Restrict);
     }

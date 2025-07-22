@@ -22,9 +22,9 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     OriginalFileName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     FileName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Path = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     UploadedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
-                    UploadedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    UploadedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -43,12 +43,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Files_Users_UserId",
-                        column: x => x.UserId,
-                        principalSchema: "ea",
-                        principalTable: "Users",
-                        principalColumn: "UserId");
                 });
 
             migrationBuilder.CreateIndex(
@@ -62,12 +56,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 schema: "ea",
                 table: "Files",
                 column: "UploadedBy");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Files_UserId",
-                schema: "ea",
-                table: "Files",
-                column: "UserId");
         }
 
         /// <inheritdoc />

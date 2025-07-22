@@ -13,6 +13,7 @@ public interface IFileFactory
         string? description,
         string originalFileName,
         string fileName,
+        string path,
         DateTime uploadedOn,
         UserId uploadedBy);
     void DeleteFile(File file);

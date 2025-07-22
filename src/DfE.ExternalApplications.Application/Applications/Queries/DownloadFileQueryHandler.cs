@@ -14,6 +14,7 @@ using System.Security.Claims;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using File = DfE.ExternalApplications.Domain.Entities.File;
+using DfE.ExternalApplications.Utils.File;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -74,23 +75,16 @@ public class DownloadFileQueryHandler(
             if (upload == null)
                 return Result<DownloadFileResult>.Failure("File not found");
 
-            var storagePath = $"uploads/{application.ApplicationReference}/{upload.FileName}";
+            var storagePath = $"{upload.Path}/{upload.FileName}";
             var fileStream = await fileStorageService.DownloadAsync(storagePath, cancellationToken);
 
             // Infer content type from file extension (simple approach)
-            var contentType = "application/octet-stream";
-            var ext = Path.GetExtension(upload.OriginalFileName).ToLowerInvariant();
-            if (ext == ".pdf") contentType = "application/pdf";
-            else if (ext == ".jpg" || ext == ".jpeg") contentType = "image/jpeg";
-            else if (ext == ".png") contentType = "image/png";
-            else if (ext == ".docx") contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-            else if (ext == ".xlsx") contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
             return Result<DownloadFileResult>.Success(new DownloadFileResult
             {
                 FileStream = fileStream,
                 FileName = upload.OriginalFileName,
-                ContentType = contentType
+                ContentType = upload.OriginalFileName.GetContentType()
             });
         }
         catch (Exception e)

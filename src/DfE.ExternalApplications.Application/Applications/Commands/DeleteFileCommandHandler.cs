@@ -88,7 +88,7 @@ public class DeleteFileCommandHandler(
             if (upload == null)
                 return Result<bool>.Failure("File not found");
 
-            var storagePath = $"uploads/{application.ApplicationReference}/{upload.FileName}";
+            var storagePath = $"{application.ApplicationReference}/{upload.FileName}";
             await fileStorageService.DeleteAsync(storagePath, cancellationToken);
 
             fileFactory.DeleteFile(upload);

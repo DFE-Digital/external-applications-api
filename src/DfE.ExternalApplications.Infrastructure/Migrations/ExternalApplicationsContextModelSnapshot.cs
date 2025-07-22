@@ -150,6 +150,12 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("OriginalFileName");
 
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Path");
+
                     b.Property<Guid>("UploadedBy")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("UploadedBy");
@@ -160,16 +166,11 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnName("UploadedOn")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationId");
 
                     b.HasIndex("UploadedBy");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Files", "ea");
                 });
@@ -530,14 +531,10 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("DfE.ExternalApplications.Domain.Entities.User", "UploadedByUser")
-                        .WithMany()
+                        .WithMany("Files")
                         .HasForeignKey("UploadedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("DfE.ExternalApplications.Domain.Entities.User", null)
-                        .WithMany("Files")
-                        .HasForeignKey("UserId");
 
                     b.Navigation("Application");
 
