@@ -141,8 +141,12 @@ public sealed class AddContributorCommandHandler(
             .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Read);
         var hasWritePermission = existingContributor.Permissions
             .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Write);
+        var hasReadFilesPermission = existingContributor.Permissions
+            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.ApplicationFiles && p.AccessType == AccessType.Read);
+        var hasWriteFilesPermission = existingContributor.Permissions
+            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.ApplicationFiles && p.AccessType == AccessType.Write);
 
-        if (hasReadPermission && hasWritePermission)
+        if (hasReadPermission && hasWritePermission && hasReadFilesPermission && hasWriteFilesPermission)
         {
             // Contributor already exists with all needed permissions, return their details
             var authorization = CreateAuthorizationFromUser(existingContributor);
@@ -160,6 +164,13 @@ public sealed class AddContributorCommandHandler(
         // Add missing permissions using factory method
         userFactory.AddPermissionToUser(existingContributor, applicationId.Value.ToString(), ResourceType.Application, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, applicationId);
         userFactory.AddTemplatePermissionToUser(existingContributor, application.TemplateVersion!.TemplateId.Value.ToString(), new[] { AccessType.Read }, dbUser.Id!, DateTime.UtcNow);
+        userFactory.AddPermissionToUser(
+            existingContributor,
+            applicationId.Value.ToString(),
+            ResourceType.ApplicationFiles,
+            new[] { AccessType.Read, AccessType.Write },
+            dbUser.Id!,
+            applicationId);
 
         await unitOfWork.CommitAsync(cancellationToken);
 

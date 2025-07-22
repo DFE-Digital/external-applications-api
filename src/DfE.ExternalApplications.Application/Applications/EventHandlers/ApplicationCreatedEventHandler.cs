@@ -55,9 +55,20 @@ public sealed class ApplicationCreatedEventHandler(
             notification.CreatedOn,
             notification.CreatedBy);
 
+        var filesDeletePermission = new Permission(
+            new PermissionId(Guid.NewGuid()),
+            notification.CreatedBy,
+            notification.ApplicationId,
+            notification.ApplicationId.Value.ToString(),
+            ResourceType.ApplicationFiles,
+            AccessType.Delete,
+            notification.CreatedOn,
+            notification.CreatedBy);
+
         await permissionRepo.AddAsync(readPermission, cancellationToken);
         await permissionRepo.AddAsync(writePermission, cancellationToken);
         await permissionRepo.AddAsync(filesReadPermission, cancellationToken);
         await permissionRepo.AddAsync(filesWritePermission, cancellationToken);
+        await permissionRepo.AddAsync(filesDeletePermission, cancellationToken);
     }
 } 
