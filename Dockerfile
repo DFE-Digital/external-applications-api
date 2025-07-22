@@ -42,6 +42,7 @@ RUN dotnet ef migrations bundle -r linux-x64 \
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-azurelinux3.0 AS initcontainer
 WORKDIR /sql
 COPY --from=efbuilder /sql /sql
+COPY --from=build /app/appsettings* /sql/
 COPY --from=build /app/appsettings* /DfE.ExternalApplications.Api/
 
 # Stage 3 - Build a runtime environment
