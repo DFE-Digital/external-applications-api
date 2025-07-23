@@ -481,7 +481,14 @@
         },
         "responses": {
           "201": {
-            "description": "File uploaded successfully."
+            "description": "File uploaded successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadDto"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request data."
@@ -511,7 +518,17 @@
         ],
         "responses": {
           "200": {
-            "description": "List of files for the application."
+            "description": "List of files for the application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UploadDto"
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized - no valid user token"
@@ -550,7 +567,15 @@
         ],
         "responses": {
           "200": {
-            "description": "File stream."
+            "description": "File stream.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "404": {
             "description": "File not found."
@@ -589,7 +614,14 @@
         ],
         "responses": {
           "200": {
-            "description": "File deleted successfully."
+            "description": "File deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
           },
           "404": {
             "description": "File not found."
@@ -1034,6 +1066,49 @@
           },
           "email": {
             "type": "string"
+          }
+        }
+      },
+      "UploadDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "applicationId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "uploadedBy": {
+            "type": "string",
+            "format": "guid"
+          },
+          "uploadedByUser": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserDto"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "originalFileName": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "uploadedOn": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

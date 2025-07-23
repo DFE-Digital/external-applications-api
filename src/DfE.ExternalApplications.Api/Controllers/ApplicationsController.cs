@@ -269,7 +269,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPost("{applicationId}/files")]
     [Consumes("multipart/form-data")]
-    [SwaggerResponse(201, "File uploaded successfully.")]
+    [SwaggerResponse(201, "File uploaded successfully.", typeof(UploadDto))]
     [SwaggerResponse(400, "Invalid request data.")]
     [SwaggerResponse(401, "Unauthorized - no valid user token")]
     [Authorize(Policy = "CanWriteApplicationFiles")]
@@ -309,7 +309,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// Gets all files for a specific application.
     /// </summary>
     [HttpGet("{applicationId}/files")]
-    [SwaggerResponse(200, "List of files for the application.")]
+    [SwaggerResponse(200, "List of files for the application.", typeof(IReadOnlyCollection<UploadDto>))]
     [SwaggerResponse(401, "Unauthorized - no valid user token")]
     [Authorize(Policy = "CanReadApplicationFiles")]
     public async Task<IActionResult> GetFilesForApplicationAsync(
@@ -338,7 +338,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// Downloads a file by fileId.
     /// </summary>
     [HttpGet("{applicationId}/files/{fileId}/download")]
-    [SwaggerResponse(200, "File stream.")]
+    [SwaggerResponse(200, "File stream.", typeof(FileStreamResult))]
     [SwaggerResponse(404, "File not found.")]
     [Authorize(Policy = "CanReadApplicationFiles")]
     public async Task<IActionResult> DownloadFileAsync(
@@ -368,7 +368,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// Deletes a file by fileId.
     /// </summary>
     [HttpDelete("{applicationId}/files/{fileId}")]
-    [SwaggerResponse(200, "File deleted successfully.")]
+    [SwaggerResponse(200, "File deleted successfully.", typeof(bool))]
     [SwaggerResponse(404, "File not found.")]
     [Authorize(Policy = "CanDeleteApplicationFiles")]
     public async Task<IActionResult> DeleteFileAsync(
