@@ -569,10 +569,9 @@
           "200": {
             "description": "File stream.",
             "content": {
-              "application/octet-stream": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/DownloadFileResult"
                 }
               }
             }
@@ -1111,6 +1110,68 @@
             "format": "date-time"
           }
         }
+      },
+      "DownloadFileResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "fileStream": {
+            "$ref": "#/components/schemas/Stream"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          }
+        }
+      },
+      "Stream": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MarshalByRefObject"
+          },
+          {
+            "type": "object",
+            "x-abstract": true,
+            "additionalProperties": false,
+            "properties": {
+              "canRead": {
+                "type": "boolean"
+              },
+              "canWrite": {
+                "type": "boolean"
+              },
+              "canSeek": {
+                "type": "boolean"
+              },
+              "canTimeout": {
+                "type": "boolean"
+              },
+              "length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "position": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "readTimeout": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "writeTimeout": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          }
+        ]
+      },
+      "MarshalByRefObject": {
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false
       },
       "CreateTemplateVersionRequest": {
         "type": "object",
