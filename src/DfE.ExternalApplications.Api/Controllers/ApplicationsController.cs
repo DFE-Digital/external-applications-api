@@ -338,7 +338,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// Downloads a file by fileId.
     /// </summary>
     [HttpGet("{applicationId}/files/{fileId}/download")]
-    [SwaggerResponse(200, "File stream.", typeof(DownloadFileResult))]
+    [SwaggerResponse(200, "File stream.", typeof(FileStreamResult))]
     [SwaggerResponse(404, "File not found.")]
     [Authorize(Policy = "CanReadApplicationFiles")]
     public async Task<IActionResult> DownloadFileAsync(
@@ -361,7 +361,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
             };
         }
 
-        return Ok(result.Value);
+        return File(result.Value?.FileStream!, result.Value?.ContentType!, result.Value?.FileName);
     }
 
     /// <summary>
