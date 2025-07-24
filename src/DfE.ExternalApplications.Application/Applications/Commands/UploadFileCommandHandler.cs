@@ -83,7 +83,13 @@ public class UploadFileCommandHandler(
             var hashedFileName = FileNameHasher.HashFileName(request.OriginalFileName);
             var storagePath = $"{application.ApplicationReference}/{hashedFileName}";
 
-            // File file to storage
+            var existingFile = new GetFileByFileNameApplicationIdQueryObject(hashedFileName, application.Id)
+                .Apply(uploadRepository.Query())
+                .FirstOrDefault();
+            if (existingFile != null)
+                return Result<UploadDto>.Failure("The file already exist");
+
+            // Upload file to the storage
             await fileStorageService.UploadAsync(storagePath, request.FileContent, cancellationToken);
 
             // Create File entity using factory
