@@ -48,7 +48,7 @@ public sealed class GetApplicationsForUserQueryHandler(
                         return Result<IReadOnlyCollection<ApplicationDto>>.Success(Array.Empty<ApplicationDto>());
 
                     var ids = userWithPerms.Permissions
-                        .Where(p => p.ApplicationId != null)
+                        .Where(p => p is { ApplicationId: not null, ResourceType: ResourceType.Application })
                         .Select(p => p.ApplicationId!)
                         .Distinct()
                         .ToList();
