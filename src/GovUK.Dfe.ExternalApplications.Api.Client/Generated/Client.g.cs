@@ -287,7 +287,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>A list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync(bool? includeSchema = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -306,6 +306,10 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (includeSchema != null)
                     {
                         urlBuilder_.Append(System.Uri.EscapeDataString("includeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (templateId != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("templateId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
 
@@ -373,7 +377,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>Applications for the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email, bool? includeSchema = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email, bool? includeSchema = null, System.Guid? templateId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (email == null)
                 throw new System.ArgumentNullException("email");
@@ -397,6 +401,10 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (includeSchema != null)
                     {
                         urlBuilder_.Append(System.Uri.EscapeDataString("includeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (templateId != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("templateId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
 

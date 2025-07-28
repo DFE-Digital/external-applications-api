@@ -6,12 +6,13 @@ using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetApplicationsForUserByExternalProviderIdQuery(string ExternalProviderId, bool IncludeSchema = false)
+public sealed record GetApplicationsForUserByExternalProviderIdQuery(string ExternalProviderId, bool IncludeSchema = false, Guid? TemplateId = null)
     : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
@@ -49,9 +50,18 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                     if (!ids.Any())
                         return Result<IReadOnlyCollection<ApplicationDto>>.Success(Array.Empty<ApplicationDto>());
 
-                    var apps = await new GetApplicationsByIdsQueryObject(ids)
-                        .Apply(appRepo.Query().AsNoTracking())
-                        .ToListAsync(cancellationToken);
+                    var query = new GetApplicationsByIdsQueryObject(ids)
+                        .Apply(appRepo.Query().AsNoTracking());
+
+                    // Apply template filter if specified
+                    if (request.TemplateId.HasValue)
+                    {
+                        query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(request.TemplateId.Value))
+                            .Apply(query);
+                    }
+
+                    var apps = await query.ToListAsync(cancellationToken);
+
 
                     var dtoList = apps.Select(a => new ApplicationDto
                     {

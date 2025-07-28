@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetMyApplicationsQuery(bool IncludeSchema = false) : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
+public sealed record GetMyApplicationsQuery(bool IncludeSchema = false, Guid? TemplateId = null) : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
 
 public sealed class GetMyApplicationsQueryHandler(
     IHttpContextAccessor httpContextAccessor,
@@ -33,11 +33,11 @@ public sealed class GetMyApplicationsQueryHandler(
         Result<IReadOnlyCollection<ApplicationDto>> result;
         if (principalId.Contains('@'))
         {
-            result = await mediator.Send(new GetApplicationsForUserQuery(principalId, request.IncludeSchema), cancellationToken);
+            result = await mediator.Send(new GetApplicationsForUserQuery(principalId, request.IncludeSchema, request.TemplateId), cancellationToken);
         }
         else
         {
-            result = await mediator.Send(new GetApplicationsForUserByExternalProviderIdQuery(principalId, request.IncludeSchema), cancellationToken);
+            result = await mediator.Send(new GetApplicationsForUserByExternalProviderIdQuery(principalId, request.IncludeSchema, request.TemplateId), cancellationToken);
         }
 
         return result;

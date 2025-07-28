@@ -71,9 +71,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetMyApplicationsAsync(
         CancellationToken cancellationToken,
-        [FromQuery] bool? includeSchema = null)
+        [FromQuery] bool? includeSchema = null,
+        [FromQuery] Guid? templateId = null)
     {
-        var query = new GetMyApplicationsQuery(includeSchema ?? false);
+        var query = new GetMyApplicationsQuery(includeSchema ?? false, templateId);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
@@ -93,9 +94,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetApplicationsForUserAsync(
         [FromRoute] string email,
         CancellationToken cancellationToken,
-        [FromQuery] bool? includeSchema = null)
+        [FromQuery] bool? includeSchema = null,
+        [FromQuery] Guid? templateId = null)
     {
-        var query = new GetApplicationsForUserQuery(email, includeSchema ?? false);
+        var query = new GetApplicationsForUserQuery(email, includeSchema ?? false, templateId);
         var result = await sender.Send(query, cancellationToken);
 
         if (!result.IsSuccess)
