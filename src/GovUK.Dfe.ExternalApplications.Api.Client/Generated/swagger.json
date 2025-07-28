@@ -118,6 +118,16 @@
               "nullable": true
             },
             "x-position": 1
+          },
+          {
+            "name": "templateId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -165,6 +175,16 @@
               "nullable": true
             },
             "x-position": 2
+          },
+          {
+            "name": "templateId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid",
+              "nullable": true
+            },
+            "x-position": 3
           }
         ],
         "responses": {
