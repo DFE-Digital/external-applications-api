@@ -6,14 +6,14 @@
 
 	<ItemGroup>
 		<PackageReference Include="DfE.CoreLibs.Security" Version="1.1.13" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.16" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.16" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.16">
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.18" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.18">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.16" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.16" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.18" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.18" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Identity.Web" Version="3.9.1" />
 	</ItemGroup>
