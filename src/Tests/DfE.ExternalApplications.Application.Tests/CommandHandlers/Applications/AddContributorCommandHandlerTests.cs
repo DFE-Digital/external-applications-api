@@ -317,6 +317,16 @@ public class AddContributorCommandHandlerTests
             new ApplicationId(command.ApplicationId),
             DateTime.UtcNow);
 
+        // Add ApplicationFiles permissions as well
+        realUserFactory.AddPermissionToUser(
+            existingContributor,
+            command.ApplicationId.ToString(),
+            ResourceType.ApplicationFiles,
+            new[] { AccessType.Read, AccessType.Write },
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            DateTime.UtcNow);
+
         var users = new[] { user, existingContributor }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
 
