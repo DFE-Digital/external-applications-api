@@ -948,7 +948,6 @@ public class ApplicationsControllerTests
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
         HttpClient httpClient,
-        string fileName,
         string description)
     {
         // Arrange
@@ -957,6 +956,8 @@ public class ApplicationsControllerTests
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
             new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
         };
+
+        var fileName = "test-file.jpg";
 
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
@@ -1008,7 +1009,7 @@ public class ApplicationsControllerTests
                 fileParameter));
 
         // Assert
-        Assert.Equal(401, exception.StatusCode);
+        Assert.Equal(403, exception.StatusCode);
     }
 
     [Theory]
@@ -1153,7 +1154,6 @@ public class ApplicationsControllerTests
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
         HttpClient httpClient,
-        string fileName,
         string description)
     {
         // Arrange
@@ -1162,6 +1162,7 @@ public class ApplicationsControllerTests
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
             new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
         };
+        var fileName = "large-file.jpg";
 
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
@@ -1197,8 +1198,7 @@ public class ApplicationsControllerTests
     public async Task UploadFileAsync_ShouldUploadFileWithNullDescription_WhenDescriptionIsNull(
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
-        HttpClient httpClient,
-        string fileName)
+        HttpClient httpClient)
     {
         // Arrange
         factory.TestClaims = new List<Claim>
@@ -1206,6 +1206,7 @@ public class ApplicationsControllerTests
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
             new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
         };
+        var fileName = "large-file.jpg";
 
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
@@ -1271,7 +1272,6 @@ public class ApplicationsControllerTests
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
         HttpClient httpClient,
-        string fileName,
         string description)
     {
         // Arrange
@@ -1281,6 +1281,7 @@ public class ApplicationsControllerTests
             new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
         };
 
+        var fileName = "large-file.jpg";
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
@@ -1355,7 +1356,6 @@ public class ApplicationsControllerTests
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
         HttpClient httpClient,
-        string fileName,
         string description)
     {
         // Arrange
@@ -1364,6 +1364,7 @@ public class ApplicationsControllerTests
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
             new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
         };
+        var fileName = "large-file.jpg";
 
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
@@ -1418,5 +1419,31 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetFilesForApplicationAsync_ShouldReturnFiles_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var result = await applicationsClient.GetFilesForApplicationAsync(new Guid(EaContextSeeder.ApplicationId));
+
+        // Assert
+        Assert.NotNull(result);
+        // Should return empty list since no files exist yet
+        Assert.Empty(result);
     }
 }  
