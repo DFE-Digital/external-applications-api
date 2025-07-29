@@ -61,16 +61,52 @@ public class GetFilesForApplicationQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
-        var uploadQueryable = files.AsQueryable().BuildMock();
+        // Ensure all files have the correct ApplicationId
+        var filesWithMatchingApplicationId = files.Select(file => new File(
+            file.Id!,
+            applicationId, // Use the applicationId parameter
+            file.Name,
+            file.Description,
+            file.OriginalFileName,
+            file.FileName,
+            file.Path,
+            file.UploadedOn,
+            file.UploadedBy)).ToList();
+
+        var uploadQueryable = filesWithMatchingApplicationId.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         var query = new GetFilesForApplicationQuery(applicationId);
@@ -87,7 +123,7 @@ public class GetFilesForApplicationQueryHandlerTests
         {
             var dto = result.Value.FirstOrDefault(f => f.Id == file.Id!.Value);
             Assert.NotNull(dto);
-            Assert.Equal(file.ApplicationId.Value, dto.ApplicationId);
+            Assert.Equal(applicationId.Value, dto.ApplicationId); // Use applicationId parameter instead of file.ApplicationId.Value
             Assert.Equal(file.UploadedBy.Value, dto.UploadedBy);
             Assert.Equal(file.Name, dto.Name);
             Assert.Equal(file.Description, dto.Description);
@@ -113,16 +149,40 @@ public class GetFilesForApplicationQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
         var uploadQueryable = new List<File>().AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         var query = new GetFilesForApplicationQuery(applicationId);
@@ -197,7 +257,20 @@ public class GetFilesForApplicationQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
         var applicationQueryable = new List<Domain.Entities.Application>().AsQueryable().BuildMock();
@@ -229,13 +302,37 @@ public class GetFilesForApplicationQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(false);
 
         var query = new GetFilesForApplicationQuery(applicationId);
@@ -265,16 +362,40 @@ public class GetFilesForApplicationQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
         var uploadQueryable = files.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         var query = new GetFilesForApplicationQuery(applicationId);
@@ -284,7 +405,7 @@ public class GetFilesForApplicationQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _userRepository.Query().Received(1);
+        _userRepository.Received(1).Query();
     }
 
     [Theory]
@@ -304,16 +425,40 @@ public class GetFilesForApplicationQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same external provider ID as in the HTTP context
+        var userWithMatchingExternalProviderId = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            user.Email,
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            "external-provider-id", // Match the external provider ID in the HTTP context
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingExternalProviderId }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
         var uploadQueryable = files.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         var query = new GetFilesForApplicationQuery(applicationId);
@@ -323,6 +468,6 @@ public class GetFilesForApplicationQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _userRepository.Query().Received(1);
+        _userRepository.Received(1).Query();
     }
 } 
