@@ -82,9 +82,9 @@ public class DeleteFileCommandHandler(
                     AccessType.Delete))
                 return Result<bool>.Failure("User does not have permission to delete this file");
 
-            var upload = new GetFileByIdQueryObject(new FileId(request.FileId))
+            var upload = await new GetFileByIdQueryObject(new FileId(request.FileId))
                 .Apply(fileRepository.Query())
-                .FirstOrDefault();
+                .FirstOrDefaultAsync(cancellationToken);
             if (upload == null)
                 return Result<bool>.Failure("File not found");
 
