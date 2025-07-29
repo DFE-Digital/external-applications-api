@@ -69,16 +69,52 @@ public class DownloadFileQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
-        var fileQueryable = new List<File> { file }.AsQueryable().BuildMock();
+        // Create a file with the matching ID
+        var fileWithMatchingId = new File(
+            new FileId(fileId), // Use the fileId parameter
+            file.ApplicationId,
+            file.Name,
+            file.Description,
+            file.OriginalFileName,
+            file.FileName,
+            file.Path,
+            file.UploadedOn,
+            file.UploadedBy);
+
+        var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         _fileStorageService.DownloadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -93,8 +129,8 @@ public class DownloadFileQueryHandlerTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal(fileStream, result.Value.FileStream);
-        Assert.Equal(file.OriginalFileName, result.Value.FileName);
-        Assert.Equal(file.OriginalFileName.GetContentType(), result.Value.ContentType);
+        Assert.Equal(fileWithMatchingId.OriginalFileName, result.Value.FileName);
+        Assert.Equal(fileWithMatchingId.OriginalFileName.GetContentType(), result.Value.ContentType);
 
         await _fileStorageService.Received(1).DownloadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
@@ -163,7 +199,20 @@ public class DownloadFileQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
         var applicationQueryable = new List<Domain.Entities.Application>().AsQueryable().BuildMock();
@@ -196,13 +245,37 @@ public class DownloadFileQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(false);
 
         var query = new DownloadFileQuery(fileId, applicationId);
@@ -232,16 +305,40 @@ public class DownloadFileQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
         var fileQueryable = new List<File>().AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         var query = new DownloadFileQuery(fileId, applicationId);
@@ -272,16 +369,52 @@ public class DownloadFileQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
-        var fileQueryable = new List<File> { file }.AsQueryable().BuildMock();
+        // Create a file with the matching ID
+        var fileWithMatchingId = new File(
+            new FileId(fileId), // Use the fileId parameter
+            file.ApplicationId,
+            file.Name,
+            file.Description,
+            file.OriginalFileName,
+            file.FileName,
+            file.Path,
+            file.UploadedOn,
+            file.UploadedBy);
+
+        var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         _fileStorageService.DownloadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -316,16 +449,52 @@ public class DownloadFileQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same email as in the HTTP context
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com", // Match the email in the HTTP context
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
-        var fileQueryable = new List<File> { file }.AsQueryable().BuildMock();
+        // Create a file with the matching ID
+        var fileWithMatchingId = new File(
+            new FileId(fileId), // Use the fileId parameter
+            file.ApplicationId,
+            file.Name,
+            file.Description,
+            file.OriginalFileName,
+            file.FileName,
+            file.Path,
+            file.UploadedOn,
+            file.UploadedBy);
+
+        var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         _fileStorageService.DownloadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -338,7 +507,7 @@ public class DownloadFileQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _userRepository.Query().Received(1);
+        _userRepository.Received(1).Query();
     }
 
     [Theory]
@@ -360,16 +529,52 @@ public class DownloadFileQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same external provider ID as in the HTTP context
+        var userWithMatchingExternalProviderId = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            user.Email,
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            "external-provider-id", // Match the external provider ID in the HTTP context
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingExternalProviderId }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
-        var fileQueryable = new List<File> { file }.AsQueryable().BuildMock();
+        // Create a file with the matching ID
+        var fileWithMatchingId = new File(
+            new FileId(fileId), // Use the fileId parameter
+            file.ApplicationId,
+            file.Name,
+            file.Description,
+            file.OriginalFileName,
+            file.FileName,
+            file.Path,
+            file.UploadedOn,
+            file.UploadedBy);
+
+        var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Read)
             .Returns(true);
 
         _fileStorageService.DownloadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -382,6 +587,6 @@ public class DownloadFileQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _userRepository.Query().Received(1);
+        _userRepository.Received(1).Query();
     }
 } 
