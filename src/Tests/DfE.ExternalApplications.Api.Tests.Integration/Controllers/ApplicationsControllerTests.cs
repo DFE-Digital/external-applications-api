@@ -1123,10 +1123,11 @@ public class ApplicationsControllerTests
         string description)
     {
         // Arrange
+        var nonExistentApplicationId = Guid.NewGuid();
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"ApplicationFiles:{Guid.NewGuid()}:Write")
+            new("permission", $"ApplicationFiles:{nonExistentApplicationId}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -1139,7 +1140,7 @@ public class ApplicationsControllerTests
         // Act
         var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
             applicationsClient.UploadFileAsync(
-                Guid.NewGuid(), // Non-existent application ID
+                nonExistentApplicationId, // Use the same ID as in the permission claim
                 fileName,
                 description,
                 fileParameter));
@@ -1231,7 +1232,7 @@ public class ApplicationsControllerTests
 
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-    public async Task UploadFileAsync_ShouldUploadFileWithNullName_WhenNameIsNull(
+    public async Task UploadFileAsync_ShouldReturnBadRequest_WhenNameIsNull(
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
         HttpClient httpClient,
@@ -1253,17 +1254,15 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
         // Act
-        var result = await applicationsClient.UploadFileAsync(
-            new Guid(EaContextSeeder.ApplicationId),
-            null, // null name
-            description,
-            fileParameter);
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                null, // null name - should be rejected
+                description,
+                fileParameter));
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(fileName, result.Name); // Should use the file name when name is null
-        Assert.Equal(description, result.Description);
-        Assert.Equal(fileName, result.OriginalFileName);
+        Assert.Equal(400, exception.StatusCode);
     }
 
     [Theory]
