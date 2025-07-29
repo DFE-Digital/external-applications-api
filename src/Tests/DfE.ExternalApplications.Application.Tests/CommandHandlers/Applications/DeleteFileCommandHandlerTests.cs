@@ -551,7 +551,19 @@ public class DeleteFileCommandHandlerTests
         var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepo.Query().Returns(applicationQueryable);
 
-        var fileQueryable = new List<File> { file }.AsQueryable().BuildMock();
+        // Create a file with the same ID as the fileId parameter
+        var fileWithMatchingId = new File(
+            new FileId(fileId), // Use the same ID as the parameter
+            file.ApplicationId,
+            file.Name,
+            file.Description,
+            file.OriginalFileName,
+            file.FileName,
+            file.Path,
+            file.UploadedOn,
+            file.UploadedBy);
+
+        var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _fileRepository.Query().Returns(fileQueryable);
 
         _permissionCheckerService.IsApplicationOwner(applicationWithMatchingId, userWithMatchingEmail.Id!.Value.ToString()).Returns(false);
@@ -572,8 +584,8 @@ public class DeleteFileCommandHandlerTests
         Assert.True(result.IsSuccess);
         Assert.True(result.Value);
 
-        _fileFactory.Received(1).DeleteFile(file);
-        await _fileRepository.Received(1).RemoveAsync(file, Arg.Any<CancellationToken>());
+        _fileFactory.Received(1).DeleteFile(fileWithMatchingId);
+        await _fileRepository.Received(1).RemoveAsync(fileWithMatchingId, Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
