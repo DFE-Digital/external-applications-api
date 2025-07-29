@@ -543,7 +543,7 @@ public class UploadFileCommandHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _userRepository.Query().Received(1);
+        _userRepository.Received(1).Query();
     }
 
     [Theory]
@@ -567,16 +567,40 @@ public class UploadFileCommandHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var queryable = new List<User> { user }.AsQueryable().BuildMock();
+        // Create a user with the same external provider ID as in the HTTP context
+        var userWithMatchingExternalProviderId = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            user.Email,
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            "external-provider-id", // Match the external provider ID in the HTTP context
+            user.Permissions);
+
+        var queryable = new List<User> { userWithMatchingExternalProviderId }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        var applicationQueryable = new List<Domain.Entities.Application> { application }.AsQueryable().BuildMock();
+        // Application with matching ID
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
         _applicationRepository.Query().Returns(applicationQueryable);
 
         var uploadQueryable = new List<File>().AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);
 
-        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Write)
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Write)
             .Returns(true);
 
         _fileFactory.CreateUpload(
@@ -598,6 +622,6 @@ public class UploadFileCommandHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _userRepository.Query().Received(1);
+        _userRepository.Received(1).Query();
     }
 } 
