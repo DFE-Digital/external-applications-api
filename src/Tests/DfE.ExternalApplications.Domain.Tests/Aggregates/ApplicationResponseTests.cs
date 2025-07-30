@@ -35,7 +35,7 @@ public class ApplicationResponseTests
     [CustomAutoData(typeof(ApplicationResponseCustomization))]
     public void Constructor_ShouldThrowArgumentNullException_WhenResponseBodyIsNull(
         ResponseId id,
-        ValueObjects.ApplicationId applicationId,
+        ApplicationId applicationId,
         DateTime createdOn,
         UserId createdBy,
         DateTime? lastModifiedOn,

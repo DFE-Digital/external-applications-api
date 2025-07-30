@@ -947,8 +947,8 @@
           "Task",
           "Page",
           "Field",
-          "File",
-          "ApplicationFiles"
+          "ApplicationFiles",
+          "File"
         ],
         "enum": [
           "Application",
@@ -958,7 +958,7 @@
           "Task",
           "Page",
           "Field",
-          "File",
+          "ApplicationFiles",
           "File"
         ]
       },

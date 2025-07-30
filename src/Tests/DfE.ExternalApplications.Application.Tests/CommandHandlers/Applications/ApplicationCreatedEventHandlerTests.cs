@@ -17,7 +17,7 @@ public class ApplicationCreatedEventHandlerTests
 {
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization))]
-    public async Task Handle_ShouldCreateReadAndWritePermissions_WhenEventReceived(
+    public async Task Handle_ShouldCreateAllRequiredPermissions_WhenEventReceived(
         ApplicationId applicationId,
         UserId userId,
         DateTime createdOn,
@@ -33,9 +33,10 @@ public class ApplicationCreatedEventHandlerTests
         // Act
         await handler.Handle(@event, CancellationToken.None);
 
-        // Assert
-        await permissionRepo.Received(2).AddAsync(Arg.Any<Permission>(), Arg.Any<CancellationToken>());
+        // Assert - Should create 5 permissions total
+        await permissionRepo.Received(5).AddAsync(Arg.Any<Permission>(), Arg.Any<CancellationToken>());
 
+        // Application Read permission
         await permissionRepo.Received(1).AddAsync(
             Arg.Is<Permission>(p =>
                 p.UserId == userId &&
@@ -45,6 +46,7 @@ public class ApplicationCreatedEventHandlerTests
                 p.AccessType == AccessType.Read),
             Arg.Any<CancellationToken>());
 
+        // Application Write permission
         await permissionRepo.Received(1).AddAsync(
             Arg.Is<Permission>(p =>
                 p.UserId == userId &&
@@ -52,6 +54,36 @@ public class ApplicationCreatedEventHandlerTests
                 p.ResourceKey == applicationId.Value.ToString() &&
                 p.ResourceType == ResourceType.Application &&
                 p.AccessType == AccessType.Write),
+            Arg.Any<CancellationToken>());
+
+        // ApplicationFiles Read permission
+        await permissionRepo.Received(1).AddAsync(
+            Arg.Is<Permission>(p =>
+                p.UserId == userId &&
+                p.ApplicationId == applicationId &&
+                p.ResourceKey == applicationId.Value.ToString() &&
+                p.ResourceType == ResourceType.ApplicationFiles &&
+                p.AccessType == AccessType.Read),
+            Arg.Any<CancellationToken>());
+
+        // ApplicationFiles Write permission
+        await permissionRepo.Received(1).AddAsync(
+            Arg.Is<Permission>(p =>
+                p.UserId == userId &&
+                p.ApplicationId == applicationId &&
+                p.ResourceKey == applicationId.Value.ToString() &&
+                p.ResourceType == ResourceType.ApplicationFiles &&
+                p.AccessType == AccessType.Write),
+            Arg.Any<CancellationToken>());
+
+        // ApplicationFiles Delete permission
+        await permissionRepo.Received(1).AddAsync(
+            Arg.Is<Permission>(p =>
+                p.UserId == userId &&
+                p.ApplicationId == applicationId &&
+                p.ResourceKey == applicationId.Value.ToString() &&
+                p.ResourceType == ResourceType.ApplicationFiles &&
+                p.AccessType == AccessType.Delete),
             Arg.Any<CancellationToken>());
     }
 

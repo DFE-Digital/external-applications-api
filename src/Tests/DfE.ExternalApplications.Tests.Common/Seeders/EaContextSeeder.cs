@@ -152,6 +152,77 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
 
             ctx.Permissions.AddRange(perm1, perm2, perm3);
 
+            // Add ApplicationFiles permissions for Bob (the application creator)
+            var filesReadPermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: bobId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.ApplicationFiles,
+                accessType: AccessType.Read,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var filesWritePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: bobId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.ApplicationFiles,
+                accessType: AccessType.Write,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var filesDeletePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: bobId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.ApplicationFiles,
+                accessType: AccessType.Delete,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            // Add ApplicationFiles permissions for Alice as well
+            var aliceFilesReadPermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: aliceId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.ApplicationFiles,
+                accessType: AccessType.Read,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var aliceFilesWritePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: aliceId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.ApplicationFiles,
+                accessType: AccessType.Write,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var aliceFilesDeletePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: aliceId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.ApplicationFiles,
+                accessType: AccessType.Delete,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            ctx.Permissions.AddRange(filesReadPermission, filesWritePermission, filesDeletePermission,
+                                   aliceFilesReadPermission, aliceFilesWritePermission, aliceFilesDeletePermission);
+
             var templatePerm1 = new TemplatePermission(
                 new TemplatePermissionId(new Guid(TemplatePermissionId1)),
                 userId: bobId,

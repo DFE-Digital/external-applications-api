@@ -38,7 +38,7 @@ public class ApplicationTests
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization))]
     public void Constructor_ShouldThrowArgumentNullException_WhenReferenceIsNull(
-        ValueObjects.ApplicationId id,
+        ApplicationId id,
         TemplateVersionId templateVersionId,
         DateTime createdOn,
         UserId createdBy,

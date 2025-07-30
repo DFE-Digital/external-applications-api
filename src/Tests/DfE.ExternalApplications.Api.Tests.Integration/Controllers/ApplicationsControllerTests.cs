@@ -941,4 +941,509 @@ public class ApplicationsControllerTests
             () => applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), userId));
         Assert.Equal(403, ex.StatusCode);
     }
- }  
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldUploadFile_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        var fileName = "test-file.jpg";
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Create a test file
+        var fileContent = "Test file content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var result = await applicationsClient.UploadFileAsync(
+            new Guid(EaContextSeeder.ApplicationId),
+            fileName,
+            description,
+            fileParameter);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEqual(Guid.Empty, result.Id);
+        Assert.Equal(new Guid(EaContextSeeder.ApplicationId), result.ApplicationId);
+        Assert.Equal(fileName, result.Name);
+        Assert.Equal(description, result.Description);
+        Assert.Equal(fileName, result.OriginalFileName);
+        Assert.NotNull(result.FileName);
+        Assert.NotEmpty(result.FileName);
+        Assert.NotEqual(default(DateTime), result.UploadedOn);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string fileName,
+        string description)
+    {
+        // Arrange
+        var fileContent = "Test file content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                fileName,
+                description,
+                fileParameter));
+
+        // Assert
+        Assert.Equal(403, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string fileName,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            // No permission claim
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var fileContent = "Test file content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                fileName,
+                description,
+                fileParameter));
+
+        // Assert
+        Assert.Equal(403, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnBadRequest_WhenNoFileProvided(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string fileName,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act - No file parameter
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                fileName,
+                description,
+                null));
+
+        // Assert
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnBadRequest_WhenEmptyFile(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string fileName,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Create an empty file
+        var stream = new MemoryStream();
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                fileName,
+                description,
+                fileParameter));
+
+        // Assert
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnNotFound_WhenApplicationNotExists(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string fileName,
+        string description)
+    {
+        // Arrange
+        var nonExistentApplicationId = Guid.NewGuid();
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{nonExistentApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var fileContent = "Test file content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                nonExistentApplicationId, // Use the same ID as in the permission claim
+                fileName,
+                description,
+                fileParameter));
+
+        // Assert
+        Assert.Equal(404, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnBadRequest_WhenFileAlreadyExists(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+        var fileName = "large-file.jpg";
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var fileContent = "Test file content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Upload the same file twice
+        await applicationsClient.UploadFileAsync(
+            new Guid(EaContextSeeder.ApplicationId),
+            fileName,
+            description,
+            fileParameter);
+
+        // Create a new stream for the second upload
+        var stream2 = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter2 = new FileParameter(stream2, fileName, "text/plain");
+
+        // Act - Try to upload the same file again
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                fileName,
+                description,
+                fileParameter2));
+
+        // Assert
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldUploadFileWithNullDescription_WhenDescriptionIsNull(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+        var fileName = "large-file.jpg";
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var fileContent = "Test file content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var result = await applicationsClient.UploadFileAsync(
+            new Guid(EaContextSeeder.ApplicationId),
+            fileName,
+            null, // null description
+            fileParameter);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Null(result.Description);
+        Assert.Equal(fileName, result.Name);
+        Assert.Equal(fileName, result.OriginalFileName);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnBadRequest_WhenNameIsNull(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var fileName = "test.txt";
+        var fileContent = "Test file content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                null, // null name - should be rejected
+                description,
+                fileParameter));
+
+        // Assert
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldHandleLargeFile_WhenFileIsLarge(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        var fileName = "large-file.jpg";
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Create a large file (1MB)
+        var largeContent = new string('A', 1024 * 1024);
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(largeContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var result = await applicationsClient.UploadFileAsync(
+            new Guid(EaContextSeeder.ApplicationId),
+            fileName,
+            description,
+            fileParameter);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(fileName, result.Name);
+        Assert.Equal(description, result.Description);
+        Assert.Equal(fileName, result.OriginalFileName);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldHandleDifferentFileTypes_WhenFileTypeIsValid(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var testCases = new[]
+        {
+            new { FileName = "document.pdf", ContentType = "application/pdf", Content = "%PDF-1.4\nTest PDF content" },
+            new { FileName = "image.jpg", ContentType = "image/jpeg", Content = "JPEG image content" },
+            new { FileName = "spreadsheet.xlsx", ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Content = "Excel content" },
+            new { FileName = "document.docx", ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", Content = "Word document content" }
+        };
+
+        foreach (var testCase in testCases)
+        {
+            // Act
+            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(testCase.Content));
+            var fileParameter = new FileParameter(stream, testCase.FileName, testCase.ContentType);
+
+            var result = await applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                testCase.FileName,
+                description,
+                fileParameter);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(testCase.FileName, result.Name);
+            Assert.Equal(testCase.FileName, result.OriginalFileName);
+            Assert.Equal(description, result.Description);
+        }
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnBadRequest_WhenFileSizeExceedsLimit(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+        var fileName = "large-file.jpg";
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Create a file that exceeds the 25MB limit (26MB)
+        var largeContent = new string('A', 26 * 1024 * 1024);
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(largeContent));
+        var fileParameter = new FileParameter(stream, fileName, "text/plain");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                fileName,
+                description,
+                fileParameter));
+
+        // Assert
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task UploadFileAsync_ShouldReturnBadRequest_WhenFileExtensionNotAllowed(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient,
+        string description)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var fileName = "script.exe"; // Not allowed extension
+        var fileContent = "Executable content";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter = new FileParameter(stream, fileName, "application/x-msdownload");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+            applicationsClient.UploadFileAsync(
+                new Guid(EaContextSeeder.ApplicationId),
+                fileName,
+                description,
+                fileParameter));
+
+        // Assert
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetFilesForApplicationAsync_ShouldReturnFiles_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var result = await applicationsClient.GetFilesForApplicationAsync(new Guid(EaContextSeeder.ApplicationId));
+
+        // Assert
+        Assert.NotNull(result);
+        // Should return empty list since no files exist yet
+        Assert.Empty(result);
+    }
+}  
