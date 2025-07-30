@@ -1179,8 +1179,9 @@ public class ApplicationsControllerTests
             description,
             fileParameter);
 
-        // Reset stream for second upload
-        stream.Position = 0;
+        // Create a new stream for the second upload
+        var stream2 = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
+        var fileParameter2 = new FileParameter(stream2, fileName, "text/plain");
 
         // Act - Try to upload the same file again
         var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
@@ -1188,7 +1189,7 @@ public class ApplicationsControllerTests
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
                 description,
-                fileParameter));
+                fileParameter2));
 
         // Assert
         Assert.Equal(400, exception.StatusCode);

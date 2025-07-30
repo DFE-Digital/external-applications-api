@@ -64,6 +64,26 @@
       "Controller": "ApplicationsController",
       "Action": "GetContributorsAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "UploadFileAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteApplicationFiles"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "GetFilesForApplicationAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadApplicationFiles"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "DownloadFileAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadApplicationFiles"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "DeleteFileAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanDeleteApplicationFiles"
     }
   ]
 }
