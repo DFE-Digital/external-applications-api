@@ -1,14 +1,11 @@
 ﻿using DfE.CoreLibs.Security.Configurations;
 using DfE.CoreLibs.Security.Interfaces;
+using DfE.CoreLibs.Security.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace DfE.ExternalApplications.Tests.Common.Helpers
 {
@@ -28,6 +25,24 @@ namespace DfE.ExternalApplications.Tests.Common.Helpers
                 expires: DateTime.UtcNow.AddMinutes(_settings.TokenLifetimeMinutes),
                 signingCredentials: creds);
             return Task.FromResult(handler.WriteToken(jwt));
+        }
+
+        public Task<Token> GetUserTokenModelAsync(ClaimsPrincipal principal)
+        {
+            var expiryTime = DateTime.UtcNow.AddMinutes(_settings.TokenLifetimeMinutes);
+            var handler = new JwtSecurityTokenHandler();
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SecretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var jwt = new JwtSecurityToken(
+                issuer: _settings.Issuer,
+                audience: _settings.Audience,
+                claims: principal.Claims,
+                expires: expiryTime,
+                signingCredentials: creds);
+            return Task.FromResult(new Token
+            {
+                AccessToken = handler.WriteToken(jwt),
+            });
         }
     }
 }

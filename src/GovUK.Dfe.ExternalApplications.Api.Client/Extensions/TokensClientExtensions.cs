@@ -1,4 +1,5 @@
-﻿using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+﻿using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
@@ -12,7 +13,7 @@ public static class TokensClientExtensions
         IInternalUserTokenStore tokenStore,
         CancellationToken cancellationToken = default)
     {
-        var request = new ExchangeTokenDto(idpToken);
+        var request = new ExchangeTokenRequest(idpToken);
         var response = await client.ExchangeAsync(request, cancellationToken);
         if (!string.IsNullOrEmpty(response.AccessToken))
         {
