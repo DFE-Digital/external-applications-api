@@ -16,6 +16,7 @@ using DfE.ExternalApplications.Api.Security;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 using DfE.CoreLibs.Http.Extensions;
 using DfE.ExternalApplications.Api.ExceptionHandlers;
+using System.Text.Json;
 
 namespace DfE.ExternalApplications.Api
 {
@@ -36,7 +37,12 @@ namespace DfE.ExternalApplications.Api
             });
 
             builder.Services.AddControllers()
-                .AddJsonOptions(c => { c.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); })
+                .AddJsonOptions(c =>
+                {
+                    c.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    c.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    c.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                })
                 .ConfigureApiBehaviorOptions(options =>
                 {
                     // Disable automatic model validation to let MediatR ValidationBehaviour handle it

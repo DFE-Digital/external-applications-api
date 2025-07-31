@@ -61,6 +61,7 @@
       "configurationClass": null,
       "generateClientClasses": true,
       "generateClientInterfaces": true,
+      "jsonLibrary": "SystemTextJson",
       "clientBaseInterface": null,
       "injectHttpClient": true,
       "disposeHttpClient": false,
@@ -95,7 +96,9 @@
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
         "DfE.CoreLibs.Contracts.ExternalApplications.Enums",
-        "DfE.CoreLibs.Http.Models"
+        "DfE.CoreLibs.Http.Models",
+        "System.Text.Json",
+        "System.Text.Json.Serialization"
       ],
       "generateOptionalParameters": true,
       "generateJsonMethods": true,
@@ -112,7 +115,9 @@
       "namespace": "GovUK.Dfe.ExternalApplications.Api.Client",
       "requiredPropertiesMustBeDefined": true,
       "dateType": "System.DateTime",
-      "jsonConverters": null,
+             "jsonConverters": [
+         "System.Text.Json.Serialization.JsonStringEnumConverter"
+       ],
       "anyType": "object",
       "dateTimeType": "System.DateTime",
       "timeType": "System.TimeSpan",
@@ -131,7 +136,9 @@
       "handleReferences": false,
       "generateImmutableArrayProperties": false,
       "generateImmutableDictionaryProperties": false,
-      "jsonSerializerSettingsTransformationMethod": null,
+             "jsonSerializerSettingsTransformationMethod": null,
+             "jsonSerializerSettingsType": "System.Text.Json.JsonSerializerOptions",
+      "serializerSettingsType": "System.Text.Json.JsonSerializerOptions",
       "inlineNamedArrays": false,
       "inlineNamedDictionaries": false,
       "inlineNamedTuples": true,

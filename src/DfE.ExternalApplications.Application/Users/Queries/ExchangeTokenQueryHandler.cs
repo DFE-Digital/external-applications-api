@@ -92,7 +92,12 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             return new ExchangeTokenDto
             {
                 AccessToken = internalToken.AccessToken,
-                ExpiresIn = internalToken.ExpiresIn
+                TokenType = "Bearer",
+                ExpiresIn = internalToken.ExpiresIn,
+                RefreshToken = internalToken.RefreshToken,
+                Scope = internalToken.Scope,
+                IdToken = internalToken.IdToken,
+                RefreshExpiresIn = internalToken.RefreshExpiresIn
             };
         }
     }

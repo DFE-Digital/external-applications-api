@@ -57,6 +57,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     [SwaggerResponse(404, "Template not found.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteTemplate")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateTemplateVersionAsync(
         [FromRoute] Guid templateId,
         [FromBody] CreateTemplateVersionRequest request,

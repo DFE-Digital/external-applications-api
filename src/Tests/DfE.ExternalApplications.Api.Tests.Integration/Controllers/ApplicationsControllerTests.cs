@@ -9,6 +9,7 @@ using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.CoreLibs.Http.Models;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
 
@@ -157,7 +158,7 @@ public class ApplicationsControllerTests
             ResponseBody = string.Empty
         };
         // Act
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(400, ex.StatusCode);
     }
@@ -185,7 +186,7 @@ public class ApplicationsControllerTests
         };
         
         // Act
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(400, ex.StatusCode);
     }
@@ -250,7 +251,7 @@ public class ApplicationsControllerTests
         };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.CreateApplicationAsync(request));
         Assert.Equal(400, ex.StatusCode);
     }
@@ -851,7 +852,7 @@ public class ApplicationsControllerTests
         };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(400, ex.StatusCode);
     }
@@ -1255,7 +1256,7 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
         // Act
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 null, // null name - should be rejected
