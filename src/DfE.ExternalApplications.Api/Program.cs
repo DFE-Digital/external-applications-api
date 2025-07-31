@@ -36,7 +36,12 @@ namespace DfE.ExternalApplications.Api
             });
 
             builder.Services.AddControllers()
-                .AddJsonOptions(c => { c.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
+                .AddJsonOptions(c => { c.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); })
+                .ConfigureApiBehaviorOptions(options =>
+                {
+                    // Disable automatic model validation to let MediatR ValidationBehaviour handle it
+                    options.SuppressModelStateInvalidFilter = true;
+                });
 
             builder.Services.AddApiVersioning(config =>
             {
@@ -63,7 +68,6 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
-            // Register both the interface and the concrete implementation
             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
 
             builder.Services.AddApplicationDependencyGroup(builder.Configuration);
