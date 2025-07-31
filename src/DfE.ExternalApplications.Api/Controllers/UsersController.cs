@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using DfE.CoreLibs.Http.Models;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -18,7 +19,10 @@ public class UsersController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("/v{version:apiVersion}/me/permissions")]
     [SwaggerResponse(200, "A UserAuthorizationDto object representing the User's Permissions and Roles.", typeof(UserAuthorizationDto))]
-    [SwaggerResponse(401, "Unauthorized no valid user token")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadUser")]
     public async Task<IActionResult> GetMyPermissionsAsync(
         CancellationToken cancellationToken)

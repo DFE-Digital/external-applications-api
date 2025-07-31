@@ -67,7 +67,7 @@
       "protectedMethods": [],
       "generateExceptionClasses": true,
       "exceptionClass": "ExternalApplicationsException",
-      "wrapDtoExceptions": true,
+      "wrapDtoExceptions": false,
       "useHttpClientCreationMethod": false,
       "httpClientType": "System.Net.Http.HttpClient",
       "useHttpRequestMessageCreationMethod": false,
@@ -94,7 +94,8 @@
         "System.Threading.Tasks",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums",
+        "DfE.CoreLibs.Http.Models"
       ],
       "generateOptionalParameters": true,
       "generateJsonMethods": true,
@@ -138,7 +139,8 @@
       "additionalContractNamespaceUsages": [
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums",
+        "DfE.CoreLibs.Http.Models"
       ],
       "generateDtoTypes": false,
       "useSharedDTOs": true,

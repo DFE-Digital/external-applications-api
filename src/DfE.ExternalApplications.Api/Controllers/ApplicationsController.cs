@@ -9,6 +9,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using DfE.CoreLibs.Http.Models;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Api.Controllers;
@@ -23,8 +24,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPost]
     [SwaggerResponse(200, "The created application.", typeof(ApplicationDto))]
-    [SwaggerResponse(400, "Invalid request data.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanCreateAnyApplication")]
     public async Task<IActionResult> CreateApplicationAsync(
         [FromBody] CreateApplicationRequest request,
@@ -44,10 +47,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [HttpPost]
     [Route(("{applicationId}/responses"))]
     [SwaggerResponse(201, "Response version created.", typeof(ApplicationResponseDto))]
-    [SwaggerResponse(400, "Invalid request data.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token.")]
-    [SwaggerResponse(403, "User does not have permission to update this application.")]
-    [SwaggerResponse(404, "Application not found.")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to update this application.", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> AddApplicationResponseAsync(
         [FromRoute] Guid applicationId,
@@ -69,7 +73,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [HttpGet]
     [Route("/v{version:apiVersion}/me/applications")]
     [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
-    [SwaggerResponse(401, "Unauthorized  no valid user token")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetMyApplicationsAsync(
         CancellationToken cancellationToken,
@@ -91,7 +98,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [HttpGet]
     [Route("/v{version:apiVersion}/Users/{email}/applications")]
     [SwaggerResponse(200, "Applications for the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
-    [SwaggerResponse(400, "Email cannot be null or empty.")]
+    [SwaggerResponse(400, "Email cannot be null or empty.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetApplicationsForUserAsync(
         [FromRoute] string email,
@@ -113,10 +123,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("reference/{applicationReference}")]
     [SwaggerResponse(200, "Application details with latest response.", typeof(ApplicationDto))]
-    [SwaggerResponse(400, "Invalid application reference or application not found.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
-    [SwaggerResponse(403, "User does not have permission to read this application")]
-    [SwaggerResponse(404, "Application not found")]
+    [SwaggerResponse(400, "Invalid application reference or application not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to read this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetApplicationByReferenceAsync(
         [FromRoute] string applicationReference,
@@ -144,10 +155,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPost("{applicationId}/submit")]
     [SwaggerResponse(200, "Application submitted successfully.", typeof(ApplicationDto))]
-    [SwaggerResponse(400, "Invalid request data or application already submitted.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
-    [SwaggerResponse(403, "User does not have permission to submit this application")]
-    [SwaggerResponse(404, "Application not found")]
+    [SwaggerResponse(400, "Invalid request data or application already submitted.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to submit this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> SubmitApplicationAsync(
         [FromRoute] Guid applicationId,
@@ -175,10 +187,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("{applicationId}/contributors")]
     [SwaggerResponse(200, "List of contributors for the application.", typeof(IReadOnlyCollection<UserDto>))]
-    [SwaggerResponse(400, "Invalid request data.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
-    [SwaggerResponse(403, "User does not have permission to read this application")]
-    [SwaggerResponse(404, "Application not found")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to read this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetContributorsAsync(
         [FromRoute] Guid applicationId,
@@ -207,10 +220,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPost("{applicationId}/contributors")]
     [SwaggerResponse(200, "Contributor added successfully.", typeof(UserDto))]
-    [SwaggerResponse(400, "Invalid request data or contributor already exists.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
-    [SwaggerResponse(403, "User does not have permission to manage contributors for this application")]
-    [SwaggerResponse(404, "Application not found")]
+    [SwaggerResponse(400, "Invalid request data or contributor already exists.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to manage contributors for this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> AddContributorAsync(
         [FromRoute] Guid applicationId,
@@ -240,10 +254,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpDelete("{applicationId}/contributors/{userId}")]
     [SwaggerResponse(200, "Contributor removed successfully.")]
-    [SwaggerResponse(400, "Invalid request data.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
-    [SwaggerResponse(403, "User does not have permission to manage contributors for this application")]
-    [SwaggerResponse(404, "Application or contributor not found")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to manage contributors for this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application or contributor not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> RemoveContributorAsync(
         [FromRoute] Guid applicationId,
@@ -274,8 +289,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [HttpPost("{applicationId}/files")]
     [Consumes("multipart/form-data")]
     [SwaggerResponse(201, "File uploaded successfully.", typeof(UploadDto))]
-    [SwaggerResponse(400, "Invalid request data.")]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to manage files for this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteApplicationFiles")]
     public async Task<IActionResult> UploadFileAsync(
         [FromRoute] Guid applicationId,
@@ -314,7 +332,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("{applicationId}/files")]
     [SwaggerResponse(200, "List of files for the application.", typeof(IReadOnlyCollection<UploadDto>))]
-    [SwaggerResponse(401, "Unauthorized - no valid user token")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to manage files for this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadApplicationFiles")]
     public async Task<IActionResult> GetFilesForApplicationAsync(
         [FromRoute] Guid applicationId,
@@ -343,7 +365,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("{applicationId}/files/{fileId}/download")]
     [SwaggerResponse(200, "File stream.", typeof(FileStreamResult))]
-    [SwaggerResponse(404, "File not found.")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to manage files for this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "File not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadApplicationFiles")]
     public async Task<IActionResult> DownloadFileAsync(
         [FromRoute] Guid fileId,
@@ -373,7 +399,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpDelete("{applicationId}/files/{fileId}")]
     [SwaggerResponse(200, "File deleted successfully.", typeof(bool))]
-    [SwaggerResponse(404, "File not found.")]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to manage files for this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "File not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanDeleteApplicationFiles")]
     public async Task<IActionResult> DeleteFileAsync(
         [FromRoute] Guid fileId,
