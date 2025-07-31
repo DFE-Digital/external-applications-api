@@ -14,6 +14,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using DfE.ExternalApplications.Api.Security;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
+using DfE.CoreLibs.Http.Extensions;
+using DfE.ExternalApplications.Api.ExceptionHandlers;
 
 namespace DfE.ExternalApplications.Api
 {
@@ -61,6 +63,9 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
+            // Register both the interface and the concrete implementation
+            builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
+
             builder.Services.AddApplicationDependencyGroup(builder.Configuration);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
             builder.Services.AddCustomAuthorization(builder.Configuration);
@@ -98,6 +103,7 @@ namespace DfE.ExternalApplications.Api
             });
 
             builder.Services.AddOpenApiDocument(configure => { configure.Title = "Api"; });
+
 
             var app = builder.Build();
 
@@ -162,7 +168,14 @@ namespace DfE.ExternalApplications.Api
             });
 
             app.UseMiddleware<CorrelationIdMiddleware>();
-            app.UseMiddleware<ExceptionHandlerMiddleware>();
+            app.UseGlobalExceptionHandler(options =>
+            {
+                options.IncludeDetails = builder.Environment.IsDevelopment();
+                options.LogExceptions = true;
+                options.DefaultErrorMessage = "Something went wrong";
+            });
+
+
             app.UseMiddleware<UrlDecoderMiddleware>();
 
             app.UseRouting();

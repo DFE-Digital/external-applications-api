@@ -3,6 +3,8 @@ using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
+using DfE.ExternalApplications.Application.Common.Exceptions;
+using FluentValidation.Results;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -394,5 +396,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
         }
 
         return Ok(result.Value);
+    }
+
+    [HttpPost("test-exception")]
+    public IActionResult TestException()
+    {
+        throw new ValidationException(new[] { new ValidationFailure("test", "Test error") });
     }
 }

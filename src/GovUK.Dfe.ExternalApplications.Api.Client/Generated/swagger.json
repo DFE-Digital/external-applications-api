@@ -649,6 +649,27 @@
         }
       }
     },
+    "/v1/Applications/test-exception": {
+      "post": {
+        "tags": [
+          "Applications"
+        ],
+        "operationId": "Applications_TestException",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/Templates/{templateId}/schema": {
       "get": {
         "tags": [
