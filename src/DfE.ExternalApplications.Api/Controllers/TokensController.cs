@@ -1,4 +1,5 @@
 ﻿using Asp.Versioning;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Infrastructure.Security;
@@ -25,7 +26,7 @@ namespace DfE.ExternalApplications.Api.Controllers
         [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
         [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanReadWrite")]
         public async Task<ActionResult<ExchangeTokenDto>> Exchange(
-            [FromBody] ExchangeTokenDto request,
+            [FromBody] ExchangeTokenRequest request,
             CancellationToken ct)
         {
             var result = await sender.Send(

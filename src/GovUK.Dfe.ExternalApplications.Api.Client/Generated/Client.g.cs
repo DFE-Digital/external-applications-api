@@ -2382,7 +2382,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>Token exchanged successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenDto request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<ExchangeTokenDto> ExchangeAsync(ExchangeTokenRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (request == null)
                 throw new System.ArgumentNullException("request");

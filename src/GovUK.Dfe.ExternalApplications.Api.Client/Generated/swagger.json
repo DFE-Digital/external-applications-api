@@ -1360,7 +1360,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ExchangeTokenDto"
+                "$ref": "#/components/schemas/ExchangeTokenRequest"
               }
             }
           },
@@ -1859,6 +1859,39 @@
         }
       },
       "ExchangeTokenDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "refresh_token": {
+            "type": "string",
+            "nullable": true
+          },
+          "scope": {
+            "type": "string",
+            "nullable": true
+          },
+          "id_token": {
+            "type": "string",
+            "nullable": true
+          },
+          "refresh_expires_in": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "ExchangeTokenRequest": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
