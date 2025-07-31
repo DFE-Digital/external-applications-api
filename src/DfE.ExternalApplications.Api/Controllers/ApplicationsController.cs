@@ -397,10 +397,4 @@ public class ApplicationsController(ISender sender) : ControllerBase
 
         return Ok(result.Value);
     }
-
-    [HttpPost("test-exception")]
-    public IActionResult TestException()
-    {
-        throw new ValidationException(new[] { new ValidationFailure("test", "Test error") });
-    }
 }
