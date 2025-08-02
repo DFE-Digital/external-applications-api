@@ -30,9 +30,9 @@ public class UsersController(ISender sender) : ControllerBase
         var query = new GetMyPermissionsQuery();
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
-            return BadRequest(result.Error);
-
-        return Ok(result.Value);
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 }

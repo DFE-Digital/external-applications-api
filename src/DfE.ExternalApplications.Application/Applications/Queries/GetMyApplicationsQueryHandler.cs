@@ -1,9 +1,7 @@
-﻿using System.Net.Http;
-using System.Security.Claims;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.CoreLibs.Security.Interfaces;
+﻿using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -20,7 +18,7 @@ public sealed class GetMyApplicationsQueryHandler(
     {
         var user = httpContextAccessor.HttpContext?.User;
         if (user is null || !user.Identity?.IsAuthenticated == true)
-            return Result<IReadOnlyCollection<ApplicationDto>>.Failure("Not authenticated");
+            return Result<IReadOnlyCollection<ApplicationDto>>.Forbid("Not authenticated");
 
         var principalId = user.FindFirstValue(ClaimTypes.Email);
 
@@ -28,7 +26,7 @@ public sealed class GetMyApplicationsQueryHandler(
             principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
         if (string.IsNullOrEmpty(principalId))
-            return Result<IReadOnlyCollection<ApplicationDto>>.Failure("No user identifier");
+            return Result<IReadOnlyCollection<ApplicationDto>>.Forbid("No user identifier");
 
         Result<IReadOnlyCollection<ApplicationDto>> result;
         if (principalId.Contains('@'))

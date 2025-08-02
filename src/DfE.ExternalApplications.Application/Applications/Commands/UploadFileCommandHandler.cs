@@ -44,13 +44,13 @@ public class UploadFileCommandHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<UploadDto>.Failure("Not authenticated");
+                return Result<UploadDto>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
             if (string.IsNullOrEmpty(principalId))
                 principalId = user.FindFirstValue(ClaimTypes.Email);
             if (string.IsNullOrEmpty(principalId))
-                return Result<UploadDto>.Failure("No user identifier");
+                return Result<UploadDto>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -66,18 +66,18 @@ public class UploadFileCommandHandler(
                     .FirstOrDefaultAsync(cancellationToken);
             }
             if (dbUser is null)
-                return Result<UploadDto>.Failure("User not found");
+                return Result<UploadDto>.NotFound("User not found");
 
             // Fetch application and its reference
             var application = new GetApplicationByIdQueryObject(request.ApplicationId)
                 .Apply(applicationRepository.Query())
                 .FirstOrDefault();
             if (application == null)
-                return Result<UploadDto>.Failure("Application not found");
+                return Result<UploadDto>.NotFound("Application not found");
 
             // Permission check: user must have write permission for this application (File resource)
             if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Write))
-                return Result<UploadDto>.Failure("User does not have permission to upload files for this application");
+                return Result<UploadDto>.Forbid("User does not have permission to upload files for this application");
 
             // Generate hashed file name
             var hashedFileName = FileNameHasher.HashFileName(request.OriginalFileName);
@@ -87,7 +87,7 @@ public class UploadFileCommandHandler(
                 .Apply(uploadRepository.Query())
                 .FirstOrDefault();
             if (existingFile != null)
-                return Result<UploadDto>.Failure("The file already exist");
+                return Result<UploadDto>.Conflict("The file already exist");
 
             // Upload file to the storage
             await fileStorageService.UploadAsync(storagePath, request.FileContent, cancellationToken);

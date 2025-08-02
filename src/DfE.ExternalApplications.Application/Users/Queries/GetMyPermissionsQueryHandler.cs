@@ -27,7 +27,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         {
             var user = httpContextAccessor.HttpContext?.User;
             if (user is null || !user.Identity?.IsAuthenticated == true)
-                return Result<UserAuthorizationDto>.Failure("Not authenticated");
+                return Result<UserAuthorizationDto>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue(ClaimTypes.Email);
 
@@ -35,7 +35,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<UserAuthorizationDto>.Failure("No user identifier");
+                return Result<UserAuthorizationDto>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -52,14 +52,14 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             }
 
             if (dbUser is null)
-                return Result<UserAuthorizationDto>.Failure("User not found");
+                return Result<UserAuthorizationDto>.NotFound("User not found");
 
             var canAccess = permissionCheckerService.HasPermission(ResourceType.User, dbUser.Id!.Value.ToString(), AccessType.Read);
             var canAccessByEmail = permissionCheckerService.HasPermission(ResourceType.User, dbUser.Email, AccessType.Read);
             var canAccessByExtId = permissionCheckerService.HasPermission(ResourceType.User, dbUser?.ExternalProviderId ?? "", AccessType.Read);
 
             if (!canAccess && !canAccessByEmail && !canAccessByExtId)
-                return Result<UserAuthorizationDto>.Failure("User does not have permission to view permissions.");
+                return Result<UserAuthorizationDto>.Forbid("User does not have permission to view permissions.");
 
             return await mediator.Send(new GetAllUserPermissionsQuery(dbUser.Id), cancellationToken);
 

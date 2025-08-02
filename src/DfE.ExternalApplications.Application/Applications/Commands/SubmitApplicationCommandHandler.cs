@@ -33,7 +33,7 @@ public sealed class SubmitApplicationCommandHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<ApplicationDto>.Failure("Not authenticated");
+                return Result<ApplicationDto>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
@@ -41,7 +41,7 @@ public sealed class SubmitApplicationCommandHandler(
                 principalId = user.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<ApplicationDto>.Failure("No user identifier");
+                return Result<ApplicationDto>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -58,7 +58,7 @@ public sealed class SubmitApplicationCommandHandler(
             }
 
             if (dbUser is null)
-                return Result<ApplicationDto>.Failure("User not found");
+                return Result<ApplicationDto>.NotFound("User not found");
 
             // Check if user has permission to write to this specific application
             var canAccess = permissionCheckerService.HasPermission(
@@ -67,7 +67,7 @@ public sealed class SubmitApplicationCommandHandler(
                 AccessType.Write);
 
             if (!canAccess)
-                return Result<ApplicationDto>.Failure("User does not have permission to submit this application");
+                return Result<ApplicationDto>.Forbid("User does not have permission to submit this application");
 
             // Get the application using query object
             var applicationId = new ApplicationId(request.ApplicationId);
@@ -76,11 +76,11 @@ public sealed class SubmitApplicationCommandHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)
-                return Result<ApplicationDto>.Failure("Application not found");
+                return Result<ApplicationDto>.NotFound("Application not found");
 
             // Check if the current user is the creator of the application
             if (application.CreatedBy != dbUser.Id)
-                return Result<ApplicationDto>.Failure("Only the user who created the application can submit it");
+                return Result<ApplicationDto>.Forbid("Only the user who created the application can submit it");
 
             var now = DateTime.UtcNow;
             application.Submit(now, dbUser.Id!);

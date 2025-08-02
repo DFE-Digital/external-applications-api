@@ -1,15 +1,15 @@
 ﻿using Asp.Versioning;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.CoreLibs.Http.Models;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Application.Common.Exceptions;
-using FluentValidation.Results;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using DfE.CoreLibs.Http.Models;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Api.Controllers;
@@ -35,10 +35,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
     {
         var result = await sender.Send(new CreateApplicationCommand(request.TemplateId, request.InitialResponseBody), cancellationToken);
 
-        if (!result.IsSuccess)
-            return BadRequest(result.Error);
-
-        return Ok(result.Value);
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -61,10 +61,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var command = new AddApplicationResponseCommand(applicationId, request.ResponseBody);
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
-            return BadRequest(result.Error);
-
-        return StatusCode(201, result.Value);
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status201Created
+        };
     }
 
     /// <summary>
@@ -86,10 +86,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var query = new GetMyApplicationsQuery(includeSchema ?? false, templateId);
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
-            return BadRequest(result.Error);
-
-        return Ok(result.Value);
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -112,10 +112,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var query = new GetApplicationsForUserQuery(email, includeSchema ?? false, templateId);
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
-            return BadRequest(result.Error);
-
-        return Ok(result.Value);
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -136,18 +136,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var query = new GetApplicationByReferenceQuery(applicationReference);
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "User does not have permission to read this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -168,18 +160,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var command = new SubmitApplicationCommand(applicationId);
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "User does not have permission to submit this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -201,18 +185,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var query = new GetContributorsForApplicationQuery(applicationId, includePermissionDetails ?? false);
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "Only the application owner or admin can view contributors" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -234,19 +210,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var command = new AddContributorCommand(applicationId, request.Name, request.Email);
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "User does not have permission to manage contributors for this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                "Contributor already exists for this application" => BadRequest(result.Error),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -268,19 +235,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var command = new RemoveContributorCommand(applicationId, userId);
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "Contributor not found" => NotFound(result.Error),
-                "User does not have permission to manage contributors for this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok();
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -312,19 +270,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         );
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "User does not have permission to manage files for this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                "File already exists for this application" => BadRequest(result.Error),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return StatusCode(201, result.Value);
+            StatusCode = StatusCodes.Status201Created
+        };
     }
 
     /// <summary>
@@ -345,19 +294,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var query = new GetFilesForApplicationQuery(new ApplicationId(applicationId));
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "User does not have permission to manage files for this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                "File already exists for this application" => BadRequest(result.Error),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -379,19 +319,18 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var query = new DownloadFileQuery(fileId, new ApplicationId(applicationId));
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
+        if (result is { IsSuccess: false, Error: not null })
         {
-            return result.Error switch
+            throw result.ErrorCode switch
             {
-                "Application not found" => NotFound(result.Error),
-                "User does not have permission to manage files for this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                "File already exists for this application" => BadRequest(result.Error),
-                _ => BadRequest(result.Error)
+                DomainErrorCode.NotFound => new NotFoundException(result.Error),
+                DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
+                _ => new BadRequestException(result.Error)
             };
         }
 
-        return File(result.Value?.FileStream!, result.Value?.ContentType!, result.Value?.FileName);
+        var file = result.Value!;
+        return File(file.FileStream, file.ContentType, file.FileName);
     }
 
     /// <summary>
@@ -413,18 +352,9 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var command = new DeleteFileCommand(fileId, applicationId);
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Application not found" => NotFound(result.Error),
-                "User does not have permission to manage files for this application" => Forbid(),
-                "Not authenticated" => Unauthorized(),
-                "File already exists for this application" => BadRequest(result.Error),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 }

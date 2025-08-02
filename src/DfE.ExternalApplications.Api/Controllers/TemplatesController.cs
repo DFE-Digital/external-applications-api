@@ -33,17 +33,10 @@ public class TemplatesController(ISender sender) : ControllerBase
         var query = new GetLatestTemplateSchemaQuery(templateId);
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Template version not found" => BadRequest(result.Error),
-                "Access denied" => Forbid(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
@@ -66,16 +59,9 @@ public class TemplatesController(ISender sender) : ControllerBase
         var command = new CreateTemplateVersionCommand(templateId, request.VersionNumber, request.JsonSchema);
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Template not found" => BadRequest(result.Error),
-                "Access denied" => Forbid(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return StatusCode(201, result.Value);
+            StatusCode = StatusCodes.Status201Created
+        };
     }
 }

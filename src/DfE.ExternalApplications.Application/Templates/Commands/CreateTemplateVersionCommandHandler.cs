@@ -37,7 +37,7 @@ public sealed class CreateTemplateVersionCommandHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<TemplateSchemaDto>.Failure("Not authenticated");
+                return Result<TemplateSchemaDto>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
@@ -45,7 +45,7 @@ public sealed class CreateTemplateVersionCommandHandler(
                 principalId = user.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<TemplateSchemaDto>.Failure("No user identifier");
+                return Result<TemplateSchemaDto>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -62,7 +62,7 @@ public sealed class CreateTemplateVersionCommandHandler(
             }
 
             if (dbUser is null)
-                return Result<TemplateSchemaDto>.Failure("User not found");
+                return Result<TemplateSchemaDto>.NotFound("User not found");
 
             var base64EncodedBytes = System.Convert.FromBase64String(request.JsonSchema);
             var decodedJsonSchema = System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
@@ -73,17 +73,17 @@ public sealed class CreateTemplateVersionCommandHandler(
 
             if (template is null)
             {
-                return Result<TemplateSchemaDto>.Failure("Template not found");
+                return Result<TemplateSchemaDto>.NotFound("Template not found");
             }
 
             if (!permissionChecker.HasTemplatePermission(template.Id?.Value.ToString()!, AccessType.Write))
             {
-                return Result<TemplateSchemaDto>.Failure("Access denied");
+                return Result<TemplateSchemaDto>.Forbid("Access denied");
             }
 
             if (template.TemplateVersions?.Any(v => v.VersionNumber == request.VersionNumber) == true)
             {
-                return Result<TemplateSchemaDto>.Failure($"Version {request.VersionNumber} already exists");
+                return Result<TemplateSchemaDto>.Validation($"Version {request.VersionNumber} already exists");
             }
 
             var newVersion = templateFactory.AddVersionToTemplate(

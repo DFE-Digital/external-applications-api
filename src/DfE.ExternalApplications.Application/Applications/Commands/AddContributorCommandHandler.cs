@@ -41,7 +41,7 @@ public sealed class AddContributorCommandHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<UserDto>.Failure("Not authenticated");
+                return Result<UserDto>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
@@ -49,7 +49,7 @@ public sealed class AddContributorCommandHandler(
                 principalId = user.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<UserDto>.Failure("No user identifier");
+                return Result<UserDto>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -66,7 +66,7 @@ public sealed class AddContributorCommandHandler(
             }
 
             if (dbUser is null)
-                return Result<UserDto>.Failure("User not found");
+                return Result<UserDto>.NotFound("User not found");
 
             // Get the application to verify it exists
             var applicationId = new ApplicationId(request.ApplicationId);
@@ -75,14 +75,14 @@ public sealed class AddContributorCommandHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)
-                return Result<UserDto>.Failure("Application not found");
+                return Result<UserDto>.NotFound("Application not found");
 
             // Check if user is the application owner or admin
             var isOwner = permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString());
             var isAdmin = permissionCheckerService.IsAdmin();
 
             if (!isOwner && !isAdmin)
-                return Result<UserDto>.Failure("Only the application owner or admin can add contributors");
+                return Result<UserDto>.Forbid("Only the application owner or admin can add contributors");
 
             // Check if contributor already exists
             var existingContributor = await (new GetUserByEmailQueryObject(request.Email))

@@ -17,6 +17,7 @@ using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.Telem
 using DfE.CoreLibs.Http.Extensions;
 using DfE.ExternalApplications.Api.ExceptionHandlers;
 using System.Text.Json;
+using DfE.ExternalApplications.Api.Filters;
 
 namespace DfE.ExternalApplications.Api
 {
@@ -36,7 +37,10 @@ namespace DfE.ExternalApplications.Api
                     .WriteTo.Console();
             });
 
-            builder.Services.AddControllers()
+            builder.Services.AddControllers(opts =>
+                {
+                    opts.Filters.Add<ResultToExceptionFilter>();
+                })
                 .AddJsonOptions(c =>
                 {
                     c.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -75,7 +79,8 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
-
+            builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
+            
             builder.Services.AddApplicationDependencyGroup(builder.Configuration);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
             builder.Services.AddCustomAuthorization(builder.Configuration);

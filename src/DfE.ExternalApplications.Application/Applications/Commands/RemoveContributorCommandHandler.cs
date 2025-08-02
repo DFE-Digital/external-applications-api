@@ -36,7 +36,7 @@ public sealed class RemoveContributorCommandHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<bool>.Failure("Not authenticated");
+                return Result<bool>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
@@ -44,7 +44,7 @@ public sealed class RemoveContributorCommandHandler(
                 principalId = user.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<bool>.Failure("No user identifier");
+                return Result<bool>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -61,7 +61,7 @@ public sealed class RemoveContributorCommandHandler(
             }
 
             if (dbUser is null)
-                return Result<bool>.Failure("User not found");
+                return Result<bool>.NotFound("User not found");
 
             // Get the application to verify it exists
             var applicationId = new ApplicationId(request.ApplicationId);
@@ -70,14 +70,14 @@ public sealed class RemoveContributorCommandHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)
-                return Result<bool>.Failure("Application not found");
+                return Result<bool>.NotFound("Application not found");
 
             // Check if user is the application owner or admin
             var isOwner = permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString());
             var isAdmin = permissionCheckerService.IsAdmin();
 
             if (!isOwner && !isAdmin)
-                return Result<bool>.Failure("Only the application owner or admin can remove contributors");
+                return Result<bool>.Forbid("Only the application owner or admin can remove contributors");
 
             // Get the contributor to remove
             var contributorId = new UserId(request.UserId);
@@ -86,7 +86,7 @@ public sealed class RemoveContributorCommandHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (contributor is null)
-                return Result<bool>.Failure("Contributor not found");
+                return Result<bool>.NotFound("Contributor not found");
 
             // Check if contributor has permission for this application
             var permissions = contributor.Permissions
@@ -94,7 +94,7 @@ public sealed class RemoveContributorCommandHandler(
                 .ToList();
 
             if (!permissions.Any())
-                return Result<bool>.Failure("Contributor does not have permission for this application");
+                return Result<bool>.Forbid("Contributor does not have permission for this application");
 
             // Remove all permissions for this application
             var allRemoved = true;

@@ -28,13 +28,13 @@ public class GetFilesForApplicationQueryHandler(
     {
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-            return Result<IReadOnlyCollection<UploadDto>>.Failure("Not authenticated");
+            return Result<IReadOnlyCollection<UploadDto>>.Forbid("Not authenticated");
 
         var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
         if (string.IsNullOrEmpty(principalId))
             principalId = user.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrEmpty(principalId))
-            return Result<IReadOnlyCollection<UploadDto>>.Failure("No user identifier");
+            return Result<IReadOnlyCollection<UploadDto>>.Forbid("No user identifier");
 
         User? dbUser;
         if (principalId.Contains('@'))
@@ -50,18 +50,18 @@ public class GetFilesForApplicationQueryHandler(
                 .FirstOrDefaultAsync(cancellationToken);
         }
         if (dbUser is null)
-            return Result<IReadOnlyCollection<UploadDto>>.Failure("User not found");
+            return Result<IReadOnlyCollection<UploadDto>>.NotFound("User not found");
 
         // Fetch application and its reference
         var application = new GetApplicationByIdQueryObject(request.ApplicationId)
             .Apply(applicationRepository.Query())
             .FirstOrDefault();
         if (application == null)
-            return Result<IReadOnlyCollection<UploadDto>>.Failure("Application not found");
+            return Result<IReadOnlyCollection<UploadDto>>.NotFound("Application not found");
 
         // Permission check: user must have read permission for this application (File resource)
         if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read))
-            return Result<IReadOnlyCollection<UploadDto>>.Failure("User does not have permission to list files for this application");
+            return Result<IReadOnlyCollection<UploadDto>>.Forbid("User does not have permission to list files for this application");
 
         var uploads = (await new GetFilesByApplicationIdQueryObject(request.ApplicationId)
             .Apply(uploadRepository.Query())
