@@ -1,4 +1,5 @@
-﻿using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+﻿using DfE.CoreLibs.Http.Models;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -6,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
@@ -86,10 +89,22 @@ public class TokenExchangeHandler(
 
     private static HttpResponseMessage UnauthorizedResponse(HttpRequestMessage request)
     {
+        var payload = new ExceptionResponse
+        {
+            ErrorId = "TE-401",
+            StatusCode = (int)HttpStatusCode.Unauthorized,
+            Message = "Token exchange failed – user needs to re-authenticate",
+            ExceptionType = "TokenExchangeException",
+            Timestamp = DateTime.UtcNow
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+
         return new HttpResponseMessage(HttpStatusCode.Unauthorized)
         {
             RequestMessage = request,
-            ReasonPhrase = "Token exchange failed - user needs to re-authenticate"
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+            ReasonPhrase = "Token exchange failed"
         };
     }
 }
