@@ -1360,11 +1360,11 @@ public class ApplicationsControllerTests
         string description)
     {
         // Arrange
-        factory.TestClaims = new List<Claim>
-        {
+        factory.TestClaims =
+        [
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
             new("permission", $"ApplicationFiles:{EaContextSeeder.ApplicationId}:Write")
-        };
+        ];
         var fileName = "large-file.jpg";
 
         httpClient.DefaultRequestHeaders.Authorization =
