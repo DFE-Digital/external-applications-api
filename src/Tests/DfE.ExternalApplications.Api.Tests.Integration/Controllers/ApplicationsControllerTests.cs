@@ -1068,7 +1068,7 @@ public class ApplicationsControllerTests
             new AuthenticationHeaderValue("Bearer", "user-token");
 
         // Act - No file parameter
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
