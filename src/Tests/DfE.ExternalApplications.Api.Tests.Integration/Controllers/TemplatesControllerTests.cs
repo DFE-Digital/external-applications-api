@@ -196,7 +196,7 @@ public class TemplatesControllerTests
         var request = new CreateTemplateVersionRequest("1.0.0", base64JsonSchema);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => templatesClient.CreateTemplateVersionAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
         Assert.Equal(400, ex.StatusCode);
     }

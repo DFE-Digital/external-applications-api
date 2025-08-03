@@ -259,7 +259,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         if (dto.File == null || dto.File.Length == 0)
-            return BadRequest("No file provided.");
+            throw new BadRequestException("File not provided");
 
         var command = new UploadFileCommand(
             new ApplicationId(applicationId),

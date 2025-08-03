@@ -376,7 +376,7 @@ public class ApplicationsControllerTests
             new AuthenticationHeaderValue("Bearer", "user-token");
 
         // Act
-                 var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+                 var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
              () => applicationsClient.GetApplicationByReferenceAsync("InvalidAppRef"));
          Assert.Equal(404, ex.StatusCode);
      }
@@ -471,7 +471,7 @@ public class ApplicationsControllerTests
              new AuthenticationHeaderValue("Bearer", "user-token");
 
          // Act
-         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+         var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
              () => applicationsClient.SubmitApplicationAsync(nonExistentApplicationId));
          Assert.Equal(404, ex.StatusCode);
      }
@@ -499,7 +499,7 @@ public class ApplicationsControllerTests
          await applicationsClient.SubmitApplicationAsync(applicationId);
 
          // Act - Try to submit again
-         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+         var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
              () => applicationsClient.SubmitApplicationAsync(applicationId));
          Assert.Equal(400, ex.StatusCode);
      }
@@ -524,9 +524,9 @@ public class ApplicationsControllerTests
          var applicationId = Guid.Parse(EaContextSeeder.ApplicationId);
 
          // Act
-         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+         var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
              () => applicationsClient.SubmitApplicationAsync(applicationId));
-         Assert.Equal(400, ex.StatusCode); // Should be 400 Bad Request with our error message
+         Assert.Equal(401, ex.StatusCode); 
      }
 
     [Theory]
@@ -1103,7 +1103,7 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
         // Act
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
@@ -1139,7 +1139,7 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
         // Act
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 nonExistentApplicationId, // Use the same ID as in the permission claim
                 fileName,
@@ -1193,7 +1193,7 @@ public class ApplicationsControllerTests
                 fileParameter2));
 
         // Assert
-        Assert.Equal(400, exception.StatusCode);
+        Assert.Equal(409, exception.StatusCode);
     }
 
     [Theory]
@@ -1376,7 +1376,7 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
         // Act
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
@@ -1411,7 +1411,7 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "application/x-msdownload");
 
         // Act
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,

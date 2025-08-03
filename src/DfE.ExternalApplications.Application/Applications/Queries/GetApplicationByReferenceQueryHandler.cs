@@ -34,7 +34,7 @@ public sealed class GetApplicationByReferenceQueryHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)
-                return Result<ApplicationDto>.Forbid("Application not found");
+                return Result<ApplicationDto>.NotFound("Application not found");
 
             var canAccess = permissionCheckerService.HasPermission(
                 ResourceType.Application, 
