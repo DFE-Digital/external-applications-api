@@ -28,7 +28,7 @@ public sealed class GetLatestTemplateSchemaByUserIdQueryHandler(
 
             if (latest is null)
             {
-                return Result<TemplateSchemaDto>.Failure("Template version not found");
+                return Result<TemplateSchemaDto>.NotFound("Template version not found");
             }
 
             var dto = new TemplateSchemaDto

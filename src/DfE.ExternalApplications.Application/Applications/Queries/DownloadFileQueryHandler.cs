@@ -35,13 +35,13 @@ public class DownloadFileQueryHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<DownloadFileResult>.Failure("Not authenticated");
+                return Result<DownloadFileResult>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
             if (string.IsNullOrEmpty(principalId))
                 principalId = user.FindFirstValue(ClaimTypes.Email);
             if (string.IsNullOrEmpty(principalId))
-                return Result<DownloadFileResult>.Failure("No user identifier");
+                return Result<DownloadFileResult>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -57,23 +57,23 @@ public class DownloadFileQueryHandler(
                     .FirstOrDefaultAsync(cancellationToken);
             }
             if (dbUser is null)
-                return Result<DownloadFileResult>.Failure("User not found");
+                return Result<DownloadFileResult>.NotFound("User not found");
 
             var application = new GetApplicationByIdQueryObject(request.ApplicationId)
                 .Apply(applicationRepository.Query())
                 .FirstOrDefault();
             if (application == null)
-                return Result<DownloadFileResult>.Failure("Application not found");
+                return Result<DownloadFileResult>.NotFound("Application not found");
 
             // Permission check: user must have read permission for this file
             if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Read))
-                return Result<DownloadFileResult>.Failure("User does not have permission to download this file");
+                return Result<DownloadFileResult>.Forbid("User does not have permission to download this file");
 
             var upload = new GetFileByIdQueryObject(new FileId(request.FileId))
                 .Apply(uploadRepository.Query())
                 .FirstOrDefault();
             if (upload == null)
-                return Result<DownloadFileResult>.Failure("File not found");
+                return Result<DownloadFileResult>.NotFound("File not found");
 
             var storagePath = $"{upload.Path}/{upload.FileName}";
             var fileStream = await fileStorageService.DownloadAsync(storagePath, cancellationToken);

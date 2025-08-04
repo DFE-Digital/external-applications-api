@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using DfE.CoreLibs.Http.Models;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -20,8 +21,11 @@ public class TemplatesController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet("{templateId}/schema")]
     [SwaggerResponse(200, "The latest template schema.", typeof(TemplateSchemaDto))]
-    [SwaggerResponse(400, "Request was invalid or template not found.")]
-    [SwaggerResponse(403, "Access denied.")]
+    [SwaggerResponse(400, "Request was invalid or template not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Access denied.", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Template not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadTemplate")]
     public async Task<IActionResult> GetLatestTemplateSchemaAsync(
         [FromRoute] Guid templateId, CancellationToken cancellationToken)
@@ -29,50 +33,35 @@ public class TemplatesController(ISender sender) : ControllerBase
         var query = new GetLatestTemplateSchemaQuery(templateId);
         var result = await sender.Send(query, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Template version not found" => BadRequest(result.Error),
-                "Access denied" => Forbid(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return Ok(result.Value);
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
     /// Creates a new schema version for the specified template.
     /// </summary>
-    [HttpPost("{templateId}/schema")]
-    [SwaggerResponse(201, "The template version was created successfully.", typeof(TemplateSchemaDto))]
-    [SwaggerResponse(400, "Request was invalid or template not found.")]
-    [SwaggerResponse(403, "Access denied.")]
+    [HttpPost("{templateId}/versions")]
+    [SwaggerResponse(201, "Template version created successfully.", typeof(TemplateSchemaDto))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Access denied.", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Template not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteTemplate")]
-    [Authorize(Policy = "IsAdmin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateTemplateVersionAsync(
         [FromRoute] Guid templateId,
         [FromBody] CreateTemplateVersionRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new CreateTemplateVersionCommand(
-            templateId,
-            request.VersionNumber,
-            request.JsonSchema);
-
+        var command = new CreateTemplateVersionCommand(templateId, request.VersionNumber, request.JsonSchema);
         var result = await sender.Send(command, cancellationToken);
 
-        if (!result.IsSuccess)
+        return new ObjectResult(result)
         {
-            return result.Error switch
-            {
-                "Template not found" => NotFound(result.Error),
-                "Access denied" => Forbid(),
-                _ => BadRequest(result.Error)
-            };
-        }
-
-        return StatusCode(201, result.Value);
+            StatusCode = StatusCodes.Status201Created
+        };
     }
 }

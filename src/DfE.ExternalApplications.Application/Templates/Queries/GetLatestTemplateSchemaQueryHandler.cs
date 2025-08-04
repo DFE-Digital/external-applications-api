@@ -40,7 +40,7 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
                 principalId = user.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<TemplateSchemaDto>.Failure("No user identifier");
+                return Result<TemplateSchemaDto>.Forbid("No user identifier");
 
             var cacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateId.ToString())}_{principalId}";
             var methodName = nameof(GetLatestTemplateSchemaQueryHandler);
@@ -66,7 +66,7 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
                     var canAccess = permissionCheckerService.HasPermission(ResourceType.Template, request.TemplateId.ToString(), AccessType.Read);
 
                     if (!canAccess)
-                        return Result<TemplateSchemaDto>.Failure("User does not have permission to read this template");
+                        return Result<TemplateSchemaDto>.Forbid("User does not have permission to read this template");
 
                     return await mediator.Send(
                         new GetLatestTemplateSchemaByUserIdQuery(request.TemplateId, dbUser.Id!),

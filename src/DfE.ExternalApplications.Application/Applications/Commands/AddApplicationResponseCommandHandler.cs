@@ -35,7 +35,7 @@ public sealed class AddApplicationResponseCommandHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<ApplicationResponseDto>.Failure("Not authenticated");
+                return Result<ApplicationResponseDto>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
@@ -43,7 +43,7 @@ public sealed class AddApplicationResponseCommandHandler(
                 principalId = user.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<ApplicationResponseDto>.Failure("No user identifier");
+                return Result<ApplicationResponseDto>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -60,13 +60,13 @@ public sealed class AddApplicationResponseCommandHandler(
             }
 
             if (dbUser is null)
-                return Result<ApplicationResponseDto>.Failure("User not found");
+                return Result<ApplicationResponseDto>.NotFound("User not found");
 
             // Check if user has permission to write to this specific application
             var canAccess = permissionCheckerService.HasPermission(ResourceType.Application, request.ApplicationId.ToString(), AccessType.Write);
 
             if (!canAccess)
-                return Result<ApplicationResponseDto>.Failure("User does not have permission to update this application");
+                return Result<ApplicationResponseDto>.Forbid("User does not have permission to update this application");
 
             // Get the application using query object
             var applicationId = new ApplicationId(request.ApplicationId);
@@ -75,7 +75,7 @@ public sealed class AddApplicationResponseCommandHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)
-                return Result<ApplicationResponseDto>.Failure("Application not found");
+                return Result<ApplicationResponseDto>.NotFound("Application not found");
 
             var decodedResponseBody = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(request.ResponseBody));
 

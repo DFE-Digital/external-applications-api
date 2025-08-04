@@ -27,14 +27,14 @@ public sealed class GetApplicationByReferenceQueryHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<ApplicationDto>.Failure("Not authenticated");
+                return Result<ApplicationDto>.Forbid("Not authenticated");
 
             var application = await (new GetApplicationByReferenceQueryObject(request.ApplicationReference))
                 .Apply(applicationRepo.Query().AsNoTracking())
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)
-                return Result<ApplicationDto>.Failure("Application not found");
+                return Result<ApplicationDto>.NotFound("Application not found");
 
             var canAccess = permissionCheckerService.HasPermission(
                 ResourceType.Application, 
@@ -42,7 +42,7 @@ public sealed class GetApplicationByReferenceQueryHandler(
                 AccessType.Read);
 
             if (!canAccess)
-                return Result<ApplicationDto>.Failure("User does not have permission to read this application");
+                return Result<ApplicationDto>.Forbid("User does not have permission to read this application");
 
             // Get the latest response
             var latestResponse = application.GetLatestResponse();

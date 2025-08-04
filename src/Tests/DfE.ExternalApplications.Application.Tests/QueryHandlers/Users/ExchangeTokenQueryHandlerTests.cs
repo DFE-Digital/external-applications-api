@@ -12,6 +12,7 @@ using MockQueryable.NSubstitute;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using System.Security.Claims;
+using DfE.CoreLibs.Security.Models;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MockQueryable;
 using Microsoft.AspNetCore.Authentication;
@@ -63,6 +64,16 @@ public class ExchangeTokenQueryHandlerTests
         httpContext.RequestServices.Returns(serviceProvider);
         httpContextAccessor.HttpContext.Returns(httpContext);
 
+        var expectedInternalToken = new Token
+        {
+            AccessToken = "internal-token",
+            TokenType = "Bearer",
+            ExpiresIn = 3600
+        };
+        tokenService
+            .GetUserTokenModelAsync(Arg.Any<ClaimsPrincipal>())
+            .Returns(Task.FromResult(expectedInternalToken));
+
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
@@ -75,7 +86,7 @@ public class ExchangeTokenQueryHandlerTests
         // Assert
         Assert.NotNull(result);
         await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, Arg.Any<CancellationToken>());
-        await tokenService.Received(1).GetUserTokenAsync(Arg.Is<ClaimsPrincipal>(p => p.HasClaim(ClaimTypes.Role, user.Role.Name)));
+        await tokenService.Received(1).GetUserTokenModelAsync(Arg.Is<ClaimsPrincipal>(p => p.HasClaim(ClaimTypes.Role, user.Role.Name)));
     }
 
     [Theory]

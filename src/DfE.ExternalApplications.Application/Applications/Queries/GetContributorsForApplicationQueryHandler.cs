@@ -30,7 +30,7 @@ public sealed class GetContributorsForApplicationQueryHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<IReadOnlyCollection<UserDto>>.Failure("Not authenticated");
+                return Result<IReadOnlyCollection<UserDto>>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
@@ -38,7 +38,7 @@ public sealed class GetContributorsForApplicationQueryHandler(
                 principalId = user.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<IReadOnlyCollection<UserDto>>.Failure("No user identifier");
+                return Result<IReadOnlyCollection<UserDto>>.Forbid("No user identifier");
 
             User? dbUser;
             if (principalId.Contains('@'))
@@ -55,7 +55,7 @@ public sealed class GetContributorsForApplicationQueryHandler(
             }
 
             if (dbUser is null)
-                return Result<IReadOnlyCollection<UserDto>>.Failure("User not found");
+                return Result<IReadOnlyCollection<UserDto>>.NotFound("User not found");
 
             // Get the application to verify it exists
             var applicationId = new ApplicationId(request.ApplicationId);
@@ -64,14 +64,14 @@ public sealed class GetContributorsForApplicationQueryHandler(
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)
-                return Result<IReadOnlyCollection<UserDto>>.Failure("Application not found");
+                return Result<IReadOnlyCollection<UserDto>>.NotFound("Application not found");
 
             // Check if user is the application owner or admin
             var isOwner = permissionCheckerService.IsApplicationOwner(application, dbUser.Id!.Value.ToString());
             var isAdmin = permissionCheckerService.IsAdmin();
 
             if (!isOwner && !isAdmin)
-                return Result<IReadOnlyCollection<UserDto>>.Failure("Only the application owner or admin can view contributors");
+                return Result<IReadOnlyCollection<UserDto>>.Forbid("Only the application owner or admin can view contributors");
 
             // Get all contributors
             var contributors = await (new GetContributorsForApplicationQueryObject(applicationId))

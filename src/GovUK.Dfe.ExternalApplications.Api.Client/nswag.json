@@ -61,13 +61,14 @@
       "configurationClass": null,
       "generateClientClasses": true,
       "generateClientInterfaces": true,
+      "jsonLibrary": "SystemTextJson",
       "clientBaseInterface": null,
       "injectHttpClient": true,
       "disposeHttpClient": false,
       "protectedMethods": [],
       "generateExceptionClasses": true,
       "exceptionClass": "ExternalApplicationsException",
-      "wrapDtoExceptions": true,
+      "wrapDtoExceptions": false,
       "useHttpClientCreationMethod": false,
       "httpClientType": "System.Net.Http.HttpClient",
       "useHttpRequestMessageCreationMethod": false,
@@ -94,7 +95,10 @@
         "System.Threading.Tasks",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums",
+        "DfE.CoreLibs.Http.Models",
+        "System.Text.Json",
+        "System.Text.Json.Serialization"
       ],
       "generateOptionalParameters": true,
       "generateJsonMethods": true,
@@ -111,7 +115,9 @@
       "namespace": "GovUK.Dfe.ExternalApplications.Api.Client",
       "requiredPropertiesMustBeDefined": true,
       "dateType": "System.DateTime",
-      "jsonConverters": null,
+             "jsonConverters": [
+         "System.Text.Json.Serialization.JsonStringEnumConverter"
+       ],
       "anyType": "object",
       "dateTimeType": "System.DateTime",
       "timeType": "System.TimeSpan",
@@ -130,7 +136,9 @@
       "handleReferences": false,
       "generateImmutableArrayProperties": false,
       "generateImmutableDictionaryProperties": false,
-      "jsonSerializerSettingsTransformationMethod": null,
+             "jsonSerializerSettingsTransformationMethod": null,
+             "jsonSerializerSettingsType": "System.Text.Json.JsonSerializerOptions",
+      "serializerSettingsType": "System.Text.Json.JsonSerializerOptions",
       "inlineNamedArrays": false,
       "inlineNamedDictionaries": false,
       "inlineNamedTuples": true,
@@ -138,7 +146,8 @@
       "additionalContractNamespaceUsages": [
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
         "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Enums"
+        "DfE.CoreLibs.Contracts.ExternalApplications.Enums",
+        "DfE.CoreLibs.Http.Models"
       ],
       "generateDtoTypes": false,
       "useSharedDTOs": true,

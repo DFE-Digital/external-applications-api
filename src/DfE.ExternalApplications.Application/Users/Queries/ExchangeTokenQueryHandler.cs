@@ -88,8 +88,17 @@ namespace DfE.ExternalApplications.Application.Users.Queries
 
             var mergedUser = new ClaimsPrincipal(identity);
 
-            var internalToken = await tokenSvc.GetUserTokenAsync(mergedUser);
-            return new ExchangeTokenDto(internalToken);
+            var internalToken = await tokenSvc.GetUserTokenModelAsync(mergedUser);
+            return new ExchangeTokenDto
+            {
+                AccessToken = internalToken.AccessToken,
+                TokenType = "Bearer",
+                ExpiresIn = internalToken.ExpiresIn,
+                RefreshToken = internalToken.RefreshToken,
+                Scope = internalToken.Scope,
+                IdToken = internalToken.IdToken,
+                RefreshExpiresIn = internalToken.RefreshExpiresIn
+            };
         }
     }
 }

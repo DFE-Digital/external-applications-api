@@ -6,6 +6,8 @@ using DfE.ExternalApplications.Tests.Common.Customizations;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using DfE.CoreLibs.Http.Models;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,7 +43,7 @@ public class TokensControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "azure-token");
 
-        var result = await tokensClient.ExchangeAsync(new ExchangeTokenDto(externalToken));
+        var result = await tokensClient.ExchangeAsync(new ExchangeTokenRequest(externalToken));
 
         Assert.NotNull(result);
         Assert.False(string.IsNullOrWhiteSpace(result!.AccessToken));
@@ -90,7 +92,7 @@ public class TokensControllerTests
         var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
 
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-            () => tokensClient.ExchangeAsync(new ExchangeTokenDto(externalToken)));
+            () => tokensClient.ExchangeAsync(new ExchangeTokenRequest(externalToken)));
 
         Assert.Equal(403, ex.StatusCode);
     }
@@ -114,7 +116,7 @@ public class TokensControllerTests
         var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
 
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-            () => tokensClient.ExchangeAsync(new ExchangeTokenDto(externalToken)));
+            () => tokensClient.ExchangeAsync(new ExchangeTokenRequest(externalToken)));
 
         Assert.Equal(403, ex.StatusCode);
     }
@@ -139,8 +141,8 @@ public class TokensControllerTests
 
         var invalidToken = CreateTokenWithoutEmail();
 
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
-            () => tokensClient.ExchangeAsync(new ExchangeTokenDto(invalidToken)));
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+            () => tokensClient.ExchangeAsync(new ExchangeTokenRequest(invalidToken)));
 
         Assert.Equal(500, ex.StatusCode);
     }

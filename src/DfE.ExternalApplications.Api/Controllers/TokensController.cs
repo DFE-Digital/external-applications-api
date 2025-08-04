@@ -1,11 +1,13 @@
 ﻿using Asp.Versioning;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
+using Swashbuckle.AspNetCore.Annotations;
+using DfE.CoreLibs.Http.Models;
 
 namespace DfE.ExternalApplications.Api.Controllers
 {
@@ -18,21 +20,18 @@ namespace DfE.ExternalApplications.Api.Controllers
         /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
         /// </summary>
         [HttpPost("exchange")]
+        [SwaggerResponse(200, "Token exchanged successfully.", typeof(ExchangeTokenDto))]
+        [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+        [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+        [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
         [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanReadWrite")]
         public async Task<ActionResult<ExchangeTokenDto>> Exchange(
-            [FromBody] ExchangeTokenDto request,
+            [FromBody] ExchangeTokenRequest request,
             CancellationToken ct)
         {
-            try
-            {
-                var result = await sender.Send(
-                    new ExchangeTokenQuery(request.AccessToken), ct);
-                return Ok(result);
-            }
-            catch (SecurityTokenException ex)
-            {
-                return StatusCode(500, new { Message = ex.Message });
-            }
+            var result = await sender.Send(
+                new ExchangeTokenQuery(request.AccessToken), ct);
+            return Ok(result);
         }
     }
 }

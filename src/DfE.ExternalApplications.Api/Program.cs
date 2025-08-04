@@ -14,6 +14,10 @@ using System.Text;
 using System.Text.Json.Serialization;
 using DfE.ExternalApplications.Api.Security;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
+using DfE.CoreLibs.Http.Extensions;
+using DfE.ExternalApplications.Api.ExceptionHandlers;
+using System.Text.Json;
+using DfE.ExternalApplications.Api.Filters;
 
 namespace DfE.ExternalApplications.Api
 {
@@ -33,8 +37,21 @@ namespace DfE.ExternalApplications.Api
                     .WriteTo.Console();
             });
 
-            builder.Services.AddControllers()
-                .AddJsonOptions(c => { c.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
+            builder.Services.AddControllers(opts =>
+                {
+                    opts.Filters.Add<ResultToExceptionFilter>();
+                })
+                .AddJsonOptions(c =>
+                {
+                    c.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    c.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    c.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                })
+                .ConfigureApiBehaviorOptions(options =>
+                {
+                    // Disable automatic model validation to let MediatR ValidationBehaviour handle it
+                    options.SuppressModelStateInvalidFilter = true;
+                });
 
             builder.Services.AddApiVersioning(config =>
             {
@@ -61,6 +78,9 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
+            builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
+            builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
+            
             builder.Services.AddApplicationDependencyGroup(builder.Configuration);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
             builder.Services.AddCustomAuthorization(builder.Configuration);
@@ -98,6 +118,7 @@ namespace DfE.ExternalApplications.Api
             });
 
             builder.Services.AddOpenApiDocument(configure => { configure.Title = "Api"; });
+
 
             var app = builder.Build();
 
@@ -162,7 +183,14 @@ namespace DfE.ExternalApplications.Api
             });
 
             app.UseMiddleware<CorrelationIdMiddleware>();
-            app.UseMiddleware<ExceptionHandlerMiddleware>();
+            app.UseGlobalExceptionHandler(options =>
+            {
+                options.IncludeDetails = builder.Environment.IsDevelopment();
+                options.LogExceptions = true;
+                options.DefaultErrorMessage = "Something went wrong";
+            });
+
+
             app.UseMiddleware<UrlDecoderMiddleware>();
 
             app.UseRouting();
