@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using DfE.CoreLibs.Utilities.Helpers;
 
 namespace DfE.ExternalApplications.Application.Users.Queries
 {
@@ -77,14 +78,9 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 .FirstOrDefaultAsync(ct);
             var templatePerms = templateWithPerms?.TemplatePermissions;
 
-            foreach (var p in userPerms ?? [])
-                identity.AddClaim(new Claim(
-                    "permission",
-                    $"{p.ResourceType}:{p.ResourceKey}:{p.AccessType}"));
-            foreach (var tp in templatePerms ?? [])
-                identity.AddClaim(new Claim(
-                    "permission",
-                    $"Template:{tp.TemplateId.Value}:{tp.AccessType.ToString()}"));
+            var permHash = GetHashedClaims(userPerms, templatePerms, identity);
+
+            identity.AddClaim(new Claim("perm_hash", permHash));
 
             var mergedUser = new ClaimsPrincipal(identity);
 
@@ -99,6 +95,18 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 IdToken = internalToken.IdToken,
                 RefreshExpiresIn = internalToken.RefreshExpiresIn
             };
+        }
+        private string GetHashedClaims(IReadOnlyCollection<Permission>? permissions, IReadOnlyCollection<TemplatePermission>? templatePermissions, ClaimsIdentity identity)
+        {
+            var permissionsString =
+                (permissions ?? []).Select(p => $"permission:{p.ResourceType}:{p.ResourceKey}:{p.AccessType}");
+
+            var templatePermissionsString =
+                (templatePermissions ?? []).Select(tp => $"Template:{tp.TemplateId.Value}:{tp.AccessType.ToString()}");
+
+            var merged = permissionsString.Concat(templatePermissionsString);
+
+            return HashStringHelper.GenerateHashedString(merged);
         }
     }
 }

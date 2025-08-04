@@ -151,6 +151,7 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, ApplicationFilesPermissionHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
+            services.AddTransient<ICustomClaimProvider, UserPermissionClaimProvider>();
 
             return services;
         }
