@@ -1,6 +1,7 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
+using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -11,13 +12,15 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using DfE.ExternalApplications.Application.Common.Behaviours;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
+[RateLimit(5, 30)]
 public sealed record AddApplicationResponseCommand(
     Guid ApplicationId,
-    string ResponseBody) : IRequest<Result<ApplicationResponseDto>>;
+    string ResponseBody) : IRequest<Result<ApplicationResponseDto>>, IRateLimitedRequest;
 
 public sealed class AddApplicationResponseCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,

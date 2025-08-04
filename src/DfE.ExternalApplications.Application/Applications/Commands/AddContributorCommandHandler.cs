@@ -16,13 +16,16 @@ using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Domain.Factories;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using DfE.ExternalApplications.Application.Common.Attributes;
+using DfE.ExternalApplications.Application.Common.Behaviours;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
+[RateLimit(2, 30)]
 public sealed record AddContributorCommand(
     Guid ApplicationId,
     string Name,
-    string Email) : IRequest<Result<UserDto>>;
+    string Email) : IRequest<Result<UserDto>>, IRateLimitedRequest;
 
 public sealed class AddContributorCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,
