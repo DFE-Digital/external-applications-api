@@ -49,6 +49,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Access denied.", typeof(ExceptionResponse))]
     [SwaggerResponse(404, "Template not found.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteTemplate")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateTemplateVersionAsync(

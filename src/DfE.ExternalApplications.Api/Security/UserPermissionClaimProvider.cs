@@ -1,5 +1,6 @@
-﻿using DfE.CoreLibs.Security.Interfaces;
-using DfE.CoreLibs.Utilities.Helpers;
+﻿using DfE.CoreLibs.Caching.Helpers;
+using DfE.CoreLibs.Caching.Interfaces;
+using DfE.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -11,9 +12,10 @@ using System.Security.Claims;
 namespace DfE.ExternalApplications.Api.Security
 {
     public class UserPermissionClaimProvider(
-        ISender sender, 
+        ISender sender,
         ILogger<UserPermissionClaimProvider> logger,
-        IEaRepository<User> userRepo
+        IEaRepository<User> userRepo,
+        ICacheService<IMemoryCacheType> cacheService
         ) : ICustomClaimProvider
     {
         public async Task<IEnumerable<Claim>> GetClaimsAsync(ClaimsPrincipal principal)
@@ -24,10 +26,7 @@ namespace DfE.ExternalApplications.Api.Security
             {
                 return Array.Empty<Claim>();
             }
-
             var userEmail = principal.FindFirstValue(ClaimTypes.Email);
-
-            var permHash = principal.FindFirstValue("perm_hash");
 
             if (string.IsNullOrEmpty(userEmail))
             {
@@ -35,51 +34,40 @@ namespace DfE.ExternalApplications.Api.Security
                 return Array.Empty<Claim>();
             }
 
-            var dbUser = await (new GetUserByEmailQueryObject(userEmail))
-                .Apply(userRepo.Query().AsNoTracking())
-                .FirstOrDefaultAsync();
+            var cacheKey = $"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(userEmail)}";
+            var methodName = nameof(UserPermissionClaimProvider);
 
-            if (dbUser is null)
-                return Array.Empty<Claim>();
+            return await cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+                cacheKey,
+                async () =>
+                {
+                    var dbUser = await (new GetUserByEmailQueryObject(userEmail))
+                        .Apply(userRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync();
 
-            if (dbUser.Role is null)
-                return Array.Empty<Claim>();
+                    if (dbUser is null)
+                        return Array.Empty<Claim>();
 
-            var userWithPerms = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
-                .Apply(userRepo.Query().AsNoTracking())
-                .FirstOrDefaultAsync();
-            var userPerms = userWithPerms?.Permissions;
+                    if (dbUser.Role is null)
+                        return Array.Empty<Claim>();
 
-            var templateWithPerms = await new GetUserWithAllTemplatePermissionsQueryObject(userEmail)
-                .Apply(userRepo.Query().AsNoTracking())
-                .FirstOrDefaultAsync();
-            var templatePerms = templateWithPerms?.TemplatePermissions;
+                    var userWithPerms = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
+                        .Apply(userRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync();
+                    var userPerms = userWithPerms?.Permissions;
 
-            var permHashString = GetHashedClaims(userPerms, templatePerms);
+                    var templateWithPerms = await new GetUserWithAllTemplatePermissionsQueryObject(userEmail)
+                        .Apply(userRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync();
+                    var templatePerms = templateWithPerms?.TemplatePermissions;
 
-            if (permHash != null && !permHash.Equals(permHashString))
-            {
-                logger.LogWarning($"UserPermissionsClaimProvider() > Permissions hash strings don't match for the user: {userEmail}");
-                return Array.Empty<Claim>();
-            }
+                    var claims = (from p in userPerms ?? [] select new Claim("permission", $"{p.ResourceType}:{p.ResourceKey}:{p.AccessType}")).ToList();
+                    claims.AddRange(from tp in templatePerms ?? [] select new Claim("permission", $"Template:{tp.TemplateId.Value}:{tp.AccessType.ToString()}"));
 
-            var claims = (from p in userPerms ?? [] select new Claim("permission", $"{p.ResourceType}:{p.ResourceKey}:{p.AccessType}")).ToList();
-            claims.AddRange(from tp in templatePerms ?? [] select new Claim("permission", $"Template:{tp.TemplateId.Value}:{tp.AccessType.ToString()}"));
+                    return claims;
 
-            return claims;
-        }
-
-        private string GetHashedClaims(IReadOnlyCollection<Permission>? permissions, IReadOnlyCollection<TemplatePermission>? templatePermissions)
-        {
-            var permissionsString =
-                (permissions ?? []).Select(p => $"permission:{p.ResourceType}:{p.ResourceKey}:{p.AccessType}");
-
-            var templatePermissionsString =
-                (templatePermissions ?? []).Select(tp => $"Template:{tp.TemplateId.Value}:{tp.AccessType.ToString()}");
-
-            var merged = permissionsString.Concat(templatePermissionsString);
-
-            return HashStringHelper.GenerateHashedString(merged);
+                },
+                methodName);
         }
     }
 }
