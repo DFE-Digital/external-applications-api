@@ -57,16 +57,30 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 "organisation"
             };
 
+            // Add allowed external claims if not already present
             foreach (var claim in externalUser.Claims)
             {
-                if (allowedClaimTypes.Contains(claim.Type))
+                if (allowedClaimTypes.Contains(claim.Type) &&
+                    !identity.HasClaim(c => c.Type == claim.Type && c.Value == claim.Value))
                 {
                     identity.AddClaim(claim);
                 }
             }
-            identity.AddClaim(new Claim(ClaimTypes.Role, dbUser.Role.Name));
-            
-            identity.AddClaims(svcRoles);
+
+            // Add the user's role if it's not already there
+            if (!identity.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == dbUser.Role.Name))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, dbUser.Role.Name));
+            }
+
+            // Merge Azure Entra service roles, avoiding duplicates
+            foreach (var svcRole in svcRoles)
+            {
+                if (!identity.HasClaim(c => c.Type == svcRole.Type && c.Value == svcRole.Value))
+                {
+                    identity.AddClaim(svcRole);
+                }
+            }
 
             var userWithPerms = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
                 .Apply(userRepo.Query().AsNoTracking())
