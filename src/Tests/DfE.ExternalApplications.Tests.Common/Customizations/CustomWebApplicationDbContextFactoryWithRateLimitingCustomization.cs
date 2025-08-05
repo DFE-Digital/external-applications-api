@@ -21,11 +21,13 @@ using DfE.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using GovUK.Dfe.ExternalApplications.Api.Client;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
-using DfE.CoreLibs.Utilities.RateLimiting;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations
 {
-    public class CustomWebApplicationDbContextFactoryCustomization : ICustomization
+    /// <summary>
+    /// Test customization that keeps the real rate limiter for testing rate limiting behavior
+    /// </summary>
+    public class CustomWebApplicationDbContextFactoryWithRateLimitingCustomization : ICustomization
     {
         public void Customize(IFixture fixture)
         {
@@ -87,11 +89,9 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                         services.RemoveAll<IExternalIdentityValidator>();
                         services.RemoveAll<IUserTokenService>();
-                        services.RemoveAll<IRateLimiterFactory<string>>();
 
                         services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                         services.AddUserTokenService(tokenConfig);
-                        services.AddSingleton<IRateLimiterFactory<string>, MockRateLimiterFactory>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {

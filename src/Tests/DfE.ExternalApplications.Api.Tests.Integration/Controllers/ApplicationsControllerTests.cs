@@ -1447,4 +1447,80 @@ public class ApplicationsControllerTests
         // Should return empty list since no files exist yet
         Assert.Empty(result);
     }
+
+    #region Rate Limiting Tests
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryWithRateLimitingCustomization))]
+    public async Task SubmitApplicationAsync_ShouldReturn429_WhenRateLimitExceeded(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var applicationId = Guid.Parse(EaContextSeeder.ApplicationId);
+
+        // First submission should work
+        await applicationsClient.SubmitApplicationAsync(applicationId);
+
+        // Act - Try to submit again immediately (should hit rate limit)
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+            () => applicationsClient.SubmitApplicationAsync(applicationId));
+
+        // Assert
+        Assert.Equal(429, ex.StatusCode);
+        Assert.Contains("Too many requests", ex.Result?.Message ?? "");
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryWithRateLimitingCustomization))]
+    public async Task CreateApplicationAsync_ShouldReturn429_WhenRateLimitExceeded(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Template:{EaContextSeeder.TemplateId}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var request1 = new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
+            InitialResponseBody = "First application"
+        };
+
+        var request2 = new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
+            InitialResponseBody = "Second application"
+        };
+
+        // First creation should work
+        await applicationsClient.CreateApplicationAsync(request1);
+
+        // Act - Try to create another application immediately (should hit rate limit)
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+            () => applicationsClient.CreateApplicationAsync(request2));
+
+        // Assert
+        Assert.Equal(429, ex.StatusCode);
+        Assert.Contains("Too many requests", ex.Result?.Message ?? "");
+    }
+
+    #endregion
 }  
