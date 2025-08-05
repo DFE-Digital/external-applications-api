@@ -13,12 +13,17 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Common.Attributes;
+using DfE.CoreLibs.Caching.Interfaces;
+using DfE.CoreLibs.Caching.Helpers;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
+[RateLimit(1, 30)]
 public sealed record CreateApplicationCommand(
     Guid TemplateId,
-    string InitialResponseBody) : IRequest<Result<ApplicationDto>>;
+    string InitialResponseBody) : IRequest<Result<ApplicationDto>>, IRateLimitedRequest;
 
 public sealed class CreateApplicationCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,
@@ -28,6 +33,7 @@ public sealed class CreateApplicationCommandHandler(
     IApplicationFactory applicationFactory,
     IPermissionCheckerService permissionCheckerService,
     ISender mediator,
+    ICacheService<IMemoryCacheType> cacheService,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateApplicationCommand, Result<ApplicationDto>>
 {
     public async Task<Result<ApplicationDto>> Handle(
@@ -91,6 +97,9 @@ public sealed class CreateApplicationCommandHandler(
 
             await applicationRepo.AddAsync(application, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
+
+            // invalidate the user claim cache
+            cacheService.Remove($"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(dbUser.Email)}");
 
             return Result<ApplicationDto>.Success(new ApplicationDto
             {

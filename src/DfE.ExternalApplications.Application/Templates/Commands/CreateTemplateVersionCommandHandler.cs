@@ -1,5 +1,6 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
@@ -12,13 +13,15 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using DfE.ExternalApplications.Application.Common.Behaviours;
 
 namespace DfE.ExternalApplications.Application.Templates.Commands;
 
+[RateLimit(1, 30)]
 public record CreateTemplateVersionCommand(
     Guid TemplateId,
     string VersionNumber,
-    string JsonSchema) : IRequest<Result<TemplateSchemaDto>>;
+    string JsonSchema) : IRequest<Result<TemplateSchemaDto>>, IRateLimitedRequest;
 
 public sealed class CreateTemplateVersionCommandHandler(
     IEaRepository<Template> templateRepo,

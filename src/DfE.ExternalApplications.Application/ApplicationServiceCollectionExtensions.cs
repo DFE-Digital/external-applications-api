@@ -7,6 +7,8 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using DfE.CoreLibs.FileStorage;
+using DfE.CoreLibs.Utilities.RateLimiting;
+using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,11 +21,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), includeInternalTypes: true);
 
+            services.AddRateLimiting<string>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
             services.AddMediatR(cfg =>
             {
                 cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>));
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
+                services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RateLimitingBehaviour<,>));
 
                 if (performanceLoggingEnabled)
                 {

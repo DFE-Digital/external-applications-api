@@ -27,6 +27,7 @@ namespace DfE.ExternalApplications.Api.Filters
                         DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
                         DomainErrorCode.Conflict => new ConflictException(result.Error),
                         DomainErrorCode.Validation => new ValidationException(result.Error),
+
                         _ => new BadRequestException(result.Error)
                     };
 

@@ -16,16 +16,19 @@ using System.Security.Claims;
 using DfE.ExternalApplications.Utils.File;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using File = DfE.ExternalApplications.Domain.Entities.File;
+using DfE.ExternalApplications.Application.Common.Attributes;
+using DfE.ExternalApplications.Application.Common.Behaviours;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
+[RateLimit(1, 10)]
 public sealed record UploadFileCommand(
     ApplicationId ApplicationId,
     string Name,
     string? Description,
     string OriginalFileName,
     Stream FileContent
-) : IRequest<Result<UploadDto>>;
+) : IRequest<Result<UploadDto>>, IRateLimitedRequest;
 
 public class UploadFileCommandHandler(
     IEaRepository<File> uploadRepository,

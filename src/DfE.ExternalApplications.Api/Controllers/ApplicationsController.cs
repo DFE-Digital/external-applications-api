@@ -28,6 +28,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanCreateAnyApplication")]
     public async Task<IActionResult> CreateApplicationAsync(
         [FromBody] CreateApplicationRequest request,
@@ -52,6 +53,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "User does not have permission to update this application.", typeof(ExceptionResponse))]
     [SwaggerResponse(404, "Application not found.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> AddApplicationResponseAsync(
         [FromRoute] Guid applicationId,
@@ -152,6 +154,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "User does not have permission to submit this application", typeof(ExceptionResponse))]
     [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> SubmitApplicationAsync(
         [FromRoute] Guid applicationId,
@@ -201,6 +204,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "User does not have permission to manage contributors for this application", typeof(ExceptionResponse))]
     [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanUpdateApplication")]
     public async Task<IActionResult> AddContributorAsync(
         [FromRoute] Guid applicationId,
@@ -252,6 +256,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "User does not have permission to manage files for this application", typeof(ExceptionResponse))]
     [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteApplicationFiles")]
     public async Task<IActionResult> UploadFileAsync(
         [FromRoute] Guid applicationId,

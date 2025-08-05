@@ -13,10 +13,13 @@ using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Contracts;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using DfE.ExternalApplications.Application.Common.Attributes;
+using DfE.ExternalApplications.Application.Common.Behaviours;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
-public sealed record SubmitApplicationCommand(Guid ApplicationId) : IRequest<Result<ApplicationDto>>;
+[RateLimit(1, 60)]
+public sealed record SubmitApplicationCommand(Guid ApplicationId) : IRequest<Result<ApplicationDto>>, IRateLimitedRequest;
 
 public sealed class SubmitApplicationCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,
