@@ -255,8 +255,9 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "User does not have permission to manage files for this application", typeof(ExceptionResponse))]
     [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
-    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
+    [SwaggerResponse(409, "Conflict Error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteApplicationFiles")]
     public async Task<IActionResult> UploadFileAsync(
         [FromRoute] Guid applicationId,
