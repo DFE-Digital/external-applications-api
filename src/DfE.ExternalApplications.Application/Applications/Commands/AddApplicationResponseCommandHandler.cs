@@ -17,7 +17,7 @@ using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
-[RateLimit(5, 30)]
+[RateLimit(10, 30)]
 public sealed record AddApplicationResponseCommand(
     Guid ApplicationId,
     string ResponseBody) : IRequest<Result<ApplicationResponseDto>>, IRateLimitedRequest;
