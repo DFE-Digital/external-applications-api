@@ -16,6 +16,7 @@ public class FileCustomization : ICustomization
     public string? OverridePath { get; set; }
     public DateTime? OverrideUploadedOn { get; set; }
     public UserId? OverrideUploadedBy { get; set; }
+    public long? OverridePathFileSize { get; set; }
 
     public void Customize(IFixture fixture)
     {
@@ -30,6 +31,7 @@ public class FileCustomization : ICustomization
             var path = OverridePath ?? fixture.Create<string>();
             var uploadedOn = OverrideUploadedOn ?? fixture.Create<DateTime>();
             var uploadedBy = OverrideUploadedBy ?? new UserId(fixture.Create<Guid>());
+            var fileSize = OverridePathFileSize ?? fixture.Create<long>();
 
             return new Domain.Entities.File(
                 id,
@@ -40,7 +42,8 @@ public class FileCustomization : ICustomization
                 fileName,
                 path,
                 uploadedOn,
-                uploadedBy);
+                uploadedBy, 
+                fileSize);
         }));
     }
 } 

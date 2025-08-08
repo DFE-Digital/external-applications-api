@@ -101,7 +101,8 @@ public class GetFilesForApplicationQueryHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy)).ToList();
+            file.UploadedBy,
+            file.FileSize)).ToList();
 
         var uploadQueryable = filesWithMatchingApplicationId.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);

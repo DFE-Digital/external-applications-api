@@ -95,6 +95,8 @@ public class UploadFileCommandHandler(
             // Upload file to the storage
             await fileStorageService.UploadAsync(storagePath, request.FileContent, cancellationToken);
 
+            var fileSize = request.FileContent.Length;
+
             // Create File entity using factory
             var upload = fileFactory.CreateUpload(
                 new FileId(Guid.NewGuid()),
@@ -105,7 +107,8 @@ public class UploadFileCommandHandler(
                 hashedFileName,
                 application.ApplicationReference,
                 DateTime.UtcNow,
-                dbUser.Id!
+                dbUser.Id!,
+                fileSize
             );
 
             await uploadRepository.AddAsync(upload, cancellationToken);
@@ -121,7 +124,8 @@ public class UploadFileCommandHandler(
                 Description = upload.Description,
                 OriginalFileName = upload.OriginalFileName,
                 FileName = upload.FileName,
-                UploadedOn = upload.UploadedOn
+                UploadedOn = upload.UploadedOn,
+                FileSize = fileSize
             };
 
             return Result<UploadDto>.Success(dto);

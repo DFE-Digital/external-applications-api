@@ -74,7 +74,8 @@ public class GetFilesForApplicationQueryHandler(
                 Description = u.Description,
                 OriginalFileName = u.OriginalFileName,
                 FileName = u.FileName,
-                UploadedOn = u.UploadedOn
+                UploadedOn = u.UploadedOn,
+                FileSize = u.FileSize
             })
             .ToListAsync(cancellationToken)).AsReadOnly();
 

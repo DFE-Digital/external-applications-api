@@ -17,7 +17,8 @@ public class FileFactory : IFileFactory
         string fileName,
         string path,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        long fileSize)
     {
         return new File(
             id,
@@ -28,7 +29,8 @@ public class FileFactory : IFileFactory
             fileName,
             path,
             uploadedOn,
-            uploadedBy
+            uploadedBy,
+            fileSize
         );
     }
 

@@ -14,6 +14,7 @@ public sealed class File : BaseAggregateRoot, IEntity<FileId>
     public string? Description { get; private set; }
     public string OriginalFileName { get; private set; } = null!;
     public string FileName { get; private set; } = null!;
+    public long FileSize { get; private set; }
     public string Path { get; private set; }
     public DateTime UploadedOn { get; private set; }
     public UserId UploadedBy { get; private set; }
@@ -31,7 +32,8 @@ public sealed class File : BaseAggregateRoot, IEntity<FileId>
         string fileName,
         string path,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        long fileSize)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         ApplicationId = applicationId ?? throw new ArgumentNullException(nameof(applicationId));
@@ -42,6 +44,7 @@ public sealed class File : BaseAggregateRoot, IEntity<FileId>
         Path = path;
         UploadedOn = uploadedOn;
         UploadedBy = uploadedBy ?? throw new ArgumentNullException(nameof(uploadedBy));
+        FileSize = fileSize;
     }
 
     public void Delete()
