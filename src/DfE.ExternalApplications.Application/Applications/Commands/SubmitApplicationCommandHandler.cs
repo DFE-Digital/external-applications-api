@@ -18,7 +18,7 @@ using DfE.ExternalApplications.Application.Common.Behaviours;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
-[RateLimit(5, 60)]
+[RateLimit(1, 30)]
 public sealed record SubmitApplicationCommand(Guid ApplicationId) : IRequest<Result<ApplicationDto>>, IRateLimitedRequest;
 
 public sealed class SubmitApplicationCommandHandler(

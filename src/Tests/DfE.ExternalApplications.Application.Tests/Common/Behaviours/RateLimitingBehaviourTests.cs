@@ -41,7 +41,7 @@ public class RateLimitingBehaviourTests
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
-        _rateLimiter.IsAllowed("test-app-id").Returns(true);
+        _rateLimiter.IsAllowed("test-app-id_TestRateLimitedRequest").Returns(true);
 
         var request = new TestRateLimitedRequest("test");
         var next = Substitute.For<RequestHandlerDelegate<string>>();
@@ -54,7 +54,7 @@ public class RateLimitingBehaviourTests
         Assert.Equal("success", result);
         await next.Received(1).Invoke();
         _rateLimiterFactory.Received(1).Create(5, TimeSpan.FromSeconds(60));
-        _rateLimiter.Received(1).IsAllowed("test-app-id");
+        _rateLimiter.Received(1).IsAllowed("test-app-id_TestRateLimitedRequest");
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class RateLimitingBehaviourTests
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
-        _rateLimiter.IsAllowed("test-app-id").Returns(false);
+        _rateLimiter.IsAllowed("test-app-id_TestRateLimitedRequest").Returns(false);
 
         var request = new TestRateLimitedRequest("test");
         var next = Substitute.For<RequestHandlerDelegate<string>>();
@@ -82,7 +82,7 @@ public class RateLimitingBehaviourTests
         Assert.Equal("Too many requests. Please retry later.", exception.Message);
         await next.DidNotReceive().Invoke();
         _rateLimiterFactory.Received(1).Create(5, TimeSpan.FromSeconds(60));
-        _rateLimiter.Received(1).IsAllowed("test-app-id");
+        _rateLimiter.Received(1).IsAllowed("test-app-id_TestRateLimitedRequest");
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class RateLimitingBehaviourTests
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
-        _rateLimiter.IsAllowed("test-azp-id").Returns(true);
+        _rateLimiter.IsAllowed("test-azp-id_TestRateLimitedRequest").Returns(true);
 
         var request = new TestRateLimitedRequest("test");
         var next = Substitute.For<RequestHandlerDelegate<string>>();
@@ -109,7 +109,7 @@ public class RateLimitingBehaviourTests
 
         // Assert
         Assert.Equal("success", result);
-        _rateLimiter.Received(1).IsAllowed("test-azp-id");
+        _rateLimiter.Received(1).IsAllowed("test-azp-id_TestRateLimitedRequest");
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class RateLimitingBehaviourTests
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
-        _rateLimiter.IsAllowed("test@example.com").Returns(true);
+        _rateLimiter.IsAllowed("test@example.com_TestRateLimitedRequest").Returns(true);
 
         var request = new TestRateLimitedRequest("test");
         var next = Substitute.For<RequestHandlerDelegate<string>>();
@@ -136,7 +136,7 @@ public class RateLimitingBehaviourTests
 
         // Assert
         Assert.Equal("success", result);
-        _rateLimiter.Received(1).IsAllowed("test@example.com");
+        _rateLimiter.Received(1).IsAllowed("test@example.com_TestRateLimitedRequest");
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class RateLimitingBehaviourTests
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
-        _rateLimiter.IsAllowed("test-app-id").Returns(true);
+        _rateLimiter.IsAllowed("test-app-id_TestRateLimitedRequest").Returns(true);
 
         var request = new TestRateLimitedRequest("test");
         var next = Substitute.For<RequestHandlerDelegate<string>>();
@@ -224,9 +224,9 @@ public class RateLimitingBehaviourTests
 
         // Assert
         Assert.Equal("success", result);
-        _rateLimiter.Received(1).IsAllowed("test-app-id");
-        _rateLimiter.DidNotReceive().IsAllowed("test-azp-id");
-        _rateLimiter.DidNotReceive().IsAllowed("test@example.com");
+        _rateLimiter.Received(1).IsAllowed("test-app-id_TestRateLimitedRequest");
+        _rateLimiter.DidNotReceive().IsAllowed("test-azp-id_TestRateLimitedRequest");
+        _rateLimiter.DidNotReceive().IsAllowed("test@example.com_TestRateLimitedRequest");
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public class RateLimitingBehaviourTests
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
-        _rateLimiter.IsAllowed("test-azp-id").Returns(true);
+        _rateLimiter.IsAllowed("test-azp-id_TestRateLimitedRequest").Returns(true);
 
         var request = new TestRateLimitedRequest("test");
         var next = Substitute.For<RequestHandlerDelegate<string>>();
@@ -254,8 +254,8 @@ public class RateLimitingBehaviourTests
 
         // Assert
         Assert.Equal("success", result);
-        _rateLimiter.Received(1).IsAllowed("test-azp-id");
-        _rateLimiter.DidNotReceive().IsAllowed("test@example.com");
+        _rateLimiter.Received(1).IsAllowed("test-azp-id_TestRateLimitedRequest");
+        _rateLimiter.DidNotReceive().IsAllowed("test@example.com_TestRateLimitedRequest");
     }
 
     [Fact]
@@ -271,7 +271,7 @@ public class RateLimitingBehaviourTests
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
-        _rateLimiter.IsAllowed("test-app-id").Returns(true);
+        _rateLimiter.IsAllowed("test-app-id_TestRateLimitedRequest").Returns(true);
 
         var request = new TestRateLimitedRequest("test");
         var next = Substitute.For<RequestHandlerDelegate<string>>();
