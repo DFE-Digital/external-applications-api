@@ -62,6 +62,7 @@ public class DeleteFileCommandHandlerTests
         Domain.Entities.Application application,
         User user,
         File file,
+        long fileSize,
         Guid fileId,
         Guid applicationId)
     {
@@ -114,7 +115,7 @@ public class DeleteFileCommandHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, fileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _fileRepository.Query().Returns(fileQueryable);
@@ -428,6 +429,7 @@ public class DeleteFileCommandHandlerTests
         Domain.Entities.Application application,
         User user,
         File file,
+        long fileSize,
         Guid fileId,
         Guid applicationId)
     {
@@ -480,7 +482,7 @@ public class DeleteFileCommandHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, fileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _fileRepository.Query().Returns(fileQueryable);
@@ -508,7 +510,8 @@ public class DeleteFileCommandHandlerTests
     public async Task Handle_Should_Allow_Admin_To_Delete_File(
         Domain.Entities.Application application,
         User user,
-        File file,
+        File file, 
+        long fileSize,
         Guid fileId,
         Guid applicationId)
     {
@@ -561,7 +564,7 @@ public class DeleteFileCommandHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, fileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _fileRepository.Query().Returns(fileQueryable);
@@ -595,6 +598,7 @@ public class DeleteFileCommandHandlerTests
         Domain.Entities.Application application,
         User user,
         File file,
+        long fileSize,
         Guid fileId,
         Guid applicationId)
     {
@@ -647,7 +651,7 @@ public class DeleteFileCommandHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, fileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _fileRepository.Query().Returns(fileQueryable);
@@ -672,7 +676,8 @@ public class DeleteFileCommandHandlerTests
     public async Task Handle_Should_Use_ExternalProviderId_When_PrincipalId_Does_Not_Contain_At_Symbol(
         Domain.Entities.Application application,
         User user,
-        File file,
+        File file, 
+        long fileSize,
         Guid fileId,
         Guid applicationId)
     {
@@ -725,7 +730,7 @@ public class DeleteFileCommandHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, fileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _fileRepository.Query().Returns(fileQueryable);

@@ -105,7 +105,7 @@ public class DownloadFileQueryHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, file.FileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
@@ -405,7 +405,7 @@ public class DownloadFileQueryHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, file.FileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
@@ -485,7 +485,7 @@ public class DownloadFileQueryHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, file.FileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);
@@ -565,7 +565,7 @@ public class DownloadFileQueryHandlerTests
             file.FileName,
             file.Path,
             file.UploadedOn,
-            file.UploadedBy);
+            file.UploadedBy, file.FileSize);
 
         var fileQueryable = new List<File> { fileWithMatchingId }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(fileQueryable);

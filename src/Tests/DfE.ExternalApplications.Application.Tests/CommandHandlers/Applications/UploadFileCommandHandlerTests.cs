@@ -124,7 +124,8 @@ public class UploadFileCommandHandlerTests
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<DateTime>(),
-            Arg.Any<UserId>())
+            Arg.Any<UserId>(),
+            Arg.Any<long>())
             .Returns(uploadedFile);
 
         var command = new UploadFileCommand(applicationId, name, description, originalFileName, fileContent);
@@ -377,7 +378,8 @@ public class UploadFileCommandHandlerTests
             hashedFileName, // Use the hashed filename that the handler generates
             existingFile.Path,
             existingFile.UploadedOn,
-            existingFile.UploadedBy);
+            existingFile.UploadedBy,
+            existingFile.FileSize);
 
         var uploadQueryable = new List<File> { existingFileWithMatchingProperties }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);
@@ -533,7 +535,8 @@ public class UploadFileCommandHandlerTests
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<DateTime>(),
-            Arg.Any<UserId>())
+            Arg.Any<UserId>(),
+            Arg.Any<long>())
             .Returns(uploadedFile);
 
         var command = new UploadFileCommand(applicationId, name, description, originalFileName, fileContent);
@@ -612,7 +615,8 @@ public class UploadFileCommandHandlerTests
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<DateTime>(),
-            Arg.Any<UserId>())
+            Arg.Any<UserId>(),
+            Arg.Any<long>())
             .Returns(uploadedFile);
 
         var command = new UploadFileCommand(applicationId, name, description, originalFileName, fileContent);

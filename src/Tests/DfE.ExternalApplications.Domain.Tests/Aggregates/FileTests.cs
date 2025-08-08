@@ -19,12 +19,13 @@ public class FileTests
         string description,
         string originalFileName,
         string fileName,
+        long fileSize,
         string path,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Act
-        var file = new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy);
+        var file = new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize);
 
         // Assert
         Assert.Equal(id, file.Id);
@@ -47,13 +48,14 @@ public class FileTests
         string description,
         string originalFileName,
         string fileName,
+        long fileSize,
         string path,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new File(null!, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy));
+            new File(null!, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize));
         Assert.Equal("id", exception.ParamName);
     }
 
@@ -65,13 +67,14 @@ public class FileTests
         string description,
         string originalFileName,
         string fileName,
+        long fileSize,
         string path,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new File(id, null!, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy));
+            new File(id, null!, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize));
         Assert.Equal("applicationId", exception.ParamName);
     }
 
@@ -84,12 +87,13 @@ public class FileTests
         string originalFileName,
         string fileName,
         string path,
+        long fileSize,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new File(id, applicationId, null!, description, originalFileName, fileName, path, uploadedOn, uploadedBy));
+            new File(id, applicationId, null!, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize));
         Assert.Equal("name", exception.ParamName);
     }
 
@@ -101,13 +105,14 @@ public class FileTests
         string name,
         string description,
         string fileName,
+        long fileSize,
         string path,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new File(id, applicationId, name, description, null!, fileName, path, uploadedOn, uploadedBy));
+            new File(id, applicationId, name, description, null!, fileName, path, uploadedOn, uploadedBy, fileSize));
         Assert.Equal("originalFileName", exception.ParamName);
     }
 
@@ -120,12 +125,13 @@ public class FileTests
         string description,
         string originalFileName,
         string path,
+        long fileSize,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new File(id, applicationId, name, description, originalFileName, null!, path, uploadedOn, uploadedBy));
+            new File(id, applicationId, name, description, originalFileName, null!, path, uploadedOn, uploadedBy, fileSize));
         Assert.Equal("fileName", exception.ParamName);
     }
 
@@ -138,12 +144,13 @@ public class FileTests
         string description,
         string originalFileName,
         string fileName,
+        long fileSize,
         string path,
         DateTime uploadedOn)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, null!));
+            new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, null!, fileSize));
         Assert.Equal("uploadedBy", exception.ParamName);
     }
 
@@ -157,11 +164,12 @@ public class FileTests
         string originalFileName,
         string fileName,
         string path,
+        long fileSize,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Arrange
-        var file = new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy);
+        var file = new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize);
 
         // Act
         file.Delete();
@@ -180,11 +188,12 @@ public class FileTests
         string originalFileName,
         string fileName,
         string path,
+        long fileSize,
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Arrange
-        var file = new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy);
+        var file = new File(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize);
         file.Delete(); // First deletion
 
         // Act & Assert
@@ -201,11 +210,13 @@ public class FileTests
         string originalFileName,
         string fileName,
         string path,
+        long fileSize,
+
         DateTime uploadedOn,
         UserId uploadedBy)
     {
         // Act
-        var file = new File(id, applicationId, name, null, originalFileName, fileName, path, uploadedOn, uploadedBy);
+        var file = new File(id, applicationId, name, null, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize);
 
         // Assert
         Assert.Null(file.Description);

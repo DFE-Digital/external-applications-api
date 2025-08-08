@@ -15,6 +15,7 @@ public interface IFileFactory
         string fileName,
         string path,
         DateTime uploadedOn,
-        UserId uploadedBy);
+        UserId uploadedBy,
+        long fileSize);
     void DeleteFile(File file);
 } 

@@ -483,6 +483,9 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("FileName")
             .HasMaxLength(255)
             .IsRequired();
+        b.Property(e => e.FileSize)
+            .HasColumnName("FileSize")
+            .IsRequired();
         b.Property(e => e.Path)
             .HasColumnName("Path")
             .HasMaxLength(255);
