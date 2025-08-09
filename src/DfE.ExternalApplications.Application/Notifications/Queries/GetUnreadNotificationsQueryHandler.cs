@@ -1,5 +1,7 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Notifications.Interfaces;
+using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
@@ -10,6 +12,7 @@ public sealed record GetUnreadNotificationsQuery() : IRequest<Result<IEnumerable
 
 public sealed class GetUnreadNotificationsQueryHandler(
     INotificationService notificationService,
+    IPermissionCheckerService permissionCheckerService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<GetUnreadNotificationsQuery, Result<IEnumerable<NotificationDto>>>
 {
@@ -30,6 +33,10 @@ public sealed class GetUnreadNotificationsQueryHandler(
 
             if (string.IsNullOrEmpty(principalId))
                 return Result<IEnumerable<NotificationDto>>.Forbid("No user identifier");
+
+            var canAccess = permissionCheckerService.HasPermission(ResourceType.Notifications, principalId, AccessType.Read);
+            if (!canAccess)
+                return Result<IEnumerable<NotificationDto>>.Forbid("User does not have permission to read notifications");
 
             var notifications = await notificationService.GetUnreadNotificationsAsync(principalId, cancellationToken);
 

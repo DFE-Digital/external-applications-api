@@ -7,6 +7,9 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using DfE.CoreLibs.Http.Models;
@@ -26,7 +29,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -81,7 +84,7 @@ public class NotificationsControllerTests
         var request = new AddNotificationRequest
         {
             Message = "Test notification message",
-            Type = "Info"
+            Type = NotificationType.Info
         };
 
         var json = JsonSerializer.Serialize(request);
@@ -104,7 +107,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -136,7 +139,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -179,7 +182,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -209,7 +212,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -252,7 +255,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -279,7 +282,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -318,7 +321,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -341,7 +344,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -380,7 +383,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -403,7 +406,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -426,7 +429,7 @@ public class NotificationsControllerTests
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", "User:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =

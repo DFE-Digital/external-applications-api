@@ -1,10 +1,12 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Domain.Services;
+using DfE.CoreLibs.Notifications.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
-using DfE.CoreLibs.Notifications.Interfaces;
 
 namespace DfE.ExternalApplications.Application.Notifications.Commands;
 
@@ -13,6 +15,7 @@ public sealed record ClearNotificationsByContextCommand(string Context) : IReque
 
 public sealed class ClearNotificationsByContextCommandHandler(
     INotificationService notificationService,
+    IPermissionCheckerService permissionCheckerService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<ClearNotificationsByContextCommand, Result<Unit>>
 {
@@ -33,6 +36,10 @@ public sealed class ClearNotificationsByContextCommandHandler(
 
             if (string.IsNullOrEmpty(principalId))
                 return Result<Unit>.Forbid("No user identifier");
+
+            var canAccess = permissionCheckerService.HasPermission(ResourceType.Notifications, principalId, AccessType.Write);
+            if (!canAccess)
+                return Result<Unit>.Forbid("User does not have permission to modify notifications");
 
             await notificationService.ClearNotificationsByContextAsync(request.Context, principalId, cancellationToken);
 

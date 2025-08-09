@@ -84,6 +84,61 @@
       "Controller": "ApplicationsController",
       "Action": "DeleteFileAsync",
       "ExpectedSecurity": "Authorize: Policy=CanDeleteApplicationFiles"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "CreateNotificationAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "GetUnreadNotificationsAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "GetAllNotificationsAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "GetNotificationsByCategoryAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "GetUnreadNotificationCountAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "MarkNotificationAsReadAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "MarkAllNotificationsAsReadAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "RemoveNotificationAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "ClearAllNotificationsAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "ClearNotificationsByCategoryAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
+    },
+    {
+      "Controller": "NotificationsController",
+      "Action": "ClearNotificationsByContextAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
     }
   ]
 }
