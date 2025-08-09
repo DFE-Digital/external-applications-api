@@ -17,8 +17,9 @@
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="DfE.CoreLibs.AsyncProcessing" Version="1.0.12" />
 		<PackageReference Include="DfE.CoreLibs.Caching" Version="1.0.10" />
-		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.43" />
+		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.44" />
 		<PackageReference Include="DfE.CoreLibs.FileStorage" Version="0.1.0" />
+		<PackageReference Include="DfE.CoreLibs.Notifications" Version="0.1.1" />
 		<PackageReference Include="DfE.CoreLibs.Security" Version="1.1.14-prerelease-23" />
 		<PackageReference Include="DfE.CoreLibs.Utilities" Version="1.0.15" />
 		<PackageReference Include="FluentValidation" Version="12.0.0" />

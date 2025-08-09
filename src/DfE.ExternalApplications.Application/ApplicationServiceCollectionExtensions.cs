@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using DfE.CoreLibs.FileStorage;
+using DfE.CoreLibs.Notifications.Extensions;
 using DfE.CoreLibs.Utilities.RateLimiting;
 using Microsoft.AspNetCore.Http;
 
@@ -43,6 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<IFileFactory, FileFactory>();
 
             services.AddBackgroundService();
+            services.AddNotificationServices();
 
             services.AddFileStorage(config);
 
