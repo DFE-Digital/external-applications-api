@@ -1,5 +1,6 @@
 using AutoFixture;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
+using DfE.ExternalApplications.Api;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

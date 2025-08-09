@@ -1,6 +1,5 @@
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
-using DfE.ExternalApplications.Application.Notifications.Models;
 using DfE.ExternalApplications.Tests.Common.Customizations;
 using DfE.ExternalApplications.Tests.Common.Seeders;
 using System.Net.Http.Headers;
