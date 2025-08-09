@@ -1,10 +1,10 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
-using DfE.ExternalApplications.Application.Notifications.Models;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Notifications.Interfaces;
 using DfE.CoreLibs.Notifications.Models;
 
