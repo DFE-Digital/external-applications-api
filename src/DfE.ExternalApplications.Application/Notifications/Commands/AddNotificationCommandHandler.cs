@@ -7,6 +7,7 @@ using System.Security.Claims;
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.CoreLibs.Notifications.Interfaces;
 using DfE.CoreLibs.Notifications.Models;
+using DfE.ExternalApplications.Domain.Services;
 
 namespace DfE.ExternalApplications.Application.Notifications.Commands;
 
@@ -25,6 +26,7 @@ public sealed record AddNotificationCommand(
 
 public sealed class AddNotificationCommandHandler(
     INotificationService notificationService,
+    IPermissionCheckerService permissionCheckerService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<AddNotificationCommand, Result<NotificationDto>>
 {
@@ -45,6 +47,11 @@ public sealed class AddNotificationCommandHandler(
 
             if (string.IsNullOrEmpty(principalId))
                 return Result<NotificationDto>.Forbid("No user identifier");
+
+            var canAccess = permissionCheckerService.HasPermission(ResourceType.Notifications, principalId, AccessType.Write);
+
+            if (!canAccess)
+                return Result<NotificationDto>.Forbid("User does not have permission to create notifications");
 
             var options = new NotificationOptions
             {

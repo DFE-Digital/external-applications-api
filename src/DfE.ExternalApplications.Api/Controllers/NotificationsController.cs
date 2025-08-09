@@ -26,7 +26,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanWriteNotifications")]
     public async Task<IActionResult> CreateNotificationAsync(
         [FromBody] AddNotificationRequest request,
         CancellationToken cancellationToken)
@@ -60,7 +60,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanReadNotifications")]
     public async Task<IActionResult> GetUnreadNotificationsAsync(CancellationToken cancellationToken)
     {
         var query = new GetUnreadNotificationsQuery();
@@ -81,7 +81,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanReadNotifications")]
     public async Task<IActionResult> GetAllNotificationsAsync(CancellationToken cancellationToken)
     {
         var query = new GetAllNotificationsQuery();
@@ -102,7 +102,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanReadNotifications")]
     public async Task<IActionResult> GetNotificationsByCategoryAsync(
         [FromRoute] string category,
         [FromQuery] bool unreadOnly = false,
@@ -126,7 +126,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanReadNotifications")]
     public async Task<IActionResult> GetUnreadNotificationCountAsync(CancellationToken cancellationToken)
     {
         var query = new GetUnreadNotificationCountQuery();
@@ -149,7 +149,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(404, "Notification not found.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanWriteNotifications")]
     public async Task<IActionResult> MarkNotificationAsReadAsync(
         [FromRoute] string notificationId,
         CancellationToken cancellationToken)
@@ -173,7 +173,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanWriteNotifications")]
     public async Task<IActionResult> MarkAllNotificationsAsReadAsync(CancellationToken cancellationToken)
     {
         var command = new MarkAllNotificationsAsReadCommand();
@@ -196,7 +196,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(404, "Notification not found.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanWriteNotifications")]
     public async Task<IActionResult> RemoveNotificationAsync(
         [FromRoute] string notificationId,
         CancellationToken cancellationToken)
@@ -220,7 +220,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanWriteNotifications")]
     public async Task<IActionResult> ClearAllNotificationsAsync(CancellationToken cancellationToken)
     {
         var command = new ClearAllNotificationsCommand();
@@ -242,7 +242,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanWriteNotifications")]
     public async Task<IActionResult> ClearNotificationsByCategoryAsync(
         [FromRoute] string category,
         CancellationToken cancellationToken)
@@ -266,7 +266,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize(Policy = "CanWriteNotifications")]
     public async Task<IActionResult> ClearNotificationsByContextAsync(
         [FromRoute] string context,
         CancellationToken cancellationToken)
