@@ -1,9 +1,11 @@
 using AutoFixture;
+using DfE.CoreLibs.Notifications.Interfaces;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Api;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations;
 
@@ -27,8 +29,8 @@ public class NotificationTestCustomization : ICustomization
                     originalExternalServices?.Invoke(services);
 
                     // Replace the notification service with our mock
-                    services.RemoveAll<INotificationService>();
-                    services.AddSingleton<INotificationService, MockNotificationService>();
+                    services.RemoveAll<DfE.CoreLibs.Notifications.Interfaces.INotificationService>();
+                    services.AddSingleton<DfE.CoreLibs.Notifications.Interfaces.INotificationService, MockNotificationService>();
                 };
             }));
     }

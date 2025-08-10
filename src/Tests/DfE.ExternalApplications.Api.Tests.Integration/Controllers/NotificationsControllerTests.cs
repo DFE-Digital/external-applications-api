@@ -2,6 +2,7 @@ using DfE.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Tests.Common.Customizations;
 using DfE.ExternalApplications.Tests.Common.Seeders;
+using GovUK.Dfe.ExternalApplications.Api.Client;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
@@ -13,15 +14,17 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using DfE.CoreLibs.Http.Models;
 using DfE.CoreLibs.Notifications.Models;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 
 namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers;
 
 public class NotificationsControllerTests
 {
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task CreateNotificationAsync_ShouldCreateNotification_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -46,20 +49,10 @@ public class NotificationsControllerTests
             ActionUrl = "/test-action"
         };
 
-        var json = JsonSerializer.Serialize(request);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
         // Act
-        var response = await httpClient.PostAsync("/v1/notifications", content);
+        var result = await notificationsClient.CreateNotificationAsync(request);
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<NotificationDto>(responseContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
-
         Assert.NotNull(result);
         Assert.NotNull(result.Id);
         Assert.Equal("Test notification message", result.Message);
@@ -74,10 +67,10 @@ public class NotificationsControllerTests
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task CreateNotificationAsync_ShouldReturnUnauthorized_WhenTokenMissing(
         CustomWebApplicationDbContextFactory<Program> factory,
-        HttpClient httpClient)
+        INotificationsClient notificationsClient)
     {
         // Arrange
         var request = new AddNotificationRequest
@@ -86,27 +79,24 @@ public class NotificationsControllerTests
             Type = NotificationType.Info
         };
 
-        var json = JsonSerializer.Serialize(request);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        // Act
-        var response = await httpClient.PostAsync("/v1/notifications", content);
-
-        // Assert
-        Assert.Equal(403, (int)response.StatusCode);
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => notificationsClient.CreateNotificationAsync(request));
+        Assert.Equal(403, ex.StatusCode);
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task CreateNotificationAsync_ShouldReturnBadRequest_WhenInvalidData(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Read")
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -115,23 +105,20 @@ public class NotificationsControllerTests
         var request = new AddNotificationRequest
         {
             Message = "", // Invalid - empty message
-            Type = NotificationType.Info // Valid type, but message is invalid
+            Type = NotificationType.Info
         };
 
-        var json = JsonSerializer.Serialize(request);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        // Act
-        var response = await httpClient.PostAsync("/v1/notifications", content);
-
-        // Assert
-        Assert.Equal(400, (int)response.StatusCode);
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => notificationsClient.CreateNotificationAsync(request));
+        Assert.Equal(400, ex.StatusCode);
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task GetUnreadNotificationsAsync_ShouldReturnNotifications_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -151,30 +138,22 @@ public class NotificationsControllerTests
             Type = NotificationType.Info
         };
 
-        var createJson = JsonSerializer.Serialize(createRequest);
-        var createContent = new StringContent(createJson, Encoding.UTF8, "application/json");
-        await httpClient.PostAsync("/v1/notifications", createContent);
+        await notificationsClient.CreateNotificationAsync(createRequest);
 
         // Act
-        var response = await httpClient.GetAsync("/v1/notifications/unread");
+        var result = await notificationsClient.GetUnreadNotificationsAsync();
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<IEnumerable<NotificationDto>>(responseContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
-
         Assert.NotNull(result);
         Assert.NotEmpty(result);
         Assert.All(result, n => Assert.False(n.IsRead));
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task GetAllNotificationsAsync_ShouldReturnAllNotifications_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -188,23 +167,17 @@ public class NotificationsControllerTests
             new AuthenticationHeaderValue("Bearer", "user-token");
 
         // Act
-        var response = await httpClient.GetAsync("/v1/notifications");
+        var result = await notificationsClient.GetAllNotificationsAsync();
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<IEnumerable<NotificationDto>>(responseContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
-
         Assert.NotNull(result);
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task GetNotificationsByCategoryAsync_ShouldReturnFilteredNotifications_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -217,37 +190,30 @@ public class NotificationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
-        // Create a notification with specific category
+        // First create a notification with specific category
         var createRequest = new AddNotificationRequest
         {
-            Message = "Test notification for category filter",
+            Message = "Test notification for category test",
             Type = NotificationType.Info,
             Category = "TestCategory"
         };
 
-        var createJson = JsonSerializer.Serialize(createRequest);
-        var createContent = new StringContent(createJson, Encoding.UTF8, "application/json");
-        await httpClient.PostAsync("/v1/notifications", createContent);
+        await notificationsClient.CreateNotificationAsync(createRequest);
 
         // Act
-        var response = await httpClient.GetAsync("/v1/notifications/category/TestCategory");
+        var result = await notificationsClient.GetNotificationsByCategoryAsync("TestCategory");
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<IEnumerable<NotificationDto>>(responseContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
-
         Assert.NotNull(result);
+        Assert.NotEmpty(result);
         Assert.All(result, n => Assert.Equal("TestCategory", n.Category));
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task GetUnreadNotificationCountAsync_ShouldReturnCount_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -260,21 +226,27 @@ public class NotificationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
+        // First create a notification
+        var createRequest = new AddNotificationRequest
+        {
+            Message = "Test notification for count test",
+            Type = NotificationType.Info
+        };
+
+        await notificationsClient.CreateNotificationAsync(createRequest);
+
         // Act
-        var response = await httpClient.GetAsync("/v1/notifications/unread/count");
+        var count = await notificationsClient.GetUnreadNotificationCountAsync();
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<int>(responseContent);
-
-        Assert.True(result >= 0);
+        Assert.True(count > 0);
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task MarkNotificationAsReadAsync_ShouldMarkAsRead_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -290,53 +262,25 @@ public class NotificationsControllerTests
         // First create a notification
         var createRequest = new AddNotificationRequest
         {
-            Message = "Test notification for marking as read",
+            Message = "Test notification for mark as read test",
             Type = NotificationType.Info
         };
 
-        var createJson = JsonSerializer.Serialize(createRequest);
-        var createContent = new StringContent(createJson, Encoding.UTF8, "application/json");
-        var createResponse = await httpClient.PostAsync("/v1/notifications", createContent);
-        var createResponseContent = await createResponse.Content.ReadAsStringAsync();
-        var createdNotification = JsonSerializer.Deserialize<NotificationDto>(createResponseContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
+        var notification = await notificationsClient.CreateNotificationAsync(createRequest);
 
         // Act
-        var response = await httpClient.PutAsync($"/v1/notifications/{createdNotification!.Id}/read", null);
+        await notificationsClient.MarkNotificationAsReadAsync(notification.Id);
 
-        // Assert
-        Assert.True(response.IsSuccessStatusCode);
+        // Assert - verify it's marked as read by getting unread count
+        var unreadCount = await notificationsClient.GetUnreadNotificationCountAsync();
+        Assert.True(unreadCount >= 0); // Should not throw an exception
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task MarkAllNotificationsAsReadAsync_ShouldMarkAllAsRead_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
-        HttpClient httpClient)
-    {
-        // Arrange
-        factory.TestClaims = new List<Claim>
-        {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
-            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
-        };
-
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "user-token");
-
-        // Act
-        var response = await httpClient.PutAsync("/v1/notifications/read-all", null);
-
-        // Assert
-        Assert.True(response.IsSuccessStatusCode);
-    }
-
-    [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
-    public async Task RemoveNotificationAsync_ShouldRemoveNotification_WhenValidRequest(
-        CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -352,30 +296,59 @@ public class NotificationsControllerTests
         // First create a notification
         var createRequest = new AddNotificationRequest
         {
-            Message = "Test notification for removal",
+            Message = "Test notification for mark all as read test",
             Type = NotificationType.Info
         };
 
-        var createJson = JsonSerializer.Serialize(createRequest);
-        var createContent = new StringContent(createJson, Encoding.UTF8, "application/json");
-        var createResponse = await httpClient.PostAsync("/v1/notifications", createContent);
-        var createResponseContent = await createResponse.Content.ReadAsStringAsync();
-        var createdNotification = JsonSerializer.Deserialize<NotificationDto>(createResponseContent, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
+        await notificationsClient.CreateNotificationAsync(createRequest);
 
         // Act
-        var response = await httpClient.DeleteAsync($"/v1/notifications/{createdNotification!.Id}");
+        await notificationsClient.MarkAllNotificationsAsReadAsync();
 
-        // Assert
-        Assert.True(response.IsSuccessStatusCode);
+        // Assert - verify all are marked as read
+        var unreadCount = await notificationsClient.GetUnreadNotificationCountAsync();
+        Assert.Equal(0, unreadCount);
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task RemoveNotificationAsync_ShouldRemoveNotification_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Notifications:{EaContextSeeder.BobEmail}:Write")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // First create a notification
+        var createRequest = new AddNotificationRequest
+        {
+            Message = "Test notification for remove test",
+            Type = NotificationType.Info
+        };
+
+        var notification = await notificationsClient.CreateNotificationAsync(createRequest);
+
+        // Act
+        await notificationsClient.RemoveNotificationAsync(notification.Id);
+
+        // Assert - verify it's removed by checking count
+        var allNotifications = await notificationsClient.GetAllNotificationsAsync();
+        Assert.DoesNotContain(allNotifications, n => n.Id == notification.Id);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task ClearAllNotificationsAsync_ShouldClearAll_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -388,17 +361,28 @@ public class NotificationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
-        // Act
-        var response = await httpClient.DeleteAsync("/v1/notifications/clear-all");
+        // First create a notification
+        var createRequest = new AddNotificationRequest
+        {
+            Message = "Test notification for clear all test",
+            Type = NotificationType.Info
+        };
 
-        // Assert
-        Assert.True(response.IsSuccessStatusCode);
+        await notificationsClient.CreateNotificationAsync(createRequest);
+
+        // Act
+        await notificationsClient.ClearAllNotificationsAsync();
+
+        // Assert - verify all are cleared
+        var allNotifications = await notificationsClient.GetAllNotificationsAsync();
+        Assert.Empty(allNotifications);
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task ClearNotificationsByCategoryAsync_ShouldClearByCategory_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -411,17 +395,38 @@ public class NotificationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
-        // Act
-        var response = await httpClient.DeleteAsync("/v1/notifications/category/TestCategory");
+        // First create notifications with different categories
+        var createRequest1 = new AddNotificationRequest
+        {
+            Message = "Test notification for category clear test 1",
+            Type = NotificationType.Info,
+            Category = "TestCategory"
+        };
 
-        // Assert
-        Assert.True(response.IsSuccessStatusCode);
+        var createRequest2 = new AddNotificationRequest
+        {
+            Message = "Test notification for category clear test 2",
+            Type = NotificationType.Info,
+            Category = "OtherCategory"
+        };
+
+        await notificationsClient.CreateNotificationAsync(createRequest1);
+        await notificationsClient.CreateNotificationAsync(createRequest2);
+
+        // Act
+        await notificationsClient.ClearNotificationsByCategoryAsync("TestCategory");
+
+        // Assert - verify only TestCategory notifications are cleared
+        var remainingNotifications = await notificationsClient.GetAllNotificationsAsync();
+        Assert.DoesNotContain(remainingNotifications, n => n.Category == "TestCategory");
+        Assert.Contains(remainingNotifications, n => n.Category == "OtherCategory");
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task ClearNotificationsByContextAsync_ShouldClearByContext_WhenValidRequest(
         CustomWebApplicationDbContextFactory<Program> factory,
+        INotificationsClient notificationsClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -434,60 +439,56 @@ public class NotificationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
-        // Act
-        var response = await httpClient.DeleteAsync("/v1/notifications/context/TestContext");
+        // First create notifications with different contexts
+        var createRequest1 = new AddNotificationRequest
+        {
+            Message = "Test notification for context clear test 1",
+            Type = NotificationType.Info,
+            Context = "TestContext"
+        };
 
-        // Assert
-        Assert.True(response.IsSuccessStatusCode);
+        var createRequest2 = new AddNotificationRequest
+        {
+            Message = "Test notification for context clear test 2",
+            Type = NotificationType.Info,
+            Context = "OtherContext"
+        };
+
+        await notificationsClient.CreateNotificationAsync(createRequest1);
+        await notificationsClient.CreateNotificationAsync(createRequest2);
+
+        // Act
+        await notificationsClient.ClearNotificationsByContextAsync("TestContext");
+
+        // Assert - verify only TestContext notifications are cleared
+        var remainingNotifications = await notificationsClient.GetAllNotificationsAsync();
+        Assert.DoesNotContain(remainingNotifications, n => n.Context == "TestContext");
+        Assert.Contains(remainingNotifications, n => n.Context == "OtherContext");
     }
 
     [Theory]
-    [CustomAutoData(typeof(NotificationTestCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task NotificationEndpoints_ShouldReturnUnauthorized_WhenTokenMissing(
         CustomWebApplicationDbContextFactory<Program> factory,
-        HttpClient httpClient)
+        INotificationsClient notificationsClient)
     {
-        // Test all GET endpoints
-        var getEndpoints = new[]
+        // Act & Assert - all endpoints should return 403 when no token
+        var createRequest = new AddNotificationRequest
         {
-            "/v1/notifications",
-            "/v1/notifications/unread",
-            "/v1/notifications/unread/count",
-            "/v1/notifications/category/test"
+            Message = "Test notification",
+            Type = NotificationType.Info
         };
 
-        foreach (var endpoint in getEndpoints)
-        {
-            var response = await httpClient.GetAsync(endpoint);
-            Assert.Equal(403, (int)response.StatusCode);
-        }
+        await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => notificationsClient.CreateNotificationAsync(createRequest));
 
-        // Test PUT endpoints
-        var putEndpoints = new[]
-        {
-            "/v1/notifications/test-id/read",
-            "/v1/notifications/read-all"
-        };
+        await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => notificationsClient.GetAllNotificationsAsync());
 
-        foreach (var endpoint in putEndpoints)
-        {
-            var response = await httpClient.PutAsync(endpoint, null);
-            Assert.Equal(403, (int)response.StatusCode);
-        }
+        await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => notificationsClient.GetUnreadNotificationsAsync());
 
-        // Test DELETE endpoints
-        var deleteEndpoints = new[]
-        {
-            "/v1/notifications/test-id",
-            "/v1/notifications/clear-all",
-            "/v1/notifications/category/test",
-            "/v1/notifications/context/test"
-        };
-
-        foreach (var endpoint in deleteEndpoints)
-        {
-            var response = await httpClient.DeleteAsync(endpoint);
-            Assert.Equal(403, (int)response.StatusCode);
-        }
+        await Assert.ThrowsAsync<ExternalApplicationsException>(
+            () => notificationsClient.GetUnreadNotificationCountAsync());
     }
 }

@@ -223,6 +223,77 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
             ctx.Permissions.AddRange(filesReadPermission, filesWritePermission, filesDeletePermission,
                                    aliceFilesReadPermission, aliceFilesWritePermission, aliceFilesDeletePermission);
 
+            // Add Notifications permissions for Bob
+            var notificationsReadPermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: bobId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.Notifications,
+                accessType: AccessType.Read,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var notificationsWritePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: bobId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.Notifications,
+                accessType: AccessType.Write,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var notificationsDeletePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: bobId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.Notifications,
+                accessType: AccessType.Delete,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            // Add Notifications permissions for Alice as well
+            var aliceNotificationsReadPermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: aliceId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.Notifications,
+                accessType: AccessType.Read,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var aliceNotificationsWritePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: aliceId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.Notifications,
+                accessType: AccessType.Write,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            var aliceNotificationsDeletePermission = new Permission(
+                new PermissionId(Guid.NewGuid()),
+                userId: aliceId,
+                applicationId: applicationId,
+                resourceKey: applicationId.Value.ToString(),
+                resourceType: ResourceType.Notifications,
+                accessType: AccessType.Delete,
+                grantedOn: now,
+                grantedBy: aliceId
+            );
+
+            ctx.Permissions.AddRange(notificationsReadPermission, notificationsWritePermission, notificationsDeletePermission,
+                                   aliceNotificationsReadPermission, aliceNotificationsWritePermission, aliceNotificationsDeletePermission);
+
             var templatePerm1 = new TemplatePermission(
                 new TemplatePermissionId(new Guid(TemplatePermissionId1)),
                 userId: bobId,
