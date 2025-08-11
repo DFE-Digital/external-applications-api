@@ -52,7 +52,7 @@ public class ClearNotificationsByCategoryCommandHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        await _notificationService.Received(1).ClearNotificationsByCategoryAsync(command.Category, email, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).ClearNotificationsByCategoryAsync(email, command.Category, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -143,7 +143,7 @@ public class ClearNotificationsByCategoryCommandHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         _permissionCheckerService.Received(1).HasPermission(ResourceType.Notifications, appId, AccessType.Write);
-        await _notificationService.Received(1).ClearNotificationsByCategoryAsync(command.Category, appId, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).ClearNotificationsByCategoryAsync(appId, command.Category, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -164,7 +164,7 @@ public class ClearNotificationsByCategoryCommandHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Write).Returns(true);
 
         var exceptionMessage = "Test exception";
-        _notificationService.ClearNotificationsByCategoryAsync(command.Category, email, Arg.Any<CancellationToken>())
+        _notificationService.ClearNotificationsByCategoryAsync(email, command.Category, Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception(exceptionMessage));
 
         // Act

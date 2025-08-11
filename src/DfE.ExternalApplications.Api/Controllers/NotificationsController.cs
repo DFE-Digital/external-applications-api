@@ -142,7 +142,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     /// Marks a specific notification as read.
     /// </summary>
     [HttpPut("{notificationId}/read")]
-    [SwaggerResponse(200, "Notification marked as read successfully.")]
+    [SwaggerResponse(200, "Notification marked as read successfully.", typeof(bool))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
@@ -167,7 +167,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     /// Marks all notifications as read for the current user.
     /// </summary>
     [HttpPut("read-all")]
-    [SwaggerResponse(200, "All notifications marked as read successfully.")]
+    [SwaggerResponse(200, "All notifications marked as read successfully.", typeof(bool))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
@@ -189,7 +189,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     /// Removes a specific notification.
     /// </summary>
     [HttpDelete("{notificationId}")]
-    [SwaggerResponse(200, "Notification removed successfully.")]
+    [SwaggerResponse(200, "Notification removed successfully.", typeof(bool))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
@@ -214,7 +214,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     /// Clears all notifications for the current user.
     /// </summary>
     [HttpDelete("clear-all")]
-    [SwaggerResponse(200, "All notifications cleared successfully.")]
+    [SwaggerResponse(200, "All notifications cleared successfully.", typeof(bool))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
@@ -236,7 +236,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     /// Clears notifications by category for the current user.
     /// </summary>
     [HttpDelete("category/{category}")]
-    [SwaggerResponse(200, "Notifications cleared successfully.")]
+    [SwaggerResponse(200, "Notifications cleared successfully.", typeof(bool))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
@@ -260,7 +260,7 @@ public class NotificationsController(ISender sender) : ControllerBase
     /// Clears notifications by context for the current user.
     /// </summary>
     [HttpDelete("context/{context}")]
-    [SwaggerResponse(200, "Notifications cleared successfully.")]
+    [SwaggerResponse(200, "Notifications cleared successfully.", typeof(bool))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]

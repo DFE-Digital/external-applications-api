@@ -11,15 +11,15 @@ using System.Security.Claims;
 namespace DfE.ExternalApplications.Application.Notifications.Commands;
 
 [RateLimit(5, 30)]
-public sealed record ClearNotificationsByContextCommand(string Context) : IRequest<Result<Unit>>, IRateLimitedRequest;
+public sealed record ClearNotificationsByContextCommand(string Context) : IRequest<Result<bool>>, IRateLimitedRequest;
 
 public sealed class ClearNotificationsByContextCommandHandler(
     INotificationService notificationService,
     IPermissionCheckerService permissionCheckerService,
     IHttpContextAccessor httpContextAccessor)
-    : IRequestHandler<ClearNotificationsByContextCommand, Result<Unit>>
+    : IRequestHandler<ClearNotificationsByContextCommand, Result<bool>>
 {
-    public async Task<Result<Unit>> Handle(
+    public async Task<Result<bool>> Handle(
         ClearNotificationsByContextCommand request, 
         CancellationToken cancellationToken)
     {
@@ -27,7 +27,7 @@ public sealed class ClearNotificationsByContextCommandHandler(
         {
             var httpContext = httpContextAccessor.HttpContext;
             if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                return Result<Unit>.Forbid("Not authenticated");
+                return Result<bool>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue(ClaimTypes.Email);
             
@@ -35,19 +35,19 @@ public sealed class ClearNotificationsByContextCommandHandler(
                 principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
             if (string.IsNullOrEmpty(principalId))
-                return Result<Unit>.Forbid("No user identifier");
+                return Result<bool>.Forbid("No user identifier");
 
             var canAccess = permissionCheckerService.HasPermission(ResourceType.Notifications, principalId, AccessType.Write);
             if (!canAccess)
-                return Result<Unit>.Forbid("User does not have permission to modify notifications");
+                return Result<bool>.Forbid("User does not have permission to modify notifications");
 
-            await notificationService.ClearNotificationsByContextAsync(request.Context, principalId, cancellationToken);
+            await notificationService.ClearNotificationsByContextAsync(principalId, request.Context, cancellationToken);
 
-            return Result<Unit>.Success(Unit.Value);
+            return Result<bool>.Success(true);
         }
         catch (Exception ex)
         {
-            return Result<Unit>.Failure(ex.Message);
+            return Result<bool>.Failure(ex.Message);
         }
     }
 }

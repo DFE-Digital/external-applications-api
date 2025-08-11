@@ -1541,7 +1541,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Notifications cleared successfully."
+            "description": "Notifications cleared successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request data.",
@@ -1678,7 +1685,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Notification marked as read successfully."
+            "description": "Notification marked as read successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request data.",
@@ -1752,7 +1766,14 @@
         "operationId": "Notifications_MarkAllNotificationsAsRead",
         "responses": {
           "200": {
-            "description": "All notifications marked as read successfully."
+            "description": "All notifications marked as read successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request data.",
@@ -1827,7 +1848,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Notification removed successfully."
+            "description": "Notification removed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request data.",
@@ -1901,7 +1929,14 @@
         "operationId": "Notifications_ClearAllNotifications",
         "responses": {
           "200": {
-            "description": "All notifications cleared successfully."
+            "description": "All notifications cleared successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request data.",
@@ -1976,7 +2011,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Notifications cleared successfully."
+            "description": "Notifications cleared successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid request data.",

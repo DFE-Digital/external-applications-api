@@ -3,6 +3,7 @@ using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
 
 namespace DfE.ExternalApplications.Api.Filters
 {
@@ -21,25 +22,24 @@ namespace DfE.ExternalApplications.Api.Filters
 
                 if (!result.IsSuccess)
                 {
-                    Exception ex = result.ErrorCode switch
+                    throw result.ErrorCode switch
                     {
                         DomainErrorCode.NotFound => new NotFoundException(result.Error),
                         DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
                         DomainErrorCode.Conflict => new ConflictException(result.Error),
                         DomainErrorCode.Validation => new ValidationException(result.Error),
-
                         _ => new BadRequestException(result.Error)
                     };
-
-                    throw ex;
                 }
                 else
                 {
-                    // overwrite the result to just return the Value
-                    context.Result = new ObjectResult(result.Value)
-                    {
-                        StatusCode = or.StatusCode ?? 200
-                    };
+
+                        // For other values, return the Value as before
+                        context.Result = new ObjectResult(result.Value)
+                        {
+                            StatusCode = or.StatusCode ?? 200
+                        };
+                    
                 }
             }
 

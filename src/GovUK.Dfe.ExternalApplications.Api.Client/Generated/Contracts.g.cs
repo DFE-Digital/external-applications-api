@@ -179,7 +179,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>Notifications cleared successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ClearNotificationsByCategoryAsync(string category, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<bool> ClearNotificationsByCategoryAsync(string category, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -195,7 +195,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>Notification marked as read successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task MarkNotificationAsReadAsync(string notificationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<bool> MarkNotificationAsReadAsync(string notificationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -203,7 +203,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>All notifications marked as read successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task MarkAllNotificationsAsReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<bool> MarkAllNotificationsAsReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -211,7 +211,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>Notification removed successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task RemoveNotificationAsync(string notificationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<bool> RemoveNotificationAsync(string notificationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -219,7 +219,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>All notifications cleared successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ClearAllNotificationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<bool> ClearAllNotificationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -227,7 +227,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>Notifications cleared successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ClearNotificationsByContextAsync(string context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<bool> ClearNotificationsByContextAsync(string context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 

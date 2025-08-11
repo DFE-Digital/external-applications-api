@@ -8,11 +8,11 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
     /// Authorization handler that checks notifications permission claims for a specific user resource.
     /// </summary>
     public sealed class NotificationsPermissionHandler(IHttpContextAccessor accessor)
-        : AuthorizationHandler<UserPermissionRequirement>
+        : AuthorizationHandler<NotificationsPermissionRequirement>
     {
         protected override Task HandleRequirementAsync(
             AuthorizationHandlerContext context,
-            UserPermissionRequirement requirement)
+            NotificationsPermissionRequirement requirement)
         {
             var httpContext = accessor.HttpContext;
             var resourceKey = httpContext?.Request.RouteValues["email"]?.ToString();
