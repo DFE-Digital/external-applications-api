@@ -18,6 +18,7 @@ using DfE.CoreLibs.Http.Extensions;
 using DfE.ExternalApplications.Api.ExceptionHandlers;
 using System.Text.Json;
 using DfE.ExternalApplications.Api.Filters;
+using Microsoft.AspNetCore.SignalR;
 
 namespace DfE.ExternalApplications.Api
 {
@@ -80,6 +81,9 @@ namespace DfE.ExternalApplications.Api
 
             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
             builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
+            
+            // Configure SignalR
+            ConfigureSignalR(builder.Services, builder.Configuration, builder.Environment);
             
             builder.Services.AddApplicationDependencyGroup(builder.Configuration);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
@@ -198,12 +202,37 @@ namespace DfE.ExternalApplications.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints => 
+            { 
+                endpoints.MapControllers();
+                endpoints.MapHub<Hubs.NotificationHub>("/hubs/notifications");
+            });
 
             ILogger<Program> logger = app.Services.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Logger is working...");
 
             await app.RunAsync();
+        }
+
+        private static void ConfigureSignalR(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+        {
+            // Check if we're running in Azure (has Azure SignalR connection string)
+            var azureSignalRConnectionString = configuration.GetConnectionString("AzureSignalR");
+            
+            if (!string.IsNullOrEmpty(azureSignalRConnectionString))
+            {
+                // Use Azure SignalR Service
+                services.AddSignalR()
+                    .AddAzureSignalR(azureSignalRConnectionString);
+            }
+            else
+            {
+                // Use local ASP.NET Core SignalR
+                services.AddSignalR();
+            }
+            
+            // Register the hub context abstraction
+            services.AddScoped<DfE.ExternalApplications.Domain.Services.INotificationHubContext, DfE.ExternalApplications.Api.Services.NotificationHubContext>();
         }
     }
 }

@@ -16,6 +16,7 @@ public sealed record MarkAllNotificationsAsReadCommand() : IRequest<Result<bool>
 public sealed class MarkAllNotificationsAsReadCommandHandler(
     INotificationService notificationService,
     IPermissionCheckerService permissionCheckerService,
+    INotificationSignalRService notificationSignalRService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<MarkAllNotificationsAsReadCommand, Result<bool>>
 {
@@ -42,6 +43,9 @@ public sealed class MarkAllNotificationsAsReadCommandHandler(
                 return Result<bool>.Forbid("User does not have permission to modify notifications");
 
             await notificationService.MarkAllAsReadAsync(principalId, cancellationToken);
+
+            // Send real-time notification list refresh via SignalR
+            await notificationSignalRService.SendNotificationListRefreshToUserAsync(principalId, cancellationToken);
 
             return Result<bool>.Success(true);
         }

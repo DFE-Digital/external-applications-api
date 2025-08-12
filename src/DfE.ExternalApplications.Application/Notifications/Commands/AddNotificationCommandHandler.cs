@@ -27,6 +27,7 @@ public sealed record AddNotificationCommand(
 public sealed class AddNotificationCommandHandler(
     INotificationService notificationService,
     IPermissionCheckerService permissionCheckerService,
+    INotificationSignalRService notificationSignalRService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<AddNotificationCommand, Result<NotificationDto>>
 {
@@ -88,6 +89,9 @@ public sealed class AddNotificationCommandHandler(
                 Metadata = notification.Metadata,
                 Priority = notification.Priority
             };
+
+            // Send real-time notification via SignalR
+            await notificationSignalRService.SendNotificationToUserAsync(principalId, dto, cancellationToken);
 
             return Result<NotificationDto>.Success(dto);
         }

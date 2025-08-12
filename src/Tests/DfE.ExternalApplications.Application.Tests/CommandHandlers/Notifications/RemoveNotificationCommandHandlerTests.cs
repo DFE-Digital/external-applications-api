@@ -8,6 +8,7 @@ using NSubstitute;
 using System.Security.Claims;
 using NSubstitute.ExceptionExtensions;
 using Xunit;
+using DfE.ExternalApplications.Tests.Common.Mocks;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Notifications;
 
@@ -15,6 +16,7 @@ public class RemoveNotificationCommandHandlerTests
 {
     private readonly INotificationService _notificationService;
     private readonly IPermissionCheckerService _permissionCheckerService;
+    private readonly INotificationSignalRService _notificationSignalRService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly RemoveNotificationCommandHandler _handler;
 
@@ -22,11 +24,13 @@ public class RemoveNotificationCommandHandlerTests
     {
         _notificationService = Substitute.For<INotificationService>();
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
+        _notificationSignalRService = new MockNotificationSignalRService();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
 
         _handler = new RemoveNotificationCommandHandler(
             _notificationService,
             _permissionCheckerService,
+            _notificationSignalRService,
             _httpContextAccessor);
     }
 
@@ -53,6 +57,11 @@ public class RemoveNotificationCommandHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         await _notificationService.Received(1).RemoveNotificationAsync(command.NotificationId, Arg.Any<CancellationToken>());
+        
+        // Verify SignalR notification was sent
+        var mockService = (MockNotificationSignalRService)_notificationSignalRService;
+        Assert.Single(mockService.DeletedNotificationIds);
+        Assert.Equal(command.NotificationId, mockService.DeletedNotificationIds.First());
     }
 
     [Theory]

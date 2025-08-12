@@ -16,6 +16,7 @@ public sealed record RemoveNotificationCommand(string NotificationId) : IRequest
 public sealed class RemoveNotificationCommandHandler(
     INotificationService notificationService,
     IPermissionCheckerService permissionCheckerService,
+    INotificationSignalRService notificationSignalRService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<RemoveNotificationCommand, Result<bool>>
 {
@@ -42,6 +43,9 @@ public sealed class RemoveNotificationCommandHandler(
                 return Result<bool>.Forbid("User does not have permission to modify notifications");
 
             await notificationService.RemoveNotificationAsync(request.NotificationId, cancellationToken);
+
+            // Send real-time notification deletion via SignalR
+            await notificationSignalRService.SendNotificationDeletionToUserAsync(principalId, request.NotificationId, cancellationToken);
 
             return Result<bool>.Success(true);
         }

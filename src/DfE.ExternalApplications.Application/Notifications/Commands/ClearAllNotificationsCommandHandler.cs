@@ -16,6 +16,7 @@ public sealed record ClearAllNotificationsCommand() : IRequest<Result<bool>>, IR
 public sealed class ClearAllNotificationsCommandHandler(
     INotificationService notificationService,
     IPermissionCheckerService permissionCheckerService,
+    INotificationSignalRService notificationSignalRService,
     IHttpContextAccessor httpContextAccessor)
     : IRequestHandler<ClearAllNotificationsCommand, Result<bool>>
 {
@@ -42,6 +43,9 @@ public sealed class ClearAllNotificationsCommandHandler(
                 return Result<bool>.Forbid("User does not have permission to modify notifications");
 
             await notificationService.ClearAllNotificationsAsync(principalId, cancellationToken);
+
+            // Send real-time notification list refresh via SignalR
+            await notificationSignalRService.SendNotificationListRefreshToUserAsync(principalId, cancellationToken);
 
             return Result<bool>.Success(true);
         }

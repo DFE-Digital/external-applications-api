@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<IFileFactory, FileFactory>();
 
             services.AddBackgroundService();
-            services.AddNotificationServices();
+            services.AddNotificationServicesWithRedis(config);
 
             services.AddFileStorage(config);
 

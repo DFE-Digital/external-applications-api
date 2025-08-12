@@ -1,4 +1,5 @@
 using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.CoreLibs.Notifications.Interfaces;
 using DfE.CoreLibs.Notifications.Models;
 using DfE.CoreLibs.Testing.AutoFixture.Attributes;
@@ -9,6 +10,7 @@ using NSubstitute;
 using System.Security.Claims;
 using NSubstitute.ExceptionExtensions;
 using Xunit;
+using DfE.ExternalApplications.Tests.Common.Mocks;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Notifications;
 
@@ -16,6 +18,7 @@ public class AddNotificationCommandHandlerTests
 {
     private readonly INotificationService _notificationService;
     private readonly IPermissionCheckerService _permissionCheckerService;
+    private readonly INotificationSignalRService _notificationSignalRService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly AddNotificationCommandHandler _handler;
 
@@ -23,11 +26,13 @@ public class AddNotificationCommandHandlerTests
     {
         _notificationService = Substitute.For<INotificationService>();
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
+        _notificationSignalRService = new MockNotificationSignalRService();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
 
         _handler = new AddNotificationCommandHandler(
             _notificationService,
             _permissionCheckerService,
+            _notificationSignalRService,
             _httpContextAccessor);
     }
 
@@ -247,5 +252,55 @@ public class AddNotificationCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(exceptionMessage, result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldSendSignalRNotification_WhenNotificationCreatedSuccessfully(
+        AddNotificationCommand command,
+        Notification notification)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var email = "test@example.com";
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, email)
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+
+        _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Write).Returns(true);
+
+        // Set up the notification to return from the service
+        notification.Id = Guid.NewGuid().ToString();
+        notification.Message = command.Message;
+        notification.Type = command.Type;
+        notification.UserId = email;
+        notification.CreatedAt = DateTime.UtcNow;
+        notification.IsRead = false;
+        notification.AutoDismiss = command.AutoDismiss ?? true;
+        notification.AutoDismissSeconds = command.AutoDismissSeconds ?? 5;
+        notification.Category = command.Category;
+        notification.Context = command.Context;
+        notification.ActionUrl = command.ActionUrl;
+        notification.Metadata = command.Metadata;
+        notification.Priority = command.Priority ?? NotificationPriority.Normal;
+
+        _notificationService.AddNotificationAsync(
+                command.Message,
+                command.Type,
+                Arg.Any<NotificationOptions>(),
+                Arg.Any<CancellationToken>())
+            .Returns(notification);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Single(_notificationSignalRService.SentNotifications);
+        var sentNotification = _notificationSignalRService.SentNotifications.First();
+        Assert.NotNull(sentNotification);
     }
 }
