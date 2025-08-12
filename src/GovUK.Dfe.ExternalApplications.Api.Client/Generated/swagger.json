@@ -2384,6 +2384,58 @@
           }
         }
       }
+    },
+    "/auth/hub-ticket": {
+      "post": {
+        "tags": [
+          "HubAuth"
+        ],
+        "operationId": "HubAuth_CreateHubTicket",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/hub-cookie": {
+      "get": {
+        "tags": [
+          "HubAuth"
+        ],
+        "operationId": "HubAuth_RedeemHubCookie",
+        "parameters": [
+          {
+            "name": "ticket",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

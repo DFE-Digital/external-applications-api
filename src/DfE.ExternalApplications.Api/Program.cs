@@ -81,7 +81,13 @@ namespace DfE.ExternalApplications.Api
 
             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
             builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
-            
+
+            builder.Services.AddCors(o => o.AddPolicy("Frontend", p =>
+                p.WithOrigins(builder.Configuration["Frontend:Origin"] ?? "https://localhost:7020")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials()));
+
             // Configure SignalR
             ConfigureSignalR(builder.Services, builder.Configuration, builder.Environment);
             
@@ -199,13 +205,18 @@ namespace DfE.ExternalApplications.Api
 
             app.UseRouting();
 
+            app.UseCors("Frontend");
+
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => 
             { 
                 endpoints.MapControllers();
-                endpoints.MapHub<Hubs.NotificationHub>("/hubs/notifications");
+
+                endpoints.MapHub<Hubs.NotificationHub>("/hubs/notifications")
+                    .RequireAuthorization()
+                    .RequireCors("Frontend");
             });
 
             ILogger<Program> logger = app.Services.GetRequiredService<ILogger<Program>>();

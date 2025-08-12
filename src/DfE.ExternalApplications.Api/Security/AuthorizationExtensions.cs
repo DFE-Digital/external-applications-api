@@ -150,6 +150,26 @@ namespace DfE.ExternalApplications.Api.Security
                 }
             };
 
+            // Cookie authentication for SignalR
+            services.AddAuthentication() // do NOT set defaults here
+                .AddCookie("HubCookie", o =>
+                {
+                    o.Cookie.Name = "hubauth";
+                    o.Cookie.HttpOnly = true;
+                    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                    o.Cookie.SameSite = SameSiteMode.None;
+                    o.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+                    o.SlidingExpiration = false;             // SignalR/WebSockets won’t slide; we’ll renew explicitly
+                });
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("Cookies.CanReadNotifications", p =>
+                        p.AddAuthenticationSchemes("HubCookie")
+                            .RequireAuthenticatedUser()
+                );
+            });
+
             services.AddApplicationAuthorization(
                 configuration,
                 policyCustomizations: policyCustomizations,
