@@ -217,7 +217,7 @@ namespace DfE.ExternalApplications.Api
                 endpoints.MapControllers();
 
                 endpoints.MapHub<Hubs.NotificationHub>("/hubs/notifications")
-                    .RequireAuthorization()
+                    .RequireAuthorization("Cookies.CanReadNotifications")
                     .RequireCors("Frontend");
             });
 

@@ -4,7 +4,7 @@ using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Hubs;
 
-[Authorize]
+[Authorize(Policy = "Cookies.CanReadNotifications")]
 public class NotificationHub : Hub
 {
     public override async Task OnConnectedAsync()
