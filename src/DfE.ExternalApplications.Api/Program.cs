@@ -74,6 +74,8 @@ namespace DfE.ExternalApplications.Api
                 c.EnableAnnotations();
             });
 
+            builder.Services.AddDistributedMemoryCache();
+
             builder.Services.ConfigureOptions<SwaggerOptions>();
             builder.Services.AddFeatureManagement();
             builder.Services.AddHttpContextAccessor();

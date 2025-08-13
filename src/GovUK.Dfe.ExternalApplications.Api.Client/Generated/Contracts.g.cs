@@ -286,12 +286,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
     {
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <returns>The created ticket.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> CreateHubTicketAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string, string>> CreateHubTicketAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<FileResponse> RedeemHubCookieAsync(string ticket = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task RedeemHubCookieAsync(string ticket = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 

@@ -112,7 +112,7 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.ApplicationPermissionRequirement(AccessType.Delete.ToString()));
                 },
-                ["CanReadApplicationList"] = pb =>
+                ["CanReadAnyApplication"] = pb =>
                 {
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
