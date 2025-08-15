@@ -1,5 +1,5 @@
 module "azure_container_apps_hosting" {
-  source = "github.com/DFE-Digital/terraform-azurerm-container-apps-hosting?ref=v2.2.1"
+  source = "github.com/DFE-Digital/terraform-azurerm-container-apps-hosting?ref=v2.3.0"
 
   environment    = local.environment
   project_name   = local.project_name
@@ -74,6 +74,7 @@ module "azure_container_apps_hosting" {
   mssql_server_public_access_enabled    = local.mssql_server_public_access_enabled
   mssql_azuread_auth_only               = local.mssql_azuread_auth_only
 
-  enable_signalr = local.enable_signalr
-  signalr_sku     = local.signalr_sku
+  enable_signalr       = local.enable_signalr
+  signalr_sku          = local.signalr_sku
+  signalr_service_mode = local.signalr_service_mode
 }
