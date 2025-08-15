@@ -7,6 +7,7 @@ using DfE.ExternalApplications.Infrastructure.Repositories;
 using DfE.ExternalApplications.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -23,6 +24,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddServiceCaching(config);
 
             services.AddTransient<IApplicationReferenceProvider, DefaultApplicationReferenceProvider>();
+
+            // SignalR Services
+            services.AddScoped<INotificationSignalRService, NotificationSignalRService>();
 
             //Db
             var connectionString = config.GetConnectionString("DefaultConnection");

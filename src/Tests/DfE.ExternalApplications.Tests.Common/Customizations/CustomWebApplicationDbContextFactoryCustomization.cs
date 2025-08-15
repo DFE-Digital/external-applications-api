@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using DfE.CoreLibs.Notifications.Interfaces;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -37,7 +38,14 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         { "Authorization:TokenSettings:SecretKey", "iw5/ivfUWaCpj+n3TihlGUzRVna+KKu8IfLP52GdgNXlDcqt3+N2MM45rwQ=" },
                         { "Authorization:TokenSettings:Issuer", "21f3ed37-8443-4755-9ed2-c68ca86b4398" },
                         { "Authorization:TokenSettings:Audience", "20dafd6d-79e5-4caf-8b72-d070dcc9716f" },
-                        { "Authorization:TokenSettings:TokenLifetimeMinutes", "60" }
+                        { "Authorization:TokenSettings:TokenLifetimeMinutes", "60" },
+                        { "NotificationService:StorageProvider", "Redis" },
+                        { "NotificationService:MaxNotificationsPerUser", "50" },
+                        { "NotificationService:AutoCleanupIntervalMinutes", "60" },
+                        { "NotificationService:MaxNotificationAgeHours", "24" },
+                        { "NotificationService:RedisConnectionString", "localhost:6379" },
+                        { "NotificationService:RedisKeyPrefix", "notifications:" },
+                        { "NotificationService:SessionKey", "UserNotifications" }
                     })
                     .Build();
 
@@ -92,6 +100,10 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                         services.AddUserTokenService(tokenConfig);
                         services.AddSingleton<IRateLimiterFactory<string>, MockRateLimiterFactory>();
+                        
+                        // Replace the notification service with our mock
+                        services.RemoveAll<INotificationService>();
+                        services.AddSingleton<INotificationService, MockNotificationService>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
@@ -115,6 +127,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 services.AddExternalApplicationsApiClient<ITemplatesClient, TemplatesClient>(config, client);
                 services.AddExternalApplicationsApiClient<ITokensClient, TokensClient>(config, client);
                 services.AddExternalApplicationsApiClient<IApplicationsClient, ApplicationsClient>(config, client);
+                services.AddExternalApplicationsApiClient<INotificationsClient, NotificationsClient>(config, client);
 
                 services.RemoveAll<IExternalIdentityValidator>();
                 services.RemoveAll<IUserTokenService>();
@@ -131,6 +144,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 fixture.Inject(serviceProvider.GetRequiredService<ITemplatesClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<ITokensClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<IApplicationsClient>());
+                fixture.Inject(serviceProvider.GetRequiredService<INotificationsClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<IExternalIdentityValidator>());
                 fixture.Inject(new List<Claim>());
 
