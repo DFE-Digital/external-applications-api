@@ -1,5 +1,5 @@
 module "azure_container_apps_hosting" {
-  source = "github.com/DFE-Digital/terraform-azurerm-container-apps-hosting?ref=v1.20.0"
+  source = "github.com/DFE-Digital/terraform-azurerm-container-apps-hosting?ref=v2.2.1"
 
   environment    = local.environment
   project_name   = local.project_name
@@ -42,6 +42,9 @@ module "azure_container_apps_hosting" {
   launch_in_vnet                     = true
   container_app_name_override        = local.container_app_name_override
 
+  storage_subnet_cidr                = local.storage_subnet_cidr
+  mssql_private_endpoint_subnet_cidr = local.mssql_private_endpoint_subnet_cidr
+
   enable_monitoring              = local.enable_monitoring
   monitor_email_receivers        = local.monitor_email_receivers
   container_health_probe_path    = local.container_health_probe_path
@@ -70,4 +73,7 @@ module "azure_container_apps_hosting" {
   mssql_managed_identity_assign_role    = local.mssql_managed_identity_assign_role
   mssql_server_public_access_enabled    = local.mssql_server_public_access_enabled
   mssql_azuread_auth_only               = local.mssql_azuread_auth_only
+
+  enable_signalr = local.enable_signalr
+  signalr_sku     = local.signalr_sku
 }
