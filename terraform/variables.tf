@@ -510,3 +510,9 @@ variable "signalr_sku" {
   type        = string
   default     = "Free_F1"
 }
+
+variable "signalr_service_mode" {
+  description = "SignalR service mode"
+  type        = string
+  default     = "Default"
+}

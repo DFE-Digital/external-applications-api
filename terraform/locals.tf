@@ -67,6 +67,7 @@ locals {
   mssql_azuread_auth_only                      = var.mssql_azuread_auth_only
   enable_signalr                               = var.enable_signalr
   signalr_sku                                  = var.signalr_sku
+  signalr_service_mode                         = var.signalr_service_mode
   restrict_container_apps_to_cdn_inbound_only  = var.restrict_container_apps_to_cdn_inbound_only
   container_apps_infra_subnet_cidr             = var.container_apps_infra_subnet_cidr
 }
