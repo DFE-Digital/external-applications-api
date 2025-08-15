@@ -49,15 +49,20 @@ variable "tags" {
   type        = map(string)
 }
 
-variable "virtual_network_address_space" {
-  description = "Virtual network address space CIDR"
-  type        = string
-}
-
 variable "container_apps_infra_subnet_cidr" {
   description = "Specify a subnet prefix to use for the container_apps_infra subnet"
   type        = string
   default     = "172.16.110.16/28"
+}
+
+variable "storage_subnet_cidr" {
+  description = "Specify a subnet prefix to use for the storage subnet"
+  type        = string
+}
+
+variable "mssql_private_endpoint_subnet_cidr" {
+  description = "Specify a subnet prefix to use for the mssql private endpoint subnet"
+  type        = string
 }
 
 variable "enable_container_registry" {
@@ -493,4 +498,15 @@ variable "storage_account_ipv4_allow_list" {
   description = "A list of public IPv4 address to grant access to the Storage Account"
   type        = list(string)
   default     = []
+}
+
+variable "enable_signalr" {
+  description = "Enable serverless Azure SignalR service"
+  type        = bool
+}
+
+variable "signalr_sku" {
+  description = "SignalR SKU name"
+  type        = string
+  default     = "Free_F1"
 }

@@ -3,7 +3,6 @@ locals {
   project_name                                 = var.project_name
   azure_location                               = var.azure_location
   tags                                         = var.tags
-  virtual_network_address_space                = var.virtual_network_address_space
   enable_container_registry                    = var.enable_container_registry
   registry_admin_enabled                       = var.registry_admin_enabled
   registry_use_managed_identity                = var.registry_use_managed_identity
@@ -51,6 +50,8 @@ locals {
   enable_monitoring_traces                     = var.enable_monitoring_traces
   existing_container_app_environment           = var.existing_container_app_environment
   existing_virtual_network                     = var.existing_virtual_network
+  storage_subnet_cidr                          = var.storage_subnet_cidr
+  mssql_private_endpoint_subnet_cidr           = var.mssql_private_endpoint_subnet_cidr
   existing_resource_group                      = var.existing_resource_group
   container_app_name_override                  = var.container_app_name_override
   enable_mssql_database                        = var.enable_mssql_database
@@ -64,6 +65,8 @@ locals {
   mssql_managed_identity_assign_role           = var.mssql_managed_identity_assign_role
   mssql_server_public_access_enabled           = var.mssql_server_public_access_enabled
   mssql_azuread_auth_only                      = var.mssql_azuread_auth_only
+  enable_signalr                               = var.enable_signalr
+  signalr_sku                                  = var.signalr_sku
   restrict_container_apps_to_cdn_inbound_only  = var.restrict_container_apps_to_cdn_inbound_only
   container_apps_infra_subnet_cidr             = var.container_apps_infra_subnet_cidr
 }
