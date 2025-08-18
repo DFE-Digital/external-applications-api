@@ -299,8 +299,9 @@ public class AddNotificationCommandHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Single(_notificationSignalRService.SentNotifications);
-        var sentNotification = _notificationSignalRService.SentNotifications.First();
+        var mockService = (MockNotificationSignalRService)_notificationSignalRService;
+        Assert.Single(mockService.SentNotifications);
+        var sentNotification = mockService.SentNotifications.First();
         Assert.NotNull(sentNotification);
     }
 }

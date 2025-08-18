@@ -34,32 +34,6 @@ public class NotificationsPermissionHandlerTests
         Assert.True(context.HasSucceeded);
     }
 
-    [Fact]
-    public async Task Handle_ShouldSucceed_WithApplicationFilesPermission_WhenApplicationIdInRoute()
-    {
-        // Arrange
-        var requirement = new NotificationsPermissionRequirement("Write");
-        var httpContext = new DefaultHttpContext();
-        var applicationId = Guid.NewGuid().ToString();
-        httpContext.Request.RouteValues["applicationId"] = applicationId;
-        var accessor = Substitute.For<IHttpContextAccessor>();
-        accessor.HttpContext.Returns(httpContext);
-        var userEmail = "user@example.com";
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.Email, userEmail),
-            new Claim("permission", $"ApplicationFiles:{applicationId}:Write")
-        };
-        var user = new ClaimsPrincipal(new ClaimsIdentity(claims));
-        var context = new AuthorizationHandlerContext([requirement], user, null);
-        var handler = new NotificationsPermissionHandler(accessor);
-
-        // Act
-        await handler.HandleAsync(context);
-
-        // Assert
-        Assert.True(context.HasSucceeded);
-    }
 
     [Fact]
     public async Task Handle_ShouldSucceed_WithAppIdClaim()

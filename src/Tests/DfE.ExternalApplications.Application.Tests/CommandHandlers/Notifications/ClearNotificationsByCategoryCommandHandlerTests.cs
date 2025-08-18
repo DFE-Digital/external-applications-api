@@ -15,6 +15,7 @@ public class ClearNotificationsByCategoryCommandHandlerTests
 {
     private readonly INotificationService _notificationService;
     private readonly IPermissionCheckerService _permissionCheckerService;
+    private readonly INotificationSignalRService _notificationSignalRService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ClearNotificationsByCategoryCommandHandler _handler;
 
@@ -22,11 +23,13 @@ public class ClearNotificationsByCategoryCommandHandlerTests
     {
         _notificationService = Substitute.For<INotificationService>();
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
+        _notificationSignalRService = Substitute.For<INotificationSignalRService>();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
 
         _handler = new ClearNotificationsByCategoryCommandHandler(
             _notificationService,
             _permissionCheckerService,
+            _notificationSignalRService,
             _httpContextAccessor);
     }
 
