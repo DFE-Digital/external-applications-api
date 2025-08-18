@@ -139,6 +139,16 @@
       "Controller": "NotificationsController",
       "Action": "ClearNotificationsByContextAsync",
       "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
+    },
+    {
+      "Controller": "HubAuthController",
+      "Action": "CreateHubTicket",
+      "ExpectedSecurity": "Authorize"
+    },
+    {
+      "Controller": "HubAuthController",
+      "Action": "RedeemHubCookie",
+      "ExpectedSecurity": "AllowAnonymous"
     }
   ]
 }
