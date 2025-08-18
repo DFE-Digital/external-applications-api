@@ -91,7 +91,12 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
                                 AuthConstants.AzureAdScheme,
-                                _ => { /* picks up the same factory.TestClaims */ });
+                                _ => { /* picks up the same factory.TestClaims */ })
+                            
+                            // Add HubCookie scheme for SignalR authentication
+                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
+                                "HubCookie",
+                                _ => { /* picks up factory.TestClaims */ });
 
                         services.RemoveAll<IExternalIdentityValidator>();
                         services.RemoveAll<IUserTokenService>();

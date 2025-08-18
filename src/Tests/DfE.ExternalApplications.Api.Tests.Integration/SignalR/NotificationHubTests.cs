@@ -116,14 +116,21 @@ public class NotificationHubTests
             new(ClaimTypes.Email, userEmail)
         };
 
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "user-token");
+        // For SignalR with cookie authentication, we need to set up the authentication cookie
+        // First, make a request to get the authentication cookie
+        var authResponse = await httpClient.GetAsync("/api/v1/notifications");
+        var authCookies = authResponse.Headers.GetValues("Set-Cookie").ToList();
 
         var connection = new HubConnectionBuilder()
             .WithUrl("http://localhost/hubs/notifications", options =>
             {
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                options.Headers.Add("Authorization", "Bearer user-token");
+                
+                // Add the authentication cookie to the SignalR connection
+                if (authCookies.Any())
+                {
+                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
+                }
             })
             .Build();
 
@@ -152,14 +159,21 @@ public class NotificationHubTests
             new(ClaimTypes.Email, user1Email)
         };
 
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", "user-token");
+        // For SignalR with cookie authentication, we need to set up the authentication cookie
+        // First, make a request to get the authentication cookie
+        var authResponse = await httpClient.GetAsync("/api/v1/notifications");
+        var authCookies = authResponse.Headers.GetValues("Set-Cookie").ToList();
 
         var connection1 = new HubConnectionBuilder()
             .WithUrl("http://localhost/hubs/notifications", options =>
             {
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                options.Headers.Add("Authorization", "Bearer user-token");
+                
+                // Add the authentication cookie to the SignalR connection
+                if (authCookies.Any())
+                {
+                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
+                }
             })
             .Build();
 
@@ -167,7 +181,12 @@ public class NotificationHubTests
             .WithUrl("http://localhost/hubs/notifications", options =>
             {
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                options.Headers.Add("Authorization", "Bearer user-token");
+                
+                // Add the authentication cookie to the SignalR connection
+                if (authCookies.Any())
+                {
+                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
+                }
             })
             .Build();
 
