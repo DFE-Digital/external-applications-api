@@ -1185,7 +1185,7 @@ public class ApplicationsControllerTests
         var fileParameter2 = new FileParameter(stream2, fileName, "text/plain");
 
         // Act - Try to upload the same file again
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,

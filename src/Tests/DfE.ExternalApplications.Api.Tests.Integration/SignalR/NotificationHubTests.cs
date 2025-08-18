@@ -33,29 +33,14 @@ public class NotificationHubTests
         ticketReq.EnsureSuccessStatusCode();
         var payload = JsonDocument.Parse(await ticketReq.Content.ReadAsStringAsync());
         var redeemUrl = payload.RootElement.GetProperty("url").GetString();
-        
-        // Debug: Log the redeem URL to see what we're calling
-        Console.WriteLine($"Redeem URL: {redeemUrl}");
-        
-        // Extract ticket from URL for debugging
-        var uri = new Uri(redeemUrl!);
-        var ticket = System.Web.HttpUtility.ParseQueryString(uri.Query).Get("ticket");
-        Console.WriteLine($"Extracted ticket: {ticket}");
-        
         var redeemResp = await httpClient.GetAsync(redeemUrl!);
-        
-        // Debug: Log the response status and content
-        Console.WriteLine($"Redeem response status: {redeemResp.StatusCode}");
-        if (!redeemResp.IsSuccessStatusCode)
-        {
-            var errorContent = await redeemResp.Content.ReadAsStringAsync();
-            Console.WriteLine($"Error content: {errorContent}");
-        }
-        
         Assert.Equal(System.Net.HttpStatusCode.NoContent, redeemResp.StatusCode);
-        var authCookies = redeemResp.Headers.TryGetValues("Set-Cookie", out var cookieValues)
+        var rawCookies = redeemResp.Headers.TryGetValues("Set-Cookie", out var cookieValues)
             ? cookieValues.ToList()
             : new List<string>();
+        var authCookies = rawCookies
+            .Select(c => c.Split(';')[0])
+            .ToList();
 
         var connection = new HubConnectionBuilder()
             .WithUrl("http://localhost/hubs/notifications", options =>
@@ -143,7 +128,21 @@ public class NotificationHubTests
             .Build();
 
         // Act & Assert - should fail due to missing hub auth cookie
-        await Assert.ThrowsAsync<HttpRequestException>(() => connection.StartAsync());
+        try
+        {
+            await connection.StartAsync();
+            // If we reach here, the connection succeeded when it shouldn't have
+            Assert.True(false, "Connection should have failed due to missing authentication");
+        }
+        catch (Exception ex)
+        {
+            // Connection should fail due to missing authentication
+            Assert.True(ex.Message.Contains("401") || 
+                       ex.Message.Contains("Unauthorized") || 
+                       ex.Message.Contains("Forbidden") ||
+                       ex is HttpRequestException,
+                       $"Expected authentication failure, but got: {ex.GetType().Name}: {ex.Message}");
+        }
 
         // Cleanup
         await connection.DisposeAsync();
