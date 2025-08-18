@@ -6,6 +6,7 @@ using DfE.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
@@ -105,6 +106,12 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.ApplicationPermissionRequirement(AccessType.Write.ToString()));
                 },
+                ["CanDeleteApplication"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.ApplicationPermissionRequirement(AccessType.Delete.ToString()));
+                },
                 ["CanReadAnyApplication"] = pb =>
                 {
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
@@ -134,8 +141,40 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.ApplicationFilesPermissionRequirement(AccessType.Delete.ToString()));
+                },
+                ["CanReadNotifications"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.NotificationsPermissionRequirement(AccessType.Read.ToString()));
+                },
+                ["CanWriteNotifications"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.NotificationsPermissionRequirement(AccessType.Write.ToString()));
                 }
             };
+
+            // Cookie authentication for SignalR
+            services.AddAuthentication() // do NOT set defaults here
+                .AddCookie("HubCookie", o =>
+                {
+                    o.Cookie.Name = "hubauth";
+                    o.Cookie.HttpOnly = true;
+                    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                    o.Cookie.SameSite = SameSiteMode.None;
+                    o.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+                    o.SlidingExpiration = false;             // SignalR/WebSockets won’t slide; we’ll renew explicitly
+                });
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("Cookies.CanReadNotifications", p =>
+                        p.AddAuthenticationSchemes("HubCookie")
+                            .RequireAuthenticatedUser()
+                );
+            });
 
             services.AddApplicationAuthorization(
                 configuration,
@@ -149,6 +188,7 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, ApplicationListPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, AnyTemplatePermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationFilesPermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, NotificationsPermissionHandler>(); 
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, UserPermissionClaimProvider>();
