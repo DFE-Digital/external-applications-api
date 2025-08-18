@@ -82,19 +82,18 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                                             : AuthConstants.AzureAdScheme;
                                     }
 
-                                    return AuthConstants.AzureAdScheme;
+                                        return AuthConstants.AzureAdScheme;
                                 };
                             })
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
                                 AuthConstants.UserScheme,
-                                _ => { /* picks up factory.TestClaims */ })
-
+                                _ => { /* picks up the same factory.TestClaims */ })
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
                                 AuthConstants.AzureAdScheme,
                                 _ => { /* picks up the same factory.TestClaims */ })
                             
-                            // Add HubCookie scheme for SignalR authentication
-                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
+                            // Add HubCookie scheme for SignalR authentication with proper cookie handler
+                            .AddScheme<AuthenticationSchemeOptions, MockCookieAuthenticationHandler>(
                                 "HubCookie",
                                 _ => { /* picks up factory.TestClaims */ });
 

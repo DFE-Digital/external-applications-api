@@ -4,6 +4,8 @@ using DfE.ExternalApplications.Tests.Common.Customizations;
 using DfE.ExternalApplications.Tests.Common.Seeders;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Linq;
 using System.Security.Claims;
 using Xunit;
 
@@ -26,11 +28,43 @@ public class NotificationHubTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
+        // Obtain hub auth cookie via HubAuthController flow
+        var ticketReq = await httpClient.PostAsync("/auth/hub-ticket", content: null);
+        ticketReq.EnsureSuccessStatusCode();
+        var payload = JsonDocument.Parse(await ticketReq.Content.ReadAsStringAsync());
+        var redeemUrl = payload.RootElement.GetProperty("url").GetString();
+        
+        // Debug: Log the redeem URL to see what we're calling
+        Console.WriteLine($"Redeem URL: {redeemUrl}");
+        
+        // Extract ticket from URL for debugging
+        var uri = new Uri(redeemUrl!);
+        var ticket = System.Web.HttpUtility.ParseQueryString(uri.Query).Get("ticket");
+        Console.WriteLine($"Extracted ticket: {ticket}");
+        
+        var redeemResp = await httpClient.GetAsync(redeemUrl!);
+        
+        // Debug: Log the response status and content
+        Console.WriteLine($"Redeem response status: {redeemResp.StatusCode}");
+        if (!redeemResp.IsSuccessStatusCode)
+        {
+            var errorContent = await redeemResp.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error content: {errorContent}");
+        }
+        
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, redeemResp.StatusCode);
+        var authCookies = redeemResp.Headers.TryGetValues("Set-Cookie", out var cookieValues)
+            ? cookieValues.ToList()
+            : new List<string>();
+
         var connection = new HubConnectionBuilder()
             .WithUrl("http://localhost/hubs/notifications", options =>
             {
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                options.Headers.Add("Authorization", "Bearer user-token");
+                if (authCookies.Any())
+                {
+                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
+                }
             })
             .Build();
 
@@ -59,11 +93,28 @@ public class NotificationHubTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
+        // Obtain hub auth cookie via HubAuthController flow
+        var ticketReq2 = await httpClient.PostAsync("/auth/hub-ticket", content: null);
+        ticketReq2.EnsureSuccessStatusCode();
+        var payload2 = JsonDocument.Parse(await ticketReq2.Content.ReadAsStringAsync());
+        var redeemUrl2 = payload2.RootElement.GetProperty("url").GetString();
+        var redeemResp2 = await httpClient.GetAsync(redeemUrl2!);
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, redeemResp2.StatusCode);
+        var rawCookies2 = redeemResp2.Headers.TryGetValues("Set-Cookie", out var cookieValues2)
+            ? cookieValues2.ToList()
+            : new List<string>();
+        var cookiePairs2 = rawCookies2
+            .Select(c => c.Split(';')[0])
+            .ToList();
+
         var connection = new HubConnectionBuilder()
             .WithUrl("http://localhost/hubs/notifications", options =>
             {
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                options.Headers.Add("Authorization", "Bearer user-token");
+                if (cookiePairs2.Any())
+                {
+                    options.Headers.Add("Cookie", string.Join("; ", cookiePairs2));
+                }
             })
             .Build();
 
@@ -80,7 +131,7 @@ public class NotificationHubTests
 
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-    public async Task Hub_ShouldConnect_WhenNoTokenProvided(
+    public async Task Hub_ShouldReturnUnauthorized_WhenNoCookieProvided(
         CustomWebApplicationDbContextFactory<Program> factory)
     {
         // Arrange
@@ -91,13 +142,8 @@ public class NotificationHubTests
             })
             .Build();
 
-        // Act & Assert
-        // In test environment, SignalR authentication might be bypassed for testing purposes
-        // This test verifies that the hub endpoint is accessible
-        await connection.StartAsync();
-        
-        // Verify the connection was successful
-        Assert.Equal(HubConnectionState.Connected, connection.State);
+        // Act & Assert - should fail due to missing hub auth cookie
+        await Assert.ThrowsAsync<HttpRequestException>(() => connection.StartAsync());
 
         // Cleanup
         await connection.DisposeAsync();
@@ -116,17 +162,27 @@ public class NotificationHubTests
             new(ClaimTypes.Email, userEmail)
         };
 
-        // For SignalR with cookie authentication, we need to set up the authentication cookie
-        // First, make a request to get the authentication cookie
-        var authResponse = await httpClient.GetAsync("/api/v1/notifications");
-        var authCookies = authResponse.Headers.GetValues("Set-Cookie").ToList();
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Obtain hub auth cookie via HubAuthController flow
+        var ticketReq = await httpClient.PostAsync("/auth/hub-ticket", content: null);
+        ticketReq.EnsureSuccessStatusCode();
+        var payload = JsonDocument.Parse(await ticketReq.Content.ReadAsStringAsync());
+        var redeemUrl = payload.RootElement.GetProperty("url").GetString();
+        var redeemResp = await httpClient.GetAsync(redeemUrl!);
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, redeemResp.StatusCode);
+        var rawCookies = redeemResp.Headers.TryGetValues("Set-Cookie", out var cookieValues)
+            ? cookieValues.ToList()
+            : new List<string>();
+        var authCookies = rawCookies
+            .Select(c => c.Split(';')[0])
+            .ToList();
 
         var connection = new HubConnectionBuilder()
             .WithUrl("http://localhost/hubs/notifications", options =>
             {
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                
-                // Add the authentication cookie to the SignalR connection
                 if (authCookies.Any())
                 {
                     options.Headers.Add("Cookie", string.Join("; ", authCookies));
@@ -159,10 +215,19 @@ public class NotificationHubTests
             new(ClaimTypes.Email, user1Email)
         };
 
-        // For SignalR with cookie authentication, we need to set up the authentication cookie
-        // First, make a request to get the authentication cookie
-        var authResponse = await httpClient.GetAsync("/api/v1/notifications");
-        var authCookies = authResponse.Headers.GetValues("Set-Cookie").ToList();
+        // Obtain hub auth cookie via HubAuthController flow
+        var ticketReq = await httpClient.PostAsync("/auth/hub-ticket", content: null);
+        ticketReq.EnsureSuccessStatusCode();
+        var payload = JsonDocument.Parse(await ticketReq.Content.ReadAsStringAsync());
+        var redeemUrl = payload.RootElement.GetProperty("url").GetString();
+        var redeemResp = await httpClient.GetAsync(redeemUrl!);
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, redeemResp.StatusCode);
+        var rawCookies = redeemResp.Headers.TryGetValues("Set-Cookie", out var cookieValues)
+            ? cookieValues.ToList()
+            : new List<string>();
+        var authCookies = rawCookies
+            .Select(c => c.Split(';')[0])
+            .ToList();
 
         var connection1 = new HubConnectionBuilder()
             .WithUrl("http://localhost/hubs/notifications", options =>
