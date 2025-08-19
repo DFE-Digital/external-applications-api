@@ -34,7 +34,7 @@ namespace DfE.ExternalApplications.Api.Security
                 return Array.Empty<Claim>();
             }
 
-            var cacheKey = $"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(userEmail)}";
+            var cacheKey = $"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(userEmail.ToLower())}";
             var methodName = nameof(UserPermissionClaimProvider);
 
             return await cacheService.GetOrAddAsync<IEnumerable<Claim>>(
