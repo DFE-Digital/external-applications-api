@@ -23,7 +23,7 @@
 		<PackageReference Include="DfE.CoreLibs.Security" Version="1.1.14-prerelease-23" />
 		<PackageReference Include="DfE.CoreLibs.Utilities" Version="1.0.15" />
 		<PackageReference Include="FluentValidation" Version="12.0.0" />
-		<PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+		<PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.18" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
