@@ -29,7 +29,7 @@ public sealed class ContributorAddedEventHandler(
         userFactory.AddTemplatePermissionToUser(
             notification.Contributor,
             notification.TemplateId.Value.ToString(),
-            new[] { AccessType.Read },
+            new[] { AccessType.Read, AccessType.Write },
             notification.AddedBy,
             notification.AddedOn);
 
@@ -37,6 +37,15 @@ public sealed class ContributorAddedEventHandler(
             notification.Contributor,
             notification.ApplicationId.Value.ToString(),
             ResourceType.ApplicationFiles,
+            new[] { AccessType.Read, AccessType.Write },
+            notification.AddedBy,
+            notification.ApplicationId,
+            notification.AddedOn);
+
+        userFactory.AddPermissionToUser(
+            notification.Contributor,
+            notification.ApplicationId.Value.ToString(),
+            ResourceType.Notifications,
             new[] { AccessType.Read, AccessType.Write },
             notification.AddedBy,
             notification.ApplicationId,

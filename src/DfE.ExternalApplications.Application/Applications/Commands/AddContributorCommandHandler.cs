@@ -166,7 +166,7 @@ public sealed class AddContributorCommandHandler(
 
         // Add missing permissions using factory method
         userFactory.AddPermissionToUser(existingContributor, applicationId.Value.ToString(), ResourceType.Application, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, applicationId);
-        userFactory.AddTemplatePermissionToUser(existingContributor, application.TemplateVersion!.TemplateId.Value.ToString(), new[] { AccessType.Read }, dbUser.Id!, DateTime.UtcNow);
+        userFactory.AddTemplatePermissionToUser(existingContributor, application.TemplateVersion!.TemplateId.Value.ToString(), new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, DateTime.UtcNow);
         userFactory.AddPermissionToUser(
             existingContributor,
             applicationId.Value.ToString(),
