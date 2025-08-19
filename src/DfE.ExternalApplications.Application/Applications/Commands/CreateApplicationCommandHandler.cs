@@ -99,7 +99,7 @@ public sealed class CreateApplicationCommandHandler(
             await unitOfWork.CommitAsync(cancellationToken);
 
             // invalidate the user claim cache
-            cacheService.Remove($"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(dbUser.Email)}");
+            cacheService.Remove($"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(dbUser.Email.ToLower())}");
 
             return Result<ApplicationDto>.Success(new ApplicationDto
             {
