@@ -8,7 +8,6 @@ The API Client Library description.
 
 ## Key Features
 
-
 ## Installation
 
 To install the API Client Library, use the following command in your .NET project:
