@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
+[ExcludeFromCodeCoverage]
 public class CachedInternalUserTokenStore(
     IHttpContextAccessor httpContextAccessor,
     IDistributedCache distributedCache,

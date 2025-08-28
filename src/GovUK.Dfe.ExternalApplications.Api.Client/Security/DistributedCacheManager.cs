@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +12,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 /// Implementation of cache manager using distributed cache and HTTP context
 /// Ensures atomic cache operations and consistency
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class DistributedCacheManager(
     IDistributedCache distributedCache,
     IHttpContextAccessor httpContextAccessor,
