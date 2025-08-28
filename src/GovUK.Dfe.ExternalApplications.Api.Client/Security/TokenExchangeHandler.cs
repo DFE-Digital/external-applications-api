@@ -76,7 +76,7 @@ public class TokenExchangeHandler(
             }
 
             // Attempt token refresh if possible
-            if (tokenState.CanRefresh && tokenState.IsAnyTokenExpired)
+            if (tokenState.CanRefresh)
             {
                 logger.LogInformation(">>>>>>>>>> TokenExchange >>> Attempting token refresh for user: {UserName}", userName);
                 
