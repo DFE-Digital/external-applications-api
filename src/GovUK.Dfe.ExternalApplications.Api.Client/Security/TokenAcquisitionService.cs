@@ -1,7 +1,9 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
-using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
-using Microsoft.Identity.Client;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
+using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
 {

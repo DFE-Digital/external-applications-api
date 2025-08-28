@@ -1,5 +1,9 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;

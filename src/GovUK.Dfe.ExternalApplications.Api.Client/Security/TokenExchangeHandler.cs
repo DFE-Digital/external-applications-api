@@ -1,14 +1,17 @@
-﻿using DfE.CoreLibs.Http.Models;
-using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
-using GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics.CodeAnalysis;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Text;
-using System.Text.Json;
+using DfE.CoreLibs.Http.Models;
+using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
@@ -18,273 +21,169 @@ public class TokenExchangeHandler(
     IInternalUserTokenStore tokenStore,
     ITokensClient tokensClient,
     ITokenAcquisitionService tokenAcquisitionService,
+    ITokenStateManager tokenStateManager,
     ILogger<TokenExchangeHandler> logger)
     : DelegatingHandler
 {
-    // How close to expiration before we force logout
-    private static readonly TimeSpan ExpiryBuffer = TimeSpan.FromMinutes(5);
-
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        logger.LogDebug(">>>>>>>>>> Authentication >>> TokenExchangeHandler.SendAsync started for request: {Method} {Uri}", 
-            request.Method, request.RequestUri);
+        logger.LogInformation(">>>>>>>>>> TokenExchange >>> ENTRY: Processing request: {Method} {Uri} - Time: {Time}", 
+            request.Method, request.RequestUri, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff UTC"));
 
         var httpContext = httpContextAccessor.HttpContext;
         
         if (httpContext == null)
         {
-            logger.LogError(">>>>>>>>>> Authentication >>> HttpContext is null in TokenExchangeHandler for request: {Method} {Uri}", 
+            logger.LogError(">>>>>>>>>> TokenExchange >>> HttpContext is null for request: {Method} {Uri}", 
                 request.Method, request.RequestUri);
             return UnauthorizedResponse(request);
         }
 
-        logger.LogDebug(">>>>>>>>>> Authentication >>> HttpContext available, User.Identity.IsAuthenticated: {IsAuthenticated}, User.Identity.Name: {UserName}", 
-            httpContext.User?.Identity?.IsAuthenticated, httpContext.User?.Identity?.Name);
-        
-        // Get initial token status overview
-        logger.LogInformation(">>>>>>>>>> Authentication >>> ===== TOKEN STATUS OVERVIEW FOR REQUEST: {Method} {Uri} =====", 
-            request.Method, request.RequestUri);
-        
-        var internalToken = tokenStore.GetToken();
-        logger.LogDebug(">>>>>>>>>> Authentication >>> Retrieved internal token from store, HasToken: {HasToken}", 
-            !string.IsNullOrEmpty(internalToken));
-
-        // Log internal token expiry if available
-        if (!string.IsNullOrEmpty(internalToken))
+        // Check if user is authenticated
+        if (httpContext.User?.Identity?.IsAuthenticated != true)
         {
-            var internalTokenExpiry = GetTokenExpiry(internalToken);
-            var internalTokenTimeRemaining = internalTokenExpiry - DateTime.UtcNow;
-            
-            logger.LogInformation(">>>>>>>>>> Authentication >>> INTERNAL TOKEN EXPIRY: {ExpiryTime} UTC (Time remaining: {TimeRemaining})", 
-                internalTokenExpiry, internalTokenTimeRemaining);
+            logger.LogWarning(">>>>>>>>>> TokenExchange >>> User not authenticated for request: {Method} {Uri}", 
+                request.Method, request.RequestUri);
+            return UnauthorizedResponse(request);
+        }
 
-            var isValid = IsTokenValid(internalToken);
-            logger.LogDebug(">>>>>>>>>> Authentication >>> Internal token validation result: {IsValid}, TokenLength: {TokenLength}", 
-                isValid, internalToken.Length);
+        var userName = httpContext.User.Identity.Name ?? "Unknown";
+        logger.LogInformation(">>>>>>>>>> TokenExchange >>> Processing request for user: {UserName}", userName);
 
-            if (isValid)
+        try
+        {
+            // Get current token state
+            var tokenState = await tokenStateManager.GetCurrentTokenStateAsync();
+
+            // Check if we should force logout
+            if (tokenStateManager.ShouldForceLogout(tokenState))
             {
-                logger.LogInformation(">>>>>>>>>> Authentication >>> Using cached internal token for API request: {Method} {Uri}", 
-                    request.Method, request.RequestUri);
-                
-                logger.LogInformation(">>>>>>>>>> Authentication >>> ===== USING CACHED TOKEN - NO EXCHANGE NEEDED =====");
-                logger.LogInformation(">>>>>>>>>> Authentication >>> CACHED INTERNAL TOKEN EXPIRY: {ExpiryTime} UTC (Time remaining: {TimeRemaining})", 
-                    internalTokenExpiry, internalTokenTimeRemaining);
-                logger.LogInformation(">>>>>>>>>> Authentication >>> ===== PROCEEDING WITH CACHED TOKEN =====");
-                
-                // We have a valid internal token, use it and continue
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", internalToken);
-                
-                var response = await base.SendAsync(request, cancellationToken);
-                
-                logger.LogInformation(">>>>>>>>>> Authentication >>> Request with cached token completed with status: {StatusCode} for {Method} {Uri}", 
-                    response.StatusCode, request.Method, request.RequestUri);
+                logger.LogWarning(">>>>>>>>>> TokenExchange >>> Token state requires logout for user: {UserName}, Reason: {Reason}", 
+                    userName, tokenState.LogoutReason);
 
-                if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
+                await tokenStateManager.ForceCompleteLogoutAsync();
+                return UnauthorizedResponse(request);
+            }
+
+            // Check if we have a valid OBO token
+            if (tokenState.OboToken.IsValid)
+            {
+                logger.LogDebug(">>>>>>>>>> TokenExchange >>> Valid OBO token found, adding to request");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenState.OboToken.Value);
+                return await base.SendAsync(request, cancellationToken);
+            }
+
+            // Attempt token refresh if possible
+            if (tokenState.CanRefresh && tokenState.IsAnyTokenExpired)
+            {
+                logger.LogInformation(">>>>>>>>>> TokenExchange >>> Attempting token refresh for user: {UserName}", userName);
+                
+                var refreshed = await tokenStateManager.RefreshTokensIfPossibleAsync();
+                if (refreshed)
                 {
-                    logger.LogWarning(">>>>>>>>>> Authentication >>> Cached token resulted in {StatusCode} - token may be expired or invalid for {Method} {Uri}", 
-                        response.StatusCode, request.Method, request.RequestUri);
-                    
-                    // Clear the token and try exchange
-                    tokenStore.ClearToken();
-                    logger.LogDebug(">>>>>>>>>> Authentication >>> Cleared invalid cached token, attempting token exchange");
-                    
-                    // Don't return the failed response, continue to token exchange
+                    logger.LogInformation(">>>>>>>>>> TokenExchange >>> Token refresh successful, retrying token state");
+                    tokenState = await tokenStateManager.GetCurrentTokenStateAsync();
+                }
+            }
+
+            // Try to exchange for OBO token
+            if (tokenState.ExternalIdpToken.IsValid && !string.IsNullOrEmpty(tokenState.ExternalIdpToken.Value))
+            {
+                logger.LogInformation(">>>>>>>>>> TokenExchange >>> Attempting token exchange for user: {UserName}", userName);
+                
+                var oboToken = await ExchangeTokenAsync(tokenState.ExternalIdpToken.Value);
+                if (!string.IsNullOrEmpty(oboToken))
+                {
+                    logger.LogInformation(">>>>>>>>>> TokenExchange >>> Token exchange successful for user: {UserName}", userName);
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", oboToken);
+                    return await base.SendAsync(request, cancellationToken);
                 }
                 else
                 {
-                    return response;
+                    logger.LogWarning(">>>>>>>>>> TokenExchange >>> Token exchange failed for user: {UserName}", userName);
+                    await tokenStateManager.ForceCompleteLogoutAsync();
+                    return UnauthorizedResponse(request);
                 }
             }
             else
             {
-                logger.LogDebug(">>>>>>>>>> Authentication >>> Cached internal token is invalid/expired, clearing and proceeding to exchange");
-                tokenStore.ClearToken();
-            }
-        }
-        else
-        {
-            logger.LogDebug(">>>>>>>>>> Authentication >>> No internal token in cache, proceeding to token exchange");
-        }
-
-        try
-        {
-            logger.LogDebug(">>>>>>>>>> Authentication >>> Starting token exchange process for request: {Method} {Uri}", 
-                request.Method, request.RequestUri);
-
-            // Get DSI token from authentication context
-            logger.LogDebug(">>>>>>>>>> Authentication >>> Retrieving DSI id_token from authentication context");
-            var externalIdpToken = await httpContext?.GetTokenAsync("id_token");
-            
-            if (string.IsNullOrEmpty(externalIdpToken))
-            {
-                logger.LogError(">>>>>>>>>> Authentication >>> No DSI id_token found in authentication context for user: {UserName}", 
-                    httpContext?.User?.Identity?.Name);
+                logger.LogWarning(">>>>>>>>>> TokenExchange >>> No valid External IDP token available for user: {UserName}", userName);
+                await tokenStateManager.ForceCompleteLogoutAsync();
                 return UnauthorizedResponse(request);
             }
-
-            logger.LogDebug(">>>>>>>>>> Authentication >>> DSI id_token retrieved, length: {TokenLength} chars", 
-                externalIdpToken.Length);
-
-            // Log ExternalIdpToken (DSI token) expiry
-            var externalIdpTokenExpiry = GetTokenExpiry(externalIdpToken);
-            var externalIdpTokenTimeRemaining = externalIdpTokenExpiry - DateTime.UtcNow;
-            
-            logger.LogInformation(">>>>>>>>>> Authentication >>> EXTERNAL IDP TOKEN (DSI) EXPIRY: {ExpiryTime} UTC (Time remaining: {TimeRemaining})", 
-                externalIdpTokenExpiry, externalIdpTokenTimeRemaining);
-
-            var isExternalTokenValid = IsTokenValid(externalIdpToken);
-            logger.LogDebug(">>>>>>>>>> Authentication >>> DSI token validation result: {IsValid}", isExternalTokenValid);
-
-            if (!isExternalTokenValid)
-            {
-                logger.LogWarning(">>>>>>>>>> Authentication >>> DSI id_token is invalid or expired for user: {UserName}", 
-                    httpContext?.User?.Identity?.Name);
-                return UnauthorizedResponse(request);
-            }
-
-            // Azure token (for authorization to call exchange endpoint)
-            logger.LogDebug(">>>>>>>>>> Authentication >>> Getting Azure token for token exchange endpoint authorization");
-            var azureToken = await tokenAcquisitionService.GetTokenAsync();
-            
-            if (string.IsNullOrEmpty(azureToken))
-            {
-                logger.LogError(">>>>>>>>>> Authentication >>> Failed to get Azure token for token exchange endpoint");
-                return UnauthorizedResponse(request);
-            }
-
-            logger.LogDebug(">>>>>>>>>> Authentication >>> Azure token acquired for exchange endpoint, length: {TokenLength} chars", 
-                azureToken.Length);
-
-            // Log Azure token expiry
-            var azureTokenExpiry = GetTokenExpiry(azureToken);
-            var azureTokenTimeRemaining = azureTokenExpiry - DateTime.UtcNow;
-            
-            logger.LogInformation(">>>>>>>>>> Authentication >>> AZURE TOKEN EXPIRY: {ExpiryTime} UTC (Time remaining: {TimeRemaining})", 
-                azureTokenExpiry, azureTokenTimeRemaining);
-
-            // Call exchange endpoint with DSI token in body
-            logger.LogInformation(">>>>>>>>>> Authentication >>> Calling token exchange endpoint with DSI token");
-            var exchangeResult = await tokensClient.ExchangeAndStoreAsync(externalIdpToken, tokenStore, cancellationToken);
-            
-            if (exchangeResult == null)
-            {
-                logger.LogError(">>>>>>>>>> Authentication >>> Token exchange returned null result");
-                return UnauthorizedResponse(request);
-            }
-
-            logger.LogDebug(">>>>>>>>>> Authentication >>> Token exchange completed, HasAccessToken: {HasAccessToken}", 
-                !string.IsNullOrEmpty(exchangeResult.AccessToken));
-            
-            if (string.IsNullOrEmpty(exchangeResult.AccessToken))
-            {
-                logger.LogError(">>>>>>>>>> Authentication >>> Token exchange returned empty internal token for user: {UserName}", 
-                    httpContext?.User?.Identity?.Name);
-                return UnauthorizedResponse(request);
-            }
-
-            logger.LogInformation(">>>>>>>>>> Authentication >>> Token exchange successful, new internal token acquired, length: {TokenLength} chars", 
-                exchangeResult.AccessToken.Length);
-
-            // Log newly exchanged OBO token expiry
-            var newInternalTokenExpiry = GetTokenExpiry(exchangeResult.AccessToken);
-            var newInternalTokenTimeRemaining = newInternalTokenExpiry - DateTime.UtcNow;
-            
-            logger.LogInformation(">>>>>>>>>> Authentication >>> NEW EXCHANGED OBO TOKEN EXPIRY: {ExpiryTime} UTC (Time remaining: {TimeRemaining})", 
-                newInternalTokenExpiry, newInternalTokenTimeRemaining);
-
-            // Use the new internal token for the current request
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", exchangeResult.AccessToken);
-            
-            logger.LogDebug(">>>>>>>>>> Authentication >>> Authorization header set with new internal token for request: {Method} {Uri}", 
-                request.Method, request.RequestUri);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, ">>>>>>>>>> Authentication >>> Token exchange process failed for request: {Method} {Uri}, User: {UserName}", 
-                request.Method, request.RequestUri, httpContext?.User?.Identity?.Name);
+            logger.LogError(ex, ">>>>>>>>>> TokenExchange >>> Error during token exchange for user: {UserName}", userName);
             return UnauthorizedResponse(request);
         }
+    }
 
-        logger.LogInformation(">>>>>>>>>> Authentication >>> ===== FINAL TOKEN SUMMARY BEFORE API CALL =====");
-        logger.LogInformation(">>>>>>>>>> Authentication >>> Request: {Method} {Uri}", request.Method, request.RequestUri);
-        logger.LogInformation(">>>>>>>>>> Authentication >>> All token expiry times logged above - check for:");
-        logger.LogInformation(">>>>>>>>>> Authentication >>> 1. EXTERNAL IDP TOKEN (DSI) EXPIRY");
-        logger.LogInformation(">>>>>>>>>> Authentication >>> 2. AZURE TOKEN EXPIRY"); 
-        logger.LogInformation(">>>>>>>>>> Authentication >>> 3. INTERNAL/OBO TOKEN EXPIRY");
-        logger.LogInformation(">>>>>>>>>> Authentication >>> ===== PROCEEDING WITH API CALL =====");
-        
-        logger.LogDebug(">>>>>>>>>> Authentication >>> Sending request with internal token: {Method} {Uri}", 
+    private async Task<string?> ExchangeTokenAsync(string externalIdpToken)
+    {
+        try
+        {
+            logger.LogInformation(">>>>>>>>>> TokenExchange >>> Starting token exchange process");
+
+            // Get Azure token for authentication with the token exchange endpoint
+            var azureToken = await tokenAcquisitionService.GetTokenAsync();
+            if (string.IsNullOrEmpty(azureToken))
+            {
+                logger.LogError(">>>>>>>>>> TokenExchange >>> Failed to get Azure token for exchange endpoint authentication");
+                return null;
+            }
+
+            logger.LogDebug(">>>>>>>>>> TokenExchange >>> Azure token acquired for exchange endpoint");
+
+            // Create exchange request
+            var exchangeRequest = new ExchangeTokenRequest(externalIdpToken);
+
+            logger.LogDebug(">>>>>>>>>> TokenExchange >>> Calling token exchange endpoint");
+
+            // Call exchange endpoint
+            var result = await tokensClient.ExchangeAsync(exchangeRequest);
+
+            if (!string.IsNullOrEmpty(result?.AccessToken))
+            {
+                logger.LogInformation(">>>>>>>>>> TokenExchange >>> Token exchange successful, storing OBO token");
+                
+                // Store the new OBO token
+                tokenStore.SetToken(result.AccessToken);
+                
+                return result.AccessToken;
+            }
+            else
+            {
+                logger.LogWarning(">>>>>>>>>> TokenExchange >>> Token exchange failed - no access token returned");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ">>>>>>>>>> TokenExchange >>> Exception during token exchange");
+            return null;
+        }
+    }
+
+    private HttpResponseMessage UnauthorizedResponse(HttpRequestMessage request)
+    {
+        logger.LogWarning(">>>>>>>>>> TokenExchange >>> Returning 401 Unauthorized for request: {Method} {Uri}", 
             request.Method, request.RequestUri);
+
+        var response = new HttpResponseMessage(HttpStatusCode.Unauthorized);
         
-        var finalResponse = await base.SendAsync(request, cancellationToken);
-        
-        logger.LogInformation(">>>>>>>>>> Authentication >>> Final request completed with status: {StatusCode} for {Method} {Uri}", 
-            finalResponse.StatusCode, request.Method, request.RequestUri);
-
-        if (finalResponse.StatusCode == HttpStatusCode.Unauthorized)
+        var errorResponse = new ExceptionResponse
         {
-            logger.LogError(">>>>>>>>>> Authentication >>> 401 Unauthorized after token exchange - internal token may be invalid or user may lack permissions for {Method} {Uri}", 
-                request.Method, request.RequestUri);
-        }
-        else if (finalResponse.StatusCode == HttpStatusCode.Forbidden)
-        {
-            logger.LogError(">>>>>>>>>> Authentication >>> 403 Forbidden after token exchange - user may lack specific permissions for {Method} {Uri}", 
-                request.Method, request.RequestUri);
-        }
-        
-        return finalResponse;
-    }
-
-    private static bool IsTokenValid(string token)
-    {
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
-            var isValid = jwt.ValidTo > DateTime.UtcNow.Add(ExpiryBuffer);
-            return isValid;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static DateTime GetTokenExpiry(string token)
-    {
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
-            return jwt.ValidTo;
-        }
-        catch
-        {
-            return DateTime.UtcNow; // Default fallback for invalid tokens
-        }
-    }
-
-    private static HttpResponseMessage UnauthorizedResponse(HttpRequestMessage request)
-    {
-        var payload = new ExceptionResponse
-        {
-            ErrorId = "TE-401",
-            StatusCode = (int)HttpStatusCode.Unauthorized,
-            Message = "Token exchange failed – user needs to re-authenticate",
-            ExceptionType = "TokenExchangeException",
+            ExceptionType = "Unauthorized",
+            Message = "Authentication tokens are invalid or expired",
             Timestamp = DateTime.UtcNow
         };
 
-        var json = JsonSerializer.Serialize(payload);
-
-        return new HttpResponseMessage(HttpStatusCode.Unauthorized)
-        {
-            RequestMessage = request,
-            Content = new StringContent(json, Encoding.UTF8, "application/json"),
-            ReasonPhrase = "Token exchange failed"
-        };
+        var json = JsonSerializer.Serialize(errorResponse);
+        response.Content = new StringContent(json, Encoding.UTF8, "application/json");
+        
+        return response;
     }
 }

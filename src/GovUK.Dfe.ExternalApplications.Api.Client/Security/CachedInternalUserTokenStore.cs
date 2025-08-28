@@ -1,3 +1,4 @@
+using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
@@ -15,7 +16,10 @@ public class CachedInternalUserTokenStore(
 {
     private const string TokenKey = "__InternalUserToken";
     private const string CacheKeyPrefix = "InternalToken:";
-    private static readonly TimeSpan CacheBuffer = TimeSpan.FromMinutes(5);
+    /// <summary>
+    /// Unified expiry buffer - consistent with TokenExpiryService
+    /// </summary>
+    private static readonly TimeSpan ExpiryBuffer = TimeSpan.FromMinutes(5);
 
     public string? GetToken()
     {
@@ -148,13 +152,13 @@ public class CachedInternalUserTokenStore(
             var tokenData = new CachedTokenData(token, tokenExpiry);
             
             logger.LogDebug(">>>>>>>>>> Authentication >>> Token expires at: {ExpiryTime}, caching until: {CacheUntil}", 
-                tokenExpiry, tokenExpiry.Subtract(CacheBuffer));
+                tokenExpiry, tokenExpiry.Subtract(ExpiryBuffer));
             
             var tokenJson = JsonSerializer.Serialize(tokenData);
             
             var cacheOptions = new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = tokenData.ExpiresAt.Subtract(CacheBuffer)
+                AbsoluteExpiration = tokenData.ExpiresAt.Subtract(ExpiryBuffer)
             };
             
             try
@@ -223,13 +227,26 @@ public class CachedInternalUserTokenStore(
         }
     }
 
+    public bool IsTokenValid()
+    {
+        var token = GetToken();
+        return !string.IsNullOrEmpty(token) && IsTokenValid(token);
+    }
+
+    public DateTime? GetTokenExpiry()
+    {
+        var token = GetToken();
+        return string.IsNullOrEmpty(token) ? null : GetTokenExpiry(token);
+    }
+
     private static bool IsTokenValid(string token)
     {
         try
         {
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.ReadJwtToken(token);
-            var isValid = jwt.ValidTo > DateTime.UtcNow.AddMinutes(1);
+            // Use unified 5-minute buffer instead of 1-minute
+            var isValid = jwt.ValidTo > DateTime.UtcNow.Add(ExpiryBuffer);
             return isValid;
         }
         catch
