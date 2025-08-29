@@ -93,7 +93,7 @@ public class UploadFileCommandHandler(
                 return Result<UploadDto>.Conflict("The file already exist");
 
             // Upload file to the storage
-            await fileStorageService.UploadAsync(storagePath, request.FileContent, cancellationToken);
+            await fileStorageService.UploadAsync(storagePath, request.FileContent, request.OriginalFileName, cancellationToken);
 
             var fileSize = request.FileContent.Length;
 

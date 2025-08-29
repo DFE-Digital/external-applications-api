@@ -147,7 +147,7 @@ public class UploadFileCommandHandlerTests
 
         await _uploadRepository.Received(1).AddAsync(uploadedFile, Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
-        await _fileStorageService.Received(1).UploadAsync(Arg.Any<string>(), fileContent, Arg.Any<CancellationToken>());
+        await _fileStorageService.Received(1).UploadAsync(Arg.Any<string>(), fileContent, Arg.Any<string>(),Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -449,7 +449,7 @@ public class UploadFileCommandHandlerTests
 
         // Simulate exception in file storage
         _fileStorageService
-            .When(x => x.UploadAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<CancellationToken>()))
+            .When(x => x.UploadAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new Exception("Storage error"));
 
         // Allow user to have permission to upload files
