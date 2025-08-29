@@ -1,11 +1,16 @@
-using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
-using GovUK.Dfe.ExternalApplications.Api.Client.Security;
-using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
+using System;
+using System.Linq;
+using System.Net.Http;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics.CodeAnalysis;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using GovUK.Dfe.ExternalApplications.Api.Client.Security;
+using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
 {
@@ -33,6 +38,16 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
             {
                 // Frontend clients need internal token storage and exchange handler
                 services.AddScoped<IInternalUserTokenStore, CachedInternalUserTokenStore>();
+                
+                services.AddScoped<ICacheManager, DistributedCacheManager>();
+                services.AddScoped<ITokenStateManager, TokenStateManager>();
+
+                if (!services.Any(x => x.ServiceType == typeof(IDistributedCache)))
+                {
+                    services.AddMemoryCache();
+                    services.AddDistributedMemoryCache();
+                }
+                
                 services.AddTransient<TokenExchangeHandler>(serviceProvider =>
                 {
                     return new TokenExchangeHandler(
@@ -40,6 +55,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
                         serviceProvider.GetRequiredService<IInternalUserTokenStore>(),
                         serviceProvider.GetRequiredService<ITokensClient>(),
                         serviceProvider.GetRequiredService<ITokenAcquisitionService>(),
+                        serviceProvider.GetRequiredService<ITokenStateManager>(),
                         serviceProvider.GetRequiredService<ILogger<TokenExchangeHandler>>());
                 });
             }
@@ -86,5 +102,19 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
 
             return services;
         }
+
+        /// <summary>
+        /// Extension method to register the new token management middleware
+        /// </summary>
+        public static IApplicationBuilder UseTokenManagementMiddleware(this IApplicationBuilder app)
+        {
+            return app.UseMiddleware<TokenManagementMiddleware>();
+        }
+
+
+
+
     }
+
+
 }
