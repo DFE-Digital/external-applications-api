@@ -27,7 +27,6 @@ public class TokenStateManager(
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null)
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> HttpContext is null");
             return new TokenState { IsAuthenticated = false };
         }
 
@@ -43,19 +42,13 @@ public class TokenStateManager(
 
         if (!state.IsAuthenticated)
         {
-            logger.LogDebug(">>>>>>>>>> TokenState >>> User is not authenticated");
             return state;
         }
-
-        logger.LogInformation(">>>>>>>>>> TokenState >>> Checking token state for authenticated user, Scheme: {Scheme}", 
-            state.AuthenticationScheme);
 
         // Get the appropriate authentication strategy
         var strategy = GetAuthenticationStrategy(state.AuthenticationScheme);
         if (strategy == null)
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> No authentication strategy found for scheme: {Scheme}", 
-                state.AuthenticationScheme);
             state.LogoutReason = $"No authentication strategy for scheme: {state.AuthenticationScheme}";
             return state;
         }
@@ -64,7 +57,6 @@ public class TokenStateManager(
         state.UserId = strategy.GetUserId(httpContext);
         if (string.IsNullOrEmpty(state.UserId))
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> No user ID found");
             state.LogoutReason = "No user ID found";
             return state;
         }
@@ -72,8 +64,6 @@ public class TokenStateManager(
         // Check if logout is already flagged
         if (await cacheManager.IsLogoutFlagSetAsync(state.UserId))
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> Logout flag is set for user: {UserId} - checking if this is fresh authentication", state.UserId);
-            
             // Check if this is a fresh authentication by looking at External IDP token issue time
             var externalIdpToken = await strategy.GetExternalIdpTokenAsync(httpContext);
             if (externalIdpToken.IsPresent && !string.IsNullOrEmpty(externalIdpToken.Value))
@@ -93,21 +83,12 @@ public class TokenStateManager(
                     {
                         issuedAt = jsonToken.ValidFrom;
                         timeSinceIssue = DateTime.UtcNow - issuedAt;
-                        logger.LogInformation(">>>>>>>>>> TokenState >>> Using ValidFrom instead of IssuedAt: {ValidFrom}", 
-                            issuedAt.ToString("yyyy-MM-dd HH:mm:ss UTC"));
                     }
                     
                     var isRecentAuthentication = timeSinceIssue <= TimeSpan.FromMinutes(2);
                     
-                    logger.LogInformation(">>>>>>>>>> TokenState >>> External IDP token issued at: {IssuedAt}, {TimeSince} ago, IsRecent: {IsRecent}", 
-                        issuedAt.ToString("yyyy-MM-dd HH:mm:ss UTC"), 
-                        timeSinceIssue.ToString(@"mm\:ss"), 
-                        isRecentAuthentication);
-                    
                     if (isRecentAuthentication)
                     {
-                        logger.LogWarning(">>>>>>>>>> TokenState >>> FRESH AUTHENTICATION DETECTED - clearing logout flag for user: {UserId}", state.UserId);
-                        
                         // Clear the logout flag since this is fresh authentication
                         await cacheManager.ClearLogoutFlagAsync(state.UserId);
                         
@@ -117,17 +98,12 @@ public class TokenStateManager(
                         // Set re-authentication detection flag for this request
                         cacheManager.SetRequestScopedFlag("ReAuthenticationDetected", true);
                         
-                        logger.LogInformation(">>>>>>>>>> TokenState >>> Logout flag cleared - proceeding with fresh token state");
-                        
                         // Continue with normal token processing
                     }
                     else
                     {
-                        logger.LogInformation(">>>>>>>>>> TokenState >>> Authentication is not recent - checking if this is a re-authentication scenario");
-                        
                         // ALTERNATIVE: If user is authenticated but logout flag is set, this might be a re-authentication
                         // Clear the flag and try once more (to handle cases where token timestamps are unreliable)
-                        logger.LogWarning(">>>>>>>>>> TokenState >>> User is authenticated despite logout flag - clearing flag to allow re-authentication attempt");
                         
                         await cacheManager.ClearLogoutFlagAsync(state.UserId);
                         tokenStore.ClearToken();
@@ -135,21 +111,17 @@ public class TokenStateManager(
                         // Set flag to prevent infinite loops
                         cacheManager.SetRequestScopedFlag("ReAuthenticationDetected", true);
                         
-                        logger.LogInformation(">>>>>>>>>> TokenState >>> Logout flag cleared for re-authentication - proceeding with fresh token state");
-                        
                         // Continue with normal token processing
                     }
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, ">>>>>>>>>> TokenState >>> Error checking External IDP token issue time - logout flag remains active");
                     state.LogoutReason = "Logout flag set (token check error)";
                     return state;
                 }
             }
             else
             {
-                logger.LogInformation(">>>>>>>>>> TokenState >>> No External IDP token found - logout flag remains active");
                 state.LogoutReason = "Logout flag set (no External IDP token)";
                 return state;
             }
@@ -157,10 +129,6 @@ public class TokenStateManager(
 
         // Check for re-authentication detection (prevents multiple calls in same request)
         bool isReAuthentication = cacheManager.HasRequestScopedFlag("ReAuthenticationDetected");
-        if (isReAuthentication)
-        {
-            logger.LogInformation(">>>>>>>>>> TokenState >>> Re-authentication detected (cached) - allowing fresh exchange");
-        }
 
         // Get External IDP token
         state.ExternalIdpToken = await strategy.GetExternalIdpTokenAsync(httpContext);
@@ -173,7 +141,6 @@ public class TokenStateManager(
         {
             // During re-authentication, allow fresh token exchange even if strategy says no refresh
             state.CanRefresh = true;
-            logger.LogInformation(">>>>>>>>>> TokenState >>> Re-authentication: Overriding CanRefresh to allow fresh exchange");
         }
         else
         {
@@ -195,15 +162,6 @@ public class TokenStateManager(
             }
         }
 
-        logger.LogInformation(">>>>>>>>>> TokenState >>> Token State Summary - " +
-            "ExternalIDP: Valid={ExternalValid}, Expires={ExternalExpiry}, " +
-            "OBO: Valid={OboValid}, Expires={OboExpiry}, " +
-            "CanRefresh={CanRefresh}, ShouldLogout={ShouldLogout}, " +
-            "Reason={Reason}",
-            state.ExternalIdpToken.IsValid, state.ExternalIdpToken.ExpiryTime?.ToString("yyyy-MM-dd HH:mm:ss UTC"),
-            state.OboToken.IsValid, state.OboToken.ExpiryTime?.ToString("yyyy-MM-dd HH:mm:ss UTC"),
-            state.CanRefresh, state.ShouldLogout, state.LogoutReason);
-
         return state;
     }
 
@@ -212,7 +170,6 @@ public class TokenStateManager(
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null)
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> Cannot force logout - HttpContext is null");
             return false;
         }
 
@@ -223,11 +180,8 @@ public class TokenStateManager(
 
         if (string.IsNullOrEmpty(userId))
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> Cannot force logout - No user ID found");
             return false;
         }
-
-        logger.LogWarning(">>>>>>>>>> TokenState >>> FORCING COMPLETE LOGOUT for user: {UserId}", userId);
 
         try
         {
@@ -237,12 +191,10 @@ public class TokenStateManager(
             // Clear all caches atomically
             await cacheManager.ClearAllTokenCachesAsync(userId);
 
-            logger.LogInformation(">>>>>>>>>> TokenState >>> Complete logout successful for user: {UserId}", userId);
             return true;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, ">>>>>>>>>> TokenState >>> Error during complete logout for user: {UserId}", userId);
             return false;
         }
     }
@@ -252,7 +204,6 @@ public class TokenStateManager(
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null)
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> Cannot refresh tokens - HttpContext is null");
             return false;
         }
 
@@ -261,27 +212,20 @@ public class TokenStateManager(
         var strategy = GetAuthenticationStrategy(mappedScheme);
         if (strategy == null)
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> Cannot refresh tokens - No authentication strategy");
             return false;
         }
 
         var userId = strategy.GetUserId(httpContext);
         if (string.IsNullOrEmpty(userId))
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> Cannot refresh tokens - No user ID");
             return false;
         }
-
-        logger.LogInformation(">>>>>>>>>> TokenState >>> Attempting token refresh for user: {UserId}, Scheme: {Scheme}", 
-            userId, strategy.SchemeName);
 
         try
         {
             // Check if refresh is possible
             if (!await strategy.CanRefreshTokenAsync(httpContext))
             {
-                logger.LogWarning(">>>>>>>>>> TokenState >>> Token refresh not supported for scheme: {Scheme}", 
-                    strategy.SchemeName);
                 return false;
             }
 
@@ -298,18 +242,15 @@ public class TokenStateManager(
                 // Set re-authentication detection flag
                 cacheManager.SetRequestScopedFlag("ReAuthenticationDetected", true);
                 
-                logger.LogInformation(">>>>>>>>>> TokenState >>> Token refresh successful for user: {UserId}", userId);
                 return true;
             }
             else
             {
-                logger.LogWarning(">>>>>>>>>> TokenState >>> Token refresh failed for user: {UserId}", userId);
                 return false;
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, ">>>>>>>>>> TokenState >>> Error during token refresh for user: {UserId}", userId);
             return false;
         }
     }
@@ -324,9 +265,6 @@ public class TokenStateManager(
         // Force logout if tokens are expired and can't refresh
         var shouldLogout = state.IsAnyTokenExpired && !state.CanRefresh;
         
-        logger.LogDebug(">>>>>>>>>> TokenState >>> Should force logout: {ShouldLogout}, Reason: {Reason}", 
-            shouldLogout, state.LogoutReason);
-        
         return shouldLogout;
     }
 
@@ -339,11 +277,8 @@ public class TokenStateManager(
     {
         if (string.IsNullOrEmpty(schemeName))
         {
-            logger.LogWarning(">>>>>>>>>> TokenState >>> Scheme name is null or empty");
             return null;
         }
-
-        logger.LogDebug(">>>>>>>>>> TokenState >>> Looking for strategy for scheme: {Scheme}", schemeName);
 
         // Direct match first
         var strategy = authStrategies.FirstOrDefault(s => 
@@ -351,7 +286,6 @@ public class TokenStateManager(
 
         if (strategy != null)
         {
-            logger.LogDebug(">>>>>>>>>> TokenState >>> Found direct match strategy: {StrategyName}", strategy.SchemeName);
             return strategy;
         }
 
@@ -362,7 +296,6 @@ public class TokenStateManager(
             strategy = authStrategies.FirstOrDefault(s => s.SchemeName == "TestScheme");
             if (strategy != null)
             {
-                logger.LogInformation(">>>>>>>>>> TokenState >>> Using TestScheme strategy for scheme: {Scheme}", schemeName);
                 return strategy;
             }
         }
@@ -373,15 +306,12 @@ public class TokenStateManager(
             strategy = authStrategies.FirstOrDefault(s => s.SchemeName == "OIDC");
             if (strategy != null)
             {
-                logger.LogInformation(">>>>>>>>>> TokenState >>> Using OIDC strategy for scheme: {Scheme}", schemeName);
                 return strategy;
             }
         }
 
         // Log available strategies for debugging
         var availableStrategies = string.Join(", ", authStrategies.Select(s => s.SchemeName));
-        logger.LogWarning(">>>>>>>>>> TokenState >>> No matching authentication strategy for scheme: {Scheme}. Available strategies: {Available}", 
-            schemeName, availableStrategies);
         
         return null;
     }
@@ -393,7 +323,6 @@ public class TokenStateManager(
             var token = tokenStore.GetToken();
             if (string.IsNullOrEmpty(token))
             {
-                logger.LogDebug(">>>>>>>>>> TokenState >>> No OBO token found in store");
                 return new TokenInfo();
             }
 
@@ -404,14 +333,10 @@ public class TokenStateManager(
                 ExpiryTime = expiry
             };
 
-            logger.LogDebug(">>>>>>>>>> TokenState >>> OBO token: Valid={IsValid}, Expires={Expiry}", 
-                tokenInfo.IsValid, tokenInfo.ExpiryTime?.ToString("yyyy-MM-dd HH:mm:ss UTC"));
-
             return tokenInfo;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, ">>>>>>>>>> TokenState >>> Error getting OBO token");
             return new TokenInfo();
         }
     }

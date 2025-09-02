@@ -22,19 +22,14 @@ public class TokenManagementMiddleware(RequestDelegate next, ILogger<TokenManage
 
     public async Task InvokeAsync(HttpContext context, ITokenStateManager tokenStateManager)
     {
-        _logger.LogInformation(">>>>>>>>>> TokenManagement >>> MIDDLEWARE ENTRY: {Method} {Path} - {Time}", 
-            context.Request.Method, context.Request.Path, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff UTC"));
-
         // Only process authenticated requests
         if (context.User?.Identity?.IsAuthenticated != true)
         {
-            _logger.LogDebug(">>>>>>>>>> TokenManagement >>> User not authenticated, skipping token management");
             await _next(context);
             return;
         }
 
         var userName = context.User.Identity.Name ?? "Unknown";
-        _logger.LogInformation(">>>>>>>>>> TokenManagement >>> Processing authenticated user: {UserName}", userName);
 
         try
         {
@@ -44,9 +39,6 @@ public class TokenManagementMiddleware(RequestDelegate next, ILogger<TokenManage
             // Check if we should force logout
             if (tokenStateManager.ShouldForceLogout(tokenState))
             {
-                _logger.LogWarning(">>>>>>>>>> TokenManagement >>> Forcing logout for user: {UserName}, Reason: {Reason}", 
-                    userName, tokenState.LogoutReason);
-
                 await tokenStateManager.ForceCompleteLogoutAsync();
 
                 // Handle response based on request type
@@ -58,7 +50,6 @@ public class TokenManagementMiddleware(RequestDelegate next, ILogger<TokenManage
                 else
                 {
                     // For web requests, force immediate logout and redirect
-                    _logger.LogWarning(">>>>>>>>>> TokenManagement >>> Forcing web logout and redirect for user: {UserName}", userName);
                     
                     // Get authentication scheme to determine which schemes to sign out from
                     var authScheme = context.User?.Identity?.AuthenticationType;
@@ -69,13 +60,11 @@ public class TokenManagementMiddleware(RequestDelegate next, ILogger<TokenManage
                         // For OIDC, sign out from both cookie and OIDC schemes
                         await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                         await context.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
-                        _logger.LogInformation(">>>>>>>>>> TokenManagement >>> Signed out from both Cookie and OIDC schemes");
                     }
                     else
                     {
                         // For other schemes (like TestAuthentication), only sign out from default scheme
                         await context.SignOutAsync();
-                        _logger.LogInformation(">>>>>>>>>> TokenManagement >>> Signed out from default authentication scheme: {Scheme}", authScheme);
                     }
                     
                     // Clear authentication-specific session data to prevent re-authentication
@@ -84,13 +73,11 @@ public class TokenManagementMiddleware(RequestDelegate next, ILogger<TokenManage
                         // Clear TestAuth session data to prevent infinite logout loop
                         context.Session.Remove("TestAuth:Email");
                         context.Session.Remove("TestAuth:Token");
-                        _logger.LogInformation(">>>>>>>>>> TokenManagement >>> Cleared TestAuth session data for logout");
                     }
                     else if (authScheme == "AuthenticationTypes.Federation")
                     {
                         // Clear OIDC-related data to prevent re-authentication
                         context.Session.Clear(); // Clear entire session for OIDC
-                        _logger.LogInformation(">>>>>>>>>> TokenManagement >>> Cleared OIDC session data for logout");
                     }
                     
                     // Redirect to home page or login page
@@ -144,7 +131,5 @@ public class TokenManagementMiddleware(RequestDelegate next, ILogger<TokenManage
 
         var json = JsonSerializer.Serialize(response);
         await context.Response.WriteAsync(json);
-        
-        _logger.LogInformation(">>>>>>>>>> TokenManagement >>> Returned 401 JSON response for API request");
     }
 }
