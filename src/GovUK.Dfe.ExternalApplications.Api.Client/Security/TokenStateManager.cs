@@ -157,7 +157,7 @@ public class TokenStateManager(
                     ? lastActivity.Value
                     : lastActivity.Value.ToUniversalTime();
                 var inactivity = DateTime.UtcNow - lastUtc;
-                if (inactivity >= TimeSpan.FromMinutes(30))
+                if (inactivity >= TimeSpan.FromMinutes(5))
                 {
                     // Mark that refresh is allowed due to inactivity regardless of normal window
                     cacheManager.SetRequestScopedFlag("AllowRefreshDueToInactivity", true);
