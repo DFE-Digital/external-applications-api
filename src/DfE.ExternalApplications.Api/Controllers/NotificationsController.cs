@@ -1,7 +1,7 @@
 using Asp.Versioning;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.CoreLibs.Http.Models;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using DfE.ExternalApplications.Application.Notifications.Commands;
 using DfE.ExternalApplications.Application.Notifications.Queries;
 using MediatR;

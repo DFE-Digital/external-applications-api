@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
 using AutoFixture.Xunit2;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Api.Security;
 using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 using DfE.ExternalApplications.Domain.Entities;

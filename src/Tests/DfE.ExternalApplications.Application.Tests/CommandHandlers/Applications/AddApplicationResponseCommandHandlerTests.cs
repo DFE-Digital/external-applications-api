@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -10,7 +10,7 @@ using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
 using System.Security.Claims;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using Microsoft.EntityFrameworkCore;
 using MockQueryable.NSubstitute;

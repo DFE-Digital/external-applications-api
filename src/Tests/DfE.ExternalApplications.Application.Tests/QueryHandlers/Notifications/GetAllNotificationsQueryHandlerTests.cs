@@ -1,7 +1,7 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Notifications.Interfaces;
-using DfE.CoreLibs.Notifications.Models;
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
+using GovUK.Dfe.CoreLibs.Notifications.Models;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Notifications.Queries;
 using DfE.ExternalApplications.Domain.Services;
 using Microsoft.AspNetCore.Http;

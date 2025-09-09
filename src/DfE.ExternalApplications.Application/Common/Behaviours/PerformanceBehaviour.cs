@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;

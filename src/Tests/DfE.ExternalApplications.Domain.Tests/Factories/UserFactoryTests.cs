@@ -1,9 +1,9 @@
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using System;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 

@@ -22,8 +22,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DfE.CoreLibs.Contracts" Version="1.0.44" />
-		<PackageReference Include="DfE.CoreLibs.Http" Version="1.0.9" />
+		<PackageReference Include="GovUK.Dfe.CoreLibs.Contracts" Version="1.0.45" />
+		<PackageReference Include="GovUK.Dfe.CoreLibs.Http" Version="1.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Abstractions" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.18" />

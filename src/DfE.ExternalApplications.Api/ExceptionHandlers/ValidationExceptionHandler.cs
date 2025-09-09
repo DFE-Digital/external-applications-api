@@ -1,5 +1,5 @@
-﻿using DfE.CoreLibs.Http.Interfaces;
-using DfE.CoreLibs.Http.Models;
+﻿using GovUK.Dfe.CoreLibs.Http.Interfaces;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using DfE.ExternalApplications.Application.Common.Exceptions;
 using System.Diagnostics.CodeAnalysis;
 

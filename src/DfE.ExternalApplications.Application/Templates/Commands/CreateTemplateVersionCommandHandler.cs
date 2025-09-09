@@ -1,5 +1,5 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;

@@ -1,7 +1,7 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
-using DfE.CoreLibs.Security.Interfaces;
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -12,7 +12,7 @@ using MockQueryable.NSubstitute;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using System.Security.Claims;
-using DfE.CoreLibs.Security.Models;
+using GovUK.Dfe.CoreLibs.Security.Models;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MockQueryable;
 using Microsoft.AspNetCore.Authentication;

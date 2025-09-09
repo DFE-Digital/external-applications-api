@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using Microsoft.AspNetCore.Authorization;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers

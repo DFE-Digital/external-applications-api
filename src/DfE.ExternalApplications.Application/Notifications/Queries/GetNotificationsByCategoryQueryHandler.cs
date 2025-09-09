@@ -1,6 +1,6 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Notifications.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
 using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;

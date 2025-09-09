@@ -1,13 +1,13 @@
 ﻿using Asp.Versioning;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using DfE.CoreLibs.Http.Models;
+using GovUK.Dfe.CoreLibs.Http.Models;
 
 namespace DfE.ExternalApplications.Api.Controllers
 {

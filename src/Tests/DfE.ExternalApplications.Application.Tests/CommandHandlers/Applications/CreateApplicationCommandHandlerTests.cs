@@ -1,8 +1,8 @@
 using AutoFixture.Xunit2;
-using DfE.CoreLibs.Caching.Interfaces;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using DfE.ExternalApplications.Domain.Entities;

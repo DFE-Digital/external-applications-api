@@ -7,7 +7,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
 using System.Security.Claims;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Interfaces;
 using MockQueryable;
 using MockQueryable.NSubstitute;

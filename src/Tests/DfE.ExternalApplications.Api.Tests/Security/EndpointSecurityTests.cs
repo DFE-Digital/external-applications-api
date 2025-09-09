@@ -1,5 +1,5 @@
-﻿using DfE.CoreLibs.Testing.Authorization;
-using DfE.CoreLibs.Testing.Authorization.Helpers;
+﻿using GovUK.Dfe.CoreLibs.Testing.Authorization;
+using GovUK.Dfe.CoreLibs.Testing.Authorization.Helpers;
 using Xunit;
 
 namespace DfE.ExternalApplications.Api.Tests.Security

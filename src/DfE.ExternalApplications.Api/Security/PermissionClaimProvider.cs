@@ -1,5 +1,5 @@
 ﻿using System.Security.Claims;
-using DfE.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;

@@ -1,4 +1,4 @@
-﻿using DfE.CoreLibs.Http.Models;
+﻿using GovUK.Dfe.CoreLibs.Http.Models;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;

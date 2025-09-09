@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
@@ -11,12 +11,12 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using DfE.ExternalApplications.Application.Common.Behaviours;
 using DfE.ExternalApplications.Application.Common.Attributes;
-using DfE.CoreLibs.Caching.Interfaces;
-using DfE.CoreLibs.Caching.Helpers;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 

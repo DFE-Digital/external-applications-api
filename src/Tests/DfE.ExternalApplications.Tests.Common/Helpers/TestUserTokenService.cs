@@ -1,6 +1,6 @@
-﻿using DfE.CoreLibs.Security.Configurations;
-using DfE.CoreLibs.Security.Interfaces;
-using DfE.CoreLibs.Security.Models;
+﻿using GovUK.Dfe.CoreLibs.Security.Configurations;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Security.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

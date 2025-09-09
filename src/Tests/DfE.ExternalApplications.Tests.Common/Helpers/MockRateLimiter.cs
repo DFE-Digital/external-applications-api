@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Utilities.RateLimiting;
+using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 
 namespace DfE.ExternalApplications.Tests.Common.Helpers;
 

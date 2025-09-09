@@ -7,10 +7,10 @@
 using System.Net.Http;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Http.Models;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;

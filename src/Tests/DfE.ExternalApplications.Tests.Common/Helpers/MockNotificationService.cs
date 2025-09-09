@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Notifications.Interfaces;
-using DfE.CoreLibs.Notifications.Models;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
+using GovUK.Dfe.CoreLibs.Notifications.Models;
 
 namespace DfE.ExternalApplications.Tests.Common.Helpers;
 
 /// <summary>
 /// Mock notification service that stores notifications in memory for testing purposes
 /// </summary>
-public class MockNotificationService : DfE.CoreLibs.Notifications.Interfaces.INotificationService
+public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfaces.INotificationService
 {
     private readonly ConcurrentDictionary<string, List<Notification>> _userNotifications = new();
     private int _notificationIdCounter = 1;

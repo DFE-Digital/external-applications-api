@@ -1,7 +1,7 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
-using DfE.CoreLibs.Http.Interfaces;
-using DfE.CoreLibs.Http.Middlewares.CorrelationId;
+using GovUK.Dfe.CoreLibs.Http.Interfaces;
+using GovUK.Dfe.CoreLibs.Http.Middlewares.CorrelationId;
 using DfE.ExternalApplications.Api.Middleware;
 using DfE.ExternalApplications.Api.Swagger;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -14,7 +14,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using DfE.ExternalApplications.Api.Security;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
-using DfE.CoreLibs.Http.Extensions;
+using GovUK.Dfe.CoreLibs.Http.Extensions;
 using DfE.ExternalApplications.Api.ExceptionHandlers;
 using System.Text.Json;
 using DfE.ExternalApplications.Api.Filters;

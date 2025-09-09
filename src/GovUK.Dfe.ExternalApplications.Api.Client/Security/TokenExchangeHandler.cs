@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using DfE.CoreLibs.Http.Models;
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Http.Models;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;

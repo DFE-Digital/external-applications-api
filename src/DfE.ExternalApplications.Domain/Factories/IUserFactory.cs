@@ -1,6 +1,6 @@
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Domain.Factories;

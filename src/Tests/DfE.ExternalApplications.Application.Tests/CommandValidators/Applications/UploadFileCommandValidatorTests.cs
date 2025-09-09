@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using FluentValidation.TestHelper;

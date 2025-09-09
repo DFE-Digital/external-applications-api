@@ -93,10 +93,10 @@
         "System.Net.Http",
         "System.Collections.ObjectModel",
         "System.Threading.Tasks",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Enums",
-        "DfE.CoreLibs.Http.Models",
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response",
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request",
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums",
+        "GovUK.Dfe.CoreLibs.Http.Models",
         "System.Text.Json",
         "System.Text.Json.Serialization"
       ],
@@ -144,16 +144,16 @@
       "inlineNamedTuples": true,
       "inlineNamedAny": false,
       "additionalContractNamespaceUsages": [
-        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Request",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Enums",
-        "DfE.CoreLibs.Http.Models"
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response",
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request",
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums",
+        "GovUK.Dfe.CoreLibs.Http.Models"
       ],
       "generateDtoTypes": false,
       "useSharedDTOs": true,
       "typeMappings": {
-        "DfE.CoreLibs.Contracts.ExternalApplications.Models.Response.UserPermissionDto": "UserPermissionDto",
-        "DfE.CoreLibs.Contracts.ExternalApplications.Enums.AccessType": "AccessType"
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response.UserPermissionDto": "UserPermissionDto",
+        "GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums.AccessType": "AccessType"
       },
       "generateOptionalPropertiesAsNullable": false,
       "generateNullableReferenceTypes": false,

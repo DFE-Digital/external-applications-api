@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Domain.Services;
 
 namespace DfE.ExternalApplications.Tests.Common.Mocks;

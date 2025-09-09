@@ -1,5 +1,5 @@
 using AutoFixture;
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.TemplatePermissions.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using DfE.ExternalApplications.Infrastructure.Database;
 using MediatR;
-using DfE.CoreLibs.Testing.Helpers;
+using GovUK.Dfe.CoreLibs.Testing.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryObjects.TemplatePermissions;

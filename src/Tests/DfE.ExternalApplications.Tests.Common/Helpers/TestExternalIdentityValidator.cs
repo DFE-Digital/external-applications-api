@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using DfE.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 
 namespace DfE.ExternalApplications.Tests.Common.Helpers

@@ -1,12 +1,12 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Notifications.Interfaces;
-using DfE.CoreLibs.Notifications.Models;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
+using GovUK.Dfe.CoreLibs.Notifications.Models;
 using DfE.ExternalApplications.Domain.Services;
 
 namespace DfE.ExternalApplications.Application.Notifications.Commands;

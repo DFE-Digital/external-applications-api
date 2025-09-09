@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Utilities.RateLimiting;
+using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
 using DfE.ExternalApplications.Application.Common.Exceptions;

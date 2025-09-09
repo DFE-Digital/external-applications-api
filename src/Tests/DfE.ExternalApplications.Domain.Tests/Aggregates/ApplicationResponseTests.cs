@@ -1,4 +1,4 @@
-﻿using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+﻿using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;

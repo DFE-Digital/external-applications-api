@@ -1,5 +1,5 @@
 using AutoFixture;
-using DfE.CoreLibs.Testing.AutoFixture.Attributes;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Infrastructure.Services;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;

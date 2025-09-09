@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;

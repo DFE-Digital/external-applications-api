@@ -1,4 +1,4 @@
-﻿using DfE.CoreLibs.Security.Interfaces;
+﻿using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;

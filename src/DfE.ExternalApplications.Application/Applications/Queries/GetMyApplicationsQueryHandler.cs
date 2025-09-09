@@ -1,4 +1,4 @@
-﻿using DfE.CoreLibs.Contracts.ExternalApplications.Models.Response;
+﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;

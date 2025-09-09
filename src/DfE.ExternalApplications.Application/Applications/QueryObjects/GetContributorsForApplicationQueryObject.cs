@@ -1,4 +1,4 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Application.Common.QueriesObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using Microsoft.EntityFrameworkCore;

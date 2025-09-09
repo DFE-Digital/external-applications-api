@@ -1,8 +1,8 @@
-using DfE.CoreLibs.Contracts.ExternalApplications.Enums;
-using DfE.CoreLibs.Security;
-using DfE.CoreLibs.Security.Authorization;
-using DfE.CoreLibs.Security.Configurations;
-using DfE.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Security;
+using GovUK.Dfe.CoreLibs.Security.Authorization;
+using GovUK.Dfe.CoreLibs.Security.Configurations;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;

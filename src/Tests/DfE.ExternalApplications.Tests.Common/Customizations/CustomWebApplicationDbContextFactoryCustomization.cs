@@ -1,6 +1,6 @@
 using AutoFixture;
-using DfE.CoreLibs.Testing.Mocks.Authentication;
-using DfE.CoreLibs.Testing.Mocks.WebApplicationFactory;
+using GovUK.Dfe.CoreLibs.Testing.Mocks.Authentication;
+using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Api;
 using GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
 using DfE.ExternalApplications.Infrastructure.Database;
@@ -11,18 +11,18 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using DfE.CoreLibs.Notifications.Interfaces;
+using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using DfE.CoreLibs.Security.Interfaces;
-using DfE.CoreLibs.Security;
-using DfE.CoreLibs.Security.Services;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Security;
+using GovUK.Dfe.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using GovUK.Dfe.ExternalApplications.Api.Client;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
-using DfE.CoreLibs.Utilities.RateLimiting;
+using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations
 {
