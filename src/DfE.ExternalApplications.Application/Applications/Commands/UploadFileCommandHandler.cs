@@ -21,7 +21,7 @@ using DfE.ExternalApplications.Application.Common.Behaviours;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
-[RateLimit(1, 10)]
+[RateLimit(5, 10)]
 public sealed record UploadFileCommand(
     ApplicationId ApplicationId,
     string Name,
