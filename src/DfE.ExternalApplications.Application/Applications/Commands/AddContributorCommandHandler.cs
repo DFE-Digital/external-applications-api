@@ -174,6 +174,13 @@ public sealed class AddContributorCommandHandler(
             new[] { AccessType.Read, AccessType.Write },
             dbUser.Id!,
             applicationId);
+        userFactory.AddPermissionToUser(
+            existingContributor,
+            existingContributor.Email,
+            ResourceType.Notifications,
+            new[] { AccessType.Read, AccessType.Write },
+            dbUser.Id!,
+            applicationId);
 
         await unitOfWork.CommitAsync(cancellationToken);
 

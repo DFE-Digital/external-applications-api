@@ -44,7 +44,7 @@ public sealed class ContributorAddedEventHandler(
 
         userFactory.AddPermissionToUser(
             notification.Contributor,
-            notification.ApplicationId.Value.ToString(),
+            notification.Contributor.Email,
             ResourceType.Notifications,
             new[] { AccessType.Read, AccessType.Write },
             notification.AddedBy,
