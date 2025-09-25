@@ -7,7 +7,7 @@ namespace DfE.ExternalApplications.Domain.Events;
 public sealed record ApplicationSubmittedEvent(
     ApplicationId ApplicationId,
     string ApplicationReference,
-    TemplateVersionId TemplateVersionId,
+    TemplateId TemplateId,
     UserId SubmittedBy,
     string UserEmail,
     string UserFullName,

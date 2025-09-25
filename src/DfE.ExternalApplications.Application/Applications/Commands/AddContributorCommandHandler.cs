@@ -101,15 +101,16 @@ public sealed class AddContributorCommandHandler(
             var contributorId = new UserId(Guid.NewGuid());
             var now = DateTime.UtcNow;
 
-            var contributor = userFactory.CreateContributor(
-                contributorId,
-                new RoleId(RoleConstants.UserRoleId),
-                request.Name,
-                request.Email,
-                dbUser.Id!,
-                applicationId,
-                application.TemplateVersion!.TemplateId,
-                now);
+        var contributor = userFactory.CreateContributor(
+            contributorId,
+            new RoleId(RoleConstants.UserRoleId),
+            request.Name,
+            request.Email,
+            dbUser.Id!,
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersion!.TemplateId,
+            now);
 
             await userRepo.AddAsync(contributor, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);

@@ -10,15 +10,15 @@ public interface IEmailTemplateResolver
     /// <summary>
     /// Resolves the email template ID for a given application template and email type
     /// </summary>
-    /// <param name="templateVersionId">The template version ID from the application</param>
+    /// <param name="templateId">The template ID from the application</param>
     /// <param name="emailType">The type of email (e.g., "ApplicationSubmitted")</param>
     /// <returns>The email template ID if found, otherwise null</returns>
-    Task<string?> ResolveEmailTemplateAsync(TemplateVersionId templateVersionId, string emailType);
+    Task<string?> ResolveEmailTemplateAsync(TemplateId templateId, string emailType);
 
     /// <summary>
-    /// Gets the application type name for a given template version ID
+    /// Gets the application type name for a given template ID
     /// </summary>
-    /// <param name="templateVersionId">The template version ID</param>
+    /// <param name="templateId">The template ID</param>
     /// <returns>The application type name if found, otherwise null</returns>
-    Task<string?> GetApplicationTypeAsync(TemplateVersionId templateVersionId);
+    Task<string?> GetApplicationTypeAsync(TemplateId templateId);
 }

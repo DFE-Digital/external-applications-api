@@ -54,13 +54,24 @@ public class SubmitApplicationCommandHandlerTests
         userRepo.Query().Returns(users);
 
         var applicationId = new ApplicationId(command.ApplicationId);
+        var templateVersionId = new TemplateVersionId(Guid.NewGuid());
         var application = new Domain.Entities.Application(
             applicationId,
             "APP-001",
-            new TemplateVersionId(Guid.NewGuid()),
+            templateVersionId,
             DateTime.UtcNow,
             userWithExternalId.Id!,
             ApplicationStatus.InProgress); // Not yet submitted
+
+        // Set up the TemplateVersion which is needed for the Submit method
+        var templateVersion = new TemplateVersion(
+            templateVersionId,
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            userWithExternalId.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
 
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
@@ -126,13 +137,24 @@ public class SubmitApplicationCommandHandlerTests
         userRepo.Query().Returns(users);
 
         var applicationId = new ApplicationId(command.ApplicationId);
+        var templateVersionId = new TemplateVersionId(Guid.NewGuid());
         var application = new Domain.Entities.Application(
             applicationId,
             "APP-001",
-            new TemplateVersionId(Guid.NewGuid()),
+            templateVersionId,
             DateTime.UtcNow,
             testUser.Id!,
             ApplicationStatus.InProgress); // Not yet submitted
+
+        // Set up the TemplateVersion which is needed for the Submit method
+        var templateVersion = new TemplateVersion(
+            templateVersionId,
+            new TemplateId(Guid.NewGuid()),
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            testUser.Id!);
+        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
 
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);

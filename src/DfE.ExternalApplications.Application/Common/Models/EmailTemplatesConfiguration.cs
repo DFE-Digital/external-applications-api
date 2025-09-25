@@ -3,15 +3,8 @@ namespace DfE.ExternalApplications.Application.Common.Models;
 /// <summary>
 /// Configuration for email templates organized by application type
 /// </summary>
-public class EmailTemplatesConfiguration
+public class EmailTemplatesConfiguration : Dictionary<string, Dictionary<string, string>>
 {
-    /// <summary>
-    /// Email templates organized by application type
-    /// Key: Application type name (e.g., "Transfer", "SigChange")
-    /// Value: Dictionary of email template types to template IDs
-    /// </summary>
-    public Dictionary<string, Dictionary<string, string>> Templates { get; set; } = new();
-
     /// <summary>
     /// Gets an email template ID for a specific application type and email type
     /// </summary>
@@ -20,7 +13,7 @@ public class EmailTemplatesConfiguration
     /// <returns>The template ID if found, otherwise null</returns>
     public string? GetTemplateId(string applicationType, string emailType)
     {
-        if (Templates.TryGetValue(applicationType, out var typeTemplates))
+        if (this.TryGetValue(applicationType, out var typeTemplates))
         {
             typeTemplates.TryGetValue(emailType, out var templateId);
             return templateId;
@@ -35,7 +28,7 @@ public class EmailTemplatesConfiguration
     /// <returns>Collection of available email types</returns>
     public IEnumerable<string> GetAvailableEmailTypes(string applicationType)
     {
-        return Templates.TryGetValue(applicationType, out var typeTemplates) 
+        return this.TryGetValue(applicationType, out var typeTemplates) 
             ? typeTemplates.Keys 
             : Enumerable.Empty<string>();
     }

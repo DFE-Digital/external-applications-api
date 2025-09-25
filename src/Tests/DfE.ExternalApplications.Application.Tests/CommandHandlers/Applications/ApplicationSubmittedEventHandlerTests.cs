@@ -20,7 +20,7 @@ public class ApplicationSubmittedEventHandlerTests
     public async Task Handle_ShouldSendEmail_WhenEventReceived(
         ApplicationId applicationId,
         string applicationReference,
-        TemplateVersionId templateVersionId,
+        TemplateId templateId,
         UserId submittedBy,
         string userEmail,
         string userFullName,
@@ -34,14 +34,14 @@ public class ApplicationSubmittedEventHandlerTests
         var @event = new ApplicationSubmittedEvent(
             applicationId, 
             applicationReference, 
-            templateVersionId, 
+            templateId, 
             submittedBy, 
             userEmail, 
             userFullName, 
             submittedOn);
             
         var expectedTemplateId = "a4188604-0053-4d77-9ad2-720f6fbbdf0a";
-        emailTemplateResolver.ResolveEmailTemplateAsync(templateVersionId, "ApplicationSubmitted")
+        emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ApplicationSubmitted")
             .Returns(expectedTemplateId);
 
         var successResponse = new EmailResponse { Id = "test-email-id", Status = EmailStatus.Sent };
@@ -64,7 +64,7 @@ public class ApplicationSubmittedEventHandlerTests
                 email.Personalization.ContainsKey("submitted_time")),
             Arg.Any<CancellationToken>());
 
-        await emailTemplateResolver.Received(1).ResolveEmailTemplateAsync(templateVersionId, "ApplicationSubmitted");
+        await emailTemplateResolver.Received(1).ResolveEmailTemplateAsync(templateId, "ApplicationSubmitted");
     }
 
     [Theory]
@@ -72,7 +72,7 @@ public class ApplicationSubmittedEventHandlerTests
     public async Task Handle_ShouldFormatDateAndTimeCorrectly(
         ApplicationId applicationId,
         string applicationReference,
-        TemplateVersionId templateVersionId,
+        TemplateId templateId,
         UserId submittedBy,
         string userEmail,
         string userFullName)
@@ -86,14 +86,14 @@ public class ApplicationSubmittedEventHandlerTests
         var @event = new ApplicationSubmittedEvent(
             applicationId, 
             applicationReference, 
-            templateVersionId, 
+            templateId, 
             submittedBy, 
             userEmail, 
             userFullName, 
             submittedOn);
 
         var expectedTemplateId = "a4188604-0053-4d77-9ad2-720f6fbbdf0a";
-        emailTemplateResolver.ResolveEmailTemplateAsync(templateVersionId, "ApplicationSubmitted")
+        emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ApplicationSubmitted")
             .Returns(expectedTemplateId);
 
         var successResponse = new EmailResponse { Id = "test-email-id", Status = EmailStatus.Sent };
@@ -120,7 +120,7 @@ public class ApplicationSubmittedEventHandlerTests
     public async Task Handle_ShouldLogError_WhenEmailTemplateCannotBeResolved(
         ApplicationId applicationId,
         string applicationReference,
-        TemplateVersionId templateVersionId,
+        TemplateId templateId,
         UserId submittedBy,
         string userEmail,
         string userFullName,
@@ -134,13 +134,13 @@ public class ApplicationSubmittedEventHandlerTests
         var @event = new ApplicationSubmittedEvent(
             applicationId, 
             applicationReference, 
-            templateVersionId, 
+            templateId, 
             submittedBy, 
             userEmail, 
             userFullName, 
             submittedOn);
 
-        emailTemplateResolver.ResolveEmailTemplateAsync(templateVersionId, "ApplicationSubmitted")
+        emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ApplicationSubmitted")
             .Returns((string?)null);
 
         var handler = new ApplicationSubmittedEventHandler(logger, emailService, emailTemplateResolver);
@@ -164,7 +164,7 @@ public class ApplicationSubmittedEventHandlerTests
     public async Task Handle_ShouldLogSuccess_WhenEmailSentSuccessfully(
         ApplicationId applicationId,
         string applicationReference,
-        TemplateVersionId templateVersionId,
+        TemplateId templateId,
         UserId submittedBy,
         string userEmail,
         string userFullName,
@@ -178,14 +178,14 @@ public class ApplicationSubmittedEventHandlerTests
         var @event = new ApplicationSubmittedEvent(
             applicationId, 
             applicationReference, 
-            templateVersionId, 
+            templateId, 
             submittedBy, 
             userEmail, 
             userFullName, 
             submittedOn);
 
         var expectedTemplateId = "a4188604-0053-4d77-9ad2-720f6fbbdf0a";
-        emailTemplateResolver.ResolveEmailTemplateAsync(templateVersionId, "ApplicationSubmitted")
+        emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ApplicationSubmitted")
             .Returns(expectedTemplateId);
 
         var successResponse = new EmailResponse { Id = "test-email-id", Status = EmailStatus.Sent };
@@ -211,7 +211,7 @@ public class ApplicationSubmittedEventHandlerTests
     public async Task Handle_ShouldLogWarning_WhenEmailFails(
         ApplicationId applicationId,
         string applicationReference,
-        TemplateVersionId templateVersionId,
+        TemplateId templateId,
         UserId submittedBy,
         string userEmail,
         string userFullName,
@@ -225,14 +225,14 @@ public class ApplicationSubmittedEventHandlerTests
         var @event = new ApplicationSubmittedEvent(
             applicationId, 
             applicationReference, 
-            templateVersionId, 
+            templateId, 
             submittedBy, 
             userEmail, 
             userFullName, 
             submittedOn);
 
         var expectedTemplateId = "a4188604-0053-4d77-9ad2-720f6fbbdf0a";
-        emailTemplateResolver.ResolveEmailTemplateAsync(templateVersionId, "ApplicationSubmitted")
+        emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ApplicationSubmitted")
             .Returns(expectedTemplateId);
 
         var failureResponse = new EmailResponse { Id = "test-email-failure-id", Status = EmailStatus.PermanentFailure };
@@ -258,7 +258,7 @@ public class ApplicationSubmittedEventHandlerTests
     public async Task Handle_ShouldLogErrorAndNotThrow_WhenExceptionOccurs(
         ApplicationId applicationId,
         string applicationReference,
-        TemplateVersionId templateVersionId,
+        TemplateId templateId,
         UserId submittedBy,
         string userEmail,
         string userFullName,
@@ -272,14 +272,14 @@ public class ApplicationSubmittedEventHandlerTests
         var @event = new ApplicationSubmittedEvent(
             applicationId, 
             applicationReference, 
-            templateVersionId, 
+            templateId, 
             submittedBy, 
             userEmail, 
             userFullName, 
             submittedOn);
 
         var expectedTemplateId = "a4188604-0053-4d77-9ad2-720f6fbbdf0a";
-        emailTemplateResolver.ResolveEmailTemplateAsync(templateVersionId, "ApplicationSubmitted")
+        emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ApplicationSubmitted")
             .Returns(expectedTemplateId);
 
         emailService.SendEmailAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())

@@ -20,13 +20,13 @@ public sealed class ApplicationSubmittedEventHandler(
         {
             // Resolve the email template ID based on the application template and email type
             var emailTemplateId = await emailTemplateResolver.ResolveEmailTemplateAsync(
-                notification.TemplateVersionId, 
+                notification.TemplateId,
                 "ApplicationSubmitted");
 
             if (string.IsNullOrEmpty(emailTemplateId))
             {
-                _logger.LogError("Could not resolve email template for application {ApplicationId} with template version {TemplateVersionId}", 
-                    notification.ApplicationId.Value, notification.TemplateVersionId.Value);
+                _logger.LogError("Could not resolve email template for application {ApplicationId} with template {TemplateId}", 
+                    notification.ApplicationId.Value, notification.TemplateId.Value);
                 return;
             }
 

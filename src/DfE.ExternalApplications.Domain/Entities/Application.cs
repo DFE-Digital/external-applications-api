@@ -108,7 +108,7 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
         AddDomainEvent(new ApplicationSubmittedEvent(
             Id!,
             ApplicationReference,
-            TemplateVersionId,
+            TemplateVersion!.TemplateId,
             submittedBy,
             userEmail,
             userFullName,

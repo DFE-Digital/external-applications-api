@@ -24,19 +24,19 @@ public class EmailTemplateResolver : IEmailTemplateResolver
         _logger = logger;
     }
 
-    public Task<string?> ResolveEmailTemplateAsync(TemplateVersionId templateVersionId, string emailType)
+    public Task<string?> ResolveEmailTemplateAsync(TemplateId templateId, string emailType)
     {
-        var applicationType = GetApplicationTypeByTemplateId(templateVersionId.Value);
+        var applicationType = GetApplicationTypeByTemplateId(templateId.Value);
         
         if (string.IsNullOrEmpty(applicationType))
         {
-            _logger.LogWarning("Could not determine application type for template ID {TemplateId}", templateVersionId.Value);
+            _logger.LogWarning("Could not determine application type for template ID {TemplateId}", templateId.Value);
             return Task.FromResult<string?>(null);
         }
 
-        var templateId = _emailTemplatesConfig.GetTemplateId(applicationType, emailType);
+        var emailTemplateId = _emailTemplatesConfig.GetTemplateId(applicationType, emailType);
         
-        if (string.IsNullOrEmpty(templateId))
+        if (string.IsNullOrEmpty(emailTemplateId))
         {
             _logger.LogWarning("Could not find email template for application type {ApplicationType} and email type {EmailType}", 
                 applicationType, emailType);
@@ -44,14 +44,14 @@ public class EmailTemplateResolver : IEmailTemplateResolver
         }
 
         _logger.LogDebug("Resolved email template {TemplateId} for application type {ApplicationType} and email type {EmailType}", 
-            templateId, applicationType, emailType);
+            emailTemplateId, applicationType, emailType);
 
-        return Task.FromResult<string?>(templateId);
+        return Task.FromResult<string?>(emailTemplateId);
     }
 
-    public Task<string?> GetApplicationTypeAsync(TemplateVersionId templateVersionId)
+    public Task<string?> GetApplicationTypeAsync(TemplateId templateId)
     {
-        var applicationType = GetApplicationTypeByTemplateId(templateVersionId.Value);
+        var applicationType = GetApplicationTypeByTemplateId(templateId.Value);
         return Task.FromResult(applicationType);
     }
 

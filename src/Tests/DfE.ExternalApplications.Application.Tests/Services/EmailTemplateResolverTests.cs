@@ -30,18 +30,15 @@ public class EmailTemplateResolverTests
 
         _emailTemplatesConfig = new EmailTemplatesConfiguration
         {
-            Templates = new Dictionary<string, Dictionary<string, string>>
+            ["Transfer"] = new Dictionary<string, string>
             {
-                ["Transfer"] = new Dictionary<string, string>
-                {
-                    ["ApplicationSubmitted"] = "a4188604-0053-4d77-9ad2-720f6fbbdf0a",
-                    ["ContributorInvited"] = "b5299715-1164-5e88-ae3f-8c077g8bdg1b"
-                },
-                ["SigChange"] = new Dictionary<string, string>
-                {
-                    ["ApplicationSubmitted"] = "c6300826-2275-6f99-bf40-9d188h9ceh2c",
-                    ["ContributorInvited"] = "d7411937-3386-7g00-cg51-ae299i0dfj3d"
-                }
+                ["ApplicationSubmitted"] = "a4188604-0053-4d77-9ad2-720f6fbbdf0a",
+                ["ContributorInvited"] = "b5299715-1164-5e88-ae3f-8c077g8bdg1b"
+            },
+            ["SigChange"] = new Dictionary<string, string>
+            {
+                ["ApplicationSubmitted"] = "c6300826-2275-6f99-bf40-9d188h9ceh2c",
+                ["ContributorInvited"] = "d7411937-3386-7g00-cg51-ae299i0dfj3d"
             }
         };
 
@@ -55,11 +52,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldReturnCorrectTemplate_ForTransferApplicationSubmitted()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
+        var templateId = new TemplateId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
         var emailType = "ApplicationSubmitted";
 
         // Act
-        var result = await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        var result = await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         Assert.Equal("a4188604-0053-4d77-9ad2-720f6fbbdf0a", result);
@@ -69,11 +66,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldReturnCorrectTemplate_ForSigChangeApplicationSubmitted()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("B2F8E7D4-2C46-4A91-8E73-9D5A1F4B6C89"));
+        var templateId = new TemplateId(Guid.Parse("B2F8E7D4-2C46-4A91-8E73-9D5A1F4B6C89"));
         var emailType = "ApplicationSubmitted";
 
         // Act
-        var result = await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        var result = await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         Assert.Equal("c6300826-2275-6f99-bf40-9d188h9ceh2c", result);
@@ -83,11 +80,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldReturnCorrectTemplate_ForTransferContributorInvited()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
+        var templateId = new TemplateId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
         var emailType = "ContributorInvited";
 
         // Act
-        var result = await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        var result = await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         Assert.Equal("b5299715-1164-5e88-ae3f-8c077g8bdg1b", result);
@@ -97,11 +94,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldReturnNull_ForUnknownTemplate()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("00000000-0000-0000-0000-000000000000"));
+        var templateId = new TemplateId(Guid.Parse("00000000-0000-0000-0000-000000000000"));
         var emailType = "ApplicationSubmitted";
 
         // Act
-        var result = await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        var result = await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         Assert.Null(result);
@@ -111,11 +108,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldReturnNull_ForUnknownEmailType()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
+        var templateId = new TemplateId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
         var emailType = "UnknownEmailType";
 
         // Act
-        var result = await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        var result = await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         Assert.Null(result);
@@ -125,10 +122,10 @@ public class EmailTemplateResolverTests
     public async Task GetApplicationTypeAsync_ShouldReturnCorrectType_ForTransfer()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
+        var templateId = new TemplateId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
 
         // Act
-        var result = await _resolver.GetApplicationTypeAsync(templateVersionId);
+        var result = await _resolver.GetApplicationTypeAsync(templateId);
 
         // Assert
         Assert.Equal("Transfer", result);
@@ -138,10 +135,10 @@ public class EmailTemplateResolverTests
     public async Task GetApplicationTypeAsync_ShouldReturnCorrectType_ForSigChange()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("B2F8E7D4-2C46-4A91-8E73-9D5A1F4B6C89"));
+        var templateId = new TemplateId(Guid.Parse("B2F8E7D4-2C46-4A91-8E73-9D5A1F4B6C89"));
 
         // Act
-        var result = await _resolver.GetApplicationTypeAsync(templateVersionId);
+        var result = await _resolver.GetApplicationTypeAsync(templateId);
 
         // Assert
         Assert.Equal("SigChange", result);
@@ -151,10 +148,10 @@ public class EmailTemplateResolverTests
     public async Task GetApplicationTypeAsync_ShouldReturnNull_ForUnknownTemplate()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("00000000-0000-0000-0000-000000000000"));
+        var templateId = new TemplateId(Guid.Parse("00000000-0000-0000-0000-000000000000"));
 
         // Act
-        var result = await _resolver.GetApplicationTypeAsync(templateVersionId);
+        var result = await _resolver.GetApplicationTypeAsync(templateId);
 
         // Assert
         Assert.Null(result);
@@ -164,11 +161,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldLogWarning_WhenTemplateNotFound()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("00000000-0000-0000-0000-000000000000"));
+        var templateId = new TemplateId(Guid.Parse("00000000-0000-0000-0000-000000000000"));
         var emailType = "ApplicationSubmitted";
 
         // Act
-        await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         _logger.Received(1).Log(
@@ -183,11 +180,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldLogWarning_WhenEmailTypeNotFound()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
+        var templateId = new TemplateId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
         var emailType = "UnknownEmailType";
 
         // Act
-        await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         _logger.Received(1).Log(
@@ -202,11 +199,11 @@ public class EmailTemplateResolverTests
     public async Task ResolveEmailTemplateAsync_ShouldLogDebug_WhenTemplateResolved()
     {
         // Arrange
-        var templateVersionId = new TemplateVersionId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
+        var templateId = new TemplateId(Guid.Parse("9A4E9C58-9135-468C-B154-7B966F7ACFB7"));
         var emailType = "ApplicationSubmitted";
 
         // Act
-        await _resolver.ResolveEmailTemplateAsync(templateVersionId, emailType);
+        await _resolver.ResolveEmailTemplateAsync(templateId, emailType);
 
         // Assert
         _logger.Received(1).Log(
