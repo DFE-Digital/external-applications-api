@@ -205,7 +205,7 @@ public class ApplicationTests
             ApplicationStatus.InProgress); // Start with InProgress status
 
         // Act
-        application.Submit(submittedOn, submittedBy);
+        application.Submit(submittedOn, submittedBy, "test@example.com", "Test User");
 
         // Assert
         Assert.Equal(ApplicationStatus.Submitted, application.Status);
@@ -234,7 +234,7 @@ public class ApplicationTests
 
         // Act & Assert
         var ex = Assert.Throws<ArgumentNullException>(() =>
-            application.Submit(submittedOn, null!));
+            application.Submit(submittedOn, null!, "test@example.com", "Test User"));
 
         Assert.Equal("submittedBy", ex.ParamName);
     }
@@ -261,7 +261,7 @@ public class ApplicationTests
 
         // Act & Assert
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            application.Submit(submittedOn, submittedBy));
+            application.Submit(submittedOn, submittedBy, "test@example.com", "Test User"));
 
         Assert.Equal("Application has already been submitted", ex.Message);
     }
@@ -286,7 +286,7 @@ public class ApplicationTests
             createdBy,
             null); // null status
 
-        applicationWithNullStatus.Submit(submittedOn, submittedBy);
+        applicationWithNullStatus.Submit(submittedOn, submittedBy, "test@example.com", "Test User");
         Assert.Equal(ApplicationStatus.Submitted, applicationWithNullStatus.Status);
 
         // Test submitting from InProgress status
@@ -298,7 +298,79 @@ public class ApplicationTests
             createdBy,
             ApplicationStatus.InProgress);
 
-        applicationWithInProgress.Submit(submittedOn, submittedBy);
+        applicationWithInProgress.Submit(submittedOn, submittedBy, "test@example.com", "Test User");
         Assert.Equal(ApplicationStatus.Submitted, applicationWithInProgress.Status);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Submit_ShouldThrowArgumentException_WhenUserEmailIsNullOrEmpty(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime submittedOn,
+        UserId submittedBy)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy,
+            ApplicationStatus.InProgress);
+
+        // Act & Assert - Test null email
+        var ex1 = Assert.Throws<ArgumentException>(() =>
+            application.Submit(submittedOn, submittedBy, null!, "Test User"));
+        Assert.Equal("userEmail", ex1.ParamName);
+
+        // Act & Assert - Test empty email
+        var ex2 = Assert.Throws<ArgumentException>(() =>
+            application.Submit(submittedOn, submittedBy, "", "Test User"));
+        Assert.Equal("userEmail", ex2.ParamName);
+
+        // Act & Assert - Test whitespace email
+        var ex3 = Assert.Throws<ArgumentException>(() =>
+            application.Submit(submittedOn, submittedBy, "   ", "Test User"));
+        Assert.Equal("userEmail", ex3.ParamName);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Submit_ShouldThrowArgumentException_WhenUserFullNameIsNullOrEmpty(
+        ApplicationId applicationId,
+        string applicationReference,
+        TemplateVersionId templateVersionId,
+        DateTime createdOn,
+        UserId createdBy,
+        DateTime submittedOn,
+        UserId submittedBy)
+    {
+        // Arrange
+        var application = new Entities.Application(
+            applicationId,
+            applicationReference,
+            templateVersionId,
+            createdOn,
+            createdBy,
+            ApplicationStatus.InProgress);
+
+        // Act & Assert - Test null name
+        var ex1 = Assert.Throws<ArgumentException>(() =>
+            application.Submit(submittedOn, submittedBy, "test@example.com", null!));
+        Assert.Equal("userFullName", ex1.ParamName);
+
+        // Act & Assert - Test empty name
+        var ex2 = Assert.Throws<ArgumentException>(() =>
+            application.Submit(submittedOn, submittedBy, "test@example.com", ""));
+        Assert.Equal("userFullName", ex2.ParamName);
+
+        // Act & Assert - Test whitespace name
+        var ex3 = Assert.Throws<ArgumentException>(() =>
+            application.Submit(submittedOn, submittedBy, "test@example.com", "   "));
+        Assert.Equal("userFullName", ex3.ParamName);
     }
 }

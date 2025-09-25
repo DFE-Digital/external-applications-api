@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Common.Models;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Services;
@@ -10,6 +11,7 @@ using GovUK.Dfe.CoreLibs.FileStorage;
 using GovUK.Dfe.CoreLibs.Notifications.Extensions;
 using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using Microsoft.AspNetCore.Http;
+using GovUK.Dfe.CoreLibs.Email;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -43,10 +45,17 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<ITemplateFactory, TemplateFactory>();
             services.AddTransient<IFileFactory, FileFactory>();
 
+            // Configure email template resolution
+            services.Configure<ApplicationTemplatesConfiguration>(config.GetSection("ApplicationTemplates"));
+            services.Configure<EmailTemplatesConfiguration>(config.GetSection("EmailTemplates"));
+            services.AddTransient<IEmailTemplateResolver, EmailTemplateResolver>();
+
             services.AddBackgroundService();
             services.AddNotificationServicesWithRedis(config);
 
             services.AddFileStorage(config);
+
+            services.AddEmailServicesWithGovUkNotify(config);
 
             return services;
         }

@@ -86,10 +86,16 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
     /// <summary>
     /// Submits the application, setting its status to Submitted and updating last modified tracking.
     /// </summary>
-    public void Submit(DateTime submittedOn, UserId submittedBy)
+    public void Submit(DateTime submittedOn, UserId submittedBy, string userEmail, string userFullName)
     {
         if (submittedBy == null)
             throw new ArgumentNullException(nameof(submittedBy));
+        
+        if (string.IsNullOrWhiteSpace(userEmail))
+            throw new ArgumentException("User email cannot be null or empty", nameof(userEmail));
+            
+        if (string.IsNullOrWhiteSpace(userFullName))
+            throw new ArgumentException("User full name cannot be null or empty", nameof(userFullName));
 
         if (Status == ApplicationStatus.Submitted)
             throw new InvalidOperationException("Application has already been submitted");
@@ -97,5 +103,15 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
         Status = ApplicationStatus.Submitted;
         LastModifiedOn = submittedOn;
         LastModifiedBy = submittedBy;
+        
+        // Raise domain event
+        AddDomainEvent(new ApplicationSubmittedEvent(
+            Id!,
+            ApplicationReference,
+            TemplateVersion!.TemplateId,
+            submittedBy,
+            userEmail,
+            userFullName,
+            submittedOn));
     }
 }

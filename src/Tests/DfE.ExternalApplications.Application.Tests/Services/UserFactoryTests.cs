@@ -36,6 +36,7 @@ public class UserFactoryTests
             "john@example.com",
             createdBy,
             applicationId,
+            "APP-12345",
             templateId,
             createdOn);
 
@@ -54,6 +55,7 @@ public class UserFactoryTests
         var contributorAddedEvent = domainEvents.First() as ContributorAddedEvent;
         Assert.NotNull(contributorAddedEvent);
         Assert.Equal(applicationId, contributorAddedEvent.ApplicationId);
+        Assert.Equal("APP-12345", contributorAddedEvent.ApplicationReference);
         Assert.Equal(templateId, contributorAddedEvent.TemplateId);
         Assert.Equal(contributor, contributorAddedEvent.Contributor);
         Assert.Equal(createdBy, contributorAddedEvent.AddedBy);
@@ -77,6 +79,7 @@ public class UserFactoryTests
             "john@example.com",
             createdBy,
             applicationId,
+            "APP-12345",
             templateId));
 
         Assert.Contains("Id cannot be null", exception.Message);
@@ -99,6 +102,7 @@ public class UserFactoryTests
             "john@example.com",
             createdBy,
             applicationId,
+            "APP-12345",
             null!));
 
         Assert.Contains("TemplateId cannot be null", exception.Message);

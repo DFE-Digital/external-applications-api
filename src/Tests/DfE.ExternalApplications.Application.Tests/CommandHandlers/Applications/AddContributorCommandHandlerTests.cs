@@ -1,24 +1,21 @@
-using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
-using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
-using Microsoft.AspNetCore.Http;
-using NSubstitute;
-using System.Security.Claims;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
-using MediatR;
-using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MockQueryable.NSubstitute;
-using DfE.ExternalApplications.Domain.Factories;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Domain.Common;
+using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using System.Security.Claims;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Applications;
 
@@ -100,6 +97,7 @@ public class AddContributorCommandHandlerTests
             command.Email,
             user.Id!,
             new ApplicationId(command.ApplicationId),
+            application.ApplicationReference,
             templateVersion.TemplateId,
             Arg.Any<DateTime>())
             .Returns(contributor);
@@ -239,7 +237,7 @@ public class AddContributorCommandHandlerTests
         userFactory.Received(1).AddTemplatePermissionToUser(
             existingContributor,
             templateVersion.TemplateId.Value.ToString(),
-            Arg.Is<AccessType[]>(a => a.Length == 1 && a.Contains(AccessType.Read)),
+            Arg.Is<AccessType[]>(a => a.Length == 2 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write)),
             user.Id!,
             Arg.Any<DateTime>());
 
@@ -816,6 +814,7 @@ public class AddContributorCommandHandlerTests
             command.Email,
             user.Id!,
             new ApplicationId(command.ApplicationId),
+            application.ApplicationReference,
             templateVersion.TemplateId,
             Arg.Any<DateTime>())
             .Returns(contributor);
@@ -918,6 +917,7 @@ public class AddContributorCommandHandlerTests
             command.Email,
             user.Id!,
             new ApplicationId(command.ApplicationId),
+            application.ApplicationReference,
             templateVersion.TemplateId,
             Arg.Any<DateTime>())
             .Returns(contributor);
@@ -1086,6 +1086,7 @@ public class AddContributorCommandHandlerTests
             command.Email,
             user.Id!,
             new ApplicationId(command.ApplicationId),
+            application.ApplicationReference,
             templateVersion.TemplateId,
             Arg.Any<DateTime>())
             .Returns(contributor);

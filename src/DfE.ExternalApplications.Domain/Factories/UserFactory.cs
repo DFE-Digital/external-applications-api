@@ -16,6 +16,7 @@ public class UserFactory : IUserFactory
         string email,
         UserId createdBy,
         ApplicationId applicationId,
+        string applicationReference,
         TemplateId templateId,
         DateTime? createdOn = null)
     {
@@ -37,6 +38,9 @@ public class UserFactory : IUserFactory
         if (applicationId == null)
             throw new ArgumentException("ApplicationId cannot be null", nameof(applicationId));
 
+        if (string.IsNullOrWhiteSpace(applicationReference))
+            throw new ArgumentException("ApplicationReference cannot be null or empty", nameof(applicationReference));
+
         if (templateId == null)
             throw new ArgumentException("TemplateId cannot be null", nameof(templateId));
 
@@ -55,6 +59,7 @@ public class UserFactory : IUserFactory
         // Raise domain event for contributor addition (permissions will be added in the event handler)
         contributor.AddDomainEvent(new ContributorAddedEvent(
             applicationId,
+            applicationReference,
             templateId,
             contributor,
             createdBy,

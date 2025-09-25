@@ -14,6 +14,7 @@ public interface IUserFactory
         string email,
         UserId createdBy,
         ApplicationId applicationId,
+        string applicationReference,
         TemplateId templateId,
         DateTime? createdOn = null);
 
