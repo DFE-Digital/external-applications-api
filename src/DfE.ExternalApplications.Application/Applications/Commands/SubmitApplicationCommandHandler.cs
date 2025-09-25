@@ -86,7 +86,7 @@ public sealed class SubmitApplicationCommandHandler(
                 return Result<ApplicationDto>.Forbid("Only the user who created the application can submit it");
 
             var now = DateTime.UtcNow;
-            application.Submit(now, dbUser.Id!);
+            application.Submit(now, dbUser.Id!, dbUser.Email, dbUser.Name);
 
             await unitOfWork.CommitAsync(cancellationToken);
 
