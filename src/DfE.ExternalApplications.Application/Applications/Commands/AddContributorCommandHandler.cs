@@ -140,48 +140,54 @@ public sealed class AddContributorCommandHandler(
         User dbUser,
         CancellationToken cancellationToken)
     {
-        // Check if they already have both Read and Write permissions for this application
-        var hasReadPermission = existingContributor.Permissions
-            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Read);
-        var hasWritePermission = existingContributor.Permissions
-            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.Application && p.AccessType == AccessType.Write);
-        var hasReadFilesPermission = existingContributor.Permissions
-            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.ApplicationFiles && p.AccessType == AccessType.Read);
-        var hasWriteFilesPermission = existingContributor.Permissions
-            .Any(p => p.ApplicationId == applicationId && p.ResourceType == ResourceType.ApplicationFiles && p.AccessType == AccessType.Write);
+        
+        // Application permissions
+        userFactory.AddPermissionToUser(
+            existingContributor,
+            applicationId.Value.ToString(),
+            ResourceType.Application,
+            new[] { AccessType.Read, AccessType.Write },
+            dbUser.Id!,
+            applicationId,
+            DateTime.UtcNow);
 
-        if (hasReadPermission && hasWritePermission && hasReadFilesPermission && hasWriteFilesPermission)
-        {
-            // Contributor already exists with all needed permissions, return their details
-            var authorization = CreateAuthorizationFromUser(existingContributor);
-
-            return Result<UserDto>.Success(new UserDto
-            {
-                UserId = existingContributor.Id!.Value,
-                Name = existingContributor.Name,
-                Email = existingContributor.Email,
-                RoleId = existingContributor.RoleId.Value,
-                Authorization = authorization
-            });
-        }
-
-        // Add missing permissions using factory method
-        userFactory.AddPermissionToUser(existingContributor, applicationId.Value.ToString(), ResourceType.Application, new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, applicationId);
-        userFactory.AddTemplatePermissionToUser(existingContributor, application.TemplateVersion!.TemplateId.Value.ToString(), new[] { AccessType.Read, AccessType.Write }, dbUser.Id!, DateTime.UtcNow);
+        // Application files permissions
         userFactory.AddPermissionToUser(
             existingContributor,
             applicationId.Value.ToString(),
             ResourceType.ApplicationFiles,
-            new[] { AccessType.Read, AccessType.Write },
+            new[] { AccessType.Read, AccessType.Write, AccessType.Delete },
             dbUser.Id!,
-            applicationId);
+            applicationId,
+            DateTime.UtcNow);
+
+        // Notifications permissions
         userFactory.AddPermissionToUser(
             existingContributor,
             existingContributor.Email,
             ResourceType.Notifications,
+            new[] { AccessType.Read, AccessType.Write, AccessType.Delete },
+            dbUser.Id!,
+            applicationId,
+            DateTime.UtcNow);
+
+        // Template permissions
+        userFactory.AddTemplatePermissionToUser(
+            existingContributor,
+            application.TemplateVersion!.TemplateId.Value.ToString(),
             new[] { AccessType.Read, AccessType.Write },
             dbUser.Id!,
-            applicationId);
+            DateTime.UtcNow);
+
+        // Raise event for existing contributor (for email side effects)
+        existingContributor.AddDomainEvent(new ContributorPermissionsGrantedEvent(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersion!.TemplateId,
+            existingContributor,
+            new[] { AccessType.Read, AccessType.Write },
+            dbUser.Id!,
+            DateTime.UtcNow));
 
         await unitOfWork.CommitAsync(cancellationToken);
 

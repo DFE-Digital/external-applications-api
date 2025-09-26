@@ -225,15 +225,39 @@ public class AddContributorCommandHandlerTests
         Assert.Equal(command.Name, result.Value.Name);
         Assert.Equal(command.Email, result.Value.Email);
 
-        // Verify that permissions were added to existing contributor
+        // Verify that all required permissions were added to existing contributor
+        
+        // Application permissions
         userFactory.Received(1).AddPermissionToUser(
             existingContributor,
             command.ApplicationId.ToString(),
             ResourceType.Application,
             Arg.Is<AccessType[]>(a => a.Length == 2 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write)),
             user.Id!,
-            new ApplicationId(command.ApplicationId));
+            new ApplicationId(command.ApplicationId),
+            Arg.Any<DateTime>());
 
+        // Application files permissions  
+        userFactory.Received(1).AddPermissionToUser(
+            existingContributor,
+            command.ApplicationId.ToString(),
+            ResourceType.ApplicationFiles,
+            Arg.Is<AccessType[]>(a => a.Length == 3 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write) && a.Contains(AccessType.Delete)),
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            Arg.Any<DateTime>());
+
+        // Notifications permissions
+        userFactory.Received(1).AddPermissionToUser(
+            existingContributor,
+            existingContributor.Email,
+            ResourceType.Notifications,
+            Arg.Is<AccessType[]>(a => a.Length == 3 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write) && a.Contains(AccessType.Delete)),
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            Arg.Any<DateTime>());
+
+        // Template permissions
         userFactory.Received(1).AddTemplatePermissionToUser(
             existingContributor,
             templateVersion.TemplateId.Value.ToString(),
@@ -353,11 +377,48 @@ public class AddContributorCommandHandlerTests
         Assert.Equal(command.Name, result.Value.Name);
         Assert.Equal(command.Email, result.Value.Email);
 
-        // Verify that no new permissions were added since contributor already has all needed permissions
-        userFactory.DidNotReceive().AddPermissionToUser(Arg.Any<User>(), Arg.Any<string>(), Arg.Any<ResourceType>(), Arg.Any<AccessType[]>(), Arg.Any<UserId>(), Arg.Any<ApplicationId>());
-        userFactory.DidNotReceive().AddTemplatePermissionToUser(Arg.Any<User>(), Arg.Any<string>(), Arg.Any<AccessType[]>(), Arg.Any<UserId>(), Arg.Any<DateTime>());
+        // Verify that all permission methods were called (but since the user already has all permissions, they're idempotent and won't add duplicates)
+        
+        // Application permissions
+        userFactory.Received(1).AddPermissionToUser(
+            existingContributor,
+            command.ApplicationId.ToString(),
+            ResourceType.Application,
+            Arg.Any<AccessType[]>(),
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            Arg.Any<DateTime>());
 
-        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        // Application files permissions  
+        userFactory.Received(1).AddPermissionToUser(
+            existingContributor,
+            command.ApplicationId.ToString(),
+            ResourceType.ApplicationFiles,
+            Arg.Any<AccessType[]>(),
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            Arg.Any<DateTime>());
+
+        // Notifications permissions
+        userFactory.Received(1).AddPermissionToUser(
+            existingContributor,
+            existingContributor.Email,
+            ResourceType.Notifications,
+            Arg.Any<AccessType[]>(),
+            user.Id!,
+            new ApplicationId(command.ApplicationId),
+            Arg.Any<DateTime>());
+
+        // Template permissions
+        userFactory.Received(1).AddTemplatePermissionToUser(
+            existingContributor,
+            templateVersion.TemplateId.Value.ToString(),
+            Arg.Any<AccessType[]>(),
+            user.Id!,
+            Arg.Any<DateTime>());
+
+        // CommitAsync should still be called
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
     [Theory]

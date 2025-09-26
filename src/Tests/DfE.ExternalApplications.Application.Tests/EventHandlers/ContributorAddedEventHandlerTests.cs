@@ -1,11 +1,8 @@
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.EventHandlers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
-using DfE.ExternalApplications.Domain.Factories;
-using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.Extensions.Logging;
@@ -19,8 +16,6 @@ namespace DfE.ExternalApplications.Application.Tests.EventHandlers;
 public class ContributorAddedEventHandlerTests
 {
     private readonly ILogger<ContributorAddedEventHandler> _logger;
-    private readonly IEaRepository<User> _userRepo;
-    private readonly IUserFactory _userFactory;
     private readonly IEmailService _emailService;
     private readonly IEmailTemplateResolver _emailTemplateResolver;
     private readonly ContributorAddedEventHandler _handler;
@@ -28,116 +23,12 @@ public class ContributorAddedEventHandlerTests
     public ContributorAddedEventHandlerTests()
     {
         _logger = Substitute.For<ILogger<ContributorAddedEventHandler>>();
-        _userRepo = Substitute.For<IEaRepository<User>>();
-        _userFactory = Substitute.For<IUserFactory>();
         _emailService = Substitute.For<IEmailService>();
         _emailTemplateResolver = Substitute.For<IEmailTemplateResolver>();
 
-        _handler = new ContributorAddedEventHandler(_logger, _userRepo, _userFactory, _emailService, _emailTemplateResolver);
+        _handler = new ContributorAddedEventHandler(_logger, _emailService, _emailTemplateResolver);
     }
 
-    [Theory]
-    [CustomAutoData(typeof(UserCustomization))]
-    public async Task Handle_Should_Add_Application_Permissions_To_Contributor(
-        User contributor,
-        ApplicationId applicationId,
-        string applicationReference,
-        TemplateId templateId,
-        UserId addedBy,
-        DateTime addedOn)
-    {
-        // Arrange
-        var @event = new ContributorAddedEvent(applicationId, applicationReference, templateId, contributor, addedBy, addedOn);
-        
-        var expectedTemplateId = "3a0e2130-ceea-48c9-8e3d-906431acc86f";
-        _emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ContributorInvited")
-            .Returns(expectedTemplateId);
-
-        var successResponse = new EmailResponse { Id = "test-email-id", Status = EmailStatus.Sent };
-        _emailService.SendEmailAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())
-            .Returns(successResponse);
-
-        // Act
-        await _handler.Handle(@event, CancellationToken.None);
-
-        // Assert
-        _userFactory.Received(1).AddPermissionToUser(
-            contributor,
-            applicationId.Value.ToString(),
-            ResourceType.Application,
-            Arg.Is<AccessType[]>(a => a.Length == 2 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write)),
-            addedBy,
-            applicationId,
-            addedOn);
-    }
-
-    [Theory]
-    [CustomAutoData(typeof(UserCustomization))]
-    public async Task Handle_Should_Add_Template_Permissions_To_Contributor(
-        User contributor,
-        ApplicationId applicationId,
-        string applicationReference,
-        TemplateId templateId,
-        UserId addedBy,
-        DateTime addedOn)
-    {
-        // Arrange
-        var @event = new ContributorAddedEvent(applicationId, applicationReference, templateId, contributor, addedBy, addedOn);
-        
-        var expectedTemplateId = "3a0e2130-ceea-48c9-8e3d-906431acc86f";
-        _emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ContributorInvited")
-            .Returns(expectedTemplateId);
-
-        var successResponse = new EmailResponse { Id = "test-email-id", Status = EmailStatus.Sent };
-        _emailService.SendEmailAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())
-            .Returns(successResponse);
-
-        // Act
-        await _handler.Handle(@event, CancellationToken.None);
-
-        // Assert
-        _userFactory.Received(1).AddTemplatePermissionToUser(
-            contributor,
-            templateId.Value.ToString(),
-            Arg.Is<AccessType[]>(a => a.Length == 2 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write)),
-            addedBy,
-            addedOn);
-    }
-
-    [Theory]
-    [CustomAutoData(typeof(UserCustomization))]
-    public async Task Handle_Should_Add_Application_Files_Permissions_To_Contributor(
-        User contributor,
-        ApplicationId applicationId,
-        string applicationReference,
-        TemplateId templateId,
-        UserId addedBy,
-        DateTime addedOn)
-    {
-        // Arrange
-        var @event = new ContributorAddedEvent(applicationId, applicationReference, templateId, contributor, addedBy, addedOn);
-        
-        var expectedTemplateId = "3a0e2130-ceea-48c9-8e3d-906431acc86f";
-        _emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ContributorInvited")
-            .Returns(expectedTemplateId);
-
-        var successResponse = new EmailResponse { Id = "test-email-id", Status = EmailStatus.Sent };
-        _emailService.SendEmailAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())
-            .Returns(successResponse);
-
-        // Act
-        await _handler.Handle(@event, CancellationToken.None);
-
-        // Assert
-        _userFactory.Received(1).AddPermissionToUser(
-            contributor,
-            applicationId.Value.ToString(),
-            ResourceType.ApplicationFiles,
-            Arg.Is<AccessType[]>(a => a.Length == 2 && a.Contains(AccessType.Read) && a.Contains(AccessType.Write)),
-            addedBy,
-            applicationId,
-            addedOn);
-    }
 
     [Theory]
     [CustomAutoData(typeof(UserCustomization))]
@@ -340,36 +231,4 @@ public class ContributorAddedEventHandlerTests
             Arg.Any<Func<object, Exception?, string>>());
     }
 
-    [Theory]
-    [CustomAutoData(typeof(UserCustomization))]
-    public async Task Handle_Should_Log_Information_Message_For_Permissions(
-        User contributor,
-        ApplicationId applicationId,
-        string applicationReference,
-        TemplateId templateId,
-        UserId addedBy,
-        DateTime addedOn)
-    {
-        // Arrange
-        var @event = new ContributorAddedEvent(applicationId, applicationReference, templateId, contributor, addedBy, addedOn);
-        
-        var expectedTemplateId = "3a0e2130-ceea-48c9-8e3d-906431acc86f";
-        _emailTemplateResolver.ResolveEmailTemplateAsync(templateId, "ContributorInvited")
-            .Returns(expectedTemplateId);
-
-        var successResponse = new EmailResponse { Id = "test-email-id", Status = EmailStatus.Sent };
-        _emailService.SendEmailAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())
-            .Returns(successResponse);
-
-        // Act
-        await _handler.Handle(@event, CancellationToken.None);
-
-        // Assert
-        _logger.Received(1).Log(
-            LogLevel.Information,
-            Arg.Any<EventId>(),
-            Arg.Is<object>(o => o.ToString()!.Contains("Added permissions for contributor")),
-            null,
-            Arg.Any<Func<object, Exception?, string>>());
-    }
 } 

@@ -18,6 +18,7 @@ public interface IUserFactory
         TemplateId templateId,
         DateTime? createdOn = null);
 
+
     void AddPermissionToUser(
         User user,
         string resourceKey,
