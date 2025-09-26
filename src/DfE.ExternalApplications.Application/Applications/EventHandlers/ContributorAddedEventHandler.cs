@@ -13,56 +13,17 @@ namespace DfE.ExternalApplications.Application.Applications.EventHandlers;
 
 public sealed class ContributorAddedEventHandler(
     ILogger<ContributorAddedEventHandler> logger,
-    IEaRepository<User> userRepo,
-    IUserFactory userFactory,
     IEmailService emailService,
     IEmailTemplateResolver emailTemplateResolver) : BaseEventHandler<ContributorAddedEvent>(logger)
 {
     protected override async Task HandleEvent(ContributorAddedEvent notification, CancellationToken cancellationToken)
     {
-        // Add application permissions as side effect
-        userFactory.AddPermissionToUser(
-            notification.Contributor,
-            notification.ApplicationId.Value.ToString(),
-            ResourceType.Application,
-            new[] { AccessType.Read, AccessType.Write },
-            notification.AddedBy,
-            notification.ApplicationId,
-            notification.AddedOn);
-
-        // Add template permissions as side effect
-        userFactory.AddTemplatePermissionToUser(
-            notification.Contributor,
-            notification.TemplateId.Value.ToString(),
-            new[] { AccessType.Read, AccessType.Write },
-            notification.AddedBy,
-            notification.AddedOn);
-
-        userFactory.AddPermissionToUser(
-            notification.Contributor,
-            notification.ApplicationId.Value.ToString(),
-            ResourceType.ApplicationFiles,
-            new[] { AccessType.Read, AccessType.Write },
-            notification.AddedBy,
-            notification.ApplicationId,
-            notification.AddedOn);
-
-        userFactory.AddPermissionToUser(
-            notification.Contributor,
-            notification.Contributor.Email,
-            ResourceType.Notifications,
-            new[] { AccessType.Read, AccessType.Write },
-            notification.AddedBy,
-            notification.ApplicationId,
-            notification.AddedOn);
-
-        logger.LogInformation("Added permissions for contributor {ContributorId} to application {ApplicationId} and template {TemplateId} by {AddedBy}", 
+        logger.LogInformation("Processing contributor added event for {ContributorId} to application {ApplicationId} by {AddedBy}", 
             notification.Contributor.Id!.Value, 
             notification.ApplicationId.Value, 
-            notification.TemplateId.Value,
             notification.AddedBy.Value);
 
-        // Send email to the new contributor
+        // Send email to the new contributor (side effect only)
         await SendContributorInvitationEmail(notification, cancellationToken);
     }
 

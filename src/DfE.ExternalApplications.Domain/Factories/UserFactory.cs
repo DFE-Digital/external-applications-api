@@ -56,7 +56,47 @@ public class UserFactory : IUserFactory
             null,
             null);
 
-        // Raise domain event for contributor addition (permissions will be added in the event handler)
+        // Add all required permissions directly (idempotent)
+        
+        // Application permissions
+        AddPermissionToUser(
+            contributor,
+            applicationId.Value.ToString(),
+            ResourceType.Application,
+            new[] { AccessType.Read, AccessType.Write },
+            createdBy,
+            applicationId,
+            when);
+
+        // Application files permissions
+        AddPermissionToUser(
+            contributor,
+            applicationId.Value.ToString(),
+            ResourceType.ApplicationFiles,
+            new[] { AccessType.Read, AccessType.Write, AccessType.Delete },
+            createdBy,
+            applicationId,
+            when);
+
+        // Notifications permissions
+        AddPermissionToUser(
+            contributor,
+            email,
+            ResourceType.Notifications,
+            new[] { AccessType.Read, AccessType.Write, AccessType.Delete },
+            createdBy,
+            applicationId,
+            when);
+
+        // Template permissions
+        AddTemplatePermissionToUser(
+            contributor,
+            templateId.Value.ToString(),
+            new[] { AccessType.Read, AccessType.Write },
+            createdBy,
+            when);
+
+        // Raise domain event for contributor addition (side effects like email)
         contributor.AddDomainEvent(new ContributorAddedEvent(
             applicationId,
             applicationReference,
@@ -67,6 +107,7 @@ public class UserFactory : IUserFactory
 
         return contributor;
     }
+
 
     public void AddPermissionToUser(
         User user,
@@ -93,13 +134,23 @@ public class UserFactory : IUserFactory
 
         foreach (var accessType in accessTypes)
         {
-            user.AddPermission(
-                resourceKey,
-                resourceType,
-                accessType,
-                grantedBy,
-                applicationId,
-                when);
+            // Check if permission already exists (idempotent)
+            var hasPermission = user.Permissions
+                .Any(p => p.ResourceType == resourceType && 
+                         p.ResourceKey == resourceKey && 
+                         p.AccessType == accessType &&
+                         (applicationId == null || p.ApplicationId == applicationId));
+
+            if (!hasPermission)
+            {
+                user.AddPermission(
+                    resourceKey,
+                    resourceType,
+                    accessType,
+                    grantedBy,
+                    applicationId,
+                    when);
+            }
         }
     }
 
@@ -126,11 +177,18 @@ public class UserFactory : IUserFactory
 
         foreach (var accessType in accessTypes)
         {
-            user.AddTemplatePermission(
-                templateId,
-                accessType,
-                grantedBy,
-                when);
+            // Check if template permission already exists (idempotent)
+            var hasTemplatePermission = user.TemplatePermissions
+                .Any(tp => tp.TemplateId.Value.ToString() == templateId && tp.AccessType == accessType);
+
+            if (!hasTemplatePermission)
+            {
+                user.AddTemplatePermission(
+                    templateId,
+                    accessType,
+                    grantedBy,
+                    when);
+            }
         }
     }
 
