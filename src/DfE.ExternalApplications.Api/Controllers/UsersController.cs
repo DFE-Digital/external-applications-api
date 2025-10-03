@@ -42,19 +42,23 @@ public class UsersController(ISender sender) : ControllerBase
     /// <summary>
     /// Create and registers a new user using the data in the provided External-IDP token.
     /// </summary>
-    [HttpPost("exchange")]
-    [SwaggerResponse(200, "Contributor added successfully.", typeof(UserDto))]
+    [HttpPost("register")]
+    [SwaggerResponse(200, "User registered successfully.", typeof(UserDto))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanReadWrite")]
-    public async Task<ActionResult<ExchangeTokenDto>> RegisterUserAsync(
-        [FromBody] ExchangeTokenRequest request,
+    public async Task<ActionResult<UserDto>> RegisterUserAsync(
+        [FromBody] RegisterUserRequest request,
         CancellationToken ct)
     {
         var result = await sender.Send(
-            new RegisterUserCommand(request.AccessToken), ct);
-        return Ok(result);
+            new RegisterUserCommand(request.AccessToken, request.TemplateId), ct);
+        
+        if (!result.IsSuccess)
+            return BadRequest(new ExceptionResponse { Message = result.Error });
+        
+        return Ok(result.Value);
     }
 }
