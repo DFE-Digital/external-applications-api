@@ -4,6 +4,7 @@ using DfE.ExternalApplications.Tests.Common.Helpers;
 using DfE.ExternalApplications.Tests.Common.Seeders;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
@@ -54,8 +55,7 @@ public class UsersControllerRegisterTests
         };
 
         // Act
-        var response = await httpClient.PostAsJsonAsync("/v1/users/register", request);
-        var result = await response.Content.ReadFromJsonAsync<UserDto>();
+        var result = await usersClient.RegisterUserAsync(request);
 
         // Assert
         Assert.NotNull(result);
@@ -118,8 +118,7 @@ public class UsersControllerRegisterTests
         };
 
         // Act
-        var response = await httpClient.PostAsJsonAsync("/v1/users/register", request);
-        var result = await response.Content.ReadFromJsonAsync<UserDto>();
+        var result = await usersClient.RegisterUserAsync(request);
 
         // Assert
         Assert.NotNull(result);
@@ -137,6 +136,7 @@ public class UsersControllerRegisterTests
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task RegisterUserAsync_ShouldReturnBadRequest_WhenTokenIsInvalid(
         CustomWebApplicationDbContextFactory<Program> factory,
+        IUsersClient usersClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -159,17 +159,16 @@ public class UsersControllerRegisterTests
             TemplateId = Guid.Parse(EaContextSeeder.TemplateId)
         };
 
-        // Act
-        var response = await httpClient.PostAsJsonAsync("/v1/users/register", request);
-
-        // Assert
-        Assert.False(response.IsSuccessStatusCode);
+        // Act & Assert
+        await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+            async () => await usersClient.RegisterUserAsync(request));
     }
 
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task RegisterUserAsync_ShouldReturnUnauthorized_WhenNotAuthenticated(
         CustomWebApplicationDbContextFactory<Program> factory,
+        IUsersClient usersClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -183,11 +182,11 @@ public class UsersControllerRegisterTests
             TemplateId = Guid.Parse(EaContextSeeder.TemplateId)
         };
 
-        // Act
-        var response = await httpClient.PostAsJsonAsync("/v1/users/register", request);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            async () => await usersClient.RegisterUserAsync(request));
+        
+        Assert.Equal(403, ex.StatusCode);
     }
 
     [Theory]
@@ -219,8 +218,7 @@ public class UsersControllerRegisterTests
         };
 
         // Act
-        var response = await httpClient.PostAsJsonAsync("/v1/users/register", request);
-        var result = await response.Content.ReadFromJsonAsync<UserDto>();
+        var result = await usersClient.RegisterUserAsync(request);
 
         // Assert
         Assert.NotNull(result);
@@ -268,8 +266,7 @@ public class UsersControllerRegisterTests
         };
 
         // Act
-        var response = await httpClient.PostAsJsonAsync("/v1/users/register", request);
-        var result = await response.Content.ReadFromJsonAsync<UserDto>();
+        var result = await usersClient.RegisterUserAsync(request);
 
         // Assert
         Assert.NotNull(result);
@@ -290,6 +287,7 @@ public class UsersControllerRegisterTests
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task RegisterUserAsync_ShouldHandleRateLimit(
         CustomWebApplicationDbContextFactory<Program> factory,
+        IUsersClient usersClient,
         HttpClient httpClient)
     {
         // Arrange
@@ -305,7 +303,7 @@ public class UsersControllerRegisterTests
             new AuthenticationHeaderValue("Bearer", "azure-token");
 
         // Act - Make multiple rapid requests to test rate limiting
-        var tasks = new List<Task<HttpResponseMessage>>();
+        var tasks = new List<Task<bool>>();
         for (int i = 0; i < 10; i++)
         {
             var token = TestExternalIdentityValidator.CreateToken($"user{i}@example.com");
@@ -314,13 +312,24 @@ public class UsersControllerRegisterTests
                 AccessToken = token,
                 TemplateId = Guid.Parse(EaContextSeeder.TemplateId)
             };
-            tasks.Add(httpClient.PostAsJsonAsync("/v1/users/register", request));
+            tasks.Add(Task.Run(async () =>
+            {
+                try
+                {
+                    await usersClient.RegisterUserAsync(request);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }));
         }
 
-        var responses = await Task.WhenAll(tasks);
+        var results = await Task.WhenAll(tasks);
 
         // Assert - At least one request should succeed (rate limit is 5 in 30 seconds)
-        var successCount = responses.Count(r => r.IsSuccessStatusCode);
+        var successCount = results.Count(r => r);
         Assert.True(successCount >= 1, "At least one request should succeed");
     }
 }
