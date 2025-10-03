@@ -18,6 +18,13 @@ public interface IUserFactory
         TemplateId templateId,
         DateTime? createdOn = null);
 
+    User CreateUser(
+        UserId id,
+        RoleId roleId,
+        string name,
+        string email,
+        TemplateId templateId,
+        DateTime? createdOn = null);
 
     void AddPermissionToUser(
         User user,

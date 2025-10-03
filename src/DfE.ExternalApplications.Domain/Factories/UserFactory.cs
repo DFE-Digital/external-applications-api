@@ -108,6 +108,83 @@ public class UserFactory : IUserFactory
         return contributor;
     }
 
+    public User CreateUser(
+        UserId id,
+        RoleId roleId,
+        string name,
+        string email,
+        TemplateId templateId ,
+        DateTime? createdOn = null)
+    {
+        if (id == null)
+            throw new ArgumentException("Id cannot be null", nameof(id));
+        
+        if (roleId == null)
+            throw new ArgumentException("RoleId cannot be null", nameof(roleId));
+        
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be null or empty", nameof(name));
+        
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be null or empty", nameof(email));
+
+        var when = createdOn ?? DateTime.UtcNow;
+        
+        var user = new User(
+            id,
+            roleId,
+            name,
+            email,
+            when,
+            null, // CreatedBy is null for self-registered users
+            null,
+            null);
+
+        // Add self permission to the user to read their own user record
+        AddPermissionToUser(
+            user,
+            email,
+            ResourceType.User,
+            new[] { AccessType.Read },
+            id, // User grants permission to themselves
+            null, // No application context
+            when);
+
+        // Add notification permissions for the user's own email
+        AddPermissionToUser(
+            user,
+            email,
+            ResourceType.Notifications,
+            new[] { AccessType.Read, AccessType.Write, AccessType.Delete },
+            id, // User grants permission to themselves
+            null, // No application context
+            when);
+
+        // Add template permissions if TemplateId is provided
+        AddTemplatePermissionToUser(
+            user,
+            templateId.Value.ToString(),
+            new[] { AccessType.Read, AccessType.Write },
+            id, // User grants permission to themselves
+            when);
+
+        // Add application permissions for "Any" application
+        AddPermissionToUser(
+            user,
+            "Any",
+            ResourceType.Application,
+            new[] { AccessType.Read, AccessType.Write },
+            id,
+            null,
+            when);
+
+        // Raise domain event for user creation (side effects like email)
+        user.AddDomainEvent(new UserCreatedEvent(
+            user,
+            when));
+
+        return user;
+    }
 
     public void AddPermissionToUser(
         User user,
