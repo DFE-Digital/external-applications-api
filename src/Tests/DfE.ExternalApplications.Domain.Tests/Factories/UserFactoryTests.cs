@@ -26,7 +26,7 @@ public class UserFactoryTests
         DateTime createdOn)
     {
         // Act
-        var user = _factory.CreateContributor(id, roleId, name, email, createdBy, applicationId, templateId, createdOn);
+        var user = _factory.CreateContributor(id, roleId, name, email, createdBy, applicationId, "APP-REF-001", templateId, createdOn);
 
         // Assert
         Assert.Equal(id, user.Id);
@@ -52,7 +52,7 @@ public class UserFactoryTests
         var beforeCreation = DateTime.UtcNow;
 
         // Act
-        var user = _factory.CreateContributor(id, roleId, name, email, createdBy, applicationId, templateId, null);
+        var user = _factory.CreateContributor(id, roleId, name, email, createdBy, applicationId, "APP-REF-001", templateId, null);
 
         // Assert
         Assert.Equal(id, user.Id);
@@ -77,7 +77,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(null!, roleId, name, email, createdBy, applicationId, templateId, createdOn));
+            _factory.CreateContributor(null!, roleId, name, email, createdBy, applicationId, "APP-REF-001", templateId, createdOn));
         Assert.Equal("Id cannot be null (Parameter 'id')", exception.Message);
         Assert.Equal("id", exception.ParamName);
     }
@@ -95,7 +95,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, null!, name, email, createdBy, applicationId, templateId, createdOn));
+            _factory.CreateContributor(id, null!, name, email, createdBy, applicationId, "APP-REF-001", templateId, createdOn));
         Assert.Equal("RoleId cannot be null (Parameter 'roleId')", exception.Message);
         Assert.Equal("roleId", exception.ParamName);
     }
@@ -113,7 +113,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, roleId, null!, email, createdBy, applicationId, templateId, createdOn));
+            _factory.CreateContributor(id, roleId, null!, email, createdBy, applicationId, "APP-REF-001", templateId, createdOn));
         Assert.Equal("Name cannot be null or empty (Parameter 'name')", exception.Message);
         Assert.Equal("name", exception.ParamName);
     }
@@ -131,7 +131,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, roleId, "", email, createdBy, applicationId, templateId, createdOn));
+            _factory.CreateContributor(id, roleId, "", email, createdBy, applicationId, "APP-REF-001", templateId, createdOn));
         Assert.Equal("Name cannot be null or empty (Parameter 'name')", exception.Message);
         Assert.Equal("name", exception.ParamName);
     }
@@ -149,7 +149,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, roleId, name, null!, createdBy, applicationId, templateId, createdOn));
+            _factory.CreateContributor(id, roleId, name, null!, createdBy, applicationId, "APP-REF-001", templateId, createdOn));
         Assert.Equal("Email cannot be null or empty (Parameter 'email')", exception.Message);
         Assert.Equal("email", exception.ParamName);
     }
@@ -167,7 +167,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, roleId, name, "", createdBy, applicationId, templateId, createdOn));
+            _factory.CreateContributor(id, roleId, name, "", createdBy, applicationId, "APP-REF-001", templateId, createdOn));
         Assert.Equal("Email cannot be null or empty (Parameter 'email')", exception.Message);
         Assert.Equal("email", exception.ParamName);
     }
@@ -185,7 +185,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, roleId, name, email, null!, applicationId, templateId, createdOn));
+            _factory.CreateContributor(id, roleId, name, email, null!, applicationId, "APP-REF-001", templateId, createdOn));
         Assert.Equal("CreatedBy cannot be null (Parameter 'createdBy')", exception.Message);
         Assert.Equal("createdBy", exception.ParamName);
     }
@@ -203,7 +203,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, roleId, name, email, createdBy, null!, templateId, createdOn));
+            _factory.CreateContributor(id, roleId, name, email, createdBy, null!, "APP-REF-001", templateId, createdOn));
         Assert.Equal("ApplicationId cannot be null (Parameter 'applicationId')", exception.Message);
         Assert.Equal("applicationId", exception.ParamName);
     }
@@ -221,7 +221,7 @@ public class UserFactoryTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            _factory.CreateContributor(id, roleId, name, email, createdBy, applicationId, null!, createdOn));
+            _factory.CreateContributor(id, roleId, name, email, createdBy, applicationId, "APP-REF-001", null!, createdOn));
         Assert.Equal("TemplateId cannot be null (Parameter 'templateId')", exception.Message);
         Assert.Equal("templateId", exception.ParamName);
     }

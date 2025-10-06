@@ -11,6 +11,11 @@ internal class RegisterUserCommandValidator : AbstractValidator<RegisterUserComm
         RuleFor(x => x.SubjectToken)
             .NotEmpty()
             .WithMessage("Subject token is required");
+        
+        RuleFor(x => x.TemplateId)
+            .NotNull()
+            .NotEmpty()
+            .WithMessage("Template ID is required");
     }
 }
 

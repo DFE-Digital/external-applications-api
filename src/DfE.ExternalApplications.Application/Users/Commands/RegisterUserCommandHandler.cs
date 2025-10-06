@@ -44,6 +44,7 @@ public sealed class RegisterUserCommandHandler(
 
             var name = externalUser.FindFirst(ClaimTypes.Name)?.Value 
                        ?? externalUser.FindFirst("name")?.Value
+                       ?? externalUser.FindFirst("given_name")?.Value
                        ?? email; // Fallback to email if name not available
 
             // Check if user already exists
@@ -68,9 +69,13 @@ public sealed class RegisterUserCommandHandler(
             var userId = new UserId(Guid.NewGuid());
             var now = DateTime.UtcNow;
 
-            var templateId = request.TemplateId.HasValue 
-                ? new TemplateId(request.TemplateId.Value) 
-                : null;
+            // TemplateId is required for user registration
+            if (!request.TemplateId.HasValue)
+            {
+                return Result<UserDto>.Failure("Template ID is required for user registration");
+            }
+
+            var templateId = new TemplateId(request.TemplateId.Value);
 
             var newUser = userFactory.CreateUser(
                 userId,
