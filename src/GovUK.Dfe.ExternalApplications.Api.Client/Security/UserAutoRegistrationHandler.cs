@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using GovUK.Dfe.CoreLibs.Http.Models;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using System.Net.Http.Headers;
 using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
@@ -24,7 +25,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 [ExcludeFromCodeCoverage]
 public class UserAutoRegistrationHandler : DelegatingHandler
 {
-    private readonly IUsersClient _usersClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ITokenStateManager _tokenStateManager;
     private readonly ITokenAcquisitionService _tokenAcquisitionService;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -33,14 +34,14 @@ public class UserAutoRegistrationHandler : DelegatingHandler
     private readonly SemaphoreSlim _registrationLock = new(1, 1);
 
     public UserAutoRegistrationHandler(
-        IUsersClient usersClient,
+        IHttpClientFactory httpClientFactory,
         ITokenStateManager tokenStateManager,
         ITokenAcquisitionService tokenAcquisitionService,
         IHttpContextAccessor httpContextAccessor,
         ApiClientSettings settings,
         ILogger<UserAutoRegistrationHandler> logger)
     {
-        _usersClient = usersClient;
+        _httpClientFactory = httpClientFactory;
         _tokenStateManager = tokenStateManager;
         _tokenAcquisitionService = tokenAcquisitionService;
         _httpContextAccessor = httpContextAccessor;
@@ -184,9 +185,13 @@ public class UserAutoRegistrationHandler : DelegatingHandler
                 TemplateId = templateId.Value
             };
 
-            // Call the register endpoint
-            // Note: IUsersClient is configured with AzureBearerTokenHandler, so it will use the Azure token
-            var result = await _usersClient.RegisterUserAsync(registerRequest, cancellationToken);
+            // Call the register endpoint using a local client with Azure token only for this request
+            var client = _httpClientFactory.CreateClient();
+            client.BaseAddress = new Uri(_settings.BaseUrl!);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", azureToken);
+
+            var usersClient = new UsersClient(_settings.BaseUrl!, client);
+            var result = await usersClient.RegisterUserAsync(registerRequest, cancellationToken);
 
             _logger.LogInformation("User auto-registered successfully: {UserId} - {Email}", 
                 result.UserId, result.Email);

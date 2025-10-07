@@ -1,17 +1,12 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
+﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Http.Models;
+using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using GovUK.Dfe.CoreLibs.Http.Models;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
-using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 

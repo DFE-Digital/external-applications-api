@@ -75,6 +75,14 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             // Merge Azure Entra service roles, avoiding duplicates
             foreach (var svcRole in svcRoles)
             {
+                var isExcludedRole =
+                    (svcRole.Type == ClaimTypes.Role || svcRole.Type == "roles") &&
+                    (svcRole.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                     svcRole.Value.Equals("User", StringComparison.OrdinalIgnoreCase));
+
+                if (isExcludedRole)
+                    continue;
+
                 if (!identity.HasClaim(c => c.Type == svcRole.Type && c.Value == svcRole.Value))
                 {
                     identity.AddClaim(svcRole);

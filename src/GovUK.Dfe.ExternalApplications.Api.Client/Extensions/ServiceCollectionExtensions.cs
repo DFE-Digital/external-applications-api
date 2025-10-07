@@ -58,30 +58,15 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
                         serviceProvider.GetRequiredService<ITokenStateManager>(),
                         serviceProvider.GetRequiredService<ILogger<TokenExchangeHandler>>());
                 });
-                
+
                 // Register UserAutoRegistrationHandler for auto-registering new users
                 if (apiSettings.AutoRegisterUsers)
                 {
-                    // Register a dedicated IUsersClient for the auto-registration handler
-                    // This uses Azure token (not OBO) to call the register endpoint
-                    services.AddHttpClient<IUsersClient, UsersClient>("UsersClient_ForRegistration", (httpClient, serviceProvider) =>
-                    {
-                        httpClient.BaseAddress = new Uri(apiSettings.BaseUrl!);
-                        return ActivatorUtilities.CreateInstance<UsersClient>(
-                            serviceProvider, httpClient, apiSettings.BaseUrl!);
-                    })
-                    .AddHttpMessageHandler<AzureBearerTokenHandler>(); // Uses Azure token, not OBO
-                    
+                    // Simple registration; the handler manually uses IHttpClientFactory and sets Azure token
                     services.AddTransient<UserAutoRegistrationHandler>(serviceProvider =>
                     {
-                        // Get the dedicated UsersClient for registration (with Azure token)
-                        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
-                        var httpClient = httpClientFactory.CreateClient("UsersClient_ForRegistration");
-                        var usersClient = ActivatorUtilities.CreateInstance<UsersClient>(
-                            serviceProvider, httpClient, apiSettings.BaseUrl!);
-                        
                         return new UserAutoRegistrationHandler(
-                            usersClient,
+                            serviceProvider.GetRequiredService<IHttpClientFactory>(),
                             serviceProvider.GetRequiredService<ITokenStateManager>(),
                             serviceProvider.GetRequiredService<ITokenAcquisitionService>(),
                             serviceProvider.GetRequiredService<IHttpContextAccessor>(),
@@ -117,7 +102,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
                     {
                         // Tokens client always uses Azure token (for exchange endpoint authentication)
                         builder.AddHttpMessageHandler<AzureBearerTokenHandler>();
-                        
+
                         // Add auto-registration handler BEFORE token exchange
                         // This intercepts "user not found" errors and auto-registers the user
                         if (apiSettings.AutoRegisterUsers)
