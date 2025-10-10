@@ -12,6 +12,7 @@ using GovUK.Dfe.CoreLibs.Notifications.Extensions;
 using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using GovUK.Dfe.CoreLibs.Email;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -40,6 +41,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             });
             services.AddScoped<IPermissionCheckerService, ClaimBasedPermissionCheckerService>();
+            services.AddScoped<ICustomRequestChecker, CypressRequestChecker>();
             services.AddTransient<IApplicationFactory, ApplicationFactory>();
             services.AddTransient<IUserFactory, UserFactory>();
             services.AddTransient<ITemplateFactory, TemplateFactory>();

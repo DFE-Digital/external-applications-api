@@ -18,13 +18,16 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         IExternalIdentityValidator externalValidator,
         IEaRepository<User> userRepo,
         IUserTokenService tokenSvc,
-        IHttpContextAccessor httpCtxAcc)
+        IHttpContextAccessor httpCtxAcc, 
+        ICustomRequestChecker cypressRequestChecker)
         : IRequestHandler<ExchangeTokenQuery, ExchangeTokenDto>
     {
         public async Task<ExchangeTokenDto> Handle(ExchangeTokenQuery req, CancellationToken ct)
         {
+            var validCypressReq = cypressRequestChecker.IsValidRequest(httpCtxAcc.HttpContext!);
+
             var externalUser = await externalValidator
-                .ValidateIdTokenAsync(req.SubjectToken, ct);
+                .ValidateIdTokenAsync(req.SubjectToken, validCypressReq, ct);
 
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value
                         ?? throw new SecurityTokenException("ExchangeTokenQueryHandler > Missing email");

@@ -32,6 +32,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
             services.AddHttpContextAccessor();
             
             // Register handlers
+            services.AddTransient<HeaderForwardingHandler>();
             services.AddTransient<AzureBearerTokenHandler>();
             
             if (apiSettings.RequestTokenExchange)
@@ -94,6 +95,10 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
                     return ActivatorUtilities.CreateInstance<TClientImplementation>(
                         serviceProvider, httpClient, apiSettings.BaseUrl!);
                 });
+
+                // Add header forwarding handler FIRST in the chain
+                // This ensures headers like X-Cypress-Test are available for all subsequent handlers
+                builder.AddHttpMessageHandler<HeaderForwardingHandler>();
 
                 if (apiSettings.RequestTokenExchange)
                 {
