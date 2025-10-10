@@ -13,7 +13,7 @@ namespace DfE.ExternalApplications.Tests.Common.Helpers
     public class TestExternalIdentityValidator : IExternalIdentityValidator
     {
         private const string Secret = "9b4824fc-3360-4040-8781-75c2db3e1813";
-        public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, CancellationToken cancellationToken)
+        public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, bool validCypressRequest, CancellationToken cancellationToken)
         {
             var handler = new JwtSecurityTokenHandler();
             var parameters = new TokenValidationParameters

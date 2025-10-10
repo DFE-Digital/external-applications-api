@@ -23,5 +23,12 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Settings
         /// Required when AutoRegisterUsers is true.
         /// </summary>
         public Guid? DefaultTemplateId { get; set; }
+        
+        /// <summary>
+        /// List of HTTP headers to forward from incoming requests to API calls.
+        /// Useful for forwarding authentication-related headers (e.g., X-Cypress-Test, X-Cypress-Secret).
+        /// If null or empty, a default set of common headers will be forwarded.
+        /// </summary>
+        public string[]? HeadersToForward { get; set; }
     }
 }
