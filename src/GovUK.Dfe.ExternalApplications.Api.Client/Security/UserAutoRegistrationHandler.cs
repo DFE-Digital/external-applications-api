@@ -131,10 +131,11 @@ public class UserAutoRegistrationHandler : DelegatingHandler
                 return false;
 
             // Check if error message indicates user not found
-            return content.Contains("User not found", StringComparison.OrdinalIgnoreCase) ||
-                   content.Contains("user", StringComparison.OrdinalIgnoreCase) && 
+            return content.Contains("user", StringComparison.OrdinalIgnoreCase) &&
+                   content.Contains("user not found", StringComparison.OrdinalIgnoreCase) &&
                    (content.Contains("not found", StringComparison.OrdinalIgnoreCase) ||
-                    content.Contains("does not exist", StringComparison.OrdinalIgnoreCase));
+                   content.Contains("resource not found", StringComparison.OrdinalIgnoreCase) ||
+                   content.Contains("does not exist", StringComparison.OrdinalIgnoreCase));
         }
         catch
         {

@@ -29,10 +29,10 @@ namespace DfE.ExternalApplications.Api.ExceptionHandlers
             var (statusCode, message) = exception.GetType().Name switch
             {
                 nameof(BadRequestException) => (400, "Invalid request: " + exception.Message),
-                nameof(ForbiddenException) => (401, "Unauthorized access " + exception.Message),
-                nameof(ConflictException) => (409, "Conflict error " + exception.Message),
+                nameof(ForbiddenException) => (401, "Unauthorized access, " + exception.Message),
+                nameof(ConflictException) => (409, "Conflict error, " + exception.Message),
                 nameof(RateLimitExceededException) => (429, "TooManyRequests: "+ exception.Message),
-                nameof(NotFoundException) => (404, "Resource not found"),
+                nameof(NotFoundException) => (404, "Resource not found, " + exception.Message),
                 _ => (500, "An unexpected error occurred")
             };
 
