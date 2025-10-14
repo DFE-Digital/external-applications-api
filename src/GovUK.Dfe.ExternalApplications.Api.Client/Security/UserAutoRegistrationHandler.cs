@@ -56,8 +56,12 @@ public class UserAutoRegistrationHandler : DelegatingHandler
         // If auto-registration is disabled, just pass through
         if (!_settings.AutoRegisterUsers)
         {
+            _logger.LogWarning(">>>>>>>>>>> AutoRegistration disabled!");
+
             return await base.SendAsync(request, cancellationToken);
         }
+
+        _logger.LogWarning(">>>>>>>>>>> AutoRegistration enabled!");
 
         // First attempt - try the request
         var response = await base.SendAsync(request, cancellationToken);
