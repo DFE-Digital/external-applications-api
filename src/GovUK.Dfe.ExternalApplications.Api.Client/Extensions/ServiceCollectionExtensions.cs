@@ -60,6 +60,20 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
                         serviceProvider.GetRequiredService<ILogger<TokenExchangeHandler>>());
                 });
 
+                using (var tempProvider = services.BuildServiceProvider())
+                {
+                    var logger = tempProvider.GetService<ILoggerFactory>()?.CreateLogger("ExternalApplicationsApiClient");
+
+                    if (apiSettings.AutoRegisterUsers)
+                    {
+                        logger?.LogInformation("Auto user registration is enabled for ExternalApplicationsApiClient (BaseUrl: {BaseUrl})", apiSettings.BaseUrl);
+                    }
+                    else
+                    {
+                        logger?.LogInformation("Auto user registration is disabled for ExternalApplicationsApiClient (BaseUrl: {BaseUrl})", apiSettings.BaseUrl);
+                    }
+                }
+
                 // Register UserAutoRegistrationHandler for auto-registering new users
                 if (apiSettings.AutoRegisterUsers)
                 {
