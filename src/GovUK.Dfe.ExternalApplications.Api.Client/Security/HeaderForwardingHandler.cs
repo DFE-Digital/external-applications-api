@@ -25,8 +25,8 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
         /// </summary>
         private static readonly string[] DefaultHeadersToForward = new[]
         {
-            "X-Cypress-Test",
-            "X-Cypress-Secret"
+            "x-cypress-test",
+            "x-cypress-secret"
         };
 
         /// <summary>
