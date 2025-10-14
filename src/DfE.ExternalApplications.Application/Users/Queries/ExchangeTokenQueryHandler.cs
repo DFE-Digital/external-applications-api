@@ -12,7 +12,7 @@ using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Users.Queries
 {
-    public record ExchangeTokenQuery(string SubjectToken) : IRequest<ExchangeTokenDto>;
+    public record ExchangeTokenQuery(string SubjectToken) : IRequest<Result<ExchangeTokenDto>>;
 
     public class ExchangeTokenQueryHandler(
         IExternalIdentityValidator externalValidator,
@@ -20,27 +20,29 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         IUserTokenService tokenSvc,
         IHttpContextAccessor httpCtxAcc, 
         ICustomRequestChecker cypressRequestChecker)
-        : IRequestHandler<ExchangeTokenQuery, ExchangeTokenDto>
+        : IRequestHandler<ExchangeTokenQuery, Result<ExchangeTokenDto>>
     {
-        public async Task<ExchangeTokenDto> Handle(ExchangeTokenQuery req, CancellationToken ct)
+        public async Task<Result<ExchangeTokenDto>> Handle(ExchangeTokenQuery req, CancellationToken ct)
         {
             var validCypressReq = cypressRequestChecker.IsValidRequest(httpCtxAcc.HttpContext!);
 
             var externalUser = await externalValidator
                 .ValidateIdTokenAsync(req.SubjectToken, validCypressReq, ct);
 
-            var email = externalUser.FindFirst(ClaimTypes.Email)?.Value
-                        ?? throw new SecurityTokenException("ExchangeTokenQueryHandler > Missing email");
+            var email = externalUser.FindFirst(ClaimTypes.Email)?.Value;
+                        
+            if (email is null)
+                return Result<ExchangeTokenDto>.Failure("Missing email");
 
             var dbUser = await (new GetUserByEmailQueryObject(email))
                 .Apply(userRepo.Query().AsNoTracking())
                 .FirstOrDefaultAsync(cancellationToken: ct);
 
             if (dbUser is null)
-                throw new SecurityTokenException($"ExchangeTokenQueryHandler > User not found for email {email}");
+                return Result<ExchangeTokenDto>.NotFound($"User not found for email {email}");
 
             if (dbUser.Role is null)
-                throw new SecurityTokenException($"ExchangeTokenQueryHandler > User {email} has no role assigned");
+                return Result<ExchangeTokenDto>.Conflict($"User {email} has no role assigned");
 
             var httpCtx = httpCtxAcc.HttpContext!;
             var azureAuth = await httpCtx.AuthenticateAsync("AzureEntra");
@@ -95,7 +97,8 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             var mergedUser = new ClaimsPrincipal(identity);
 
             var internalToken = await tokenSvc.GetUserTokenModelAsync(mergedUser);
-            return new ExchangeTokenDto
+
+            return Result<ExchangeTokenDto>.Success(new ExchangeTokenDto
             {
                 AccessToken = internalToken.AccessToken,
                 TokenType = "Bearer",
@@ -104,7 +107,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 Scope = internalToken.Scope,
                 IdToken = internalToken.IdToken,
                 RefreshExpiresIn = internalToken.RefreshExpiresIn
-            };
+            });
         }
     }
 }

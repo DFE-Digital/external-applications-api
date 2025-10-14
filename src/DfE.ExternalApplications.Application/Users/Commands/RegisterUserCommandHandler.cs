@@ -42,10 +42,14 @@ public sealed class RegisterUserCommandHandler(
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value
                         ?? throw new SecurityTokenException("RegisterUserCommandHandler > Missing email");
 
-            var name = externalUser.FindFirst(ClaimTypes.Name)?.Value 
-                       ?? externalUser.FindFirst("name")?.Value
+            var fullName = $"{externalUser.FindFirst(ClaimTypes.GivenName)?.Value} {externalUser.FindFirst(ClaimTypes.Surname)?.Value}";
+
+            var name = externalUser.FindFirst("name")?.Value
                        ?? externalUser.FindFirst("given_name")?.Value
                        ?? email; // Fallback to email if name not available
+
+            if (string.IsNullOrWhiteSpace(fullName))
+                fullName = name;
 
             // Check if user already exists
             var dbUser = await (new GetUserByEmailQueryObject(email))
@@ -80,7 +84,7 @@ public sealed class RegisterUserCommandHandler(
             var newUser = userFactory.CreateUser(
                 userId,
                 new RoleId(RoleConstants.UserRoleId),
-                name,
+                fullName,
                 email,
                 templateId,
                 now);

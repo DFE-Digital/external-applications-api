@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using GovUK.Dfe.CoreLibs.Http.Models;
+using DfE.ExternalApplications.Application.Applications.Commands;
+using System.Threading;
 
 namespace DfE.ExternalApplications.Api.Controllers
 {
@@ -27,11 +29,15 @@ namespace DfE.ExternalApplications.Api.Controllers
         [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanReadWrite")]
         public async Task<ActionResult<ExchangeTokenDto>> Exchange(
             [FromBody] ExchangeTokenRequest request,
-            CancellationToken ct)
+            CancellationToken cancellationToken)
         {
             var result = await sender.Send(
-                new ExchangeTokenQuery(request.AccessToken), ct);
-            return Ok(result);
+            new ExchangeTokenQuery(request.AccessToken), cancellationToken);
+
+            return new ObjectResult(result)
+            {
+                StatusCode = StatusCodes.Status200OK
+            };
         }
     }
 }
