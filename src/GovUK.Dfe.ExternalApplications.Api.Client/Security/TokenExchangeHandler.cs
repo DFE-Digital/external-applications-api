@@ -142,7 +142,8 @@ public class TokenExchangeHandler(
         {
             ExceptionType = "Unauthorized",
             Message = "Authentication tokens are invalid or expired",
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            ErrorId = "Exchange-401"
         };
 
         var json = JsonSerializer.Serialize(errorResponse);
