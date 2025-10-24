@@ -12,7 +12,10 @@ using GovUK.Dfe.CoreLibs.Notifications.Extensions;
 using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using GovUK.Dfe.CoreLibs.Email;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
+using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -58,6 +61,22 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddFileStorage(config);
 
             services.AddEmailServicesWithGovUkNotify(config);
+
+            // Skip MassTransit during NSwag/CodeGeneration to prevent assembly loading issues
+            var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
+            if (!skipMassTransit)
+            {
+                services.AddDfEMassTransit(
+                    config,
+                    configureConsumers: x =>
+                    {
+                    },
+                    configureBus: (context, cfg) =>
+                    {
+                        cfg.Message<FileUploadedEvent>(m => m.SetEntityName(TopicNames.FileScanner));
+
+                    });
+            }
 
             return services;
         }
