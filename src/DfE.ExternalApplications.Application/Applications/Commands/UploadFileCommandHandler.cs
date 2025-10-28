@@ -18,6 +18,7 @@ using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId
 using File = DfE.ExternalApplications.Domain.Entities.File;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
@@ -97,6 +98,8 @@ public class UploadFileCommandHandler(
 
             var fileSize = request.FileContent.Length;
 
+            var fileHash = CacheKeyHelper.ComputeSha256(request.FileContent);
+
             // Create File entity using factory
             var upload = fileFactory.CreateUpload(
                 new FileId(Guid.NewGuid()),
@@ -108,7 +111,8 @@ public class UploadFileCommandHandler(
                 application.ApplicationReference,
                 DateTime.UtcNow,
                 dbUser.Id!,
-                fileSize
+                fileSize,
+                fileHash: fileHash
             );
 
             await uploadRepository.AddAsync(upload, cancellationToken);

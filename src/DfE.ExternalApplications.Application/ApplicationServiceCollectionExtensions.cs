@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     },
                     configureBus: (context, cfg) =>
                     {
-                        cfg.Message<FileUploadedEvent>(m => m.SetEntityName(TopicNames.FileScanner));
+                        cfg.Message<ScanRequestedEvent>(m => m.SetEntityName(TopicNames.ScanRequests));
 
                     });
             }
