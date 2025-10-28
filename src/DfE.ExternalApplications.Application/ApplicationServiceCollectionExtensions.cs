@@ -1,5 +1,6 @@
 using DfE.ExternalApplications.Application.Common.Behaviours;
 using DfE.ExternalApplications.Application.Common.Models;
+using DfE.ExternalApplications.Application.Consumers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Services;
@@ -70,11 +71,19 @@ namespace Microsoft.Extensions.DependencyInjection
                     config,
                     configureConsumers: x =>
                     {
+                        // Register consumer for scan results
+                        x.AddConsumer<ScanResultConsumer>();
                     },
                     configureBus: (context, cfg) =>
                     {
                         cfg.Message<ScanRequestedEvent>(m => m.SetEntityName(TopicNames.ScanRequests));
+                        cfg.Message<ScanResultEvent>(m => m.SetEntityName(TopicNames.ScanResults));
 
+                        // Configure endpoint for scan results consumer
+                        cfg.SubscriptionEndpoint<ScanResultEvent>(TopicNames.ScanResult, "extapi", e =>
+                        {
+                            e.ConfigureConsumer<ScanResultConsumer>(context);
+                        });
                     });
             }
 
