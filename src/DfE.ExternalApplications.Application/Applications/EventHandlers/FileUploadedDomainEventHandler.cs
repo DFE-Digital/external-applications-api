@@ -20,12 +20,29 @@ public sealed class FileUploadedDomainEventHandler(
     {
         var file = notification.File;
 
-        var fileName = "db6e818ed7721c8fc660a6ca43544d8b.jpg";
+        var fileName = file.FileName;
 
         // FileURL is the Azure File Share path: {applicationReference}/{hashedFileName}
         var fileUrl = $"{file.Path}/{fileName}";
 
-        var sasUri = await azureSpecificOperations.GenerateSasTokenAsync(fileUrl, DateTimeOffset.UtcNow.AddMinutes(10), "r", cancellationToken);
+        string sasUri;
+
+        var environment = configuration["ASPNETCORE_ENVIRONMENT"]
+                          ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        // Check if the service is running in a local environment
+        if (string.Equals(environment, "Local", StringComparison.OrdinalIgnoreCase))
+        {
+            // Build fake file:// URI so local function can load from disk
+            var localPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileUrl);
+            sasUri = $"file:///{localPath.Replace("\\", "/")}";
+            logger.LogInformation("Local environment detected — using fake SAS URI: {SasUri}", sasUri);
+        }
+        else
+        {
+            // Real Azure File Share SAS
+            sasUri = await azureSpecificOperations.GenerateSasTokenAsync(
+                fileUrl, DateTimeOffset.UtcNow.AddHours(1), "r", cancellationToken);
+        }
 
         // Create the integration event
         var fileUploadedEvent = new GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events.ScanRequestedEvent(

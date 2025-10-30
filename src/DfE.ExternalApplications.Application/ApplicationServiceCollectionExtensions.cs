@@ -17,6 +17,7 @@ using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
+using MassTransit;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -71,17 +72,24 @@ namespace Microsoft.Extensions.DependencyInjection
                     config,
                     configureConsumers: x =>
                     {
-                        // Register consumer for scan results
                         x.AddConsumer<ScanResultConsumer>();
                     },
                     configureBus: (context, cfg) =>
                     {
+                        // Configure topic names for message types
                         cfg.Message<ScanRequestedEvent>(m => m.SetEntityName(TopicNames.ScanRequests));
-                        cfg.Message<ScanResultEvent>(m => m.SetEntityName(TopicNames.ScanResults));
-
-                        // Configure endpoint for scan results consumer
-                        cfg.SubscriptionEndpoint<ScanResultEvent>(TopicNames.ScanResult, "extapi", e =>
+                        cfg.Message<ScanResultEvent>(m => m.SetEntityName(TopicNames.ScanResult));
+                    },
+                    configureAzureServiceBus: (context, cfg) =>
+                    {
+                        // Azure Service Bus specific configuration
+                        // Use existing "extapi" subscription (topic is determined by Message<ScanResultEvent> config above)
+                        cfg.SubscriptionEndpoint<ScanResultEvent>("extapi", e =>
                         {
+                            // Don't try to create new topology - use existing subscription
+                            e.ConfigureConsumeTopology = false;
+                            
+                            // Configure the consumer to process messages from this endpoint
                             e.ConfigureConsumer<ScanResultConsumer>(context);
                         });
                     });
