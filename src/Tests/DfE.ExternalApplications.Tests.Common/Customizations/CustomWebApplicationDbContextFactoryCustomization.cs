@@ -32,6 +32,18 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
         {
             fixture.Customize<CustomWebApplicationDbContextFactory<Program>>(composer => composer.FromFactory(() =>
             {
+                // Set environment variables for MassTransit configuration
+                // These will be picked up by ConfigurationBuilder in Program.cs
+                // For tests, provide a dummy connection string to satisfy validation
+                Environment.SetEnvironmentVariable("SkipMassTransit", "false");
+                Environment.SetEnvironmentVariable("MassTransit__Transport", "AzureServiceBus");
+                Environment.SetEnvironmentVariable("MassTransit__AppPrefix", "");
+                // Dummy connection string for tests - format: Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__ConnectionString", "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test=");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__AutoCreateEntities", "false");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__ConfigureEndpoints", "false");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__UseWebSockets", "true");
+                
                 var tokenConfig = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
