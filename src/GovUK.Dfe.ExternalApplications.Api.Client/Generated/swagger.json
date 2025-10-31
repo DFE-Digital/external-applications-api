@@ -3125,6 +3125,11 @@
           "replaceExistingContext": {
             "type": "boolean",
             "nullable": true
+          },
+          "userId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
           }
         }
       },

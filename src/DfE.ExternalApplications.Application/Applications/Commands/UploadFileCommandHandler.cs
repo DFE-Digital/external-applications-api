@@ -47,7 +47,7 @@ public class UploadFileCommandHandler(
         try
         {
             var httpContext = httpContextAccessor.HttpContext;
-            if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
+            if (httpContext?.User is not ClaimsPrincipal user || user.Identity?.IsAuthenticated != true)
                 return Result<UploadDto>.Forbid("Not authenticated");
 
             var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");

@@ -80,6 +80,10 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
     /// <inheritdoc />
     public bool IsApplicationOwner(string applicationId)
     {
+        // Validate input first
+        if (string.IsNullOrWhiteSpace(applicationId))
+            return false;
+
         // Admin bypass - Admin users have full access
         if (IsAdmin())
             return true;

@@ -190,12 +190,14 @@ public class ApplicationTests
         ApplicationId applicationId,
         string applicationReference,
         TemplateVersionId templateVersionId,
+        TemplateId templateId,
         DateTime createdOn,
         UserId createdBy,
         DateTime submittedOn,
         UserId submittedBy)
     {
         // Arrange
+        var templateVersion = new TemplateVersion(templateVersionId, templateId, "1.0", "{}", createdOn, createdBy);
         var application = new Entities.Application(
             applicationId,
             applicationReference,
@@ -203,6 +205,11 @@ public class ApplicationTests
             createdOn,
             createdBy,
             ApplicationStatus.InProgress); // Start with InProgress status
+        
+        // Set the TemplateVersion navigation property using reflection for testing
+        typeof(Entities.Application)
+            .GetProperty(nameof(Entities.Application.TemplateVersion))!
+            .SetValue(application, templateVersion);
 
         // Act
         application.Submit(submittedOn, submittedBy, "test@example.com", "Test User");
@@ -272,11 +279,15 @@ public class ApplicationTests
         ApplicationId applicationId,
         string applicationReference,
         TemplateVersionId templateVersionId,
+        TemplateId templateId,
         DateTime createdOn,
         UserId createdBy,
         DateTime submittedOn,
         UserId submittedBy)
     {
+        // Create template version for navigation property
+        var templateVersion = new TemplateVersion(templateVersionId, templateId, "1.0", "{}", createdOn, createdBy);
+        
         // Test submitting from null status
         var applicationWithNullStatus = new Entities.Application(
             applicationId,
@@ -285,6 +296,11 @@ public class ApplicationTests
             createdOn,
             createdBy,
             null); // null status
+        
+        // Set the TemplateVersion navigation property using reflection for testing
+        typeof(Entities.Application)
+            .GetProperty(nameof(Entities.Application.TemplateVersion))!
+            .SetValue(applicationWithNullStatus, templateVersion);
 
         applicationWithNullStatus.Submit(submittedOn, submittedBy, "test@example.com", "Test User");
         Assert.Equal(ApplicationStatus.Submitted, applicationWithNullStatus.Status);
@@ -297,6 +313,11 @@ public class ApplicationTests
             createdOn,
             createdBy,
             ApplicationStatus.InProgress);
+        
+        // Set the TemplateVersion navigation property using reflection for testing
+        typeof(Entities.Application)
+            .GetProperty(nameof(Entities.Application.TemplateVersion))!
+            .SetValue(applicationWithInProgress, templateVersion);
 
         applicationWithInProgress.Submit(submittedOn, submittedBy, "test@example.com", "Test User");
         Assert.Equal(ApplicationStatus.Submitted, applicationWithInProgress.Status);
