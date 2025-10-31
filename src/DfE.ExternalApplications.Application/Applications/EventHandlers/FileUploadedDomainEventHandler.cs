@@ -48,12 +48,20 @@ public sealed class FileUploadedDomainEventHandler(
         var fileUploadedEvent = new GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events.ScanRequestedEvent(
             FileId:file.Id?.Value.ToString(),
             FileHash: notification.FileHash,
-            Reference:file.Path,
+            Reference:file.ApplicationId.Value.ToString(),
             FileName: fileName,
             Path:file.Path,
             IsAzureFileShare: true,
             FileUri: sasUri,
-            ServiceName: "extapi"
+            ServiceName: "extapi",
+            Metadata: new Dictionary<string, object>
+            {
+                { "Reference", file.Application?.ApplicationReference! },
+                { "applicationId", file.ApplicationId.Value },
+                { "userId", file.UploadedBy.Value },
+                { "originalFileName", file.OriginalFileName },
+
+            }
         );
 
         // Build Azure Service Bus message properties

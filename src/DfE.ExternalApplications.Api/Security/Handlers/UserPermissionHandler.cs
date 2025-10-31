@@ -13,6 +13,13 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             UserPermissionRequirement requirement)
         {
+            // Admin bypass - Admin users have full access
+            if (context.User.IsInRole("Admin"))
+            {
+                context.Succeed(requirement);
+                return Task.CompletedTask;
+            }
+
             var httpContext = accessor.HttpContext;
             var resourceKey = httpContext?.Request.RouteValues["email"]?.ToString();
 

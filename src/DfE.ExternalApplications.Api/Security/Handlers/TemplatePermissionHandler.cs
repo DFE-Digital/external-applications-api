@@ -9,6 +9,13 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             TemplatePermissionRequirement requirement)
         {
+            // Admin bypass - Admin users have full access
+            if (context.User.IsInRole("Admin"))
+            {
+                context.Succeed(requirement);
+                return Task.CompletedTask;
+            }
+
             // First check if the user has any template permission
             var hasAnyTemplatePermission = context.User.Claims.Any(c =>
                 c.Type == "permission" &&

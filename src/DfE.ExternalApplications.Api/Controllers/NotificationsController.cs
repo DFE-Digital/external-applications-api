@@ -4,6 +4,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
 using DfE.ExternalApplications.Application.Notifications.Commands;
 using DfE.ExternalApplications.Application.Notifications.Queries;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,7 +42,8 @@ public class NotificationsController(ISender sender) : ControllerBase
             request.ActionUrl,
             request.Metadata,
             request.Priority,
-            request.ReplaceExistingContext);
+            request.ReplaceExistingContext,
+            request.UserId.HasValue ? new UserId(request.UserId.Value) : null);
 
         var result = await sender.Send(command, cancellationToken);
 

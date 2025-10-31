@@ -16,11 +16,11 @@
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.AsyncProcessing" Version="1.0.12" />
-		<PackageReference Include="GovUK.Dfe.CoreLibs.Caching" Version="1.0.11" />
-		<PackageReference Include="GovUK.Dfe.CoreLibs.Contracts" Version="1.0.46" />
+		<PackageReference Include="GovUK.Dfe.CoreLibs.Caching" Version="1.0.12" />
+		<PackageReference Include="GovUK.Dfe.CoreLibs.Contracts" Version="1.0.47" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Email" Version="0.1.0" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.FileStorage" Version="0.1.4" />
-		<PackageReference Include="GovUK.Dfe.CoreLibs.Messaging.Contracts" Version="0.1.0" />
+		<PackageReference Include="GovUK.Dfe.CoreLibs.Messaging.Contracts" Version="0.1.2" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Messaging.MassTransit" Version="0.1.0" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Notifications" Version="0.1.5" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Security" Version="1.1.19-prerelease-11" />

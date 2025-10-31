@@ -11,6 +11,13 @@ public sealed class AnyTemplatePermissionHandler : AuthorizationHandler<AnyTempl
         AuthorizationHandlerContext context,
         AnyTemplatePermissionRequirement requirement)
     {
+        // Admin bypass - Admin users have full access
+        if (context.User.IsInRole("Admin"))
+        {
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+
         var hasClaim = context.User.Claims.Any(c =>
             c.Type == "permission" &&
             c.Value.StartsWith("Template:", StringComparison.OrdinalIgnoreCase) &&
