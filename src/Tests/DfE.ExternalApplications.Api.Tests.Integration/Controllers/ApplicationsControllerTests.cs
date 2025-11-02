@@ -1327,31 +1327,45 @@ public class ApplicationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
+        // Use unique filenames to avoid conflicts if files already exist from previous test runs
+        // Use a shorter unique identifier to ensure filename stays under 255 character limit
+        var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
         var testCases = new[]
         {
-            new { FileName = "document.pdf", ContentType = "application/pdf", Content = "%PDF-1.4\nTest PDF content" },
-            new { FileName = "image.jpg", ContentType = "image/jpeg", Content = "JPEG image content" },
-            new { FileName = "spreadsheet.xlsx", ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Content = "Excel content" },
-            new { FileName = "document.docx", ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", Content = "Word document content" }
+            new { FileName = $"document-{uniqueId}.pdf", ContentType = "application/pdf", Content = "%PDF-1.4\nTest PDF content" },
+            new { FileName = $"image-{uniqueId}.jpg", ContentType = "image/jpeg", Content = "JPEG image content" },
+            new { FileName = $"spreadsheet-{uniqueId}.xlsx", ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Content = "Excel content" },
+            new { FileName = $"document-{uniqueId}.docx", ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", Content = "Word document content" }
         };
 
         foreach (var testCase in testCases)
         {
-            // Act
-            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(testCase.Content));
-            var fileParameter = new FileParameter(stream, testCase.FileName, testCase.ContentType);
+            // Act - Create a new stream for each test case to ensure it's readable
+            // Create a copy of the content bytes to ensure the stream can be read multiple times
+            var contentBytes = System.Text.Encoding.UTF8.GetBytes(testCase.Content);
+            
+            // Ensure we have a valid filename - use the test case filename as both name and file parameter filename
+            var fileName = testCase.FileName ?? "test-file.pdf";
+            if (string.IsNullOrWhiteSpace(fileName))
+                fileName = "test-file.pdf";
+            
+            // Create the stream fresh for each iteration with position at start
+            var stream = new MemoryStream(contentBytes);
+            var fileParameter = new FileParameter(stream, fileName, testCase.ContentType);
 
+            // Name is required and must be non-empty for validation to pass
+            // Pass empty string instead of null for description to ensure it's sent
             var result = await applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
-                testCase.FileName,
-                description,
+                fileName, // Use the same filename for name
+                description ?? string.Empty, // Ensure description is not null
                 fileParameter);
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(testCase.FileName, result.Name);
-            Assert.Equal(testCase.FileName, result.OriginalFileName);
-            Assert.Equal(description, result.Description);
+            Assert.Equal(fileName, result.Name);
+            Assert.Equal(fileName, result.OriginalFileName);
+            Assert.Equal(description ?? string.Empty, result.Description);
         }
     }
 
