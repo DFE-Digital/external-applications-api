@@ -760,19 +760,23 @@ public class ApplicationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "user-token");
 
+        // Use unique email to avoid conflicts with previous test runs
+        // Format: name.timestamp@example.com to ensure uniqueness
+        var uniqueEmail = $"john.doe.{DateTime.UtcNow.Ticks}@example.com";
         var request = new AddContributorRequest
         {
             Name = "John Doe",
-            Email = "john.doe@example.com"
+            Email = uniqueEmail
         };
 
-        // Act
+        // Act & Assert
+        // The handler should succeed whether the contributor is new or already exists
+        // If they exist, it will grant permissions; if new, it will create them
         var result = await applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal("John Doe", result.Name);
-        Assert.Equal("john.doe@example.com", result.Email);
+        Assert.Equal(uniqueEmail, result.Email);
         Assert.NotNull(result.Authorization);
         Assert.NotNull(result.Authorization.Permissions);
         Assert.NotNull(result.Authorization.Roles);

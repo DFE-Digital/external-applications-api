@@ -120,6 +120,10 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         // Replace the notification service with our mock
                         services.RemoveAll<INotificationService>();
                         services.AddSingleton<INotificationService, MockNotificationService>();
+                        
+                        // Replace the email service with our mock to avoid sending actual emails in tests
+                        services.RemoveAll<GovUK.Dfe.CoreLibs.Email.Interfaces.IEmailService>();
+                        services.AddSingleton<GovUK.Dfe.CoreLibs.Email.Interfaces.IEmailService, MockEmailService>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {

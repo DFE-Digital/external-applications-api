@@ -21,6 +21,7 @@ using GovUK.Dfe.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using GovUK.Dfe.ExternalApplications.Api.Client;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations
 {
@@ -33,6 +34,18 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
         {
             fixture.Customize<CustomWebApplicationDbContextFactory<Program>>(composer => composer.FromFactory(() =>
             {
+                // Set environment variables for MassTransit configuration
+                // These will be picked up by ConfigurationBuilder in Program.cs
+                // For tests, provide a dummy connection string to satisfy validation
+                Environment.SetEnvironmentVariable("SkipMassTransit", "false");
+                Environment.SetEnvironmentVariable("MassTransit__Transport", "AzureServiceBus");
+                Environment.SetEnvironmentVariable("MassTransit__AppPrefix", "");
+                // Dummy connection string for tests - format: Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__ConnectionString", "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test=");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__AutoCreateEntities", "false");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__ConfigureEndpoints", "false");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__UseWebSockets", "true");
+                
                 var tokenConfig = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
@@ -92,6 +105,14 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                         services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                         services.AddUserTokenService(tokenConfig);
+                        
+                        // Replace the notification service with our mock
+                        services.RemoveAll<INotificationService>();
+                        services.AddSingleton<INotificationService, MockNotificationService>();
+                        
+                        // Replace the email service with our mock to avoid sending actual emails in tests
+                        services.RemoveAll<GovUK.Dfe.CoreLibs.Email.Interfaces.IEmailService>();
+                        services.AddSingleton<GovUK.Dfe.CoreLibs.Email.Interfaces.IEmailService, MockEmailService>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
