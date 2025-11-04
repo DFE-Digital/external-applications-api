@@ -82,13 +82,17 @@ namespace Microsoft.Extensions.DependencyInjection
                     },
                     configureAzureServiceBus: (context, cfg) =>
                     {
+                        cfg.UseJsonSerializer();
+
                         // Azure Service Bus specific configuration
                         // Use existing "extapi" subscription (topic is determined by Message<ScanResultEvent> config above)
                         cfg.SubscriptionEndpoint<ScanResultEvent>("extapi", e =>
                         {
+                            e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
+
                             // Don't try to create new topology - use existing subscription
                             e.ConfigureConsumeTopology = false;
-                            
+
                             // Configure the consumer to process messages from this endpoint
                             e.ConfigureConsumer<ScanResultConsumer>(context);
                         });
