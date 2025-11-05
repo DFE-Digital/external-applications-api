@@ -34,7 +34,6 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddDbContext<ExternalApplicationsContext>(options =>
                 options.UseSqlServer(connectionString, sql =>
                 {
-                    sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
                 }));
 
             return services;
