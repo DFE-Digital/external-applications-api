@@ -18,6 +18,7 @@ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
 using MassTransit;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Exceptions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -88,8 +89,18 @@ namespace Microsoft.Extensions.DependencyInjection
                         // Use existing "extapi" subscription (topic is determined by Message<ScanResultEvent> config above)
                         cfg.SubscriptionEndpoint<ScanResultEvent>("extapi", e =>
                         {
-                            e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
+                            e.UseMessageRetry(r =>
+                            {
+                                // For MessageNotForThisInstanceException (instance filtering in Local env)
+                                // Retry immediately and frequently so other consumers pick it up fast
+                                r.Handle<MessageNotForThisInstanceException>();
+                                r.Immediate(10); // Try 10 times (supports up to 10 concurrent local developers)
 
+                                // For all OTHER exceptions (real errors)
+                                // Retry with delay for transient issues
+                                r.Ignore<MessageNotForThisInstanceException>(); // Don't apply interval retry to this
+                                r.Interval(3, TimeSpan.FromSeconds(5)); // 3 retries, 5 seconds apart for real errors
+                            });
                             // Don't try to create new topology - use existing subscription
                             e.ConfigureConsumeTopology = false;
 

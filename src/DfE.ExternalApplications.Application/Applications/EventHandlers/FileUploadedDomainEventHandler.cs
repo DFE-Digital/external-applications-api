@@ -1,5 +1,6 @@
 using DfE.ExternalApplications.Application.Common.EventHandlers;
 using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Helpers;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Models;
 using Microsoft.Extensions.Configuration;
@@ -27,10 +28,8 @@ public sealed class FileUploadedDomainEventHandler(
 
         string sasUri;
 
-        var environment = configuration["ASPNETCORE_ENVIRONMENT"]
-                          ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
         // Check if the service is running in a local environment
-        if (string.Equals(environment, "Local", StringComparison.OrdinalIgnoreCase))
+        if (InstanceIdentifierHelper.IsLocalEnvironment())
         {
             // Build fake file:// URI so local function can load from disk
             var localPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileUrl);
@@ -60,7 +59,7 @@ public sealed class FileUploadedDomainEventHandler(
                 { "applicationId", file.ApplicationId.Value },
                 { "userId", file.UploadedBy.Value },
                 { "originalFileName", file.OriginalFileName },
-
+                { "InstanceIdentifier", InstanceIdentifierHelper.GetInstanceIdentifier(configuration) ?? "" },
             }
         );
 
@@ -81,4 +80,3 @@ public sealed class FileUploadedDomainEventHandler(
             file.OriginalFileName);
     }
 }
-

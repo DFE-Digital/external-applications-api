@@ -1,11 +1,14 @@
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Exceptions;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Enums;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
+using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Helpers;
 using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using File = DfE.ExternalApplications.Domain.Entities.File;
 
@@ -18,6 +21,7 @@ namespace DfE.ExternalApplications.Application.Consumers;
 public sealed class ScanResultConsumer(
     ILogger<ScanResultConsumer> logger,
     IEaRepository<File> fileRepository,
+    IConfiguration configuration,
     ISender sender) : IConsumer<ScanResultEvent>
 {
     public async Task Consume(ConsumeContext<ScanResultEvent> context)
@@ -29,6 +33,31 @@ public sealed class ScanResultConsumer(
             scanResult.FileName,
             scanResult.Status,
             scanResult.Outcome);
+
+        // LOCAL ENVIRONMENT ONLY: Check if this message is for this instance
+        // This allows developers to run locally without interfering with each other
+        if (InstanceIdentifierHelper.IsLocalEnvironment())
+        {
+            var messageInstanceId = scanResult.Metadata?.ContainsKey("InstanceIdentifier") == true
+                ? scanResult.Metadata["InstanceIdentifier"]?.ToString()
+                : null;
+
+            var localInstanceId = InstanceIdentifierHelper.GetInstanceIdentifier(configuration);
+
+            if (!InstanceIdentifierHelper.IsMessageForThisInstance(messageInstanceId, localInstanceId))
+            {
+                logger.LogDebug(
+                    "Message {FileId} not for this instance (MessageInstanceId: '{MessageInstanceId}', LocalInstanceId: '{LocalInstanceId}') - throwing exception to requeue for other consumers",
+                    scanResult.FileId,
+                    messageInstanceId ?? "none",
+                    localInstanceId ?? "none");
+
+                // Throw exception to prevent acknowledgment and allow other consumers to process
+                // Service Bus will redeliver this message to another consumer instance
+                throw new MessageNotForThisInstanceException(
+                    $"Message InstanceIdentifier '{messageInstanceId}' doesn't match local instance '{localInstanceId}'");
+            }
+        }
 
         try
         {
