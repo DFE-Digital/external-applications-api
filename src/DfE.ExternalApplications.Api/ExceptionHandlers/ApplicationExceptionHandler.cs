@@ -20,6 +20,8 @@ namespace DfE.ExternalApplications.Api.ExceptionHandlers
                 nameof(NotFoundException) => true,
                 nameof(BadRequestException) => true,
                 nameof(RateLimitExceededException) => true,
+                nameof(ArgumentException) => true,
+
                 _ => false
             };
         }

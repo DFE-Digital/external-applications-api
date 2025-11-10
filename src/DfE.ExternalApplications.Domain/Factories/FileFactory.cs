@@ -1,4 +1,3 @@
-using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
@@ -18,9 +17,10 @@ public class FileFactory : IFileFactory
         string path,
         DateTime uploadedOn,
         UserId uploadedBy,
-        long fileSize)
+        long fileSize,
+        string fileHash)
     {
-        return new File(
+        var file = new File(
             id,
             applicationId,
             name,
@@ -32,6 +32,10 @@ public class FileFactory : IFileFactory
             uploadedBy,
             fileSize
         );
+
+        file.AddDomainEvent(new FileUploadedDomainEvent(file, fileHash,uploadedOn));
+
+        return file;
     }
 
     public void DeleteFile(File file)

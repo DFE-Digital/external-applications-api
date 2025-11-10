@@ -32,7 +32,9 @@ namespace Microsoft.Extensions.DependencyInjection
             var connectionString = config.GetConnectionString("DefaultConnection");
 
             services.AddDbContext<ExternalApplicationsContext>(options =>
-                options.UseSqlServer(connectionString));
+                options.UseSqlServer(connectionString, sql =>
+                {
+                }));
 
             return services;
         }

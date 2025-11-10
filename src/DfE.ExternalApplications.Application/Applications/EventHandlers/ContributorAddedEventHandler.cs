@@ -1,13 +1,9 @@
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Application.Common.EventHandlers;
 using DfE.ExternalApplications.Application.Services;
-using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
-using DfE.ExternalApplications.Domain.Factories;
-using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using Microsoft.Extensions.Logging;
 using GovUK.Dfe.CoreLibs.Email.Interfaces;
 using GovUK.Dfe.CoreLibs.Email.Models;
+using Microsoft.Extensions.Logging;
 
 namespace DfE.ExternalApplications.Application.Applications.EventHandlers;
 

@@ -8,6 +8,11 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
 using GovUK.Dfe.CoreLibs.Notifications.Models;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.ValueObjects;
+using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Notifications.Commands;
 
@@ -22,13 +27,15 @@ public sealed record AddNotificationCommand(
     string? ActionUrl = null,
     Dictionary<string, object>? Metadata = null,
     NotificationPriority? Priority = null,
-    bool? ReplaceExistingContext = null) : IRequest<Result<NotificationDto>>, IRateLimitedRequest;
+    bool? ReplaceExistingContext = null,
+    UserId? ToUserId = null) : IRequest<Result<NotificationDto>>, IRateLimitedRequest;
 
 public sealed class AddNotificationCommandHandler(
     INotificationService notificationService,
     IPermissionCheckerService permissionCheckerService,
     INotificationSignalRService notificationSignalRService,
-    IHttpContextAccessor httpContextAccessor)
+    IHttpContextAccessor httpContextAccessor,
+    IEaRepository<User> userRepo)
     : IRequestHandler<AddNotificationCommand, Result<NotificationDto>>
 {
     public async Task<Result<NotificationDto>> Handle(
@@ -54,13 +61,22 @@ public sealed class AddNotificationCommandHandler(
             if (!canAccess)
                 return Result<NotificationDto>.Forbid("User does not have permission to create notifications");
 
+            User? toUser = null;
+
+            if (request.ToUserId != null && permissionCheckerService.IsAdmin())
+            {
+                toUser = await (new GetUserByIdQueryObject(request.ToUserId))
+                    .Apply(userRepo.Query().AsNoTracking())
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+
             var options = new NotificationOptions
             {
                 Category = request.Category,
                 Context = request.Context,
                 AutoDismiss = request.AutoDismiss ?? true,
                 AutoDismissSeconds = request.AutoDismissSeconds ?? 5,
-                UserId = principalId,
+                UserId = toUser?.Email ?? principalId,
                 ActionUrl = request.ActionUrl,
                 Metadata = request.Metadata,
                 Priority = request.Priority ?? NotificationPriority.Normal,
@@ -91,7 +107,7 @@ public sealed class AddNotificationCommandHandler(
             };
 
             // Send real-time notification via SignalR
-            await notificationSignalRService.SendNotificationToUserAsync(principalId, dto, cancellationToken);
+            await notificationSignalRService.SendNotificationToUserAsync(toUser?.Email ?? principalId, dto, cancellationToken);
 
             return Result<NotificationDto>.Success(dto);
         }

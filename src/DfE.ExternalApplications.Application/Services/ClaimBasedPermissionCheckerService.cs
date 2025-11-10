@@ -15,6 +15,10 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
     /// <inheritdoc />
     public bool HasPermission(ResourceType resourceType, string resourceId, AccessType accessType)
     {
+        // Admin bypass - Admin users have full access
+        if (IsAdmin())
+            return true;
+
         var user = _httpContextAccessor.HttpContext?.User;
         if (user == null) return false;
 
@@ -27,6 +31,10 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
     /// <inheritdoc />
     public bool HasTemplatePermission(string templateId, AccessType accessType)
     {
+        // Admin bypass - Admin users have full access
+        if (IsAdmin())
+            return true;
+
         var user = _httpContextAccessor.HttpContext?.User;
         if (user == null) return false;
 
@@ -72,6 +80,14 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
     /// <inheritdoc />
     public bool IsApplicationOwner(string applicationId)
     {
+        // Validate input first
+        if (string.IsNullOrWhiteSpace(applicationId))
+            return false;
+
+        // Admin bypass - Admin users have full access
+        if (IsAdmin())
+            return true;
+
         var user = _httpContextAccessor.HttpContext?.User;
         if (user == null) return false;
 
@@ -82,6 +98,10 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
     /// <inheritdoc />
     public bool IsApplicationOwner(DfE.ExternalApplications.Domain.Entities.Application application, string currentUserId)
     {
+        // Admin bypass - Admin users have full access
+        if (IsAdmin())
+            return true;
+
         if (application == null) return false;
         if (string.IsNullOrEmpty(currentUserId)) return false;
 

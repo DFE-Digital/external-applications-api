@@ -76,7 +76,9 @@ public class UploadFileCommandHandlerTests
         {
             new(ClaimTypes.Email, "test@example.com")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         // Create a user with the same email as in the HTTP context
@@ -115,6 +117,14 @@ public class UploadFileCommandHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Write)
             .Returns(true);
 
+        // Mock file storage service
+        _fileStorageService.UploadAsync(
+            Arg.Any<string>(),
+            Arg.Any<Stream>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
             Arg.Any<ApplicationId>(),
@@ -125,16 +135,36 @@ public class UploadFileCommandHandlerTests
             Arg.Any<string>(),
             Arg.Any<DateTime>(),
             Arg.Any<UserId>(),
-            Arg.Any<long>())
+            Arg.Any<long>(),
+            Arg.Any<string>())
             .Returns(uploadedFile);
 
-        var command = new UploadFileCommand(applicationId, name, description, originalFileName, fileContent);
+        // Create a seekable MemoryStream that supports Length and can be read multiple times
+        // The handler reads the stream for upload, then accesses Length and computes hash
+        Stream testStream;
+        if (fileContent is MemoryStream ms && ms.CanSeek)
+        {
+            testStream = ms;
+            testStream.Position = 0;
+        }
+        else
+        {
+            // Create a new MemoryStream with test data
+            var testData = System.Text.Encoding.UTF8.GetBytes("test file content");
+            testStream = new MemoryStream(testData);
+        }
+
+        var command = new UploadFileCommand(applicationId, name, description, originalFileName, testStream);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        if (!result.IsSuccess)
+        {
+            var errorMsg = result.Error ?? "Unknown error";
+            Assert.True(false, $"Result failed: - {errorMsg}");
+        }
         Assert.NotNull(result.Value);
         Assert.Equal(uploadedFile.Id!.Value, result.Value.Id);
         Assert.Equal(uploadedFile.ApplicationId.Value, result.Value.ApplicationId);
@@ -147,7 +177,7 @@ public class UploadFileCommandHandlerTests
 
         await _uploadRepository.Received(1).AddAsync(uploadedFile, Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
-        await _fileStorageService.Received(1).UploadAsync(Arg.Any<string>(), fileContent, Arg.Any<string>(),Arg.Any<CancellationToken>());
+        await _fileStorageService.Received(1).UploadAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -188,7 +218,9 @@ public class UploadFileCommandHandlerTests
         {
             new(ClaimTypes.Email, "test@example.com")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         var queryable = new List<User>().AsQueryable().BuildMock();
@@ -220,7 +252,9 @@ public class UploadFileCommandHandlerTests
         {
             new(ClaimTypes.Email, "test@example.com")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         // Create a user with the same email as in the HTTP context
@@ -270,7 +304,9 @@ public class UploadFileCommandHandlerTests
         {
             new(ClaimTypes.Email, "test@example.com")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         // Create a user with the same email as in the HTTP context
@@ -334,7 +370,9 @@ public class UploadFileCommandHandlerTests
         {
             new(ClaimTypes.Email, "test@example.com")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         // Create a user with the same email as in the HTTP context
@@ -414,7 +452,9 @@ public class UploadFileCommandHandlerTests
         {
             new(ClaimTypes.Email, "test@example.com")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         // Create a user with the same email as in the HTTP context
@@ -487,7 +527,9 @@ public class UploadFileCommandHandlerTests
         {
             new(ClaimTypes.Email, "test@example.com")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         // Create a user with the same email as in the HTTP context
@@ -526,6 +568,14 @@ public class UploadFileCommandHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Write)
             .Returns(true);
 
+        // Mock file storage service
+        _fileStorageService.UploadAsync(
+            Arg.Any<string>(),
+            Arg.Any<Stream>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
             Arg.Any<ApplicationId>(),
@@ -536,16 +586,35 @@ public class UploadFileCommandHandlerTests
             Arg.Any<string>(),
             Arg.Any<DateTime>(),
             Arg.Any<UserId>(),
-            Arg.Any<long>())
+            Arg.Any<long>(),
+            Arg.Any<string>())
             .Returns(uploadedFile);
 
-        var command = new UploadFileCommand(applicationId, name, description, originalFileName, fileContent);
+        // Create a seekable MemoryStream that supports Length and can be read multiple times
+        Stream testStream;
+        if (fileContent is MemoryStream ms && ms.CanSeek)
+        {
+            testStream = ms;
+            testStream.Position = 0;
+        }
+        else
+        {
+            // Create a new MemoryStream with test data
+            var testData = System.Text.Encoding.UTF8.GetBytes("test file content");
+            testStream = new MemoryStream(testData);
+        }
+
+        var command = new UploadFileCommand(applicationId, name, description, originalFileName, testStream);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        if (!result.IsSuccess)
+        {
+            var errorMsg = result.Error ?? "Unknown error";
+            Assert.True(false, $"Result failed: - {errorMsg}");
+        }
         _userRepository.Received(1).Query();
     }
 
@@ -567,7 +636,9 @@ public class UploadFileCommandHandlerTests
         {
             new("azp", "external-provider-id")
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        // Create an authenticated identity - passing authentication type makes it authenticated
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
         _httpContextAccessor.HttpContext.Returns(httpContext);
 
         // Create a user with the same external provider ID as in the HTTP context
@@ -606,6 +677,14 @@ public class UploadFileCommandHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Write)
             .Returns(true);
 
+        // Mock file storage service
+        _fileStorageService.UploadAsync(
+            Arg.Any<string>(),
+            Arg.Any<Stream>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
             Arg.Any<ApplicationId>(),
@@ -616,16 +695,35 @@ public class UploadFileCommandHandlerTests
             Arg.Any<string>(),
             Arg.Any<DateTime>(),
             Arg.Any<UserId>(),
-            Arg.Any<long>())
+            Arg.Any<long>(),
+            Arg.Any<string>())
             .Returns(uploadedFile);
 
-        var command = new UploadFileCommand(applicationId, name, description, originalFileName, fileContent);
+        // Create a seekable MemoryStream that supports Length and can be read multiple times
+        Stream testStream;
+        if (fileContent is MemoryStream ms && ms.CanSeek)
+        {
+            testStream = ms;
+            testStream.Position = 0;
+        }
+        else
+        {
+            // Create a new MemoryStream with test data
+            var testData = System.Text.Encoding.UTF8.GetBytes("test file content");
+            testStream = new MemoryStream(testData);
+        }
+
+        var command = new UploadFileCommand(applicationId, name, description, originalFileName, testStream);
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        if (!result.IsSuccess)
+        {
+            var errorMsg = result.Error ?? "Unknown error";
+            Assert.True(false, $"Result failed: - {errorMsg}");
+        }
         _userRepository.Received(1).Query();
     }
 } 

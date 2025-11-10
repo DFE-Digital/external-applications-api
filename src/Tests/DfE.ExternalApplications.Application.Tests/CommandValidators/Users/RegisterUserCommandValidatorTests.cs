@@ -27,10 +27,10 @@ public class RegisterUserCommandValidatorTests
     }
 
     [Fact]
-    public void Should_Pass_When_TemplateId_Is_Null()
+    public void Should_Pass_When_TemplateId_Is_Provided()
     {
         // Arrange
-        var command = new RegisterUserCommand("valid-token-string", null);
+        var command = new RegisterUserCommand("valid-token-string", Guid.NewGuid());
 
         // Act
         var result = _validator.TestValidate(command);
@@ -61,7 +61,7 @@ public class RegisterUserCommandValidatorTests
     {
         // Arrange
         var longToken = new string('a', 1000); // Simulate a long JWT token
-        var command = new RegisterUserCommand(longToken);
+        var command = new RegisterUserCommand(longToken, Guid.NewGuid());
 
         // Act
         var result = _validator.TestValidate(command);
@@ -75,7 +75,7 @@ public class RegisterUserCommandValidatorTests
     {
         // Arrange
         var tokenWithSpecialChars = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
-        var command = new RegisterUserCommand(tokenWithSpecialChars);
+        var command = new RegisterUserCommand(tokenWithSpecialChars, Guid.NewGuid());
 
         // Act
         var result = _validator.TestValidate(command);

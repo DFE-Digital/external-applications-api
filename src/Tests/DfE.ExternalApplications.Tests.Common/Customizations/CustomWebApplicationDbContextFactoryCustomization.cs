@@ -32,6 +32,21 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
         {
             fixture.Customize<CustomWebApplicationDbContextFactory<Program>>(composer => composer.FromFactory(() =>
             {
+                // Set environment to "Local" to bypass Azure-specific operations in tests
+                Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Local");
+                
+                // Set environment variables for MassTransit configuration
+                // These will be picked up by ConfigurationBuilder in Program.cs
+                // For tests, provide a dummy connection string to satisfy validation
+                Environment.SetEnvironmentVariable("SkipMassTransit", "false");
+                Environment.SetEnvironmentVariable("MassTransit__Transport", "AzureServiceBus");
+                Environment.SetEnvironmentVariable("MassTransit__AppPrefix", "");
+                // Dummy connection string for tests - format: Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=...
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__ConnectionString", "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test=");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__AutoCreateEntities", "false");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__ConfigureEndpoints", "false");
+                Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__UseWebSockets", "true");
+                
                 var tokenConfig = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
@@ -108,6 +123,22 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         // Replace the notification service with our mock
                         services.RemoveAll<INotificationService>();
                         services.AddSingleton<INotificationService, MockNotificationService>();
+                        
+                        // Replace the email service with our mock to avoid sending actual emails in tests
+                        services.RemoveAll<GovUK.Dfe.CoreLibs.Email.Interfaces.IEmailService>();
+                        services.AddSingleton<GovUK.Dfe.CoreLibs.Email.Interfaces.IEmailService, MockEmailService>();
+                        
+                        // Replace the file storage service with our mock to avoid requiring actual Azure Storage connection strings in tests
+                        services.RemoveAll<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IFileStorageService>();
+                        services.AddSingleton<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IFileStorageService, MockFileStorageService>();
+                        
+                        // Replace IAzureSpecificOperations with our mock to avoid requiring actual Azure Storage for SAS token generation
+                        services.RemoveAll<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IAzureSpecificOperations>();
+                        services.AddSingleton<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IAzureSpecificOperations, MockAzureSpecificOperations>();
+                        
+                        // Replace IEventPublisher with our mock to avoid hanging on MassTransit publish in tests
+                        services.RemoveAll<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher>();
+                        services.AddSingleton<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, MockEventPublisher>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {

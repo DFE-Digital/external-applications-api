@@ -4,6 +4,8 @@ using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
 using GovUK.Dfe.CoreLibs.Notifications.Models;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Notifications.Commands;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
@@ -20,6 +22,7 @@ public class AddNotificationCommandHandlerTests
     private readonly IPermissionCheckerService _permissionCheckerService;
     private readonly INotificationSignalRService _notificationSignalRService;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IEaRepository<User> _userRepository;
     private readonly AddNotificationCommandHandler _handler;
 
     public AddNotificationCommandHandlerTests()
@@ -28,12 +31,14 @@ public class AddNotificationCommandHandlerTests
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
         _notificationSignalRService = new MockNotificationSignalRService();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        _userRepository = Substitute.For<IEaRepository<User>>();
 
         _handler = new AddNotificationCommandHandler(
             _notificationService,
             _permissionCheckerService,
             _notificationSignalRService,
-            _httpContextAccessor);
+            _httpContextAccessor,
+            _userRepository);
     }
 
     [Theory]

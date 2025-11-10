@@ -1,9 +1,16 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using Azure.Core.Diagnostics;
+using DfE.ExternalApplications.Api.ExceptionHandlers;
+using DfE.ExternalApplications.Api.Filters;
+using DfE.ExternalApplications.Api.Middleware;
+using DfE.ExternalApplications.Api.Security;
+using DfE.ExternalApplications.Api.Swagger;
+using GovUK.Dfe.CoreLibs.Http.Extensions;
 using GovUK.Dfe.CoreLibs.Http.Interfaces;
 using GovUK.Dfe.CoreLibs.Http.Middlewares.CorrelationId;
-using DfE.ExternalApplications.Api.Middleware;
-using DfE.ExternalApplications.Api.Swagger;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
+using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.FeatureManagement;
 using NetEscapades.AspNetCore.SecurityHeaders;
@@ -11,14 +18,9 @@ using Serilog;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Reflection;
 using System.Text;
-using System.Text.Json.Serialization;
-using DfE.ExternalApplications.Api.Security;
-using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
-using GovUK.Dfe.CoreLibs.Http.Extensions;
-using DfE.ExternalApplications.Api.ExceptionHandlers;
 using System.Text.Json;
-using DfE.ExternalApplications.Api.Filters;
-using Microsoft.AspNetCore.SignalR;
+using System.Text.Json.Serialization;
+using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
 namespace DfE.ExternalApplications.Api
 {
@@ -59,7 +61,7 @@ namespace DfE.ExternalApplications.Api
                 config.DefaultApiVersion = new ApiVersion(1, 0);
                 config.AssumeDefaultVersionWhenUnspecified = true;
                 config.ReportApiVersions = true;
-                
+
             }).AddApiExplorer(options =>
             {
                 options.GroupNameFormat = "'v'VVV";
@@ -92,7 +94,7 @@ namespace DfE.ExternalApplications.Api
 
             // Configure SignalR
             ConfigureSignalR(builder.Services, builder.Configuration, builder.Environment);
-            
+
             builder.Services.AddApplicationDependencyGroup(builder.Configuration);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
             builder.Services.AddCustomAuthorization(builder.Configuration);
@@ -212,8 +214,8 @@ namespace DfE.ExternalApplications.Api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => 
-            { 
+            app.UseEndpoints(endpoints =>
+            {
                 endpoints.MapControllers();
 
                 endpoints.MapHub<Hubs.NotificationHub>("/hubs/notifications")
@@ -231,7 +233,7 @@ namespace DfE.ExternalApplications.Api
         {
             // Check if we're running in Azure (has Azure SignalR connection string)
             var azureSignalRConnectionString = configuration.GetConnectionString("AzureSignalR");
-            
+
             if (!string.IsNullOrEmpty(azureSignalRConnectionString))
             {
                 // Use Azure SignalR Service
@@ -243,7 +245,7 @@ namespace DfE.ExternalApplications.Api
                 // Use local ASP.NET Core SignalR
                 services.AddSignalR();
             }
-            
+
             // Register the hub context abstraction
             services.AddScoped<DfE.ExternalApplications.Domain.Services.INotificationHubContext, DfE.ExternalApplications.Api.Services.NotificationHubContext>();
         }

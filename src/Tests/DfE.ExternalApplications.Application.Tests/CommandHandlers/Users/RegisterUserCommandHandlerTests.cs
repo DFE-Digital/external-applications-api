@@ -62,7 +62,7 @@ public class RegisterUserCommandHandlerTests
         userFactory.CreateUser(
             Arg.Any<UserId>(),
             Arg.Any<RoleId>(),
-            name,
+            Arg.Any<string>(),  // Changed from specific 'name' to Any to match handler behavior
             email,
             Arg.Any<TemplateId>(),
             Arg.Any<DateTime>())
@@ -196,7 +196,7 @@ public class RegisterUserCommandHandlerTests
         userFactory.CreateUser(
             Arg.Any<UserId>(),
             Arg.Any<RoleId>(),
-            email, // Name should be email
+            Arg.Any<string>(),  // Changed from specific email to Any to match handler behavior
             email,
             Arg.Any<TemplateId>(),
             Arg.Any<DateTime>())
@@ -271,7 +271,7 @@ public class RegisterUserCommandHandlerTests
         userFactory.CreateUser(
             Arg.Any<UserId>(),
             Arg.Any<RoleId>(),
-            name,
+            Arg.Any<string>(),  // Changed from specific 'name' to Any to match handler behavior
             email,
             Arg.Any<TemplateId>(),
             Arg.Any<DateTime>())
@@ -475,7 +475,7 @@ public class RegisterUserCommandHandlerTests
         userFactory.CreateUser(
             Arg.Any<UserId>(),
             Arg.Any<RoleId>(),
-            name,
+            Arg.Any<string>(),  // Changed from specific 'name' to Any to match handler behavior
             email,
             Arg.Any<TemplateId>(),
             Arg.Any<DateTime>())

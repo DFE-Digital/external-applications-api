@@ -123,16 +123,18 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor, requestChecker);
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<SecurityTokenException>(
-                   () => handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None));
-        Assert.Equal($"ExchangeTokenQueryHandler > User {email} has no role assigned", exception.Message);
+        // Act
+        var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal($"User {email} has no role assigned", result.Error);
     }
 
 
     [Theory]
     [CustomAutoData]
-    public async Task Handle_MissingEmail_ShouldThrowSecurityTokenException(
+    public async Task Handle_MissingEmail_ShouldReturnFailure(
         string subjectToken,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
@@ -151,10 +153,12 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor, requestChecker);
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<SecurityTokenException>(
-            () => handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None));
-        Assert.Equal("ExchangeTokenQueryHandler > Missing email", exception.Message);
+        // Act
+        var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Missing email", result.Error);
     }
 
     [Theory]
@@ -189,10 +193,12 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor, requestChecker);
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<SecurityTokenException>(
-            () => handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None));
-        Assert.Equal($"ExchangeTokenQueryHandler > User not found for email {email}", exception.Message);
+        // Act
+        var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal($"User not found for email {email}", result.Error);
     }
 
     [Theory]

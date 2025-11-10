@@ -26,10 +26,11 @@ public class FileFactoryTests
         long fileSize,
         string path,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        string fileHash)
     {
         // Act
-        var file = _factory.CreateUpload(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize);
+        var file = _factory.CreateUpload(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize, fileHash);
 
         // Assert
         Assert.Equal(id, file.Id);
@@ -81,11 +82,12 @@ public class FileFactoryTests
         long fileSize,
         string path,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        string fileHash)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            _factory.CreateUpload(null!, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize));
+            _factory.CreateUpload(null!, applicationId, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize, fileHash));
         Assert.Equal("id", exception.ParamName);
     }
 
@@ -100,11 +102,12 @@ public class FileFactoryTests
         string path,
         long fileSize,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        string fileHash)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            _factory.CreateUpload(id, null!, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize));
+            _factory.CreateUpload(id, null!, name, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize, fileHash));
         Assert.Equal("applicationId", exception.ParamName);
     }
 
@@ -119,11 +122,12 @@ public class FileFactoryTests
         string path,
         long fileSize,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        string fileHash)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            _factory.CreateUpload(id, applicationId, null!, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize));
+            _factory.CreateUpload(id, applicationId, null!, description, originalFileName, fileName, path, uploadedOn, uploadedBy, fileSize, fileHash));
         Assert.Equal("name", exception.ParamName);
     }
 
@@ -138,11 +142,12 @@ public class FileFactoryTests
         string path,
         long fileSize,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        string fileHash)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            _factory.CreateUpload(id, applicationId, name, description, null!, fileName, path, uploadedOn, uploadedBy, fileSize));
+            _factory.CreateUpload(id, applicationId, name, description, null!, fileName, path, uploadedOn, uploadedBy, fileSize, fileHash));
         Assert.Equal("originalFileName", exception.ParamName);
     }
 
@@ -157,11 +162,12 @@ public class FileFactoryTests
         long fileSize,
         string path,
         DateTime uploadedOn,
-        UserId uploadedBy)
+        UserId uploadedBy,
+        string fileHash)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            _factory.CreateUpload(id, applicationId, name, description, originalFileName, null!, path, uploadedOn, uploadedBy, fileSize));
+            _factory.CreateUpload(id, applicationId, name, description, originalFileName, null!, path, uploadedOn, uploadedBy, fileSize, fileHash));
         Assert.Equal("fileName", exception.ParamName);
     }
 
@@ -176,11 +182,12 @@ public class FileFactoryTests
         string fileName,
         long fileSize,
         string path,
-        DateTime uploadedOn)
+        DateTime uploadedOn,
+        string fileHash)
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            _factory.CreateUpload(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, null!, fileSize));
+            _factory.CreateUpload(id, applicationId, name, description, originalFileName, fileName, path, uploadedOn, null!, fileSize, fileHash));
         Assert.Equal("uploadedBy", exception.ParamName);
     }
 
