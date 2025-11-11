@@ -29,7 +29,7 @@ ARG DOTNET_EF_TAG=8.0.8
 ARG PROJECT_NAME="DfE.ExternalApplications.Api"
 
 ENV PATH=$PATH:/root/.dotnet/tools
-RUN dotnet tool install --global dotnet-ef
+RUN dotnet tool install --global dotnet-ef --version 8.*
 RUN mkdir /sql
 RUN dotnet ef migrations bundle -r linux-x64 \
       --configuration Release \
