@@ -6,6 +6,11 @@
       "ExpectedSecurity": "Authorize: Policy=CanReadUser"
     },
     {
+      "Controller": "UsersController",
+      "Action": "RegisterUserAsync",
+      "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"
+    },
+    {
       "Controller": "TemplatesController",
       "Action": "GetLatestTemplateSchemaAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadTemplate"
@@ -148,6 +153,11 @@
     {
       "Controller": "HubAuthController",
       "Action": "RedeemHubCookie",
+      "ExpectedSecurity": "AllowAnonymous"
+    },
+    {
+      "Controller": "UserFeedbackController",
+      "Action": "PostAsync",
       "ExpectedSecurity": "AllowAnonymous"
     }
   ]
