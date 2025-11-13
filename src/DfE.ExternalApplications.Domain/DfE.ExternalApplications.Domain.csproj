@@ -6,7 +6,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Caching" Version="1.0.12" />
-		<PackageReference Include="GovUK.Dfe.CoreLibs.Contracts" Version="1.0.47" />
+		<PackageReference Include="GovUK.Dfe.CoreLibs.Contracts" Version="1.0.53" />
 		<PackageReference Include="FluentValidation" Version="12.0.0" />
 		<PackageReference Include="MediatR" Version="12.5.0" />
 	</ItemGroup>
