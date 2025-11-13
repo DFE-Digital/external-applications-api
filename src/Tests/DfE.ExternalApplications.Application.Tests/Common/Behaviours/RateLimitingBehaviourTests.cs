@@ -1,3 +1,4 @@
+using System.Net;
 using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
@@ -137,6 +138,34 @@ public class RateLimitingBehaviourTests
         // Assert
         Assert.Equal("success", result);
         _rateLimiter.Received(1).IsAllowed("test@example.com_TestRateLimitedRequest");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldUseIpAddress_WhenRequestIsAnonymous()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new("some-other-claim", "some-value")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        httpContext.Connection.RemoteIpAddress = new IPAddress([11, 22, 33, 44]);
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+        
+        _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
+        _rateLimiter.IsAllowed("11.22.33.44_TestRateLimitedRequest").Returns(true);
+
+        var request = new TestRateLimitedRequest("test");
+        var next = Substitute.For<RequestHandlerDelegate<string>>();
+        next().Returns("success");
+
+        // Act
+        var result = await _behaviour.Handle(request, next, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("success", result);
+        _rateLimiter.Received(1).IsAllowed("11.22.33.44_TestRateLimitedRequest");
     }
 
     [Fact]
