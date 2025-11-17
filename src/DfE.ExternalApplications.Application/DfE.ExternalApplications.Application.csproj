@@ -15,7 +15,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="AutoMapper" Version="14.0.0" />
-		<PackageReference Include="GovUK.Dfe.CoreLibs.AsyncProcessing" Version="1.0.12" />
+		<PackageReference Include="GovUK.Dfe.CoreLibs.AsyncProcessing" Version="1.0.13" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Caching" Version="1.0.12" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Contracts" Version="1.0.47" />
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Email" Version="0.1.0" />
