@@ -139,6 +139,10 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         // Replace IEventPublisher with our mock to avoid hanging on MassTransit publish in tests
                         services.RemoveAll<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher>();
                         services.AddSingleton<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, MockEventPublisher>();
+                        
+                        // Replace IStaticHtmlGeneratorService with our mock to avoid requiring Playwright in tests
+                        services.RemoveAll<DfE.ExternalApplications.Domain.Services.IStaticHtmlGeneratorService>();
+                        services.AddSingleton<DfE.ExternalApplications.Domain.Services.IStaticHtmlGeneratorService, MockStaticHtmlGeneratorService>();
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
