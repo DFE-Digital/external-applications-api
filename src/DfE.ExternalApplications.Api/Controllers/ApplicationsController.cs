@@ -363,4 +363,36 @@ public class ApplicationsController(ISender sender) : ControllerBase
             StatusCode = StatusCodes.Status200OK
         };
     }
+
+    /// <summary>
+    /// Generates and downloads a static HTML preview of the application by reference.
+    /// </summary>
+    [HttpGet("reference/{applicationReference}/preview/download")]
+    [SwaggerResponse(200, "Static HTML file.", typeof(FileStreamResult))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "User does not have permission to read this application", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Application not found", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [Authorize(Policy = "CanReadAnyApplication")]
+    public async Task<IActionResult> DownloadApplicationPreviewHtmlAsync(
+        [FromRoute] string applicationReference,
+        CancellationToken cancellationToken)
+    {
+        var query = new GenerateApplicationPreviewHtmlQuery(applicationReference);
+        var result = await sender.Send(query, cancellationToken);
+
+        if (result is { IsSuccess: false, Error: not null })
+        {
+            throw result.ErrorCode switch
+            {
+                DomainErrorCode.NotFound => new NotFoundException(result.Error),
+                DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
+                _ => new BadRequestException(result.Error)
+            };
+        }
+
+        var file = result.Value!;
+        return File(file.FileStream, file.ContentType, file.FileName);
+    }
 }
