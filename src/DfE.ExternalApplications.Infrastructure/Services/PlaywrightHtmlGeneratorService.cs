@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using DfE.ExternalApplications.Domain.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Playwright;
@@ -7,6 +8,7 @@ namespace DfE.ExternalApplications.Infrastructure.Services;
 /// <summary>
 /// Service that uses Playwright to generate static HTML snapshots of dynamically rendered pages
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorService> logger) : IStaticHtmlGeneratorService
 {
     private readonly ILogger<PlaywrightHtmlGeneratorService> _logger = logger;
