@@ -229,6 +229,11 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
         html = Regex.Replace(html, actionPattern, @"action=""/DownloadEatFile""", RegexOptions.IgnoreCase);
         _logger.LogDebug("Updated file download form actions");
 
+        // 3. Remove "Check your answers" heading
+        var headingPattern = @"<h1[^>]*class=""[^""]*govuk-heading-xl[^""]*""[^>]*>Check your answers</h1>";
+        html = Regex.Replace(html, headingPattern, string.Empty, RegexOptions.IgnoreCase);
+        _logger.LogDebug("Removed 'Check your answers' heading from HTML");
+
         _logger.LogInformation("HTML post-processing completed");
         return html;
     }
