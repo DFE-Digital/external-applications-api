@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 using DfE.ExternalApplications.Domain.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Playwright;
@@ -193,6 +194,10 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
             }
 
             _logger.LogInformation("Static HTML generation completed successfully");
+            
+            // Post-process the HTML to remove tokens and update file download links
+            html = PostProcessHtml(html);
+            
             return html;
         }
         catch (Exception ex)
@@ -200,6 +205,32 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
             _logger.LogError(ex, "Error occurred while generating static HTML for URL: {PreviewUrl}", previewUrl);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Post-processes the HTML to remove anti-forgery tokens and update file download form actions
+    /// </summary>
+    /// <param name="html">The raw HTML content</param>
+    /// <returns>The processed HTML content</returns>
+    private string PostProcessHtml(string html)
+    {
+        _logger.LogInformation("Post-processing HTML content");
+
+        // 1. Remove all anti-forgery token input fields
+        // Pattern matches: <input name="__RequestVerificationToken" type="hidden" value="..." />
+        var tokenPattern = @"<input[^>]*name=""__RequestVerificationToken""[^>]*>";
+        html = Regex.Replace(html, tokenPattern, string.Empty, RegexOptions.IgnoreCase);
+        _logger.LogDebug("Removed anti-forgery tokens from HTML");
+
+        // 2. Update file download form actions
+        // Pattern matches: action="/applications/{ref}/...?handler=DownloadFile"
+        // Replace with: action="/DownloadEatFile"
+        var actionPattern = @"action=""[^""]*\?handler=DownloadFile""";
+        html = Regex.Replace(html, actionPattern, @"action=""/DownloadEatFile""", RegexOptions.IgnoreCase);
+        _logger.LogDebug("Updated file download form actions");
+
+        _logger.LogInformation("HTML post-processing completed");
+        return html;
     }
 }
 
