@@ -69,7 +69,7 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
             await page.GotoAsync(previewUrl, new PageGotoOptions
             {
                 WaitUntil = WaitUntilState.NetworkIdle,
-                Timeout = 60000 // 60 seconds timeout
+                Timeout = 1200000 // 60 seconds timeout
             });
 
             _logger.LogInformation("Waiting for page to be fully loaded");
@@ -226,7 +226,7 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
         // Pattern matches: action="/applications/{ref}/...?handler=DownloadFile"
         // Replace with: action="/DownloadEatFile"
         var actionPattern = @"action=""[^""]*\?handler=DownloadFile""";
-        html = Regex.Replace(html, actionPattern, @"action=""/DownloadEatFile""", RegexOptions.IgnoreCase);
+        html = Regex.Replace(html, actionPattern, @"action=""DownloadEatFile""", RegexOptions.IgnoreCase);
         _logger.LogDebug("Updated file download form actions");
 
         // 3. Remove "Check your answers" heading
