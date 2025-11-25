@@ -24,6 +24,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddServiceCaching(config);
 
             services.AddTransient<IApplicationReferenceProvider, DefaultApplicationReferenceProvider>();
+            
+            // Static HTML Generator Service
+            services.AddScoped<IStaticHtmlGeneratorService, PlaywrightHtmlGeneratorService>();
 
             // SignalR Services
             services.AddScoped<INotificationSignalRService, NotificationSignalRService>();

@@ -41,7 +41,7 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         // No existing user
@@ -114,7 +114,7 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         // Existing user
@@ -175,7 +175,7 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         // No existing user
@@ -250,7 +250,7 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         // No existing user
@@ -307,7 +307,7 @@ public class RegisterUserCommandHandlerTests
         IUnitOfWork unitOfWork)
     {
         // Arrange
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Throws(new SecurityTokenException("Invalid token"));
 
         var handler = new RegisterUserCommandHandler(
@@ -350,7 +350,7 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         var handler = new RegisterUserCommandHandler(
@@ -395,7 +395,7 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         // Mock to throw exception
@@ -442,7 +442,7 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         // No existing user

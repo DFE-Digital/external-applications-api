@@ -1541,4 +1541,181 @@ public class ApplicationsControllerTests
     }
 
     #endregion
+
+    #region DownloadApplicationPreviewHtml
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task DownloadApplicationPreviewHtmlAsync_ShouldReturnHtmlFile_WhenValidRequest(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act - Call the endpoint directly using HttpClient since this returns a file
+        var response = await httpClient.GetAsync($"/v1/applications/reference/{EaContextSeeder.ApplicationReference}/preview/download");
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.True(response.IsSuccessStatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        
+        // Verify content type
+        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        
+        // Verify content disposition header
+        var contentDisposition = response.Content.Headers.ContentDisposition;
+        Assert.NotNull(contentDisposition);
+        Assert.Equal("attachment", contentDisposition.DispositionType);
+        Assert.Contains(EaContextSeeder.ApplicationReference, contentDisposition.FileName);
+        Assert.EndsWith(".html", contentDisposition.FileName);
+        
+        // Verify content
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.NotEmpty(content);
+        Assert.Contains("<!DOCTYPE html>", content);
+        Assert.Contains("Mock Application Preview", content);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task DownloadApplicationPreviewHtmlAsync_ShouldReturnUnauthorized_WhenTokenMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        HttpClient httpClient)
+    {
+        // Arrange - No authorization header set
+
+        // Act
+        var response = await httpClient.GetAsync($"/v1/applications/reference/{EaContextSeeder.ApplicationReference}/preview/download");
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task DownloadApplicationPreviewHtmlAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            // No permission claim
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var response = await httpClient.GetAsync($"/v1/applications/reference/{EaContextSeeder.ApplicationReference}/preview/download");
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task DownloadApplicationPreviewHtmlAsync_ShouldReturnNotFound_WhenApplicationDoesNotExist(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var nonExistentReference = "TRF-99999999-999";
+
+        // Act
+        var response = await httpClient.GetAsync($"/v1/applications/reference/{nonExistentReference}/preview/download");
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task DownloadApplicationPreviewHtmlAsync_ShouldIncludeApplicationReference_InFileName(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var response = await httpClient.GetAsync($"/v1/applications/reference/{EaContextSeeder.ApplicationReference}/preview/download");
+
+        // Assert
+        Assert.True(response.IsSuccessStatusCode);
+        
+        var contentDisposition = response.Content.Headers.ContentDisposition;
+        Assert.NotNull(contentDisposition);
+        
+        // Verify filename format: application-{reference}-preview.html
+        var expectedFileName = $"application-{EaContextSeeder.ApplicationReference}-preview.html";
+        Assert.Contains(expectedFileName, contentDisposition.FileName);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task DownloadApplicationPreviewHtmlAsync_ShouldReturnValidHtmlContent(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Read")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var response = await httpClient.GetAsync($"/v1/applications/reference/{EaContextSeeder.ApplicationReference}/preview/download");
+
+        // Assert
+        Assert.True(response.IsSuccessStatusCode);
+        
+        var htmlContent = await response.Content.ReadAsStringAsync();
+        
+        // Verify it's valid HTML
+        Assert.Contains("<!DOCTYPE html>", htmlContent);
+        Assert.Contains("<html", htmlContent);
+        Assert.Contains("</html>", htmlContent);
+        Assert.Contains("<head>", htmlContent);
+        Assert.Contains("<body", htmlContent);
+        
+        // Verify mock service content
+        Assert.Contains("Mock Application Preview", htmlContent);
+        Assert.Contains("govuk-template", htmlContent);
+    }
+
+    #endregion
 }  

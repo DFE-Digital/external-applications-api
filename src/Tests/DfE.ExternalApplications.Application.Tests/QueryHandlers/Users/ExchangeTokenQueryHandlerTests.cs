@@ -1,21 +1,22 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
-using GovUK.Dfe.CoreLibs.Security.Interfaces;
-using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Security.Models;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using MockQueryable;
 using MockQueryable.NSubstitute;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using System.Security.Claims;
-using GovUK.Dfe.CoreLibs.Security.Models;
-using DfE.ExternalApplications.Domain.ValueObjects;
-using MockQueryable;
-using Microsoft.AspNetCore.Authentication;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Users;
 
@@ -31,7 +32,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen] ICustomRequestChecker requestChecker)
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claims = new List<Claim>
@@ -41,7 +43,7 @@ public class ExchangeTokenQueryHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false,Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         userCustom.OverrideEmail = email;
@@ -79,14 +81,14 @@ public class ExchangeTokenQueryHandlerTests
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker);
+            httpContextAccessor, requestChecker, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
-        await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>());
+        await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>());
         await tokenService.Received(1).GetUserTokenModelAsync(Arg.Is<ClaimsPrincipal>(p => p.HasClaim(ClaimTypes.Role, user.Role.Name)));
     }
 
@@ -99,7 +101,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen] ICustomRequestChecker requestChecker)
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claims = new List<Claim>
@@ -109,7 +112,7 @@ public class ExchangeTokenQueryHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         var user = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "test user", email, DateTime.UtcNow,
@@ -121,7 +124,7 @@ public class ExchangeTokenQueryHandlerTests
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker);
+            httpContextAccessor, requestChecker, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -140,18 +143,19 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen] ICustomRequestChecker requestChecker)
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>()));
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker);
+            httpContextAccessor, requestChecker, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -169,9 +173,9 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
-        [Frozen] IHttpContextAccessor httpContextAccessor,        
-        [Frozen] ICustomRequestChecker requestChecker)
-
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claims = new List<Claim>
@@ -181,7 +185,7 @@ public class ExchangeTokenQueryHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         var emptyQueryable = new List<User>().AsQueryable().BuildMock();
@@ -191,7 +195,7 @@ public class ExchangeTokenQueryHandlerTests
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker);
+            httpContextAccessor, requestChecker, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -209,14 +213,15 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenSvc,
         [Frozen] IHttpContextAccessor httpCtxAcc, 
-        [Frozen] ICustomRequestChecker requestChecker)
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
+        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var exception = new SecurityTokenException("Invalid token");
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Throws(exception);
 
-        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, requestChecker);
+        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, requestChecker, internalRequestChecker);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<SecurityTokenException>(

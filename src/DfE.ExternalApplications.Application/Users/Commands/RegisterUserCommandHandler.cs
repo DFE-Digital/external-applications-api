@@ -37,7 +37,7 @@ public sealed class RegisterUserCommandHandler(
         {
             // Validate external token and extract claims
             var externalUser = await externalValidator
-                .ValidateIdTokenAsync(request.SubjectToken, false, cancellationToken);
+                .ValidateIdTokenAsync(request.SubjectToken, false, validInternalRequest:false, cancellationToken);
 
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value
                         ?? throw new SecurityTokenException("RegisterUserCommandHandler > Missing email");

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DfE.ExternalApplications.Application.Users.Queries
 {
@@ -18,16 +19,18 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         IExternalIdentityValidator externalValidator,
         IEaRepository<User> userRepo,
         IUserTokenService tokenSvc,
-        IHttpContextAccessor httpCtxAcc, 
-        ICustomRequestChecker cypressRequestChecker)
+        IHttpContextAccessor httpCtxAcc,
+        [FromKeyedServices("cypress")] ICustomRequestChecker cypressRequestChecker,
+        [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
         : IRequestHandler<ExchangeTokenQuery, Result<ExchangeTokenDto>>
     {
         public async Task<Result<ExchangeTokenDto>> Handle(ExchangeTokenQuery req, CancellationToken ct)
         {
             var validCypressReq = cypressRequestChecker.IsValidRequest(httpCtxAcc.HttpContext!);
+            var validInternalAuthReq = internalRequestChecker.IsValidRequest(httpCtxAcc.HttpContext!);
 
             var externalUser = await externalValidator
-                .ValidateIdTokenAsync(req.SubjectToken, validCypressReq, ct);
+                .ValidateIdTokenAsync(req.SubjectToken, validCypressReq, validInternalAuthReq, ct);
 
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value;
                         
