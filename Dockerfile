@@ -1,32 +1,39 @@
-# Set the major version of dotnet
-ARG DOTNET_VERSION=8.0
+﻿ARG DOTNET_VERSION=8.0
 
-# Stage 1 - Build the app using the dotnet SDK
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-azurelinux3.0 AS build
+# ============================================================
+# Stage 1 - Build + Install Playwright (Ubuntu SDK)
+# ============================================================
+# Use Ubuntu-based .NET SDK for Playwright install
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /build
 ARG CI
 ENV CI=${CI}
 
-# Mount GitHub Token as a Docker secret so that NuGet Feed can be accessed
-RUN --mount=type=secret,id=github_token dotnet nuget add source --username USERNAME --password $(cat /run/secrets/github_token) --store-password-in-clear-text --name github "https://nuget.pkg.github.com/DFE-Digital/index.json"
+# Install Playwright CLI
+RUN dotnet tool install --global Microsoft.Playwright.CLI
+ENV PATH="${PATH}:/root/.dotnet/tools"
 
-# Copy the application code
+# Copy solution
 COPY ./src/ ./src/
 COPY Directory.Build.props ./
 COPY DfE.ExternalApplications.Api.sln ./
 
-# Build and publish the dotnet solution
-RUN dotnet restore DfE.ExternalApplications.Api.sln && \
-    dotnet build ./src/DfE.ExternalApplications.Api --no-restore -c Release && \
-    dotnet publish ./src/DfE.ExternalApplications.Api --no-build -o /app
+# Restore + build
+RUN dotnet restore DfE.ExternalApplications.Api.sln
+RUN dotnet build ./src/DfE.ExternalApplications.Api --configuration Release --no-restore
 
-# ==============================================
-# Entity Framework: Migration Builder
-# ==============================================
+# Install Playwright browsers + OS dependencies using Ubuntu (works)
+RUN playwright install --with-deps
+
+# Publish final output
+RUN dotnet publish ./src/DfE.ExternalApplications.Api --configuration Release --no-build -o /app
+
+
+# ============================================================
+# Stage 2 - EF Migration Builder
+# ============================================================
 FROM build AS efbuilder
 WORKDIR /build
-ARG DOTNET_EF_TAG=8.0.8
-ARG PROJECT_NAME="DfE.ExternalApplications.Api"
 
 ENV PATH=$PATH:/root/.dotnet/tools
 RUN dotnet tool install --global dotnet-ef --version 8.*
@@ -36,23 +43,37 @@ RUN dotnet ef migrations bundle -r linux-x64 \
       --project ./src/DfE.ExternalApplications.Api \
       --no-build -o /sql/migratedb
 
-# ==============================================
-# Entity Framework: Migration Runner
-# ==============================================
+
+# ============================================================
+# Stage 3 - Init Container
+# ============================================================
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-azurelinux3.0 AS initcontainer
 WORKDIR /sql
+
 COPY --from=efbuilder /sql /sql
 COPY --from=build /app/appsettings* /sql/
 COPY --from=build /app/appsettings* /DfE.ExternalApplications.Api/
 
-# Stage 3 - Build a runtime environment
-FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-azurelinux3.0 AS final
-WORKDIR /app
-LABEL org.opencontainers.image.source="https://github.com/DFE-Digital/external-applications-api"
-LABEL org.opencontainers.image.description="External Applications - Api"
 
+# ============================================================
+# Stage 4 - Final Runtime (Azure Linux) + Playwright browsers
+# ============================================================
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-azurelinux3.0 AS final
+
+WORKDIR /app
+
+# Copy published API
 COPY --from=build /app /app
-COPY ./script/api-docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
+
+# Copy Playwright installed browsers + driver
+COPY --from=build /root/.cache/ms-playwright /root/.cache/ms-playwright
+COPY --from=build /root/.dotnet/tools /root/.dotnet/tools
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+# Entrypoint script
+COPY script/api-docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 USER $APP_UID
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -1,7 +1,6 @@
-#!/bin/bash
-
-# exit on failures
+#!/bin/sh
 set -e
-set -o pipefail
 
-exec "$@"
+echo "Starting External Applications API..."
+
+exec /usr/bin/dotnet /app/DfE.ExternalApplications.Api.dll
