@@ -51,6 +51,8 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
             _logger.LogInformation("Creating browser context with authentication headers");
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+
                 // Accept all self-signed certificates for local development
                 IgnoreHTTPSErrors = true,
                 // Add authentication headers to all requests
