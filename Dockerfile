@@ -34,13 +34,19 @@ RUN dotnet publish ./src/DfE.ExternalApplications.Api -c Release --no-build -o /
 FROM build AS efbuilder
 WORKDIR /build
 
-ENV PATH="$PATH:/root/.dotnet/tools"
+ENV PATH=$PATH:/root/.dotnet/tools
+ENV DOTNET_ROOT=/usr/share/dotnet
+
 RUN dotnet tool install --global dotnet-ef --version 8.*
+
 RUN mkdir /sql
+
 RUN dotnet ef migrations bundle -r linux-x64 \
-      -c Release \
+      --configuration Release \
       --project ./src/DfE.ExternalApplications.Api \
-      --no-build -o /sql/migratedb
+      --output /sql/migratedb \
+      --no-build \
+      --self-contained
 
 
 # ============================================================
