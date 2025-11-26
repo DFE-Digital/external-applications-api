@@ -67,8 +67,13 @@ COPY --from=build /app /app
 
 # Copy Playwright installed browsers + driver
 COPY --from=build /root/.cache/ms-playwright /root/.cache/ms-playwright
+COPY --from=build /root/.cache/ms-playwright /home/app/.cache/ms-playwright
+
 COPY --from=build /root/.dotnet/tools /root/.dotnet/tools
 ENV PATH="${PATH}:/root/.dotnet/tools"
+
+RUN chmod -R 755 /home/app/.cache
+
 
 # Entrypoint script
 COPY script/api-docker-entrypoint.sh /app/docker-entrypoint.sh
