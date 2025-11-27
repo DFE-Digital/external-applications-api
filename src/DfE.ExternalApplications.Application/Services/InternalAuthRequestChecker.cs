@@ -22,10 +22,10 @@ namespace DfE.ExternalApplications.Application.Services
         private readonly InternalServiceAuthOptions _config = config.Value;
 
         /// <summary>
-        /// Validates if the current HTTP request is a valid Cypress test request
+        /// Validates if the current HTTP request is a valid internal request
         /// </summary>
         /// <param name="httpContext">The HTTP context to validate</param>
-        /// <returns>True if this is a valid Cypress request with correct headers and secret</returns>
+        /// <returns>True if this is a valid request with correct headers and secret</returns>
         public bool IsValidRequest(HttpContext httpContext)
         {
             // Check for email header

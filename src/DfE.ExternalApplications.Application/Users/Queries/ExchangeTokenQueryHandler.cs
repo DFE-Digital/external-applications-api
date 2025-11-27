@@ -20,17 +20,15 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         IEaRepository<User> userRepo,
         IUserTokenService tokenSvc,
         IHttpContextAccessor httpCtxAcc,
-        [FromKeyedServices("cypress")] ICustomRequestChecker cypressRequestChecker,
         [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
         : IRequestHandler<ExchangeTokenQuery, Result<ExchangeTokenDto>>
     {
         public async Task<Result<ExchangeTokenDto>> Handle(ExchangeTokenQuery req, CancellationToken ct)
         {
-            var validCypressReq = cypressRequestChecker.IsValidRequest(httpCtxAcc.HttpContext!);
             var validInternalAuthReq = internalRequestChecker.IsValidRequest(httpCtxAcc.HttpContext!);
 
             var externalUser = await externalValidator
-                .ValidateIdTokenAsync(req.SubjectToken, validCypressReq, validInternalAuthReq, ct);
+                .ValidateIdTokenAsync(req.SubjectToken, false, validInternalAuthReq, ct);
 
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value;
                         
