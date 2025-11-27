@@ -48,7 +48,6 @@ namespace Microsoft.Extensions.DependencyInjection
             });
             services.AddScoped<IPermissionCheckerService, ClaimBasedPermissionCheckerService>();
 
-            services.AddKeyedScoped<ICustomRequestChecker, CypressRequestChecker>("cypress");
             services.AddKeyedScoped<ICustomRequestChecker, InternalAuthRequestChecker>("internal");
 
             services.AddTransient<IApplicationFactory, ApplicationFactory>();

@@ -32,8 +32,7 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claims = new List<Claim>
@@ -81,7 +80,7 @@ public class ExchangeTokenQueryHandlerTests
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker, internalRequestChecker);
+            httpContextAccessor, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -101,8 +100,7 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claims = new List<Claim>
@@ -124,7 +122,7 @@ public class ExchangeTokenQueryHandlerTests
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker, internalRequestChecker);
+            httpContextAccessor, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -143,8 +141,7 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>()));
@@ -155,7 +152,7 @@ public class ExchangeTokenQueryHandlerTests
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker, internalRequestChecker);
+            httpContextAccessor, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -174,8 +171,7 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var claims = new List<Claim>
@@ -195,7 +191,7 @@ public class ExchangeTokenQueryHandlerTests
             externalValidator,
             userRepo,
             tokenService,
-            httpContextAccessor, requestChecker, internalRequestChecker);
+            httpContextAccessor, internalRequestChecker);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -213,15 +209,14 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IUserTokenService tokenSvc,
         [Frozen] IHttpContextAccessor httpCtxAcc, 
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker requestChecker,
-        [Frozen][FromKeyedServices("cypress")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
         var exception = new SecurityTokenException("Invalid token");
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Throws(exception);
 
-        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, requestChecker, internalRequestChecker);
+        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, internalRequestChecker);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<SecurityTokenException>(
