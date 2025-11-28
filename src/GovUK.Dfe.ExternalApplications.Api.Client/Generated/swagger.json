@@ -2407,6 +2407,61 @@
         }
       }
     },
+    "/v1/UserFeedback": {
+      "post": {
+        "tags": [
+          "UserFeedback"
+        ],
+        "operationId": "UserFeedback_Post",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserFeedbackRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "202": {
+            "description": "User feedback was submitted successfully."
+          },
+          "400": {
+            "description": "Invalid request data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/permissions": {
       "get": {
         "tags": [
@@ -3269,6 +3324,105 @@
             "type": "string"
           }
         }
+      },
+      "UserFeedbackRequest": {
+        "type": "object",
+        "discriminator": {
+          "propertyName": "$type",
+          "mapping": {
+            "BugReport": "#/components/schemas/BugReport",
+            "SupportRequest": "#/components/schemas/SupportRequest",
+            "FeedbackOrSuggestion": "#/components/schemas/FeedbackOrSuggestion"
+          }
+        },
+        "x-abstract": true,
+        "additionalProperties": false,
+        "required": [
+          "$type"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "referenceNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "$type": {
+            "type": "string"
+          }
+        }
+      },
+      "BugReport": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserFeedbackRequest"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "emailAddress": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "SupportRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserFeedbackRequest"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "emailAddress": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "FeedbackOrSuggestion": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserFeedbackRequest"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "satisfactionScore": {
+                "$ref": "#/components/schemas/SatisfactionScore"
+              }
+            }
+          }
+        ]
+      },
+      "SatisfactionScore": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "VerySatisfied",
+          "Satisfied",
+          "NeitherSatisfiedOrDissatisfied",
+          "Dissatisfied",
+          "VeryDissatisfied"
+        ],
+        "enum": [
+          "VerySatisfied",
+          "Satisfied",
+          "NeitherSatisfiedOrDissatisfied",
+          "Dissatisfied",
+          "VeryDissatisfied"
+        ]
       },
       "RegisterUserRequest": {
         "type": "object",

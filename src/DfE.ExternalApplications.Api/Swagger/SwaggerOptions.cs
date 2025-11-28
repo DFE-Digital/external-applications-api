@@ -52,6 +52,12 @@ namespace DfE.ExternalApplications.Api.Swagger
                 }
             });
             options.OperationFilter<AuthenticationHeaderOperationFilter>();
+            
+            options.UseAllOfForInheritance();
+            options.UseOneOfForPolymorphism();
+            
+            options.SelectDiscriminatorNameUsing(_ => "$type");
+            options.SelectDiscriminatorValueUsing(subType => subType.Name);
         }
     }
 }

@@ -18,7 +18,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security;
-using GovUK.Dfe.CoreLibs.Security.Services;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using GovUK.Dfe.ExternalApplications.Api.Client;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
@@ -46,6 +45,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__AutoCreateEntities", "false");
                 Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__ConfigureEndpoints", "false");
                 Environment.SetEnvironmentVariable("MassTransit__AzureServiceBus__UseWebSockets", "true");
+                // Configure service support email address for testing user feedback/support
+                Environment.SetEnvironmentVariable("Email__ServiceSupportEmailAddress", "some.email@education.gov.uk");
                 
                 var tokenConfig = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string?>
@@ -97,12 +98,13 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                                             : AuthConstants.AzureAdScheme;
                                     }
 
-                                        return AuthConstants.AzureAdScheme;
+                                    return AuthConstants.AzureAdScheme;
                                 };
                             })
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
                                 AuthConstants.UserScheme,
-                                _ => { /* picks up the same factory.TestClaims */ })
+                                _ => { /* picks up factory.TestClaims */ })
+
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
                                 AuthConstants.AzureAdScheme,
                                 _ => { /* picks up the same factory.TestClaims */ })
@@ -167,6 +169,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 services.AddExternalApplicationsApiClient<ITokensClient, TokensClient>(config, client);
                 services.AddExternalApplicationsApiClient<IApplicationsClient, ApplicationsClient>(config, client);
                 services.AddExternalApplicationsApiClient<INotificationsClient, NotificationsClient>(config, client);
+                services.AddExternalApplicationsApiClient<IUserFeedbackClient, UserFeedbackClient>(config, client);
 
                 services.RemoveAll<IExternalIdentityValidator>();
                 services.RemoveAll<IUserTokenService>();
@@ -184,6 +187,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                 fixture.Inject(serviceProvider.GetRequiredService<ITokensClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<IApplicationsClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<INotificationsClient>());
+                fixture.Inject(serviceProvider.GetRequiredService<IUserFeedbackClient>());
                 fixture.Inject(serviceProvider.GetRequiredService<IExternalIdentityValidator>());
                 fixture.Inject(new List<Claim>());
 
