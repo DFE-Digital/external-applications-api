@@ -27,6 +27,9 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
 
                 if (string.IsNullOrEmpty(principalId))
                     principalId = user?.FindFirstValue(ClaimTypes.Email);
+                
+                if (string.IsNullOrEmpty(principalId))
+                    principalId = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
 
                 if (string.IsNullOrEmpty(principalId))
                             throw new InvalidOperationException("RateLimiter > Email/AppId claim missing");
