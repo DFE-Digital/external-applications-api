@@ -145,6 +145,9 @@ namespace DfE.ExternalApplications.Api
             forwardOptions.KnownProxies.Clear();
             app.UseForwardedHeaders(forwardOptions);
 
+            // CORS must be early in the pipeline to ensure headers are added to all responses (including errors)
+            app.UseCors("Frontend");
+
             app.UseSecurityHeaders(options =>
             {
                 options.AddFrameOptionsDeny()
@@ -208,8 +211,6 @@ namespace DfE.ExternalApplications.Api
             app.UseMiddleware<UrlDecoderMiddleware>();
 
             app.UseRouting();
-
-            app.UseCors("Frontend");
 
             app.UseAuthentication();
             app.UseAuthorization();
