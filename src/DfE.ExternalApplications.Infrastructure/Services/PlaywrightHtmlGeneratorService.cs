@@ -240,6 +240,7 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
         // 4. Remove the content selector class
         if (!string.IsNullOrEmpty(contentSelector))
         {
+            contentSelector = contentSelector.Replace(".", "");
             html = html.Replace(contentSelector, "eat-app-preview");
         }
 
