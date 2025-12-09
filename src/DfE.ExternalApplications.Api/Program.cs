@@ -212,6 +212,8 @@ namespace DfE.ExternalApplications.Api
 
             app.UseRouting();
 
+            app.UseCors("Frontend");
+
             app.UseAuthentication();
             app.UseAuthorization();
 
