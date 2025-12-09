@@ -242,6 +242,7 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
         {
             contentSelector = contentSelector.Replace(".", "");
             html = html.Replace(contentSelector, "eat-app-preview");
+            _logger.LogDebug($"Removed '{contentSelector}' from the HTML");
         }
 
         _logger.LogInformation("HTML post-processing completed");
