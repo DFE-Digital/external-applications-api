@@ -198,7 +198,7 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
             _logger.LogInformation("Static HTML generation completed successfully");
             
             // Post-process the HTML to remove tokens and update file download links
-            html = PostProcessHtml(html);
+            html = PostProcessHtml(html, contentSelector);
             
             return html;
         }
@@ -213,8 +213,9 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
     /// Post-processes the HTML to remove anti-forgery tokens and update file download form actions
     /// </summary>
     /// <param name="html">The raw HTML content</param>
+    /// <param name="contentSelector">The content selector</param>
     /// <returns>The processed HTML content</returns>
-    private string PostProcessHtml(string html)
+    private string PostProcessHtml(string html, string? contentSelector = null)
     {
         _logger.LogInformation("Post-processing HTML content");
 
@@ -235,6 +236,12 @@ public class PlaywrightHtmlGeneratorService(ILogger<PlaywrightHtmlGeneratorServi
         var headingPattern = @"<h1[^>]*class=""[^""]*govuk-heading-xl[^""]*""[^>]*>Check your answers</h1>";
         html = Regex.Replace(html, headingPattern, string.Empty, RegexOptions.IgnoreCase);
         _logger.LogDebug("Removed 'Check your answers' heading from HTML");
+
+        // 4. Remove the content selector class
+        if (!string.IsNullOrEmpty(contentSelector))
+        {
+            html = html.Replace(contentSelector, "eat-app-preview");
+        }
 
         _logger.LogInformation("HTML post-processing completed");
         return html;
