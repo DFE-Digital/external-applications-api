@@ -71,7 +71,12 @@ public class ExternalApplicationsContext : DbContext
 
     private static void ConfigureRole(EntityTypeBuilder<Role> b)
     {
-        b.ToTable("Roles", DefaultSchema);
+        b.ToTable("Roles", DefaultSchema, tb => tb.IsTemporal(ttb =>
+        {
+            ttb.HasPeriodStart("PeriodStart");
+            ttb.HasPeriodEnd("PeriodEnd");
+            ttb.UseHistoryTable("History_Roles", DefaultSchema);
+        }));
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("RoleId")
@@ -87,7 +92,12 @@ public class ExternalApplicationsContext : DbContext
 
     private static void ConfigureUser(EntityTypeBuilder<User> b)
     {
-        b.ToTable("Users", DefaultSchema);
+        b.ToTable("Users", DefaultSchema, tb => tb.IsTemporal(ttb =>
+        {
+            ttb.HasPeriodStart("PeriodStart");
+            ttb.HasPeriodEnd("PeriodEnd");
+            ttb.UseHistoryTable("History_Users", DefaultSchema);
+        }));
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("UserId")
@@ -149,7 +159,12 @@ public class ExternalApplicationsContext : DbContext
 
     private static void ConfigureTemplate(EntityTypeBuilder<Template> b)
     {
-        b.ToTable("Templates", DefaultSchema);
+        b.ToTable("Templates", DefaultSchema, tb => tb.IsTemporal(ttb =>
+        {
+            ttb.HasPeriodStart("PeriodStart");
+            ttb.HasPeriodEnd("PeriodEnd");
+            ttb.UseHistoryTable("History_Templates", DefaultSchema);
+        }));
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("TemplateId")
@@ -227,7 +242,12 @@ public class ExternalApplicationsContext : DbContext
 
     private static void ConfigureApplication(EntityTypeBuilder<Domain.Entities.Application> b)
     {
-        b.ToTable("Applications", DefaultSchema);
+        b.ToTable("Applications", DefaultSchema, tb => tb.IsTemporal(ttb =>
+        {
+            ttb.HasPeriodStart("PeriodStart");
+            ttb.HasPeriodEnd("PeriodEnd");
+            ttb.UseHistoryTable("History_Applications", DefaultSchema);
+        }));
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("ApplicationId")
@@ -415,7 +435,12 @@ public class ExternalApplicationsContext : DbContext
 
     private static void ConfigureTemplatePermission(EntityTypeBuilder<TemplatePermission> b)
     {
-        b.ToTable("TemplatePermissions", DefaultSchema);
+        b.ToTable("TemplatePermissions", DefaultSchema, tb => tb.IsTemporal(ttb =>
+        {
+            ttb.HasPeriodStart("PeriodStart");
+            ttb.HasPeriodEnd("PeriodEnd");
+            ttb.UseHistoryTable("History_TemplatePermissions", DefaultSchema);
+        }));
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("TemplatePermissionId")
