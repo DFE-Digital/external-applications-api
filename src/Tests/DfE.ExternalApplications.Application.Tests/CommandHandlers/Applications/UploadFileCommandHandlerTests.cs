@@ -21,6 +21,7 @@ using MockQueryable;
 using NSubstitute.ExceptionExtensions;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using File = DfE.ExternalApplications.Domain.Entities.File;
+using DfE.ExternalApplications.Domain.ValueObjects;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Applications;
 
@@ -354,7 +355,7 @@ public class UploadFileCommandHandlerTests
 
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization), typeof(UserCustomization))]
-    public async Task Handle_Should_Return_Failure_When_File_Already_Exists(
+    public async Task Handle_Should_Return_Failure_When_File_Already_Exists_And_Is_Referenced_In_Response(
         Domain.Entities.Application application,
         User user,
         File existingFile,
@@ -391,20 +392,6 @@ public class UploadFileCommandHandlerTests
         var queryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
         _userRepository.Query().Returns(queryable);
 
-        // Application with matching ID
-        var applicationWithMatchingId = new Domain.Entities.Application(
-            applicationId,
-            application.ApplicationReference,
-            application.TemplateVersionId,
-            application.CreatedOn,
-            application.CreatedBy,
-            application.Status,
-            application.LastModifiedOn,
-            application.LastModifiedBy);
-
-        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
-        _applicationRepository.Query().Returns(applicationQueryable);
-
         // Create a file with the correct ApplicationId and FileName that the handler will look for
         var hashedFileName = FileNameHasher.HashFileName(originalFileName);
         var existingFileWithMatchingProperties = new File(
@@ -419,6 +406,30 @@ public class UploadFileCommandHandlerTests
             existingFile.UploadedBy,
             existingFile.FileSize);
 
+        // Application with matching ID and a response that CONTAINS the file ID (not orphaned)
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        // Add a response that references the existing file ID
+        var responseBody = $"{{\"fileUpload\": \"{existingFileWithMatchingProperties.Id!.Value}\"}}";
+        var response = new ApplicationResponse(
+            new ResponseId(Guid.NewGuid()),
+            applicationId,
+            responseBody,
+            DateTime.UtcNow,
+            user.Id!);
+        applicationWithMatchingId.AddResponse(response);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
+        _applicationRepository.Query().Returns(applicationQueryable);
+
         var uploadQueryable = new List<File> { existingFileWithMatchingProperties }.AsQueryable().BuildMock();
         _uploadRepository.Query().Returns(uploadQueryable);
 
@@ -432,7 +443,350 @@ public class UploadFileCommandHandlerTests
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Equal("The file already exist", result.Error);
+        Assert.Equal("The file already exists", result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization), typeof(UserCustomization))]
+    public async Task Handle_Should_Delete_Orphaned_File_And_Upload_When_No_Response_Exists(
+        Domain.Entities.Application application,
+        User user,
+        File existingFile,
+        File uploadedFile,
+        ApplicationId applicationId,
+        string name,
+        string description,
+        string originalFileName)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, "test@example.com")
+        };
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com",
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var userQueryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
+        _userRepository.Query().Returns(userQueryable);
+
+        // Create existing file with matching properties
+        var hashedFileName = FileNameHasher.HashFileName(originalFileName);
+        var existingFileWithMatchingProperties = new File(
+            existingFile.Id!,
+            applicationId,
+            existingFile.Name,
+            existingFile.Description,
+            existingFile.OriginalFileName,
+            hashedFileName,
+            existingFile.Path,
+            existingFile.UploadedOn,
+            existingFile.UploadedBy,
+            existingFile.FileSize);
+
+        // Application with NO responses (file is orphaned)
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
+        _applicationRepository.Query().Returns(applicationQueryable);
+
+        var uploadQueryable = new List<File> { existingFileWithMatchingProperties }.AsQueryable().BuildMock();
+        _uploadRepository.Query().Returns(uploadQueryable);
+
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Write)
+            .Returns(true);
+
+        _fileStorageService.DeleteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        _fileStorageService.UploadAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        _fileFactory.CreateUpload(
+            Arg.Any<FileId>(),
+            Arg.Any<ApplicationId>(),
+            Arg.Any<string>(),
+            Arg.Any<string?>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<DateTime>(),
+            Arg.Any<UserId>(),
+            Arg.Any<long>(),
+            Arg.Any<string>())
+            .Returns(uploadedFile);
+
+        var testStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("test file content"));
+        var command = new UploadFileCommand(applicationId, name, description, originalFileName, testStream);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error}");
+        Assert.NotNull(result.Value);
+
+        // Verify orphaned file was deleted
+        _fileFactory.Received(1).DeleteFile(existingFileWithMatchingProperties);
+        await _uploadRepository.Received(1).RemoveAsync(existingFileWithMatchingProperties, Arg.Any<CancellationToken>());
+        await _fileStorageService.Received(1).DeleteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+
+        // Verify new file was uploaded
+        await _uploadRepository.Received(1).AddAsync(uploadedFile, Arg.Any<CancellationToken>());
+        await _fileStorageService.Received(1).UploadAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization), typeof(UserCustomization))]
+    public async Task Handle_Should_Delete_Orphaned_File_And_Upload_When_File_Not_In_Response(
+        Domain.Entities.Application application,
+        User user,
+        File existingFile,
+        File uploadedFile,
+        ApplicationId applicationId,
+        string name,
+        string description,
+        string originalFileName)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, "test@example.com")
+        };
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com",
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var userQueryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
+        _userRepository.Query().Returns(userQueryable);
+
+        // Create existing file with matching properties
+        var hashedFileName = FileNameHasher.HashFileName(originalFileName);
+        var existingFileWithMatchingProperties = new File(
+            existingFile.Id!,
+            applicationId,
+            existingFile.Name,
+            existingFile.Description,
+            existingFile.OriginalFileName,
+            hashedFileName,
+            existingFile.Path,
+            existingFile.UploadedOn,
+            existingFile.UploadedBy,
+            existingFile.FileSize);
+
+        // Application with a response that does NOT contain the file ID (orphaned)
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        // Add a response that does NOT reference the existing file ID
+        var responseBody = "{\"someOtherField\": \"someValue\", \"differentFileId\": \"00000000-0000-0000-0000-000000000000\"}";
+        var response = new ApplicationResponse(
+            new ResponseId(Guid.NewGuid()),
+            applicationId,
+            responseBody,
+            DateTime.UtcNow,
+            user.Id!);
+        applicationWithMatchingId.AddResponse(response);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
+        _applicationRepository.Query().Returns(applicationQueryable);
+
+        var uploadQueryable = new List<File> { existingFileWithMatchingProperties }.AsQueryable().BuildMock();
+        _uploadRepository.Query().Returns(uploadQueryable);
+
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Write)
+            .Returns(true);
+
+        _fileStorageService.DeleteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        _fileStorageService.UploadAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        _fileFactory.CreateUpload(
+            Arg.Any<FileId>(),
+            Arg.Any<ApplicationId>(),
+            Arg.Any<string>(),
+            Arg.Any<string?>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<DateTime>(),
+            Arg.Any<UserId>(),
+            Arg.Any<long>(),
+            Arg.Any<string>())
+            .Returns(uploadedFile);
+
+        var testStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("test file content"));
+        var command = new UploadFileCommand(applicationId, name, description, originalFileName, testStream);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error}");
+        Assert.NotNull(result.Value);
+
+        // Verify orphaned file was deleted
+        _fileFactory.Received(1).DeleteFile(existingFileWithMatchingProperties);
+        await _uploadRepository.Received(1).RemoveAsync(existingFileWithMatchingProperties, Arg.Any<CancellationToken>());
+
+        // Verify new file was uploaded
+        await _uploadRepository.Received(1).AddAsync(uploadedFile, Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization), typeof(UserCustomization))]
+    public async Task Handle_Should_Continue_Upload_When_Orphaned_File_Storage_Delete_Fails(
+        Domain.Entities.Application application,
+        User user,
+        File existingFile,
+        File uploadedFile,
+        ApplicationId applicationId,
+        string name,
+        string description,
+        string originalFileName)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Email, "test@example.com")
+        };
+        var identity = new ClaimsIdentity(claims, "Bearer", ClaimTypes.Name, ClaimTypes.Role);
+        httpContext.User = new ClaimsPrincipal(identity);
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var userWithMatchingEmail = new User(
+            user.Id!,
+            user.RoleId,
+            user.Name,
+            "test@example.com",
+            user.CreatedOn,
+            user.CreatedBy,
+            user.LastModifiedOn,
+            user.LastModifiedBy,
+            user.ExternalProviderId,
+            user.Permissions);
+
+        var userQueryable = new List<User> { userWithMatchingEmail }.AsQueryable().BuildMock();
+        _userRepository.Query().Returns(userQueryable);
+
+        // Create existing file with matching properties
+        var hashedFileName = FileNameHasher.HashFileName(originalFileName);
+        var existingFileWithMatchingProperties = new File(
+            existingFile.Id!,
+            applicationId,
+            existingFile.Name,
+            existingFile.Description,
+            existingFile.OriginalFileName,
+            hashedFileName,
+            existingFile.Path,
+            existingFile.UploadedOn,
+            existingFile.UploadedBy,
+            existingFile.FileSize);
+
+        // Application with NO responses (file is orphaned)
+        var applicationWithMatchingId = new Domain.Entities.Application(
+            applicationId,
+            application.ApplicationReference,
+            application.TemplateVersionId,
+            application.CreatedOn,
+            application.CreatedBy,
+            application.Status,
+            application.LastModifiedOn,
+            application.LastModifiedBy);
+
+        var applicationQueryable = new List<Domain.Entities.Application> { applicationWithMatchingId }.AsQueryable().BuildMock();
+        _applicationRepository.Query().Returns(applicationQueryable);
+
+        var uploadQueryable = new List<File> { existingFileWithMatchingProperties }.AsQueryable().BuildMock();
+        _uploadRepository.Query().Returns(uploadQueryable);
+
+        _permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, applicationWithMatchingId.Id!.Value.ToString(), AccessType.Write)
+            .Returns(true);
+
+        // Simulate storage delete failure for orphaned file
+        _fileStorageService.DeleteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Throws(new Exception("Storage unavailable"));
+
+        _fileStorageService.UploadAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        _fileFactory.CreateUpload(
+            Arg.Any<FileId>(),
+            Arg.Any<ApplicationId>(),
+            Arg.Any<string>(),
+            Arg.Any<string?>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<DateTime>(),
+            Arg.Any<UserId>(),
+            Arg.Any<long>(),
+            Arg.Any<string>())
+            .Returns(uploadedFile);
+
+        var testStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("test file content"));
+        var command = new UploadFileCommand(applicationId, name, description, originalFileName, testStream);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert - should still succeed even though storage delete failed
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error}");
+        Assert.NotNull(result.Value);
+
+        // Verify orphaned file was still deleted from database (even if storage failed)
+        _fileFactory.Received(1).DeleteFile(existingFileWithMatchingProperties);
+        await _uploadRepository.Received(1).RemoveAsync(existingFileWithMatchingProperties, Arg.Any<CancellationToken>());
+
+        // Verify new file was still uploaded
+        await _uploadRepository.Received(1).AddAsync(uploadedFile, Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
     [Theory]

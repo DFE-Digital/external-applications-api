@@ -90,8 +90,38 @@ public class UploadFileCommandHandler(
             var existingFile = new GetFileByFileNameApplicationIdQueryObject(hashedFileName, application.Id)
                 .Apply(uploadRepository.Query())
                 .FirstOrDefault();
+            
             if (existingFile != null)
-                return Result<UploadDto>.Conflict("The file already exist");
+            {
+                // Check if the existing file is orphaned (not referenced in the latest ApplicationResponse)
+                var latestResponse = application.GetLatestResponse();
+                var isOrphaned = latestResponse == null ||
+                                 !latestResponse.ResponseBody.Contains(
+                                     existingFile.Id!.Value.ToString(),
+                                     StringComparison.OrdinalIgnoreCase);
+
+                if (isOrphaned)
+                {
+                    // Auto-delete the orphaned file before uploading the new one
+                    var orphanedStoragePath = $"{application.ApplicationReference}/{existingFile.FileName}";
+                    try
+                    {
+                        await fileStorageService.DeleteAsync(orphanedStoragePath, cancellationToken);
+                    }
+                    catch
+                    {
+                        // Storage deletion failure is acceptable - file may not exist on disk
+                    }
+
+                    fileFactory.DeleteFile(existingFile);
+                    await uploadRepository.RemoveAsync(existingFile, cancellationToken);
+                    // Don't commit yet - will commit together with the new file upload
+                }
+                else
+                {
+                    return Result<UploadDto>.Conflict("The file already exists");
+                }
+            }
 
             // Upload file to the storage
             await fileStorageService.UploadAsync(storagePath, request.FileContent, request.OriginalFileName, cancellationToken);
