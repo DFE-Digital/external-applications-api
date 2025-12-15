@@ -5,6 +5,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database.Interceptors;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -88,6 +89,14 @@ public class ExternalApplicationsContext : DbContext
             .HasMaxLength(50)
             .IsRequired();
         b.HasIndex(e => e.Name).IsUnique();
+
+        b.Property<DateTime>("PeriodStart")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        b.Property<DateTime>("PeriodEnd")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
     }
 
     private static void ConfigureUser(EntityTypeBuilder<User> b)
@@ -155,6 +164,14 @@ public class ExternalApplicationsContext : DbContext
             .WithOne(p => p.User)
             .HasForeignKey(p => p.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        b.Property<DateTime>("PeriodStart")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        b.Property<DateTime>("PeriodEnd")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
     }
 
     private static void ConfigureTemplate(EntityTypeBuilder<Template> b)
@@ -188,6 +205,14 @@ public class ExternalApplicationsContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.CreatedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        b.Property<DateTime>("PeriodStart")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        b.Property<DateTime>("PeriodEnd")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
     }
 
     private static void ConfigureTemplateVersion(EntityTypeBuilder<TemplateVersion> b)
@@ -292,6 +317,14 @@ public class ExternalApplicationsContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.LastModifiedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        b.Property<DateTime>("PeriodStart")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        b.Property<DateTime>("PeriodEnd")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
     }
 
     private static void ConfigureApplicationResponse(EntityTypeBuilder<ApplicationResponse> b)
@@ -476,6 +509,14 @@ public class ExternalApplicationsContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.GrantedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        b.Property<DateTime>("PeriodStart")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+        b.Property<DateTime>("PeriodEnd")
+            .ValueGeneratedOnAddOrUpdate()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
     }
 
     private static void ConfigureFile(EntityTypeBuilder<File> b)
