@@ -119,7 +119,7 @@ public class UploadFileCommandHandler(
                 }
                 else
                 {
-                    return Result<UploadDto>.Conflict("The file already exists");
+                    return Result<UploadDto>.Conflict("The selected file has already been uploaded. Upload a file with a different name.");
                 }
             }
 
