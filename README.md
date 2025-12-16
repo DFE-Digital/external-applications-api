@@ -38,6 +38,8 @@ This project follows a strict **Domain-Driven Design (DDD)** and **Clean Archite
 
 ## 🔄 System Design Diagram
 
+The following diagram illustrates the complete system architecture, showing how the EAT Web Frontend interacts with the API, and how data flows through the Clean Architecture layers to Azure platform services.
+
 ```mermaid
 flowchart LR
     %% =========================
@@ -143,9 +145,29 @@ flowchart LR
 
 ```
 
+#### Layer Responsibilities
+
+| Layer | Components | Responsibility |
+|-------|------------|----------------|
+| **External Systems** | EAT Web, GOV.UK Notify, ClamAV | Frontend UI, email delivery, virus scanning |
+| **Azure Platform** | Service Bus, File Share, SignalR, Redis, SQL | Messaging, storage, real-time comms, caching, persistence |
+| **Presentation** | Controllers, SignalR Hub | HTTP endpoints, WebSocket connections, request/response handling |
+| **Application** | Commands, Queries, Validators, Event Handlers, Consumers | Business logic orchestration, validation, event processing |
+| **Domain** | Entities, Domain Events, Factories | Core business rules, aggregate roots, domain event raising |
+| **Infrastructure** | DbContext, Repositories, Event Dispatcher | Data persistence, external service integration, event dispatch |
+
+#### Key Data Flows
+
+1. **Request Flow**: Web → Controllers → Commands/Queries → Validators → Domain → Repositories → SQL
+2. **Event Flow**: Domain Events → Application Event Handlers → GOV.UK Notify / Service Bus
+3. **File Flow**: Commands → Azure File Share ↔ ClamAV Scanner (via SAS URLs)
+4. **Real-time Flow**: SignalR Hub → Azure SignalR Service → Connected clients
+
 ---
 
 ## 📚 Domain Model
+
+The domain model represents the core business entities and their relationships. This is a DDD-aligned model where each aggregate root (User, Template, Application) encapsulates its own business rules and child entities.
 
 ```mermaid
 erDiagram
@@ -249,9 +271,34 @@ erDiagram
 
 ```
 
+#### Entity Descriptions
+
+| Entity | Type | Description |
+|--------|------|-------------|
+| **User** | Aggregate Root | Represents authenticated users with roles and permissions |
+| **Role** | Entity | Defines user roles (e.g., Admin, User) for coarse-grained access |
+| **Template** | Aggregate Root | Form template definition containing versioned JSON schemas |
+| **TemplateVersion** | Entity | Specific version of a template's JSON schema |
+| **Application** | Aggregate Root | User's form submission linked to a template version |
+| **ApplicationResponse** | Entity | JSON response data for an application (supports version history) |
+| **File** | Entity | Uploaded file metadata linked to an application |
+| **Permission** | Entity | Fine-grained access control for specific applications |
+| **TemplatePermission** | Entity | Access control for which users can use which templates |
+
+#### Key Relationships
+
+- **User → Application**: Users create and own applications
+- **Template → TemplateVersion**: Templates have multiple versions (schema evolution)
+- **TemplateVersion → Application**: Applications are bound to a specific template version
+- **Application → ApplicationResponse**: Applications contain multiple response versions (draft history)
+- **Application → File**: Applications can have multiple file attachments
+- **User/Template → Permission/TemplatePermission**: Fine-grained access control
+
 ---
 
 ## 📬 Event Flow: File Upload & Virus Scanning
+
+This sequence diagram shows the complete lifecycle of a file upload, from initial upload through virus scanning to final result handling. The process is fully asynchronous — users receive immediate upload confirmation while scanning happens in the background.
 
 ```mermaid
 sequenceDiagram
@@ -286,6 +333,23 @@ sequenceDiagram
         SR-->>U: Real-time infected file alert
     end
 ```
+
+#### Process Steps
+
+| Phase | Steps | Description |
+|-------|-------|-------------|
+| **Upload** | 1-5 | User uploads file → API stores in Azure File Share → File entity created → `FileUploadedDomainEvent` raised → User receives `201 Created` |
+| **Scan Request** | 6-7 | API publishes `ScanRequestedEvent` to Service Bus → ClamAV Scanner Function triggered |
+| **Scanning** | 8-10 | Scanner downloads file via SAS URL → ClamAV performs virus scan → `ScanResultEvent` published |
+| **Result Handling** | 11-16 | API's `ScanResultConsumer` receives result → Clean files logged, infected files deleted with real-time notification |
+
+#### Key Design Decisions
+
+- **Async Processing**: Users don't wait for scans; immediate response improves UX
+- **SAS URLs**: Time-limited, read-only access tokens for secure file transfer
+- **Event Sourcing**: All file events tracked via domain events and Service Bus
+- **Real-time Alerts**: SignalR notifies users immediately if infected files detected
+- **Automatic Cleanup**: Infected files are automatically deleted from both storage and database
 
 ---
 
