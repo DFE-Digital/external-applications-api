@@ -4,6 +4,7 @@ using DfE.ExternalApplications.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DfE.ExternalApplications.Infrastructure.Migrations
 {
     [DbContext(typeof(ExternalApplicationsContext))]
-    partial class ExternalApplicationsContextModelSnapshot : ModelSnapshot
+    [Migration("20251216143227_AddedIndexs")]
+    partial class AddedIndexs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

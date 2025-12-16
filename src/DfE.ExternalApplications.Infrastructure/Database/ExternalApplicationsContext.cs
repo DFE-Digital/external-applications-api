@@ -263,6 +263,11 @@ public class ExternalApplicationsContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.LastModifiedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Supports: GetLatestTemplateVersionForTemplateQueryObject (WHERE TemplateId ORDER BY CreatedOn DESC)
+        b.HasIndex(e => new { e.TemplateId, e.CreatedOn })
+            .IsDescending(false, true)
+            .HasDatabaseName("IX_TemplateVersions_TemplateId_CreatedOn");
     }
 
     private static void ConfigureApplication(EntityTypeBuilder<Domain.Entities.Application> b)
@@ -318,6 +323,15 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(e => e.LastModifiedBy)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Index for efficient lookup by ApplicationReference (used by GET /Applications/reference/{applicationReference})
+        b.HasIndex(e => e.ApplicationReference)
+            .IsUnique()
+            .HasDatabaseName("IX_Applications_ApplicationReference");
+
+        // Supports: GetApplicationsByTemplateIdQueryObject (joins via TemplateVersionId)
+        b.HasIndex(e => e.TemplateVersionId)
+            .HasDatabaseName("IX_Applications_TemplateVersionId");
+
         b.Property<DateTime>("PeriodStart")
             .ValueGeneratedOnAddOrUpdate()
             .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
@@ -371,6 +385,11 @@ public class ExternalApplicationsContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.LastModifiedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Supports: latest response lookup (WHERE ApplicationId ORDER BY CreatedOn DESC)
+        b.HasIndex(e => new { e.ApplicationId, e.CreatedOn })
+            .IsDescending(false, true)
+            .HasDatabaseName("IX_ApplicationResponses_ApplicationId_CreatedOn");
     }
 
     private static void ConfigurePermission(EntityTypeBuilder<Permission> b)
@@ -424,6 +443,14 @@ public class ExternalApplicationsContext : DbContext
             .WithMany()
             .HasForeignKey(e => e.GrantedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Supports: contributor lookup & permission checks by application
+        b.HasIndex(e => new { e.ApplicationId, e.ResourceType })
+            .HasDatabaseName("IX_Permissions_ApplicationId_ResourceType");
+
+        // Supports: loading permissions for a user (included collections and filters)
+        b.HasIndex(e => new { e.UserId, e.ResourceType, e.ApplicationId })
+            .HasDatabaseName("IX_Permissions_UserId_ResourceType_ApplicationId");
     }
 
     private static void ConfigureTaskAssignmentLabel(EntityTypeBuilder<TaskAssignmentLabel> b)
@@ -510,6 +537,10 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(e => e.GrantedBy)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Supports: template permission lookups by (UserId, TemplateId)
+        b.HasIndex(e => new { e.UserId, e.TemplateId })
+            .HasDatabaseName("IX_TemplatePermissions_UserId_TemplateId");
+
         b.Property<DateTime>("PeriodStart")
             .ValueGeneratedOnAddOrUpdate()
             .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
@@ -571,6 +602,18 @@ public class ExternalApplicationsContext : DbContext
             .WithMany(a => a.Files)
             .HasForeignKey(e => e.UploadedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Supports: GetFilesByApplicationIdQueryObject
+        b.HasIndex(e => e.ApplicationId)
+            .HasDatabaseName("IX_Files_ApplicationId");
+
+        // Supports: GetFileByFileNameApplicationIdQueryObject
+        b.HasIndex(e => new { e.ApplicationId, e.FileName })
+            .HasDatabaseName("IX_Files_ApplicationId_FileName");
+
+        // Supports: GetFileByPathAndFileNameQueryObject (file share / virus scan callback)
+        b.HasIndex(e => new { e.Path, e.FileName })
+            .HasDatabaseName("IX_Files_Path_FileName");
     }
 
 }
