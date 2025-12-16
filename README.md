@@ -399,9 +399,75 @@ The API implements a comprehensive authorization system:
 
 ### Authentication Methods
 
-- **Azure AD / Entra ID** — User authentication via OIDC
-- **Service Principal** — M2M authentication for internal services
-- **API Key + JWT** — Internal service authentication
+| Method | Use Case |
+|--------|----------|
+| **Azure Entra ID / DfE Sign-in** | User authentication via OIDC |
+| **Service Principal** | Machine-to-machine authentication for internal services |
+| **EA Exchange Token (OBO)** | On-Behalf-Of token for API access |
+
+### Authentication & Authorization Flow
+
+The API uses a multi-stage authentication flow combining Azure Entra ID with a custom On-Behalf-Of (OBO) token exchange for fine-grained authorization:
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    participant User as End User (Browser)
+    participant FE as External Applications Frontend (EA Web)
+    participant IdP as Azure Entra ID / DfE Sign-in
+    participant API as EA API
+    participant AuthZ as EA Authz Service
+    participant TokenStore as Token Store / Cache
+
+    %% ───────────────────────────────
+    %% USER LOGIN + TOKEN ACQUISITION
+    %% ───────────────────────────────
+    User->>FE: Access secured page
+    FE->>IdP: Redirect for authentication (OIDC)
+    IdP-->>FE: IdP Token (id_token + access_token)
+    FE->>TokenStore: Store IdP token
+
+    %% ───────────────────────────────
+    %% SERVICE TOKEN ACQUISITION
+    %% ───────────────────────────────
+    FE->>IdP: Request Service Token<br/>(Client Credentials)
+    IdP-->>FE: Service Token
+    FE->>TokenStore: Store Service Token
+
+    %% ───────────────────────────────
+    %% OBO TOKEN EXCHANGE
+    %% ───────────────────────────────
+    FE->>API: POST /tokens/exchange<br/>(IdP Token + Service Token)
+    API->>AuthZ: Validate user identity and tokens
+    AuthZ-->>API: Generate EA Exchange Token
+    API-->>FE: EA OBO Token
+    FE->>TokenStore: Cache EA Exchange token
+
+    %% ───────────────────────────────
+    %% AUTHENTICATED API REQUEST
+    %% ───────────────────────────────
+    FE->>API: Authenticated API request<br/>(EA Exchange Token)
+    API->>AuthZ: Check Coarse-Grained Access
+    AuthZ-->>API: Access allowed?
+
+    alt Coarse Access Granted
+        API->>AuthZ: Check Fine-Grained Permissions<br/>(Resource + Action)
+        AuthZ-->>API: Authorised / Denied
+        API-->>FE: Return data or forbidden
+    else Coarse Access Denied
+        API-->>FE: 403 Forbidden
+    end
+```
+
+#### Flow Explanation
+
+| Step | Description |
+|------|-------------|
+| **1-4** | User authenticates via Azure Entra ID / DfE Sign-in, frontend receives IdP tokens |
+| **5-7** | Frontend acquires a service token using client credentials |
+| **8-12** | Frontend exchanges both tokens with the API for an EA Exchange Token (OBO flow) |
+| **13-18** | API requests use the EA token; authorization happens in two phases: coarse-grained (role-based) then fine-grained (resource-specific permissions) |
 
 ---
 
