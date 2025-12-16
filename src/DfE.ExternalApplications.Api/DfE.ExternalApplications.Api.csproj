@@ -5,8 +5,8 @@
 		<NoWarn>$(NoWarn);1591</NoWarn>
 		<TargetFramework>net8.0</TargetFramework>
     <UserSecretsId>f714ca7a-fc08-46ff-b0cc-373d6f04cf4c</UserSecretsId>
-	  <Version>1.0.1</Version>
-	  <InformationalVersion>1.0.1</InformationalVersion>
+	  <Version>1.0.2</Version>
+	  <InformationalVersion>1.0.2</InformationalVersion>
   </PropertyGroup>
 
 	<ItemGroup>
