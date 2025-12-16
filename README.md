@@ -39,78 +39,108 @@ This project follows a strict **Domain-Driven Design (DDD)** and **Clean Archite
 ## 🔄 System Design Diagram
 
 ```mermaid
-flowchart TB
+flowchart LR
+    %% =========================
+    %% External Systems
+    %% =========================
     subgraph External["External Systems"]
-        EATWeb["🌐 EAT Web Frontend"]
-        GovNotify["📧 GOV.UK Notify"]
-        ClamAV["🛡️ ClamAV Scanner Function"]
+        Web["🌐 EAT Web Frontend"]
+        Notify["📧 GOV.UK Notify"]
+        ClamAV["🛡️ ClamAV Scanner"]
     end
 
+    %% =========================
+    %% Azure Platform
+    %% =========================
     subgraph Azure["Azure Platform"]
-        ServiceBus["📬 Azure Service Bus"]
-        FileShare["📁 Azure File Share"]
-        SignalR["🔔 Azure SignalR"]
+        SB["📬 Azure Service Bus"]
+        FS["📁 Azure File Share"]
+        ASR["🔔 Azure SignalR"]
         Redis["⚡ Redis Cache"]
-        SQL["🗄️ Azure SQL Server"]
+        SQL["🗄️ Azure SQL (Temporal Tables)"]
     end
 
+    %% =========================
+    %% API
+    %% =========================
     subgraph API["External Applications API"]
         direction TB
-        Controllers["🎮 REST Controllers"]
-        Hubs["📡 SignalR Hub"]
-        
-        subgraph AppLayer["Application Layer"]
-            Commands["📝 Command Handlers"]
-            Queries["🔍 Query Handlers"]
-            Events["⚡ Event Handlers"]
+
+        %% Presentation
+        subgraph Presentation["Presentation Layer"]
+            Controllers["🎮 REST Controllers"]
+            Hubs["📡 SignalR Hub"]
+        end
+
+        %% Application
+        subgraph Application["Application Layer"]
+            Commands["📝 Commands"]
+            Queries["🔍 Queries"]
             Validators["✅ Validators"]
+            AppEvents["⚡ Application Event Handlers"]
             Consumers["📥 MassTransit Consumers"]
         end
-        
-        subgraph DomainLayer["Domain Layer"]
+
+        %% Domain
+        subgraph Domain["Domain Layer"]
             Entities["📦 Aggregates & Entities"]
             DomainEvents["🎯 Domain Events"]
             Factories["🏭 Factories"]
         end
-        
-        subgraph InfraLayer["Infrastructure Layer"]
-            DbContext["🗃️ EF Core Context"]
+
+        %% Infrastructure
+        subgraph Infrastructure["Infrastructure Layer"]
+            DbContext["🗃️ EF Core DbContext"]
             Repos["📚 Repositories"]
-            EventDispatcher["📤 Event Dispatcher"]
+            Dispatcher["📤 Domain Event Dispatcher"]
         end
     end
 
-    EATWeb -->|"HTTP/REST"| Controllers
-    EATWeb -->|"WebSocket"| Hubs
-    
+    %% =========================
+    %% Web Interaction
+    %% =========================
+    Web -->|HTTP / REST| Controllers
+    Web -->|WebSocket| Hubs
+    Hubs --> ASR
+
+    %% =========================
+    %% Request Flow
+    %% =========================
     Controllers --> Commands
     Controllers --> Queries
-    Hubs --> SignalR
-    
+
     Commands --> Validators
     Commands --> Entities
     Commands --> DomainEvents
-    
+
     Queries --> Repos
-    
-    DomainEvents --> Events
-    Events --> GovNotify
-    Events -->|"Publish ScanRequestedEvent"| ServiceBus
-    
-    Consumers -->|"Consume ScanResultEvent"| ServiceBus
-    ClamAV -->|"Publish ScanResultEvent"| ServiceBus
-    ClamAV -->|"Read file via SAS URL"| FileShare
-    
-    Repos --> DbContext
-    DbContext --> SQL
-    DbContext -->|"Temporal Tables"| SQL
-    EventDispatcher --> DomainEvents
-    
-    Commands -->|"Upload files"| FileShare
-    Queries -->|"Download files"| FileShare
-    
     Queries --> Redis
     Commands --> Redis
+
+    %% =========================
+    %% Domain & Persistence
+    %% =========================
+    Repos --> DbContext
+    DbContext --> SQL
+    Dispatcher --> DomainEvents
+
+    %% =========================
+    %% Events & Messaging
+    %% =========================
+    DomainEvents --> AppEvents
+    AppEvents --> Notify
+    AppEvents -->|Publish ScanRequestedEvent| SB
+
+    Consumers -->|Consume ScanResultEvent| SB
+    ClamAV -->|Publish ScanResultEvent| SB
+
+    %% =========================
+    %% File Handling
+    %% =========================
+    Commands -->|Upload files| FS
+    Queries -->|Download files| FS
+    ClamAV -->|Read file via SAS URL| FS
+
 ```
 
 ---
@@ -119,38 +149,52 @@ flowchart TB
 
 ```mermaid
 erDiagram
+    %% =========================
+    %% Core Actors
+    %% =========================
     User ||--o{ Application : creates
-    User ||--o{ Permission : has
-    User ||--o{ TemplatePermission : has
+    User ||--o{ Permission : granted
+    User ||--o{ TemplatePermission : granted
     User ||--o{ File : uploads
-    
-    Template ||--o{ TemplateVersion : has
-    Template ||--o{ TemplatePermission : grants
-    
-    TemplateVersion ||--o{ Application : uses
-    
+    User ||--o{ Role : assigned
+
+    %% =========================
+    %% Templates
+    %% =========================
+    Template ||--o{ TemplateVersion : versions
+    Template ||--o{ TemplatePermission : access
+
+    %% =========================
+    %% Applications
+    %% =========================
+    TemplateVersion ||--o{ Application : used_by
     Application ||--o{ ApplicationResponse : contains
     Application ||--o{ File : attachments
-    Application ||--o{ Permission : grants
-    
-    Role ||--o{ User : assigned_to
+    Application ||--o{ Permission : access
 
+    %% =========================
+    %% Entities
+    %% =========================
     User {
         guid UserId PK
-        guid RoleId FK
         string Name
         string Email
         string ExternalProviderId
         datetime CreatedOn
     }
-    
+
+    Role {
+        guid RoleId PK
+        string Name
+    }
+
     Template {
         guid TemplateId PK
         string Name
         datetime CreatedOn
         guid CreatedBy FK
     }
-    
+
     TemplateVersion {
         guid TemplateVersionId PK
         guid TemplateId FK
@@ -158,7 +202,7 @@ erDiagram
         json JsonSchema
         datetime CreatedOn
     }
-    
+
     Application {
         guid ApplicationId PK
         string ApplicationReference
@@ -167,7 +211,7 @@ erDiagram
         datetime CreatedOn
         guid CreatedBy FK
     }
-    
+
     ApplicationResponse {
         guid ResponseId PK
         guid ApplicationId FK
@@ -175,7 +219,7 @@ erDiagram
         datetime CreatedOn
         guid CreatedBy FK
     }
-    
+
     File {
         guid FileId PK
         guid ApplicationId FK
@@ -186,7 +230,7 @@ erDiagram
         bigint FileSize
         datetime UploadedOn
     }
-    
+
     Permission {
         guid PermissionId PK
         guid UserId FK
@@ -195,6 +239,14 @@ erDiagram
         string ResourceKey
         enum AccessType
     }
+
+    TemplatePermission {
+        guid TemplatePermissionId PK
+        guid UserId FK
+        guid TemplateId FK
+        enum AccessType
+    }
+
 ```
 
 ---
