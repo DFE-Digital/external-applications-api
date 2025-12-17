@@ -18,12 +18,14 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             //Repos
             services.AddScoped(typeof(IEaRepository<>), typeof(EaRepository<>));
+            services.AddScoped<IApplicationRepository, ApplicationRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             //Cache service
             services.AddServiceCaching(config);
 
             services.AddTransient<IApplicationReferenceProvider, DefaultApplicationReferenceProvider>();
+            services.AddTransient<IApplicationResponseAppender, ApplicationResponseAppender>();
             
             // Static HTML Generator Service
             services.AddScoped<IStaticHtmlGeneratorService, PlaywrightHtmlGeneratorService>();

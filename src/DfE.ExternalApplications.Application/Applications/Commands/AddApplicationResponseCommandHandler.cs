@@ -1,11 +1,8 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
-using DfE.ExternalApplications.Domain.Factories;
-using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using MediatR;
@@ -23,12 +20,12 @@ public sealed record AddApplicationResponseCommand(
     string ResponseBody) : IRequest<Result<ApplicationResponseDto>>, IRateLimitedRequest;
 
 public sealed class AddApplicationResponseCommandHandler(
-    IEaRepository<Domain.Entities.Application> applicationRepo,
     IEaRepository<User> userRepo,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
-    IApplicationFactory applicationFactory,
-    IUnitOfWork unitOfWork) : IRequestHandler<AddApplicationResponseCommand, Result<ApplicationResponseDto>>
+    IApplicationRepository applicationRepository,
+    IApplicationResponseAppender responseAppender,
+    IMediator mediator) : IRequestHandler<AddApplicationResponseCommand, Result<ApplicationResponseDto>>
 {
     public async Task<Result<ApplicationResponseDto>> Handle(
         AddApplicationResponseCommand request,
@@ -71,25 +68,31 @@ public sealed class AddApplicationResponseCommandHandler(
             if (!canAccess)
                 return Result<ApplicationResponseDto>.Forbid("User does not have permission to update this application");
 
-            // Get the application using a lightweight query object (avoid loading large navigation graphs like Responses)
             var applicationId = new ApplicationId(request.ApplicationId);
-            var application = await (new GetApplicationByIdForResponseWriteQueryObject(applicationId))
-                .Apply(applicationRepo.Query()) // tracked - required for update + new response insert
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (application is null)
-                return Result<ApplicationResponseDto>.NotFound("Application not found");
-
             var decodedResponseBody = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(request.ResponseBody));
 
-            // Add the new response version using factory
-            var newResponse = applicationFactory.AddResponseToApplication(application, decodedResponseBody, dbUser.Id!);
+            // Keep invariants + event payload creation in the Domain.
+            var append = responseAppender.Create(applicationId, decodedResponseBody, dbUser.Id!);
 
-            await unitOfWork.CommitAsync(cancellationToken);
+            // Persist the aggregate change using the Application (aggregate root) repository without loading the graph.
+            var persisted = await applicationRepository.AppendResponseVersionAsync(
+                applicationId,
+                append.Response,
+                append.Now,
+                dbUser.Id!,
+                cancellationToken);
+
+            if (persisted is null)
+                return Result<ApplicationResponseDto>.NotFound("Application not found");
+
+            // Publish the domain event payload (originated from Domain service).
+            await mediator.Publish(append.DomainEvent, cancellationToken);
+
+            var (applicationReference, newResponse) = persisted.Value;
 
             return Result<ApplicationResponseDto>.Success(new ApplicationResponseDto(
                 newResponse.Id!.Value,
-                newResponse.Application?.ApplicationReference!,
+                applicationReference,
                 newResponse.ApplicationId.Value,
                 newResponse.ResponseBody,
                 newResponse.CreatedOn,
