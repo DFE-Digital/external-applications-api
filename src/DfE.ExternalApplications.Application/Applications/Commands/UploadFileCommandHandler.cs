@@ -72,38 +72,39 @@ public class UploadFileCommandHandler(
             if (dbUser is null)
                 return Result<UploadDto>.NotFound("User not found");
 
-            // Fetch application and its reference
-            var application = new GetApplicationByIdQueryObject(request.ApplicationId)
-                .Apply(applicationRepository.Query())
-                .FirstOrDefault();
-            if (application == null)
+            // Fetch only what we need (avoid loading full response history into memory)
+            var applicationInfo = await new GetApplicationUploadContextByIdQueryObject(request.ApplicationId)
+                .Apply(applicationRepository.Query().AsNoTracking())
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (applicationInfo == null)
                 return Result<UploadDto>.NotFound("Application not found");
 
             // Permission check: user must have write permission for this application (File resource)
-            if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, application.Id!.Value.ToString(), AccessType.Write))
+            if (!permissionCheckerService.HasPermission(ResourceType.ApplicationFiles, request.ApplicationId.Value.ToString(), AccessType.Write))
                 return Result<UploadDto>.Forbid("User does not have permission to upload files for this application");
 
             // Generate hashed file name
             var hashedFileName = FileNameHasher.HashFileName(request.OriginalFileName);
-            var storagePath = $"{application.ApplicationReference}/{hashedFileName}";
+            var storagePath = $"{applicationInfo.ApplicationReference}/{hashedFileName}";
 
-            var existingFile = new GetFileByFileNameApplicationIdQueryObject(hashedFileName, application.Id)
+            var existingFile = new GetFileByFileNameApplicationIdQueryObject(hashedFileName, request.ApplicationId)
                 .Apply(uploadRepository.Query())
                 .FirstOrDefault();
             
             if (existingFile != null)
             {
                 // Check if the existing file is orphaned (not referenced in the latest ApplicationResponse)
-                var latestResponse = application.GetLatestResponse();
-                var isOrphaned = latestResponse == null ||
-                                 !latestResponse.ResponseBody.Contains(
+                var latestResponseBody = applicationInfo.LatestResponseBody;
+                var isOrphaned = string.IsNullOrEmpty(latestResponseBody) ||
+                                 !latestResponseBody.Contains(
                                      existingFile.Id!.Value.ToString(),
                                      StringComparison.OrdinalIgnoreCase);
 
                 if (isOrphaned)
                 {
                     // Auto-delete the orphaned file before uploading the new one
-                    var orphanedStoragePath = $"{application.ApplicationReference}/{existingFile.FileName}";
+                    var orphanedStoragePath = $"{applicationInfo.ApplicationReference}/{existingFile.FileName}";
                     try
                     {
                         await fileStorageService.DeleteAsync(orphanedStoragePath, cancellationToken);
@@ -138,7 +139,7 @@ public class UploadFileCommandHandler(
                 request.Description,
                 request.OriginalFileName,
                 hashedFileName,
-                application.ApplicationReference,
+                applicationInfo.ApplicationReference,
                 DateTime.UtcNow,
                 dbUser.Id!,
                 fileSize,

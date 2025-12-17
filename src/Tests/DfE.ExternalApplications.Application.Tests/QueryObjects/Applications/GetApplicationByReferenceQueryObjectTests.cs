@@ -67,7 +67,7 @@ public class GetApplicationByReferenceQueryObjectTests
 
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization))]
-    public void Apply_ShouldIncludeResponsesAndTemplateVersion_WhenApplicationFound(
+    public void Apply_ShouldIncludeTemplateVersion_WhenApplicationFound(
         ApplicationCustomization appCustomization)
     {
         // Arrange

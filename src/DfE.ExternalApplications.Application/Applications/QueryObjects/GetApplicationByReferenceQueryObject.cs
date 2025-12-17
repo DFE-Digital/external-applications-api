@@ -8,7 +8,6 @@ public sealed class GetApplicationByReferenceQueryObject(string applicationRefer
 {
     public IQueryable<Domain.Entities.Application> Apply(IQueryable<Domain.Entities.Application> query) =>
         query.Where(a => a.ApplicationReference == applicationReference)
-             .Include(a => a.Responses)
              .Include(a => a.TemplateVersion)
              .ThenInclude(tv => tv!.Template)
              .Include(a => a.CreatedByUser);
