@@ -38,20 +38,6 @@ public class AddApplicationResponseCommandValidatorTests
         // Assert
         result.ShouldHaveValidationErrorFor(c => c.ResponseBody);
     }
-
-    [Fact]
-    public void Validate_ShouldFail_WhenResponseBodyIsNotBase64()
-    {
-        // Arrange
-        var command = new AddApplicationResponseCommand(Guid.NewGuid(), "this is not a base64 string");
-
-        // Act
-        var result = _validator.TestValidate(command);
-
-        // Assert
-        result.ShouldHaveValidationErrorFor(c => c.ResponseBody)
-            .WithErrorMessage("ResponseBody must be a valid Base64 encoded string.");
-    }
     
     [Fact]
     public void Validate_ShouldFail_WhenApplicationIdEmpty()

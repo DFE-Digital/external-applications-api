@@ -13,3 +13,8 @@ All notable changes to this service will be documented in this file.
 ## [1.0.2] – Public Beta
 ### Notes
 - Added diagnostics endpoint.
+
+## [1.0.3] – Public Beta
+### Notes
+- Improved loading of application response performance.
+- Improved file upload performance.
