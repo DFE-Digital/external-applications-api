@@ -71,10 +71,10 @@ public sealed class AddApplicationResponseCommandHandler(
             if (!canAccess)
                 return Result<ApplicationResponseDto>.Forbid("User does not have permission to update this application");
 
-            // Get the application using query object
+            // Get the application using a lightweight query object (avoid loading large navigation graphs like Responses)
             var applicationId = new ApplicationId(request.ApplicationId);
-            var application = await (new GetApplicationByIdQueryObject(applicationId))
-                .Apply(applicationRepo.Query())
+            var application = await (new GetApplicationByIdForResponseWriteQueryObject(applicationId))
+                .Apply(applicationRepo.Query()) // tracked - required for update + new response insert
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (application is null)

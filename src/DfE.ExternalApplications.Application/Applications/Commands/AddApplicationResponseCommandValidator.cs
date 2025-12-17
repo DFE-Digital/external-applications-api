@@ -14,25 +14,6 @@ internal class AddApplicationResponseCommandValidator : AbstractValidator<AddApp
 
         RuleFor(x => x.ResponseBody)
             .NotEmpty()
-            .WithMessage("Response body is required")
-            .Must(BeAValidBase64)
-            .WithMessage("ResponseBody must be a valid Base64 encoded string.");
-    }
-    
-    private bool BeAValidBase64(string base64)
-    {
-        if (string.IsNullOrWhiteSpace(base64))
-        {
-            return false;
-        }
-        try
-        {
-            Convert.FromBase64String(base64);
-            return true;
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
+            .WithMessage("Response body is required");
     }
 } 
