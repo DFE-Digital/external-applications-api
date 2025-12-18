@@ -96,7 +96,7 @@ public class GetApplicationByIdQueryObjectTests
     
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization))]
-    public void Apply_ShouldIncludeResponsesAndTemplateVersion_WhenApplicationFound(ApplicationCustomization appCustom)
+    public void Apply_ShouldIncludeTemplateVersion_WhenApplicationFound(ApplicationCustomization appCustom)
     {
         // Arrange
         var applicationId = new ApplicationId(Guid.NewGuid());

@@ -443,7 +443,7 @@ public class UploadFileCommandHandlerTests
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Equal("The file already exists", result.Error);
+        Assert.Equal("The selected file has already been uploaded. Upload a file with a different name.", result.Error);
     }
 
     [Theory]

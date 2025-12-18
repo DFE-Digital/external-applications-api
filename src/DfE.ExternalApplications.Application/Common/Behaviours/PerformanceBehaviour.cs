@@ -26,12 +26,12 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
 
             var elapsedMilliseconds = _timer.ElapsedMilliseconds;
 
-            if (elapsedMilliseconds <= 500) return response;
+            if (elapsedMilliseconds <= 1000) return response;
 
             var requestName = typeof(TRequest).Name;
             var identityName = context.HttpContext?.User?.Identity?.Name;
 
-            logger.LogWarning("PersonsAPI Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@IdentityName} {@Request}",
+            logger.LogWarning("EAT API Long Running Request: {Name} ({ElapsedMilliseconds} milliseconds) {@IdentityName} {@Request}",
                 requestName, elapsedMilliseconds, identityName, request);
 
             return response;
