@@ -46,6 +46,9 @@ public sealed class FileUploadedDomainEventHandler(
                 fileUrl, DateTimeOffset.UtcNow.AddHours(1), "r", cancellationToken);
         }
 
+        var tenant = tenantContextAccessor.CurrentTenant 
+            ?? throw new InvalidOperationException("Tenant context is required to publish file upload events.");
+
         // Create the integration event
         var fileUploadedEvent = new GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events.ScanRequestedEvent(
             FileId:file.Id?.Value.ToString(),
@@ -58,11 +61,13 @@ public sealed class FileUploadedDomainEventHandler(
             ServiceName: "extapi",
             Metadata: new Dictionary<string, object>
             {
+                { "TenantId", tenant.Id.ToString() },
+                { "TenantName", tenant.Name },
                 { "Reference", file.Application?.ApplicationReference! },
                 { "applicationId", file.ApplicationId.Value },
                 { "userId", file.UploadedBy.Value },
                 { "originalFileName", file.OriginalFileName },
-                { "InstanceIdentifier", InstanceIdentifierHelper.GetInstanceIdentifier(tenantContextAccessor.CurrentTenant?.Settings) ?? "" },
+                { "InstanceIdentifier", InstanceIdentifierHelper.GetInstanceIdentifier(tenant.Settings) ?? "" },
             }
         );
 

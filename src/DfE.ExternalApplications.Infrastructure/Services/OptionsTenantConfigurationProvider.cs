@@ -7,35 +7,34 @@ namespace DfE.ExternalApplications.Infrastructure.Services;
 
 public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
 {
-    private readonly IConfiguration _configuration;
+    private readonly IReadOnlyDictionary<Guid, TenantConfiguration> _tenants;
 
     public OptionsTenantConfigurationProvider(IConfiguration configuration)
     {
-        _configuration = configuration;
+        _tenants = BuildAllTenants(configuration);
     }
 
     public TenantConfiguration? GetTenant(Guid id)
-    {
-        var tenantSection = _configuration.GetSection("Tenants").GetSection(id.ToString());
-        if (!tenantSection.Exists())
-        {
-            return null;
-        }
-
-        return BuildTenantConfiguration(tenantSection, id);
-    }
+        => _tenants.TryGetValue(id, out var tenant) ? tenant : null;
 
     public IReadOnlyCollection<TenantConfiguration> GetAllTenants()
+        => _tenants.Values.ToArray();
+
+    private static IReadOnlyDictionary<Guid, TenantConfiguration> BuildAllTenants(IConfiguration configuration)
     {
-        var tenantsSection = _configuration.GetSection("Tenants");
-        return tenantsSection
-            .GetChildren()
-            .Select(section => Guid.TryParse(section.Key, out var key)
-                ? BuildTenantConfiguration(section, key)
-                : null)
-            .Where(t => t is not null)
-            .Select(t => t!)
-            .ToArray();
+        var tenantsSection = configuration.GetSection("Tenants");
+        var result = new Dictionary<Guid, TenantConfiguration>();
+
+        foreach (var section in tenantsSection.GetChildren())
+        {
+            if (Guid.TryParse(section.Key, out var key))
+            {
+                var tenant = BuildTenantConfiguration(section, key);
+                result[key] = tenant;
+            }
+        }
+
+        return result;
     }
 
     private static TenantConfiguration BuildTenantConfiguration(IConfigurationSection tenantSection, Guid key)
@@ -53,16 +52,10 @@ public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
         }
 
         // Flatten the tenant section so consumers can read settings without the Tenants:{id} prefix
-        var flattenedPairs = tenantSection.AsEnumerable(makePaths: true)
-            .Where(kv => kv.Value is not null && !string.Equals(kv.Key, tenantSection.Path, StringComparison.OrdinalIgnoreCase))
-            .Select(kv =>
-            {
-                var prefix = $"{tenantSection.Path}:";
-                var trimmedKey = kv.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-                    ? kv.Key[prefix.Length..]
-                    : kv.Key;
-                return new KeyValuePair<string, string?>(trimmedKey, kv.Value);
-            });
+        var flattenedPairs = new List<KeyValuePair<string, string?>>();
+        var prefix = tenantSection.Path + ":";
+        
+        FlattenSection(tenantSection, prefix, flattenedPairs);
 
         var settings = new ConfigurationBuilder()
             .AddInMemoryCollection(flattenedPairs!)
@@ -71,6 +64,26 @@ public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
         var origins = ResolveFrontendOrigins(settings);
 
         return new TenantConfiguration(configuredId, name!, settings, origins);
+    }
+
+    private static void FlattenSection(
+        IConfigurationSection section, 
+        string prefixToRemove, 
+        List<KeyValuePair<string, string?>> result)
+    {
+        foreach (var child in section.GetChildren())
+        {
+            if (child.Value != null)
+            {
+                var trimmedKey = child.Path.StartsWith(prefixToRemove, StringComparison.OrdinalIgnoreCase)
+                    ? child.Path[prefixToRemove.Length..]
+                    : child.Path;
+                result.Add(new KeyValuePair<string, string?>(trimmedKey, child.Value));
+            }
+            
+            // Recursively process child sections
+            FlattenSection(child, prefixToRemove, result);
+        }
     }
 
     private static string[] ResolveFrontendOrigins(IConfiguration settings)

@@ -1,6 +1,7 @@
 ﻿using System;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using DfE.ExternalApplications.Domain.Tenancy;

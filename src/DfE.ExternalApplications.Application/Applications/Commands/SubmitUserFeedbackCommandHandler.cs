@@ -7,6 +7,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Email.Interfaces;
 using GovUK.Dfe.CoreLibs.Email.Models;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using DfE.ExternalApplications.Domain.Tenancy;
 using System;

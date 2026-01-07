@@ -11,30 +11,42 @@ public class TenantResolutionMiddleware
 {
     public const string TenantIdHeader = "X-Tenant-ID";
 
+    private static readonly string[] BypassPaths = { "/swagger", "/health", "/_" };
+
     private readonly RequestDelegate _next;
     private readonly ITenantConfigurationProvider _tenantConfigurationProvider;
-    private readonly ITenantContextAccessor _tenantContextAccessor;
     private readonly ILogger<TenantResolutionMiddleware> _logger;
 
     public TenantResolutionMiddleware(
         RequestDelegate next,
         ITenantConfigurationProvider tenantConfigurationProvider,
-        ITenantContextAccessor tenantContextAccessor,
         ILogger<TenantResolutionMiddleware> logger)
     {
         _next = next;
         _tenantConfigurationProvider = tenantConfigurationProvider;
-        _tenantContextAccessor = tenantContextAccessor;
         _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
+        var path = context.Request.Path.Value ?? "";
+
+        // Bypass for infrastructure endpoints and CORS preflight
+        if (context.Request.Method == "OPTIONS" ||
+            BypassPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+        {
+            await _next(context);
+            return;
+        }
+
+        // Resolve the scoped tenant context accessor from request services
+        var tenantContextAccessor = context.RequestServices.GetRequiredService<ITenantContextAccessor>();
+
         try
         {
             var (tenantConfig, tenantId) = ResolveTenant(context);
 
-            _tenantContextAccessor.CurrentTenant = tenantConfig;
+            tenantContextAccessor.CurrentTenant = tenantConfig;
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
                        ["TenantId"] = tenantId,

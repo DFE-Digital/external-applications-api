@@ -4,6 +4,8 @@ using DfE.ExternalApplications.Application.Consumers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
+using ITenantBusFactory = DfE.ExternalApplications.Application.Services.ITenantBusFactory;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +19,7 @@ using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
+using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces;
 using MassTransit;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Exceptions;
 
@@ -25,9 +28,14 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ApplicationServiceCollectionExtensions
     {
         public static IServiceCollection AddApplicationDependencyGroup(
-            this IServiceCollection services, IConfiguration config)
+            this IServiceCollection services, 
+            IConfiguration config,
+            ITenantConfigurationProvider tenantConfigurationProvider)
         {
-            var performanceLoggingEnabled = config.GetValue<bool>("Features:PerformanceLoggingEnabled");
+            // Performance logging is enabled if any tenant has it enabled
+            var performanceLoggingEnabled = tenantConfigurationProvider
+                .GetAllTenants()
+                .Any(t => t.Settings.GetValue<bool>("Features:PerformanceLoggingEnabled"));
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), includeInternalTypes: true);
 
@@ -55,7 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<ITemplateFactory, TemplateFactory>();
             services.AddTransient<IFileFactory, FileFactory>();
 
-            // Configure email template resolution
+            // Configure email template resolution from root config (shared across tenants)
             services.Configure<ApplicationTemplatesConfiguration>(config.GetSection("ApplicationTemplates"));
             services.Configure<EmailTemplatesConfiguration>(config.GetSection("EmailTemplates"));
             services.AddTransient<IEmailTemplateResolver, EmailTemplateResolver>();
@@ -67,49 +75,30 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddEmailServicesWithGovUkNotify(config);
 
-            // Skip MassTransit during NSwag/CodeGeneration to prevent assembly loading issues
+            // Register tenant bus factory for per-tenant Service Bus connections
+            services.AddSingleton<ITenantBusFactory, TenantBusFactory>();
+            
+            // Register tenant-aware event publisher that uses tenant-specific bus
+            services.AddScoped<IEventPublisher, TenantAwareEventPublisher>();
+
+            // Skip standard MassTransit configuration - using per-tenant bus factory instead
+            // Consumer registration is handled by the TenantBusFactory
             var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
             if (!skipMassTransit)
             {
-                services.AddDfEMassTransit(
-                    config,
-                    configureConsumers: x =>
+                // Register MassTransit for DI container resolution (required for consumers)
+                services.AddMassTransit(x =>
+                {
+                    x.AddConsumer<ScanResultConsumer>();
+                    
+                    x.UsingInMemory((context, cfg) =>
                     {
-                        x.AddConsumer<ScanResultConsumer>();
-                    },
-                    configureBus: (context, cfg) =>
-                    {
-                        // Configure topic names for message types
+                        // Configure message types for topic routing
                         cfg.Message<ScanRequestedEvent>(m => m.SetEntityName(TopicNames.ScanRequests));
                         cfg.Message<ScanResultEvent>(m => m.SetEntityName(TopicNames.ScanResult));
-                    },
-                    configureAzureServiceBus: (context, cfg) =>
-                    {
-                        cfg.UseJsonSerializer();
-
-                        // Azure Service Bus specific configuration
-                        // Use existing "extapi" subscription (topic is determined by Message<ScanResultEvent> config above)
-                        cfg.SubscriptionEndpoint<ScanResultEvent>("extapi", e =>
-                        {
-                            e.UseMessageRetry(r =>
-                            {
-                                // For MessageNotForThisInstanceException (instance filtering in Local env)
-                                // Retry immediately and frequently so other consumers pick it up fast
-                                r.Handle<MessageNotForThisInstanceException>();
-                                r.Immediate(10); // Try 10 times (supports up to 10 concurrent local developers)
-
-                                // For all OTHER exceptions (real errors)
-                                // Retry with delay for transient issues
-                                r.Ignore<MessageNotForThisInstanceException>(); // Don't apply interval retry to this
-                                r.Interval(3, TimeSpan.FromSeconds(5)); // 3 retries, 5 seconds apart for real errors
-                            });
-                            // Don't try to create new topology - use existing subscription
-                            e.ConfigureConsumeTopology = false;
-
-                            // Configure the consumer to process messages from this endpoint
-                            e.ConfigureConsumer<ScanResultConsumer>(context);
-                        });
+                        cfg.ConfigureEndpoints(context);
                     });
+                });
             }
 
             return services;

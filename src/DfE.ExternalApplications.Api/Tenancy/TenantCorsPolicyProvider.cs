@@ -7,19 +7,20 @@ namespace DfE.ExternalApplications.Api.Tenancy;
 public class TenantCorsPolicyProvider : ICorsPolicyProvider
 {
     private readonly DefaultCorsPolicyProvider _defaultProvider;
-    private readonly ITenantContextAccessor _tenantContextAccessor;
 
-    public TenantCorsPolicyProvider(IOptions<CorsOptions> options, ITenantContextAccessor tenantContextAccessor)
+    public TenantCorsPolicyProvider(IOptions<CorsOptions> options)
     {
         _defaultProvider = new DefaultCorsPolicyProvider(options);
-        _tenantContextAccessor = tenantContextAccessor;
     }
 
     public Task<CorsPolicy?> GetPolicyAsync(HttpContext context, string? policyName)
     {
         if (string.Equals(policyName, "Frontend", StringComparison.OrdinalIgnoreCase))
         {
-            var tenant = _tenantContextAccessor.CurrentTenant;
+            // Resolve the scoped ITenantContextAccessor from the request's service provider
+            var tenantContextAccessor = context.RequestServices.GetService<ITenantContextAccessor>();
+            var tenant = tenantContextAccessor?.CurrentTenant;
+            
             if (tenant?.FrontendOrigins is { Length: > 0 })
             {
                 var builder = new CorsPolicyBuilder()

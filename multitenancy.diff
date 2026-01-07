@@ -1,0 +1,1274 @@
+diff --git a/docs/multi-tenancy-config.md b/docs/multi-tenancy-config.md
+new file mode 100644
+index 0000000..c521882
+--- /dev/null
++++ b/docs/multi-tenancy-config.md
+@@ -0,0 +1,48 @@
++# Multi-tenant configuration
++
++The API keeps domain logic tenant-agnostic, but infrastructure concerns (CORS, connection strings, SignalR, storage, etc.) are now selected per tenant. Each tenant is declared inside the primary `appsettings.<Environment>.json` files so the platform can load everything at startup without extra configuration files.
++
++## Configuration shape
++```jsonc
++{
++  "Tenants": {
++    "11111111-1111-1111-1111-111111111111": {
++      "Id": "11111111-1111-1111-1111-111111111111",
++      "Name": "Alpha",
++      "Logging": {
++        "LogLevel": { "Default": "Warning" }
++      },
++      "ConnectionStrings": {
++        "DefaultConnection": "Server=...;Database=AlphaExternalApps;...",
++        "AzureSignalR": "Endpoint=...;AccessKey=..."
++      },
++      "AzureAd": { "ClientId": "..." },
++      "Frontend": { "Origin": "https://alpha.example.com" },
++      "FrontendSettings": { "BaseUrl": "https://alpha.example.com" },
++      "InternalServiceAuth": {
++        "Services": [
++          { "Email": "svc-alpha@service.com", "ApiKey": "secret" }
++        ],
++        "TokenLifetimeMinutes": 60
++      },
++      "FileStorage": { "Azure": { "ShareName": "alpha-storage" } },
++      "Email": { "ServiceSupportEmailAddress": "support@alpha.example.com" },
++      "Features": { "PerformanceLoggingEnabled": true }
++    },
++    "22222222-2222-2222-2222-222222222222": { "Id": "...", "Name": "Beta", "Logging": { ... }, "ConnectionStrings": { ... }, "AzureAd": { ... } }
++  }
++}
++```
++
++- The **dictionary key** and `Id` property must both be the tenant GUID. The `Name` is required for observability and validation.
++- Wrap the entire set of environment-specific options inside each tenant block. You can copy/paste the existing `appsettings.<Environment>.json` content beneath each tenant, then customise per tenant as needed.
++- Host-level settings that are not tenant-specific (for example `ApplicationInsights` in `appsettings.json`) can remain at the root, but runtime configuration is read from the selected tenant block for each request.
++
++## Resolution and usage
++- Clients must send the `X-Tenant-ID` header (GUID) with every request. The middleware resolves the tenant and hydrates a scoped `ITenantContextAccessor` for downstream services.
++- CORS policies, SignalR, and the EF Core DbContext pick connection strings and allowed origins from the resolved tenant entry.
++- Requests with missing or unknown tenants return `400` with a short error payload.
++
++## Operational notes
++- Keep secrets (passwords, keys) in KeyVault or environment variables; reference them from the tenant sections where needed.
++- When adding a new tenant, copy an existing configuration block into the `Tenants` section, update the GUID key/`Id`, `Name`, and per-tenant settings, then redeploy.
+diff --git a/src/DfE.ExternalApplications.Api/Middleware/TenantResolutionMiddleware.cs b/src/DfE.ExternalApplications.Api/Middleware/TenantResolutionMiddleware.cs
+new file mode 100644
+index 0000000..d7bdc4c
+--- /dev/null
++++ b/src/DfE.ExternalApplications.Api/Middleware/TenantResolutionMiddleware.cs
+@@ -0,0 +1,98 @@
++using System;
++using System.Collections.Generic;
++using System.Linq;
++using System.Net;
++using System.Text.Json;
++using DfE.ExternalApplications.Domain.Tenancy;
++
++namespace DfE.ExternalApplications.Api.Middleware;
++
++public class TenantResolutionMiddleware
++{
++    public const string TenantIdHeader = "X-Tenant-ID";
++
++    private readonly RequestDelegate _next;
++    private readonly ITenantConfigurationProvider _tenantConfigurationProvider;
++    private readonly ITenantContextAccessor _tenantContextAccessor;
++    private readonly ILogger<TenantResolutionMiddleware> _logger;
++
++    public TenantResolutionMiddleware(
++        RequestDelegate next,
++        ITenantConfigurationProvider tenantConfigurationProvider,
++        ITenantContextAccessor tenantContextAccessor,
++        ILogger<TenantResolutionMiddleware> logger)
++    {
++        _next = next;
++        _tenantConfigurationProvider = tenantConfigurationProvider;
++        _tenantContextAccessor = tenantContextAccessor;
++        _logger = logger;
++    }
++
++    public async Task InvokeAsync(HttpContext context)
++    {
++        try
++        {
++            var (tenantConfig, tenantId) = ResolveTenant(context);
++
++            _tenantContextAccessor.CurrentTenant = tenantConfig;
++            using (_logger.BeginScope(new Dictionary<string, object>
++                   {
++                       ["TenantId"] = tenantId,
++                       ["TenantName"] = tenantConfig.Name
++                   }))
++            {
++                await _next(context);
++            }
++        }
++        catch (InvalidTenantException ex)
++        {
++            _logger.LogWarning(ex, "Tenant resolution failed");
++            await RespondInvalidTenant(context, ex.Message);
++        }
++    }
++
++    private (TenantConfiguration tenant, Guid tenantId) ResolveTenant(HttpContext context)
++    {
++        if (context.Request.Headers.TryGetValue(TenantIdHeader, out var tenantHeader) &&
++            Guid.TryParse(tenantHeader, out var tenantIdFromHeader))
++        {
++            var tenantFromHeader = _tenantConfigurationProvider.GetTenant(tenantIdFromHeader);
++            if (tenantFromHeader is null)
++            {
++                throw new InvalidTenantException($"Tenant '{tenantIdFromHeader}' is not configured.");
++            }
++
++            return (tenantFromHeader, tenantIdFromHeader);
++        }
++
++        if (context.Request.Headers.TryGetValue("Origin", out var originHeader))
++        {
++            var origin = originHeader.ToString();
++            var matchingTenant = _tenantConfigurationProvider
++                .GetAllTenants()
++                .FirstOrDefault(t => t.FrontendOrigins.Any(o => string.Equals(o, origin, StringComparison.OrdinalIgnoreCase)));
++
++            if (matchingTenant is not null)
++            {
++                return (matchingTenant, matchingTenant.Id);
++            }
++        }
++
++        throw new InvalidTenantException("Missing or invalid tenant id header.");
++    }
++
++    private static async Task RespondInvalidTenant(HttpContext context, string message)
++    {
++        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
++        context.Response.ContentType = "application/json";
++        var response = JsonSerializer.Serialize(new { error = message });
++        await context.Response.WriteAsync(response);
++    }
++
++    private class InvalidTenantException : Exception
++    {
++        public InvalidTenantException(string message) : base(message)
++        {
++        }
++    }
++}
+diff --git a/src/DfE.ExternalApplications.Api/Program.cs b/src/DfE.ExternalApplications.Api/Program.cs
+index 3486fd0..9ca3b8a 100644
+--- a/src/DfE.ExternalApplications.Api/Program.cs
++++ b/src/DfE.ExternalApplications.Api/Program.cs
+@@ -12,6 +12,7 @@ using GovUK.Dfe.CoreLibs.Http.Middlewares.CorrelationId;
+ using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
+ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
+ using Microsoft.AspNetCore.HttpOverrides;
++using Microsoft.AspNetCore.Cors.Infrastructure;
+ using Microsoft.FeatureManagement;
+ using NetEscapades.AspNetCore.SecurityHeaders;
+ using Serilog;
+@@ -20,6 +21,10 @@ using System.Reflection;
+ using System.Text;
+ using System.Text.Json;
+ using System.Text.Json.Serialization;
++using System.Linq;
++using DfE.ExternalApplications.Api.Tenancy;
++using DfE.ExternalApplications.Domain.Tenancy;
++using DfE.ExternalApplications.Infrastructure.Services;
+ using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
+ 
+ namespace DfE.ExternalApplications.Api
+@@ -81,23 +86,31 @@ namespace DfE.ExternalApplications.Api
+             builder.Services.ConfigureOptions<SwaggerOptions>();
+             builder.Services.AddFeatureManagement();
+             builder.Services.AddHttpContextAccessor();
++            var tenantConfigurationProvider = new OptionsTenantConfigurationProvider(builder.Configuration);
++            builder.Services.AddSingleton<ITenantConfigurationProvider>(tenantConfigurationProvider);
++            builder.Services.AddScoped<ITenantContextAccessor, TenantContextAccessor>();
+             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
+ 
+             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
+             builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
+ 
++            var defaultTenantConfig = tenantConfigurationProvider.GetAllTenants().FirstOrDefault();
++            var startupConfiguration = defaultTenantConfig?.Settings ?? builder.Configuration;
++
+             builder.Services.AddCors(o => o.AddPolicy("Frontend", p =>
+-                p.WithOrigins(builder.Configuration["Frontend:Origin"] ?? "https://localhost:7020")
++                p.WithOrigins(startupConfiguration["Frontend:Origin"] ?? "https://localhost:7020")
+                     .AllowAnyHeader()
+                     .AllowAnyMethod()
+                     .AllowCredentials()));
+ 
++            builder.Services.AddSingleton<ICorsPolicyProvider, TenantCorsPolicyProvider>();
++
+             // Configure SignalR
+-            ConfigureSignalR(builder.Services, builder.Configuration, builder.Environment);
++            ConfigureSignalR(builder.Services, startupConfiguration, builder.Environment);
+ 
+-            builder.Services.AddApplicationDependencyGroup(builder.Configuration);
+-            builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
+-            builder.Services.AddCustomAuthorization(builder.Configuration);
++            builder.Services.AddApplicationDependencyGroup(startupConfiguration);
++            builder.Services.AddInfrastructureDependencyGroup(startupConfiguration);
++            builder.Services.AddCustomAuthorization(startupConfiguration);
+ 
+             builder.Services.AddOptions<SwaggerUIOptions>()
+                 .Configure<IHttpContextAccessor>((swaggerUiOptions, httpContextAccessor) =>
+@@ -118,7 +131,7 @@ namespace DfE.ExternalApplications.Api
+                     };
+                 });
+ 
+-            var appInsightsCnnStr = builder.Configuration.GetSection("ApplicationInsights")?["ConnectionString"];
++            var appInsightsCnnStr = startupConfiguration.GetSection("ApplicationInsights")?["ConnectionString"];
+             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
+             {
+                 builder.Services.AddApplicationInsightsTelemetry(opt => { opt.ConnectionString = appInsightsCnnStr; });
+@@ -145,6 +158,8 @@ namespace DfE.ExternalApplications.Api
+             forwardOptions.KnownProxies.Clear();
+             app.UseForwardedHeaders(forwardOptions);
+ 
++            app.UseMiddleware<TenantResolutionMiddleware>();
++
+             // CORS must be early in the pipeline to ensure headers are added to all responses (including errors)
+             app.UseCors("Frontend");
+ 
+diff --git a/src/DfE.ExternalApplications.Api/Tenancy/TenantContextAccessor.cs b/src/DfE.ExternalApplications.Api/Tenancy/TenantContextAccessor.cs
+new file mode 100644
+index 0000000..9e6cf2e
+--- /dev/null
++++ b/src/DfE.ExternalApplications.Api/Tenancy/TenantContextAccessor.cs
+@@ -0,0 +1,8 @@
++using DfE.ExternalApplications.Domain.Tenancy;
++
++namespace DfE.ExternalApplications.Api.Tenancy;
++
++public class TenantContextAccessor : ITenantContextAccessor
++{
++    public TenantConfiguration? CurrentTenant { get; set; }
++}
+diff --git a/src/DfE.ExternalApplications.Api/Tenancy/TenantCorsPolicyProvider.cs b/src/DfE.ExternalApplications.Api/Tenancy/TenantCorsPolicyProvider.cs
+new file mode 100644
+index 0000000..5cc1c34
+--- /dev/null
++++ b/src/DfE.ExternalApplications.Api/Tenancy/TenantCorsPolicyProvider.cs
+@@ -0,0 +1,37 @@
++using DfE.ExternalApplications.Domain.Tenancy;
++using Microsoft.AspNetCore.Cors.Infrastructure;
++using Microsoft.Extensions.Options;
++
++namespace DfE.ExternalApplications.Api.Tenancy;
++
++public class TenantCorsPolicyProvider : ICorsPolicyProvider
++{
++    private readonly DefaultCorsPolicyProvider _defaultProvider;
++    private readonly ITenantContextAccessor _tenantContextAccessor;
++
++    public TenantCorsPolicyProvider(IOptions<CorsOptions> options, ITenantContextAccessor tenantContextAccessor)
++    {
++        _defaultProvider = new DefaultCorsPolicyProvider(options);
++        _tenantContextAccessor = tenantContextAccessor;
++    }
++
++    public Task<CorsPolicy?> GetPolicyAsync(HttpContext context, string? policyName)
++    {
++        if (string.Equals(policyName, "Frontend", StringComparison.OrdinalIgnoreCase))
++        {
++            var tenant = _tenantContextAccessor.CurrentTenant;
++            if (tenant?.FrontendOrigins is { Length: > 0 })
++            {
++                var builder = new CorsPolicyBuilder()
++                    .WithOrigins(tenant.FrontendOrigins)
++                    .AllowAnyHeader()
++                    .AllowAnyMethod()
++                    .AllowCredentials();
++
++                return Task.FromResult<CorsPolicy?>(builder.Build());
++            }
++        }
++
++        return _defaultProvider.GetPolicyAsync(context, policyName);
++    }
++}
+diff --git a/src/DfE.ExternalApplications.Api/appsettings.Development.json b/src/DfE.ExternalApplications.Api/appsettings.Development.json
+index ad1d8bf..939cd03 100644
+--- a/src/DfE.ExternalApplications.Api/appsettings.Development.json
++++ b/src/DfE.ExternalApplications.Api/appsettings.Development.json
+@@ -1,85 +1,91 @@
+ {
+-  "Logging": {
+-    "LogLevel": {
+-      "Default": "Warning",
+-      "Microsoft": "Information",
+-      "Microsoft.Hosting.Lifetime": "Information"
+-    },
+-    "Console": {
+-      "FormatterName": "simple",
+-      "FormatterOptions": {
+-        "IncludeScopes": true
+-      }
+-    }
+-  },
+-  "ConnectionStrings": {
+-    "DefaultConnection": "Server=localhost,1433;Database=ExternalApplications;User Id=SA;Password=YourPassword123!;TrustServerCertificate=True;",
+-    "AzureSignalR": "",
+-    "Redis": "localhost:6379",
+-    "ServiceBus": "Endpoint=sb://dummy.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=dummy"
+-  },
+-  "AllowedHosts": "*",
+-  "AzureAd": {
+-    "Instance": "https://login.microsoftonline.com/",
+-    "Domain": "platform.education.gov.uk",
+-    "TenantId": "9c7d9dd3-840c-4b3f-818e-552865082e16",
+-    "ClientId": "65c013ab-cc5d-4fd9-8797-e81c5b16eb3e",
+-    "Audience": "api://65c013ab-cc5d-4fd9-8797-e81c5b16eb3e"
+-  },
+-  "Features": {
+-    "PerformanceLoggingEnabled": true
+-  },
+-  "DfESignIn": {
+-    "Authority": "https://test-oidc.signin.education.gov.uk",
+-    "ClientId": "RSDExternalApps",
+-    "Issuer": "https://test-oidc.signin.education.gov.uk:443",
+-    "JwksUri": "https://test-oidc.signin.education.gov.uk/jwks",
+-    "DiscoveryEndpoint": "https://test-oidc.signin.education.gov.uk/.well-known/openid-configuration"
+-  },
+-  "TestAuthentication": {
+-    "Enabled": false,
+-    "JwtSigningKey": "secret",
+-    "JwtIssuer": "test-external-applications",
+-    "JwtAudience": "external-applications-api"
+-  },
+-  "Frontend": {
+-    "Origin": "https://dev.apply-transfer-academy.service.gov.uk"
+-  },
+-  "SkipMassTransit": false,
+-  "MassTransit": {
+-    "Transport": "AzureServiceBus",
+-    "AppPrefix": "",
+-    "AzureServiceBus": {
+-      "ConnectionString": "",
+-      "AutoCreateEntities": false,
+-      "ConfigureEndpoints": false,
+-      "UseWebSockets": true,
+-      "InstanceIdentifier": "auto"
+-    }
+-  },
+-  "FileStorage": {
+-    "Azure": {
+-      "ShareName": "s184d01-extapi-storage"
+-    }
+-  },
+-  "FrontendSettings": {
+-    "BaseUrl": "https://dev.apply-transfer-academy.service.gov.uk",
+-    "PreviewContentSelector": ".govuk-grid-column-full"
+-  },
+-  "Email": {
+-    "ServiceSupportEmailAddress": "Farshad.DASHTI@education.gov.uk"
+-  },
+-  "InternalServiceAuth": {
+-    "Services": [
+-      {
+-        "Email": "eat-transfer-service@service.com",
+-        "ApiKey": "secret"
++  "Tenants": {
++    "11111111-1111-1111-1111-111111111111": {
++      "Id": "11111111-1111-1111-1111-111111111111",
++      "Name": "Development",
++      "Logging": {
++        "LogLevel": {
++          "Default": "Warning",
++          "Microsoft": "Information",
++          "Microsoft.Hosting.Lifetime": "Information"
++        },
++        "Console": {
++          "FormatterName": "simple",
++          "FormatterOptions": {
++            "IncludeScopes": true
++          }
++        }
++      },
++      "ConnectionStrings": {
++        "DefaultConnection": "Server=localhost,1433;Database=ExternalApplications;User Id=SA;Password=YourPassword123!;TrustServerCertificate=True;",
++        "AzureSignalR": "",
++        "Redis": "localhost:6379",
++        "ServiceBus": "Endpoint=sb://dummy.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=dummy"
++      },
++      "AllowedHosts": "*",
++      "AzureAd": {
++        "Instance": "https://login.microsoftonline.com/",
++        "Domain": "platform.education.gov.uk",
++        "TenantId": "9c7d9dd3-840c-4b3f-818e-552865082e16",
++        "ClientId": "65c013ab-cc5d-4fd9-8797-e81c5b16eb3e",
++        "Audience": "api://65c013ab-cc5d-4fd9-8797-e81c5b16eb3e"
++      },
++      "Features": {
++        "PerformanceLoggingEnabled": true
++      },
++      "DfESignIn": {
++        "Authority": "https://test-oidc.signin.education.gov.uk",
++        "ClientId": "RSDExternalApps",
++        "Issuer": "https://test-oidc.signin.education.gov.uk:443",
++        "JwksUri": "https://test-oidc.signin.education.gov.uk/jwks",
++        "DiscoveryEndpoint": "https://test-oidc.signin.education.gov.uk/.well-known/openid-configuration"
+       },
+-      {
+-        "Email": "eat-cypress-service@service.com",
+-        "ApiKey": "secret"
++      "TestAuthentication": {
++        "Enabled": false,
++        "JwtSigningKey": "secret",
++        "JwtIssuer": "test-external-applications",
++        "JwtAudience": "external-applications-api"
++      },
++      "Frontend": {
++        "Origin": "https://dev.apply-transfer-academy.service.gov.uk"
++      },
++      "SkipMassTransit": false,
++      "MassTransit": {
++        "Transport": "AzureServiceBus",
++        "AppPrefix": "",
++        "AzureServiceBus": {
++          "ConnectionString": "",
++          "AutoCreateEntities": false,
++          "ConfigureEndpoints": false,
++          "UseWebSockets": true,
++          "InstanceIdentifier": "auto"
++        }
++      },
++      "FileStorage": {
++        "Azure": {
++          "ShareName": "s184d01-extapi-storage"
++        }
++      },
++      "FrontendSettings": {
++        "BaseUrl": "https://dev.apply-transfer-academy.service.gov.uk",
++        "PreviewContentSelector": ".govuk-grid-column-full"
++      },
++      "Email": {
++        "ServiceSupportEmailAddress": "Farshad.DASHTI@education.gov.uk"
++      },
++      "InternalServiceAuth": {
++        "Services": [
++          {
++            "Email": "eat-transfer-service@service.com",
++            "ApiKey": "secret"
++          },
++          {
++            "Email": "eat-cypress-service@service.com",
++            "ApiKey": "secret"
++          }
++        ],
++        "TokenLifetimeMinutes": 60
+       }
+-    ],
+-    "TokenLifetimeMinutes": 60
++    }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/src/DfE.ExternalApplications.Api/appsettings.Production.json b/src/DfE.ExternalApplications.Api/appsettings.Production.json
+index cd88c65..a4c9661 100644
+--- a/src/DfE.ExternalApplications.Api/appsettings.Production.json
++++ b/src/DfE.ExternalApplications.Api/appsettings.Production.json
+@@ -1,72 +1,91 @@
+ {
+-  "Logging": {
+-    "LogLevel": {
+-      "Default": "Warning",
+-      "Microsoft": "Information",
+-      "Microsoft.Hosting.Lifetime": "Information"
+-    },
+-    "Console": {
+-      "FormatterName": "simple",
+-      "FormatterOptions": {
+-        "IncludeScopes": true
++  "Tenants": {
++    "11111111-1111-1111-1111-111111111111": {
++      "Id": "11111111-1111-1111-1111-111111111111",
++      "Name": "Production",
++      "Logging": {
++        "LogLevel": {
++          "Default": "Warning",
++          "Microsoft": "Information",
++          "Microsoft.Hosting.Lifetime": "Information"
++        },
++        "Console": {
++          "FormatterName": "simple",
++          "FormatterOptions": {
++            "IncludeScopes": true
++          }
++        }
++      },
++      "ConnectionStrings": {
++        "DefaultConnection": "Server=localhost,1433;Database=ExternalApplications;User Id=SA;Password=YourPassword123!;TrustServerCertificate=True;",
++        "AzureSignalR": "",
++        "Redis": "localhost:6379",
++        "ServiceBus": "Endpoint=sb://dummy.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=dummy"
++      },
++      "AllowedHosts": "*",
++      "AzureAd": {
++        "Instance": "https://login.microsoftonline.com/",
++        "Domain": "platform.education.gov.uk",
++        "TenantId": "9c7d9dd3-840c-4b3f-818e-552865082e16",
++        "ClientId": "65c013ab-cc5d-4fd9-8797-e81c5b16eb3e",
++        "Audience": "api://65c013ab-cc5d-4fd9-8797-e81c5b16eb3e"
++      },
++      "Features": {
++        "PerformanceLoggingEnabled": true
++      },
++      "DfESignIn": {
++        "Authority": "https://test-oidc.signin.education.gov.uk",
++        "ClientId": "RSDExternalApps",
++        "Issuer": "https://test-oidc.signin.education.gov.uk:443",
++        "JwksUri": "https://test-oidc.signin.education.gov.uk/jwks",
++        "DiscoveryEndpoint": "https://test-oidc.signin.education.gov.uk/.well-known/openid-configuration"
++      },
++      "TestAuthentication": {
++        "Enabled": false,
++        "JwtSigningKey": "secret",
++        "JwtIssuer": "test-external-applications",
++        "JwtAudience": "external-applications-api"
++      },
++      "Frontend": {
++        "Origin": "https://apply-transfer-academy.service.gov.uk"
++      },
++      "SkipMassTransit": false,
++      "MassTransit": {
++        "Transport": "AzureServiceBus",
++        "AppPrefix": "",
++        "AzureServiceBus": {
++          "ConnectionString": "",
++          "AutoCreateEntities": false,
++          "ConfigureEndpoints": false,
++          "UseWebSockets": true,
++          "InstanceIdentifier": "auto"
++        }
++      },
++      "FileStorage": {
++        "Azure": {
++          "ShareName": "s184d01-extapi-storage"
++        }
++      },
++      "FrontendSettings": {
++        "BaseUrl": "https://apply-transfer-academy.service.gov.uk",
++        "PreviewContentSelector": ".govuk-grid-column-full"
++      },
++      "Email": {
++        "ServiceSupportEmailAddress": "Farshad.DASHTI@education.gov.uk"
++      },
++      "InternalServiceAuth": {
++        "Services": [
++          {
++            "Email": "eat-transfer-service@service.com",
++            "ApiKey": "secret"
++          },
++          {
++            "Email": "eat-cypress-service@service.com",
++            "ApiKey": "secret"
++          }
++        ],
++        "TokenLifetimeMinutes": 60
+       }
+     }
+-  },
+-  "ConnectionStrings": {
+-    "DefaultConnection": "",
+-    "AzureSignalR": "",
+-    "Redis": "localhost:6379"
+-  },
+-  "AllowedHosts": "*",
+-  "AzureAd": {
+-    "Instance": "https://login.microsoftonline.com/",
+-    "Domain": "platform.education.gov.uk",
+-    "TenantId": "9c7d9dd3-840c-4b3f-818e-552865082e16",
+-    "ClientId": "547b0a35-2d35-4ba0-ba57-02a8b264f635",
+-    "Audience": "api://547b0a35-2d35-4ba0-ba57-02a8b264f635"
+-  },
+-  "Features": {
+-    "PerformanceLoggingEnabled": false
+-  },
+-  "DfESignIn": {
+-    "Authority": "https://oidc.signin.education.gov.uk",
+-    "ClientId": "RSDExternalApps",
+-    "Issuer": "https://oidc.signin.education.gov.uk:443",
+-    "JwksUri": "https://oidc.signin.education.gov.uk/jwks",
+-    "DiscoveryEndpoint": "https://oidc.signin.education.gov.uk/.well-known/openid-configuration"
+-  },
+-  "TestAuthentication": {
+-    "Enabled": false,
+-    "JwtSigningKey": "secret",
+-    "JwtIssuer": "test-external-applications",
+-    "JwtAudience": "external-applications-api"
+-  },
+-  "Frontend": {
+-    "Origin": "https://apply-transfer-academy.service.gov.uk"
+-  },
+-  "SkipMassTransit": false,
+-  "MassTransit": {
+-    "Transport": "AzureServiceBus",
+-    "AppPrefix": "",
+-    "AzureServiceBus": {
+-      "ConnectionString": "",
+-      "AutoCreateEntities": false,
+-      "ConfigureEndpoints": false,
+-      "UseWebSockets": true,
+-      "InstanceIdentifier": "auto"
+-    }
+-  },
+-  "FileStorage": {
+-    "Azure": {
+-      "ShareName": "s184p01-extapi-storage"
+-    }
+-  },
+-  "FrontendSettings": {
+-    "BaseUrl": "https://apply-transfer-academy.service.gov.uk",
+-    "PreviewContentSelector": ".govuk-grid-column-full"
+-  },
+-  "Email": {
+-    "ServiceSupportEmailAddress": "RegionalServices.RG@education.gov.uk"
+   }
+ }
+-
+diff --git a/src/DfE.ExternalApplications.Api/appsettings.Test.json b/src/DfE.ExternalApplications.Api/appsettings.Test.json
+index 8095bb3..e388fb2 100644
+--- a/src/DfE.ExternalApplications.Api/appsettings.Test.json
++++ b/src/DfE.ExternalApplications.Api/appsettings.Test.json
+@@ -1,88 +1,91 @@
+ {
+-  "Logging": {
+-    "LogLevel": {
+-      "Default": "Warning",
+-      "Microsoft": "Information",
+-      "Microsoft.Hosting.Lifetime": "Information"
+-    },
+-    "Console": {
+-      "FormatterName": "simple",
+-      "FormatterOptions": {
+-        "IncludeScopes": true
+-      }
+-    }
+-  },
+-  "ConnectionStrings": {
+-    "DefaultConnection": "Server=localhost,1433;Database=ExternalApplications;User Id=SA;Password=YourPassword123!;TrustServerCertificate=True;",
+-    "AzureSignalR": "",
+-    "Redis": "localhost:6379"
+-  },
+-  "AllowedHosts": "*",
+-  "AzureAd": {
+-    "Instance": "https://login.microsoftonline.com/",
+-    "Domain": "platform.education.gov.uk",
+-    "TenantId": "9c7d9dd3-840c-4b3f-818e-552865082e16",
+-    "ClientId": "65c013ab-cc5d-4fd9-8797-e81c5b16eb3e",
+-    "Audience": "api://65c013ab-cc5d-4fd9-8797-e81c5b16eb3e"
+-  },
+-  "Features": {
+-    "PerformanceLoggingEnabled": false
+-  },
+-  "DfESignIn": {
+-    "Authority": "https://pp-oidc.signin.education.gov.uk",
+-    "ClientId": "RSDExternalApps",
+-    "Issuer": "https://pp-oidc.signin.education.gov.uk:443",
+-    "JwksUri": "https://pp-oidc.signin.education.gov.uk/jwks",
+-    "DiscoveryEndpoint": "https://pp-oidc.signin.education.gov.uk/.well-known/openid-configuration"
+-  },
+-  "TestAuthentication": {
+-    "Enabled": false,
+-    "JwtSigningKey": "secret",
+-    "JwtIssuer": "test-external-applications",
+-    "JwtAudience": "external-applications-api"
+-  },
+-  "Frontend": {
+-    "Origin": "https://test.apply-transfer-academy.service.gov.uk"
+-  },
+-  "CypressAuthentication": {
+-    "AllowToggle": true,
+-    "Secret": ""
+-  },
+-  "SkipMassTransit": false,
+-  "MassTransit": {
+-    "Transport": "AzureServiceBus",
+-    "AppPrefix": "",
+-    "AzureServiceBus": {
+-      "ConnectionString": "",
+-      "AutoCreateEntities": false,
+-      "ConfigureEndpoints": false,
+-      "UseWebSockets": true,
+-      "InstanceIdentifier": "auto"
+-    }
+-  },
+-  "FileStorage": {
+-    "Azure": {
+-      "ShareName": "s184t01-extapi-storage"
+-    }
+-  },
+-  "FrontendSettings": {
+-    "BaseUrl": "https://test.apply-transfer-academy.service.gov.uk",
+-    "PreviewContentSelector": ".govuk-grid-column-full"
+-  },
+-  "Email": {
+-    "ServiceSupportEmailAddress": "Farshad.DASHTI@education.gov.uk"
+-  },
+-  "InternalServiceAuth": {
+-    "Services": [
+-      {
+-        "Email": "eat-transfer-service@service.com",
+-        "ApiKey": "secret"
++  "Tenants": {
++    "11111111-1111-1111-1111-111111111111": {
++      "Id": "11111111-1111-1111-1111-111111111111",
++      "Name": "Test",
++      "Logging": {
++        "LogLevel": {
++          "Default": "Warning",
++          "Microsoft": "Information",
++          "Microsoft.Hosting.Lifetime": "Information"
++        },
++        "Console": {
++          "FormatterName": "simple",
++          "FormatterOptions": {
++            "IncludeScopes": true
++          }
++        }
++      },
++      "ConnectionStrings": {
++        "DefaultConnection": "Server=localhost,1433;Database=ExternalApplications;User Id=SA;Password=YourPassword123!;TrustServerCertificate=True;",
++        "AzureSignalR": "",
++        "Redis": "localhost:6379",
++        "ServiceBus": "Endpoint=sb://dummy.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=dummy"
++      },
++      "AllowedHosts": "*",
++      "AzureAd": {
++        "Instance": "https://login.microsoftonline.com/",
++        "Domain": "platform.education.gov.uk",
++        "TenantId": "9c7d9dd3-840c-4b3f-818e-552865082e16",
++        "ClientId": "65c013ab-cc5d-4fd9-8797-e81c5b16eb3e",
++        "Audience": "api://65c013ab-cc5d-4fd9-8797-e81c5b16eb3e"
++      },
++      "Features": {
++        "PerformanceLoggingEnabled": true
++      },
++      "DfESignIn": {
++        "Authority": "https://test-oidc.signin.education.gov.uk",
++        "ClientId": "RSDExternalApps",
++        "Issuer": "https://test-oidc.signin.education.gov.uk:443",
++        "JwksUri": "https://test-oidc.signin.education.gov.uk/jwks",
++        "DiscoveryEndpoint": "https://test-oidc.signin.education.gov.uk/.well-known/openid-configuration"
+       },
+-      {
+-        "Email": "eat-cypress-service@service.com",
+-        "ApiKey": "secret"
++      "TestAuthentication": {
++        "Enabled": false,
++        "JwtSigningKey": "secret",
++        "JwtIssuer": "test-external-applications",
++        "JwtAudience": "external-applications-api"
++      },
++      "Frontend": {
++        "Origin": "https://test.apply-transfer-academy.service.gov.uk"
++      },
++      "SkipMassTransit": false,
++      "MassTransit": {
++        "Transport": "AzureServiceBus",
++        "AppPrefix": "",
++        "AzureServiceBus": {
++          "ConnectionString": "",
++          "AutoCreateEntities": false,
++          "ConfigureEndpoints": false,
++          "UseWebSockets": true,
++          "InstanceIdentifier": "auto"
++        }
++      },
++      "FileStorage": {
++        "Azure": {
++          "ShareName": "s184d01-extapi-storage"
++        }
++      },
++      "FrontendSettings": {
++        "BaseUrl": "https://test.apply-transfer-academy.service.gov.uk",
++        "PreviewContentSelector": ".govuk-grid-column-full"
++      },
++      "Email": {
++        "ServiceSupportEmailAddress": "Farshad.DASHTI@education.gov.uk"
++      },
++      "InternalServiceAuth": {
++        "Services": [
++          {
++            "Email": "eat-transfer-service@service.com",
++            "ApiKey": "secret"
++          },
++          {
++            "Email": "eat-cypress-service@service.com",
++            "ApiKey": "secret"
++          }
++        ],
++        "TokenLifetimeMinutes": 60
+       }
+-    ],
+-    "TokenLifetimeMinutes": 60
++    }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/src/DfE.ExternalApplications.Application/Applications/Commands/SubmitUserFeedbackCommandHandler.cs b/src/DfE.ExternalApplications.Application/Applications/Commands/SubmitUserFeedbackCommandHandler.cs
+index 29c6d68..d708dcd 100644
+--- a/src/DfE.ExternalApplications.Application/Applications/Commands/SubmitUserFeedbackCommandHandler.cs
++++ b/src/DfE.ExternalApplications.Application/Applications/Commands/SubmitUserFeedbackCommandHandler.cs
+@@ -3,30 +3,33 @@ using DfE.ExternalApplications.Application.Common.Behaviours;
+ using DfE.ExternalApplications.Application.Services;
+ using DfE.ExternalApplications.Domain.ValueObjects;
+ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+-using GovUK.Dfe.CoreLibs.Email.Interfaces;
+-using GovUK.Dfe.CoreLibs.Email.Models;
+-using MediatR;
+-using Microsoft.Extensions.Configuration;
+-using Microsoft.Extensions.Logging;
+-
+-namespace DfE.ExternalApplications.Application.Applications.Commands;
++using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
++using GovUK.Dfe.CoreLibs.Email.Interfaces;
++using GovUK.Dfe.CoreLibs.Email.Models;
++using MediatR;
++using Microsoft.Extensions.Logging;
++using DfE.ExternalApplications.Domain.Tenancy;
++using System;
++
++namespace DfE.ExternalApplications.Application.Applications.Commands;
+ 
+ [RateLimit(1, 30)]
+-public sealed record SubmitUserFeedbackCommand(UserFeedbackRequest Request)
+-    : IRequest<Result<bool>>, IRateLimitedRequest;
+-
+-public sealed class SubmitUserFeedbackCommandHandler(
+-    ILogger<SubmitUserFeedbackCommandHandler> logger,
+-    IConfiguration configuration,
+-    IEmailTemplateResolver emailTemplateResolver,
+-    IEmailService emailService) : IRequestHandler<SubmitUserFeedbackCommand, Result<bool>>
+-{
+-    private const string ServiceSupportEmailAddressConfigurationKey = "Email:ServiceSupportEmailAddress";
+-
+-    public async Task<Result<bool>> Handle(SubmitUserFeedbackCommand request, CancellationToken cancellationToken)
+-    {
+-        var supportEmailAddress = configuration.GetValue<string?>(ServiceSupportEmailAddressConfigurationKey);
++public sealed record SubmitUserFeedbackCommand(UserFeedbackRequest Request)
++    : IRequest<Result<bool>>, IRateLimitedRequest;
++
++public sealed class SubmitUserFeedbackCommandHandler(
++    ILogger<SubmitUserFeedbackCommandHandler> logger,
++    ITenantContextAccessor tenantContextAccessor,
++    IEmailTemplateResolver emailTemplateResolver,
++    IEmailService emailService) : IRequestHandler<SubmitUserFeedbackCommand, Result<bool>>
++{
++    private const string ServiceSupportEmailAddressConfigurationKey = "Email:ServiceSupportEmailAddress";
++
++    public async Task<Result<bool>> Handle(SubmitUserFeedbackCommand request, CancellationToken cancellationToken)
++    {
++        var tenantConfig = tenantContextAccessor.CurrentTenant?.Settings
++                           ?? throw new InvalidOperationException("Tenant configuration has not been resolved for user feedback handling.");
++        var supportEmailAddress = tenantConfig.GetValue<string?>(ServiceSupportEmailAddressConfigurationKey);
+ 
+         if (supportEmailAddress is null)
+         {
+@@ -137,4 +140,4 @@ internal static class MessageFormatExtensions
+     };
+ 
+     internal static string ToDisplay(this string? s) => s ?? "Not provided";
+-}
+\ No newline at end of file
++}
+diff --git a/src/DfE.ExternalApplications.Application/Applications/EventHandlers/FileUploadedDomainEventHandler.cs b/src/DfE.ExternalApplications.Application/Applications/EventHandlers/FileUploadedDomainEventHandler.cs
+index cb45f6c..982c210 100644
+--- a/src/DfE.ExternalApplications.Application/Applications/EventHandlers/FileUploadedDomainEventHandler.cs
++++ b/src/DfE.ExternalApplications.Application/Applications/EventHandlers/FileUploadedDomainEventHandler.cs
+@@ -1,17 +1,20 @@
++using System;
++using System.Collections.Generic;
++using System.IO;
+ using DfE.ExternalApplications.Application.Common.EventHandlers;
+ using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Helpers;
+ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces;
+ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Models;
+-using Microsoft.Extensions.Configuration;
+ using Microsoft.Extensions.Logging;
++using DfE.ExternalApplications.Domain.Tenancy;
+ 
+ namespace DfE.ExternalApplications.Application.Applications.EventHandlers;
+ 
+ public sealed class FileUploadedDomainEventHandler(
+     ILogger<FileUploadedDomainEventHandler> logger,
+     IEventPublisher publishEndpoint,
+-    IConfiguration configuration,
++    ITenantContextAccessor tenantContextAccessor,
+     IAzureSpecificOperations azureSpecificOperations)
+     : BaseEventHandler<Domain.Events.FileUploadedDomainEvent>(logger)
+ {
+@@ -34,7 +37,7 @@ public sealed class FileUploadedDomainEventHandler(
+             // Build fake file:// URI so local function can load from disk
+             var localPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileUrl);
+             sasUri = $"file:///{localPath.Replace("\\", "/")}";
+-            logger.LogInformation("Local environment detected � using fake SAS URI: {SasUri}", sasUri);
++            logger.LogInformation("Local environment detected - using fake SAS URI: {SasUri}", sasUri);
+         }
+         else
+         {
+@@ -59,7 +62,7 @@ public sealed class FileUploadedDomainEventHandler(
+                 { "applicationId", file.ApplicationId.Value },
+                 { "userId", file.UploadedBy.Value },
+                 { "originalFileName", file.OriginalFileName },
+-                { "InstanceIdentifier", InstanceIdentifierHelper.GetInstanceIdentifier(configuration) ?? "" },
++                { "InstanceIdentifier", InstanceIdentifierHelper.GetInstanceIdentifier(tenantContextAccessor.CurrentTenant?.Settings) ?? "" },
+             }
+         );
+ 
+diff --git a/src/DfE.ExternalApplications.Application/Applications/Queries/GenerateApplicationPreviewHtmlQueryHandler.cs b/src/DfE.ExternalApplications.Application/Applications/Queries/GenerateApplicationPreviewHtmlQueryHandler.cs
+index e5855ec..efdbbe5 100644
+--- a/src/DfE.ExternalApplications.Application/Applications/Queries/GenerateApplicationPreviewHtmlQueryHandler.cs
++++ b/src/DfE.ExternalApplications.Application/Applications/Queries/GenerateApplicationPreviewHtmlQueryHandler.cs
+@@ -7,10 +7,11 @@ using DfE.ExternalApplications.Domain.Services;
+ using MediatR;
+ using Microsoft.AspNetCore.Http;
+ using Microsoft.EntityFrameworkCore;
+-using Microsoft.Extensions.Configuration;
+ using Microsoft.Extensions.Options;
++using System;
+ using System.Security.Claims;
+ using System.Text;
++using DfE.ExternalApplications.Domain.Tenancy;
+ 
+ namespace DfE.ExternalApplications.Application.Applications.Queries;
+ 
+@@ -21,7 +22,7 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
+     IHttpContextAccessor httpContextAccessor,
+     IPermissionCheckerService permissionCheckerService,
+     IStaticHtmlGeneratorService htmlGeneratorService,
+-    IConfiguration configuration,
++    ITenantContextAccessor tenantContextAccessor,
+     IOptions<InternalServiceAuthOptions> internalServiceAuthOptions)
+     : IRequestHandler<GenerateApplicationPreviewHtmlQuery, Result<DownloadFileResult>>
+ {
+@@ -53,7 +54,9 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
+                 return Result<DownloadFileResult>.Forbid("User does not have permission to access this application");
+ 
+             // Get frontend base URL from configuration
+-            var frontendBaseUrl = configuration["FrontendSettings:BaseUrl"];
++            var tenantConfig = tenantContextAccessor.CurrentTenant?.Settings
++                               ?? throw new InvalidOperationException("Tenant configuration has not been resolved for preview generation.");
++            var frontendBaseUrl = tenantConfig["FrontendSettings:BaseUrl"];
+             if (string.IsNullOrEmpty(frontendBaseUrl))
+             {
+                 return Result<DownloadFileResult>.Failure(
+@@ -82,7 +85,7 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
+ 
+             // Optional: Specify a CSS selector to extract only a specific section of the page
+             // For example, to extract only the main content area: ".govuk-grid-row" or "#main-content"
+-            var contentSelector = configuration["FrontendSettings:PreviewContentSelector"];
++            var contentSelector = tenantConfig["FrontendSettings:PreviewContentSelector"];
+ 
+             // Generate the static HTML using Playwright
+             var htmlContent = await htmlGeneratorService.GenerateStaticHtmlAsync(
+@@ -113,4 +116,3 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
+         }
+     }
+ }
+-
+diff --git a/src/DfE.ExternalApplications.Application/Consumers/ScanResultConsumer.cs b/src/DfE.ExternalApplications.Application/Consumers/ScanResultConsumer.cs
+index 07ee897..299e95c 100644
+--- a/src/DfE.ExternalApplications.Application/Consumers/ScanResultConsumer.cs
++++ b/src/DfE.ExternalApplications.Application/Consumers/ScanResultConsumer.cs
+@@ -8,8 +8,9 @@ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Helpers;
+ using MassTransit;
+ using MediatR;
+ using Microsoft.EntityFrameworkCore;
+-using Microsoft.Extensions.Configuration;
+ using Microsoft.Extensions.Logging;
++using DfE.ExternalApplications.Domain.Tenancy;
++using System;
+ using File = DfE.ExternalApplications.Domain.Entities.File;
+ 
+ namespace DfE.ExternalApplications.Application.Consumers;
+@@ -21,7 +22,7 @@ namespace DfE.ExternalApplications.Application.Consumers;
+ public sealed class ScanResultConsumer(
+     ILogger<ScanResultConsumer> logger,
+     IEaRepository<File> fileRepository,
+-    IConfiguration configuration,
++    ITenantContextAccessor tenantContextAccessor,
+     ISender sender) : IConsumer<ScanResultEvent>
+ {
+     public async Task Consume(ConsumeContext<ScanResultEvent> context)
+@@ -42,7 +43,9 @@ public sealed class ScanResultConsumer(
+                 ? scanResult.Metadata["InstanceIdentifier"]?.ToString()
+                 : null;
+ 
+-            var localInstanceId = InstanceIdentifierHelper.GetInstanceIdentifier(configuration);
++            var tenantConfiguration = tenantContextAccessor.CurrentTenant?.Settings
++                                     ?? throw new InvalidOperationException("Tenant configuration has not been resolved for message handling.");
++            var localInstanceId = InstanceIdentifierHelper.GetInstanceIdentifier(tenantConfiguration);
+ 
+             if (!InstanceIdentifierHelper.IsMessageForThisInstance(messageInstanceId, localInstanceId))
+             {
+@@ -147,4 +150,4 @@ public sealed class ScanResultConsumer(
+             throw; // Let MassTransit handle retries
+         }
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/src/DfE.ExternalApplications.Application/Services/CypressRequestChecker.cs b/src/DfE.ExternalApplications.Application/Services/CypressRequestChecker.cs
+index f76df48..c7acbd5 100644
+--- a/src/DfE.ExternalApplications.Application/Services/CypressRequestChecker.cs
++++ b/src/DfE.ExternalApplications.Application/Services/CypressRequestChecker.cs
+@@ -1,14 +1,15 @@
+-﻿using GovUK.Dfe.CoreLibs.Security.Interfaces;
++﻿using System;
++using GovUK.Dfe.CoreLibs.Security.Interfaces;
+ using Microsoft.AspNetCore.Http;
+-using Microsoft.Extensions.Configuration;
+ using Microsoft.Extensions.Hosting;
+ using Microsoft.Extensions.Logging;
++using DfE.ExternalApplications.Domain.Tenancy;
+ 
+ namespace DfE.ExternalApplications.Application.Services
+ {
+     public class CypressRequestChecker(
+         IHostEnvironment env,
+-        IConfiguration config,
++        ITenantContextAccessor tenantContextAccessor,
+         ILogger<CypressRequestChecker> logger)
+         : ICustomRequestChecker
+     {
+@@ -41,7 +42,9 @@ namespace DfE.ExternalApplications.Application.Services
+             }
+ 
+             // Check if Cypress toggle is allowed in configuration
+-            var allowCypressToggle = config.GetValue<bool>("CypressAuthentication:AllowToggle");
++            var tenantConfig = tenantContextAccessor.CurrentTenant?.Settings
++                               ?? throw new InvalidOperationException("Tenant configuration has not been resolved for Cypress validation.");
++            var allowCypressToggle = tenantConfig.GetValue<bool>("CypressAuthentication:AllowToggle");
+             if (!allowCypressToggle)
+             {
+                 logger.LogWarning(
+@@ -51,7 +54,7 @@ namespace DfE.ExternalApplications.Application.Services
+             }
+ 
+             // Validate secret
+-            var expectedSecret = config["CypressAuthentication:Secret"];
++            var expectedSecret = tenantConfig["CypressAuthentication:Secret"];
+             var providedSecret = httpContext.Request.Headers[CypressSecretHeaderKey].ToString();
+ 
+             if (string.IsNullOrWhiteSpace(expectedSecret) || string.IsNullOrWhiteSpace(providedSecret))
+diff --git a/src/DfE.ExternalApplications.Domain/Tenancy/ITenantConfigurationProvider.cs b/src/DfE.ExternalApplications.Domain/Tenancy/ITenantConfigurationProvider.cs
+new file mode 100644
+index 0000000..8283cde
+--- /dev/null
++++ b/src/DfE.ExternalApplications.Domain/Tenancy/ITenantConfigurationProvider.cs
+@@ -0,0 +1,8 @@
++namespace DfE.ExternalApplications.Domain.Tenancy;
++
++public interface ITenantConfigurationProvider
++{
++    TenantConfiguration? GetTenant(Guid id);
++
++    IReadOnlyCollection<TenantConfiguration> GetAllTenants();
++}
+diff --git a/src/DfE.ExternalApplications.Domain/Tenancy/ITenantContextAccessor.cs b/src/DfE.ExternalApplications.Domain/Tenancy/ITenantContextAccessor.cs
+new file mode 100644
+index 0000000..b281a12
+--- /dev/null
++++ b/src/DfE.ExternalApplications.Domain/Tenancy/ITenantContextAccessor.cs
+@@ -0,0 +1,6 @@
++namespace DfE.ExternalApplications.Domain.Tenancy;
++
++public interface ITenantContextAccessor
++{
++    TenantConfiguration? CurrentTenant { get; set; }
++}
+diff --git a/src/DfE.ExternalApplications.Domain/Tenancy/TenantConfiguration.cs b/src/DfE.ExternalApplications.Domain/Tenancy/TenantConfiguration.cs
+new file mode 100644
+index 0000000..03c0749
+--- /dev/null
++++ b/src/DfE.ExternalApplications.Domain/Tenancy/TenantConfiguration.cs
+@@ -0,0 +1,28 @@
++using Microsoft.Extensions.Configuration;
++
++namespace DfE.ExternalApplications.Domain.Tenancy;
++
++public class TenantConfiguration
++{
++    public TenantConfiguration(Guid id, string name, IConfigurationRoot settings, string[] frontendOrigins)
++    {
++        Id = id;
++        Name = name;
++        Settings = settings;
++        FrontendOrigins = frontendOrigins;
++    }
++
++    public Guid Id { get; }
++
++    public string Name { get; }
++
++    /// <summary>
++    /// Full tenant-specific settings, flattened so consumers can access keys
++    /// exactly as they existed before the Tenants wrapper was introduced.
++    /// </summary>
++    public IConfigurationRoot Settings { get; }
++
++    public string[] FrontendOrigins { get; }
++
++    public string? GetConnectionString(string name) => Settings.GetConnectionString(name);
++}
+diff --git a/src/DfE.ExternalApplications.Infrastructure/Database/GenericDbContextFactory.cs b/src/DfE.ExternalApplications.Infrastructure/Database/GenericDbContextFactory.cs
+index 20fad9e..eba9ee0 100644
+--- a/src/DfE.ExternalApplications.Infrastructure/Database/GenericDbContextFactory.cs
++++ b/src/DfE.ExternalApplications.Infrastructure/Database/GenericDbContextFactory.cs
+@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Design;
+ using Microsoft.Extensions.Configuration;
+ using Microsoft.Extensions.DependencyInjection;
+ using System.Reflection;
++using System.Linq;
++using DfE.ExternalApplications.Infrastructure.Services;
+ 
+ namespace DfE.ExternalApplications.Infrastructure.Database
+ {
+@@ -21,7 +23,10 @@ namespace DfE.ExternalApplications.Infrastructure.Database
+                 .AddEnvironmentVariables()
+                 .Build();
+ 
+-            var connectionString = configuration.GetConnectionString("DefaultConnection");
++            var tenantProvider = new OptionsTenantConfigurationProvider(configuration);
++            var defaultTenant = tenantProvider.GetAllTenants().FirstOrDefault();
++            var tenantConfiguration = defaultTenant?.Settings ?? configuration;
++            var connectionString = tenantConfiguration.GetConnectionString("DefaultConnection");
+ 
+             var services = new ServiceCollection();
+ 
+@@ -69,7 +74,7 @@ namespace DfE.ExternalApplications.Infrastructure.Database
+             return (TContext)Activator.CreateInstance(
+             typeof(TContext),
+                 optionsBuilder.Options,
+-                configuration, serviceProvider)!;
++                tenantConfiguration, serviceProvider)!;
+         }
+     }
+ }
+diff --git a/src/DfE.ExternalApplications.Infrastructure/InfrastructureServiceCollectionExtensions.cs b/src/DfE.ExternalApplications.Infrastructure/InfrastructureServiceCollectionExtensions.cs
+index bb20e70..d59ef62 100644
+--- a/src/DfE.ExternalApplications.Infrastructure/InfrastructureServiceCollectionExtensions.cs
++++ b/src/DfE.ExternalApplications.Infrastructure/InfrastructureServiceCollectionExtensions.cs
+@@ -34,12 +34,16 @@ namespace Microsoft.Extensions.DependencyInjection
+             services.AddScoped<INotificationSignalRService, NotificationSignalRService>();
+ 
+             //Db
+-            var connectionString = config.GetConnectionString("DefaultConnection");
++            services.AddDbContext<ExternalApplicationsContext>((serviceProvider, options) =>
++            {
++                var tenantAccessor = serviceProvider.GetRequiredService<DfE.ExternalApplications.Domain.Tenancy.ITenantContextAccessor>();
++                var tenant = tenantAccessor.CurrentTenant ?? throw new InvalidOperationException("Tenant context not resolved for database access.");
++                var connectionString = tenant.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException($"Tenant '{tenant.Name}' is missing DefaultConnection connection string.");
+ 
+-            services.AddDbContext<ExternalApplicationsContext>(options =>
+                 options.UseSqlServer(connectionString, sql =>
+                 {
+-                }));
++                });
++            });
+ 
+             return services;
+         }
+diff --git a/src/DfE.ExternalApplications.Infrastructure/Services/OptionsTenantConfigurationProvider.cs b/src/DfE.ExternalApplications.Infrastructure/Services/OptionsTenantConfigurationProvider.cs
+new file mode 100644
+index 0000000..4a11b0b
+--- /dev/null
++++ b/src/DfE.ExternalApplications.Infrastructure/Services/OptionsTenantConfigurationProvider.cs
+@@ -0,0 +1,87 @@
++using System.Collections.Generic;
++using System.Linq;
++using DfE.ExternalApplications.Domain.Tenancy;
++using Microsoft.Extensions.Configuration;
++
++namespace DfE.ExternalApplications.Infrastructure.Services;
++
++public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
++{
++    private readonly IConfiguration _configuration;
++
++    public OptionsTenantConfigurationProvider(IConfiguration configuration)
++    {
++        _configuration = configuration;
++    }
++
++    public TenantConfiguration? GetTenant(Guid id)
++    {
++        var tenantSection = _configuration.GetSection("Tenants").GetSection(id.ToString());
++        if (!tenantSection.Exists())
++        {
++            return null;
++        }
++
++        return BuildTenantConfiguration(tenantSection, id);
++    }
++
++    public IReadOnlyCollection<TenantConfiguration> GetAllTenants()
++    {
++        var tenantsSection = _configuration.GetSection("Tenants");
++        return tenantsSection
++            .GetChildren()
++            .Select(section => Guid.TryParse(section.Key, out var key)
++                ? BuildTenantConfiguration(section, key)
++                : null)
++            .Where(t => t is not null)
++            .Select(t => t!)
++            .ToArray();
++    }
++
++    private static TenantConfiguration BuildTenantConfiguration(IConfigurationSection tenantSection, Guid key)
++    {
++        var configuredId = tenantSection.GetValue<Guid?>("Id") ?? key;
++        if (configuredId != key)
++        {
++            throw new InvalidOperationException($"Tenant key {key} does not match configured Id {configuredId}.");
++        }
++
++        var name = tenantSection.GetValue<string>("Name");
++        if (string.IsNullOrWhiteSpace(name))
++        {
++            throw new InvalidOperationException($"Tenant {key} must have a non-empty Name.");
++        }
++
++        // Flatten the tenant section so consumers can read settings without the Tenants:{id} prefix
++        var flattenedPairs = tenantSection.AsEnumerable(makePaths: true)
++            .Where(kv => kv.Value is not null && !string.Equals(kv.Key, tenantSection.Path, StringComparison.OrdinalIgnoreCase))
++            .Select(kv =>
++            {
++                var prefix = $"{tenantSection.Path}:";
++                var trimmedKey = kv.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
++                    ? kv.Key[prefix.Length..]
++                    : kv.Key;
++                return new KeyValuePair<string, string?>(trimmedKey, kv.Value);
++            });
++
++        var settings = new ConfigurationBuilder()
++            .AddInMemoryCollection(flattenedPairs!)
++            .Build();
++
++        var origins = ResolveFrontendOrigins(settings);
++
++        return new TenantConfiguration(configuredId, name!, settings, origins);
++    }
++
++    private static string[] ResolveFrontendOrigins(IConfiguration settings)
++    {
++        var configuredOrigins = settings.GetSection("Frontend:Origins").Get<string[]>();
++        if (configuredOrigins is { Length: > 0 })
++        {
++            return configuredOrigins;
++        }
++
++        var singleOrigin = settings["Frontend:Origin"];
++        return string.IsNullOrWhiteSpace(singleOrigin) ? Array.Empty<string>() : new[] { singleOrigin };
++    }
++}

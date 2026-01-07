@@ -5,6 +5,8 @@ using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
+using DfE.ExternalApplications.Domain.Tenancy;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Identity.Web;
@@ -18,12 +20,14 @@ namespace DfE.ExternalApplications.Api.Security
     [ExcludeFromCodeCoverage]
     public static class AuthorizationExtensions
     {
-        public static IServiceCollection AddCustomAuthorization(this IServiceCollection services,
-            IConfiguration configuration)
+        public static IServiceCollection AddCustomAuthorization(
+            this IServiceCollection services,
+            IConfiguration configuration,
+            ITenantConfigurationProvider tenantConfigurationProvider)
         {
             services.AddExternalIdentityValidation(configuration);
 
-            // Config
+            // Config - DfESignIn from root config as base
             services
                 .Configure<OpenIdConnectOptions>(
                     configuration.GetSection("DfESignIn"));
@@ -68,10 +72,69 @@ namespace DfE.ExternalApplications.Api.Security
                             Encoding.UTF8.GetBytes(tokenSettings.SecretKey))
                     };
                 })
-                .AddMicrosoftIdentityWebApi(
-                    configuration.GetSection(AuthConstants.AzureAdSection),
-                    jwtBearerScheme: AuthConstants.AzureAdScheme,
-                    subscribeToJwtBearerMiddlewareDiagnosticsEvents: false);
+                .AddJwtBearer(AuthConstants.AzureAdScheme, opts =>
+                {
+                    // Configure dynamic token validation based on tenant
+                    opts.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            // Resolve tenant from the request (set by TenantResolutionMiddleware)
+                            var tenantAccessor = context.HttpContext.RequestServices.GetService<ITenantContextAccessor>();
+                            var tenant = tenantAccessor?.CurrentTenant;
+                            
+                            if (tenant != null)
+                            {
+                                var tenantConfig = tenant.Settings;
+                                var azureAdSection = tenantConfig.GetSection("AzureAd");
+                                
+                                var instance = azureAdSection["Instance"] ?? "https://login.microsoftonline.com/";
+                                var tenantId = azureAdSection["TenantId"];
+                                var audience = azureAdSection["Audience"];
+                                var clientId = azureAdSection["ClientId"];
+                                
+                                if (!string.IsNullOrEmpty(tenantId))
+                                {
+                                    context.Options.Authority = $"{instance.TrimEnd('/')}/{tenantId}/v2.0";
+                                    context.Options.TokenValidationParameters = new TokenValidationParameters
+                                    {
+                                        ValidateIssuer = true,
+                                        ValidIssuer = $"{instance.TrimEnd('/')}/{tenantId}/v2.0",
+                                        ValidateAudience = true,
+                                        ValidAudiences = new[] { audience, clientId, $"api://{clientId}" }
+                                            .Where(a => !string.IsNullOrEmpty(a))
+                                            .Distinct()
+                                            .ToArray(),
+                                        ValidateLifetime = true,
+                                        ValidateIssuerSigningKey = true
+                                    };
+                                }
+                            }
+                            
+                            return Task.CompletedTask;
+                        },
+                        OnAuthenticationFailed = context =>
+                        {
+                            // Log authentication failures for debugging
+                            var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
+                            logger?.LogWarning(context.Exception, "JWT authentication failed");
+                            return Task.CompletedTask;
+                        }
+                    };
+                    
+                    // Set a default authority (will be overridden per-request)
+                    var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault();
+                    if (firstTenant != null)
+                    {
+                        var azureAdSection = firstTenant.Settings.GetSection("AzureAd");
+                        var instance = azureAdSection["Instance"] ?? "https://login.microsoftonline.com/";
+                        var tenantId = azureAdSection["TenantId"];
+                        if (!string.IsNullOrEmpty(tenantId))
+                        {
+                            opts.Authority = $"{instance.TrimEnd('/')}/{tenantId}/v2.0";
+                        }
+                    }
+                });
 
             // set-up and define User and Template Permission policies
             var policyCustomizations = new Dictionary<string, Action<AuthorizationPolicyBuilder>>
@@ -165,7 +228,7 @@ namespace DfE.ExternalApplications.Api.Security
                     o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                     o.Cookie.SameSite = SameSiteMode.None;
                     o.ExpireTimeSpan = TimeSpan.FromMinutes(10);
-                    o.SlidingExpiration = false;             // SignalR/WebSockets won’t slide; we’ll renew explicitly
+                    o.SlidingExpiration = false;             // SignalR/WebSockets won't slide; we'll renew explicitly
                 });
 
             services.AddAuthorization(options =>
