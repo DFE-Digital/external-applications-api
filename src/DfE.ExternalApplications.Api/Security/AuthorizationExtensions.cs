@@ -25,12 +25,16 @@ namespace DfE.ExternalApplications.Api.Security
             IConfiguration configuration,
             ITenantConfigurationProvider tenantConfigurationProvider)
         {
-            services.AddExternalIdentityValidation(configuration);
+            // Get the first tenant's configuration for DfESignIn (now nested under tenants)
+            var firstTenantConfig = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()?.Settings;
+            var signInConfiguration = firstTenantConfig ?? configuration;
+            
+            services.AddExternalIdentityValidation(signInConfiguration);
 
-            // Config - DfESignIn from root config as base
+            // Config - DfESignIn from tenant config (now nested under each tenant)
             services
                 .Configure<OpenIdConnectOptions>(
-                    configuration.GetSection("DfESignIn"));
+                    signInConfiguration.GetSection("DfESignIn"));
 
             var tokenSettings = new TokenSettings();
             configuration.GetSection("Authorization:TokenSettings").Bind(tokenSettings);
@@ -74,40 +78,86 @@ namespace DfE.ExternalApplications.Api.Security
                 })
                 .AddJwtBearer(AuthConstants.AzureAdScheme, opts =>
                 {
-                    // Configure dynamic token validation based on tenant
+                    // Set default authority from first tenant for signing key resolution
+                    var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault();
+                    if (firstTenant != null)
+                    {
+                        var azureAdSection = firstTenant.Settings.GetSection("AzureAd");
+                        var instance = azureAdSection["Instance"] ?? "https://login.microsoftonline.com/";
+                        var tenantId = azureAdSection["TenantId"];
+                        if (!string.IsNullOrEmpty(tenantId))
+                        {
+                            opts.Authority = $"{instance.TrimEnd('/')}/{tenantId}/v2.0";
+                        }
+                        
+                        // Collect all valid audiences from ALL tenants at startup
+                        var allAudiences = tenantConfigurationProvider.GetAllTenants()
+                            .SelectMany(t =>
+                            {
+                                var section = t.Settings.GetSection("AzureAd");
+                                var audience = section["Audience"];
+                                var clientId = section["ClientId"];
+                                return new[] { audience, clientId, $"api://{clientId}" };
+                            })
+                            .Where(a => !string.IsNullOrEmpty(a))
+                            .Distinct()
+                            .ToArray();
+                        
+                        // Collect all valid issuers from ALL tenants (both v1.0 and v2.0 formats)
+                        var allIssuers = tenantConfigurationProvider.GetAllTenants()
+                            .SelectMany(t =>
+                            {
+                                var section = t.Settings.GetSection("AzureAd");
+                                var inst = section["Instance"] ?? "https://login.microsoftonline.com/";
+                                var tid = section["TenantId"];
+                                if (string.IsNullOrEmpty(tid)) return Array.Empty<string>();
+                                
+                                // Azure AD tokens can have v1.0 or v2.0 issuer format
+                                return new[]
+                                {
+                                    $"{inst.TrimEnd('/')}/{tid}/v2.0",           // v2.0 format
+                                    $"https://sts.windows.net/{tid}/",            // v1.0 format
+                                    $"https://login.microsoftonline.com/{tid}/v2.0" // explicit v2.0
+                                };
+                            })
+                            .Where(i => !string.IsNullOrEmpty(i))
+                            .Distinct()
+                            .ToArray();
+                        
+                        opts.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidIssuers = allIssuers,
+                            ValidateAudience = true,
+                            ValidAudiences = allAudiences,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true
+                        };
+                    }
+                    
                     opts.Events = new JwtBearerEvents
                     {
-                        OnMessageReceived = context =>
+                        OnTokenValidated = context =>
                         {
-                            // Resolve tenant from the request (set by TenantResolutionMiddleware)
+                            // After token is validated, verify it matches the resolved tenant
                             var tenantAccessor = context.HttpContext.RequestServices.GetService<ITenantContextAccessor>();
                             var tenant = tenantAccessor?.CurrentTenant;
                             
                             if (tenant != null)
                             {
-                                var tenantConfig = tenant.Settings;
-                                var azureAdSection = tenantConfig.GetSection("AzureAd");
+                                var azureAdSection = tenant.Settings.GetSection("AzureAd");
+                                var expectedAudience = azureAdSection["Audience"];
+                                var expectedClientId = azureAdSection["ClientId"];
                                 
-                                var instance = azureAdSection["Instance"] ?? "https://login.microsoftonline.com/";
-                                var tenantId = azureAdSection["TenantId"];
-                                var audience = azureAdSection["Audience"];
-                                var clientId = azureAdSection["ClientId"];
+                                var tokenAudience = context.Principal?.Claims
+                                    .FirstOrDefault(c => c.Type == "aud")?.Value;
                                 
-                                if (!string.IsNullOrEmpty(tenantId))
+                                var validAudiences = new[] { expectedAudience, expectedClientId, $"api://{expectedClientId}" }
+                                    .Where(a => !string.IsNullOrEmpty(a));
+                                
+                                if (!string.IsNullOrEmpty(tokenAudience) && !validAudiences.Contains(tokenAudience))
                                 {
-                                    context.Options.Authority = $"{instance.TrimEnd('/')}/{tenantId}/v2.0";
-                                    context.Options.TokenValidationParameters = new TokenValidationParameters
-                                    {
-                                        ValidateIssuer = true,
-                                        ValidIssuer = $"{instance.TrimEnd('/')}/{tenantId}/v2.0",
-                                        ValidateAudience = true,
-                                        ValidAudiences = new[] { audience, clientId, $"api://{clientId}" }
-                                            .Where(a => !string.IsNullOrEmpty(a))
-                                            .Distinct()
-                                            .ToArray(),
-                                        ValidateLifetime = true,
-                                        ValidateIssuerSigningKey = true
-                                    };
+                                    context.Fail($"Token audience '{tokenAudience}' does not match tenant '{tenant.Name}'");
                                 }
                             }
                             
@@ -121,19 +171,6 @@ namespace DfE.ExternalApplications.Api.Security
                             return Task.CompletedTask;
                         }
                     };
-                    
-                    // Set a default authority (will be overridden per-request)
-                    var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault();
-                    if (firstTenant != null)
-                    {
-                        var azureAdSection = firstTenant.Settings.GetSection("AzureAd");
-                        var instance = azureAdSection["Instance"] ?? "https://login.microsoftonline.com/";
-                        var tenantId = azureAdSection["TenantId"];
-                        if (!string.IsNullOrEmpty(tenantId))
-                        {
-                            opts.Authority = $"{instance.TrimEnd('/')}/{tenantId}/v2.0";
-                        }
-                    }
                 });
 
             // set-up and define User and Template Permission policies

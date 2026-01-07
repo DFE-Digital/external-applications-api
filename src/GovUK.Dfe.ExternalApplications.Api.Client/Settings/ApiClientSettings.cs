@@ -30,5 +30,12 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Settings
         /// If null or empty, a default set of common headers will be forwarded.
         /// </summary>
         public string[]? HeadersToForward { get; set; }
+        
+        /// <summary>
+        /// The unique identifier of the tenant this client is associated with.
+        /// This ID will be automatically included as the X-Tenant-ID header in all API requests.
+        /// Required for multi-tenant API access.
+        /// </summary>
+        public Guid? TenantId { get; set; }
     }
 }
