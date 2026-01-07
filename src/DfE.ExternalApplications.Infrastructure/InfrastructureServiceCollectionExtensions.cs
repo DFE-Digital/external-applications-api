@@ -34,12 +34,16 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<INotificationSignalRService, NotificationSignalRService>();
 
             //Db
-            var connectionString = config.GetConnectionString("DefaultConnection");
+            services.AddDbContext<ExternalApplicationsContext>((serviceProvider, options) =>
+            {
+                var tenantAccessor = serviceProvider.GetRequiredService<DfE.ExternalApplications.Domain.Tenancy.ITenantContextAccessor>();
+                var tenant = tenantAccessor.CurrentTenant ?? throw new InvalidOperationException("Tenant context not resolved for database access.");
+                var connectionString = tenant.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException($"Tenant '{tenant.Name}' is missing DefaultConnection connection string.");
 
-            services.AddDbContext<ExternalApplicationsContext>(options =>
                 options.UseSqlServer(connectionString, sql =>
                 {
-                }));
+                });
+            });
 
             return services;
         }

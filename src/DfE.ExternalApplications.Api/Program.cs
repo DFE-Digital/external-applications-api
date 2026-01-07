@@ -12,6 +12,7 @@ using GovUK.Dfe.CoreLibs.Http.Middlewares.CorrelationId;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.FeatureManagement;
 using NetEscapades.AspNetCore.SecurityHeaders;
 using Serilog;
@@ -20,6 +21,10 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
+using DfE.ExternalApplications.Api.Tenancy;
+using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Infrastructure.Services;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
 namespace DfE.ExternalApplications.Api
@@ -81,23 +86,31 @@ namespace DfE.ExternalApplications.Api
             builder.Services.ConfigureOptions<SwaggerOptions>();
             builder.Services.AddFeatureManagement();
             builder.Services.AddHttpContextAccessor();
+            var tenantConfigurationProvider = new OptionsTenantConfigurationProvider(builder.Configuration);
+            builder.Services.AddSingleton<ITenantConfigurationProvider>(tenantConfigurationProvider);
+            builder.Services.AddScoped<ITenantContextAccessor, TenantContextAccessor>();
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
             builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
 
+            var defaultTenantConfig = tenantConfigurationProvider.GetAllTenants().FirstOrDefault();
+            var startupConfiguration = defaultTenantConfig?.Settings ?? builder.Configuration;
+
             builder.Services.AddCors(o => o.AddPolicy("Frontend", p =>
-                p.WithOrigins(builder.Configuration["Frontend:Origin"] ?? "https://localhost:7020")
+                p.WithOrigins(startupConfiguration["Frontend:Origin"] ?? "https://localhost:7020")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()));
 
-            // Configure SignalR
-            ConfigureSignalR(builder.Services, builder.Configuration, builder.Environment);
+            builder.Services.AddSingleton<ICorsPolicyProvider, TenantCorsPolicyProvider>();
 
-            builder.Services.AddApplicationDependencyGroup(builder.Configuration);
-            builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
-            builder.Services.AddCustomAuthorization(builder.Configuration);
+            // Configure SignalR
+            ConfigureSignalR(builder.Services, startupConfiguration, builder.Environment);
+
+            builder.Services.AddApplicationDependencyGroup(startupConfiguration);
+            builder.Services.AddInfrastructureDependencyGroup(startupConfiguration);
+            builder.Services.AddCustomAuthorization(startupConfiguration);
 
             builder.Services.AddOptions<SwaggerUIOptions>()
                 .Configure<IHttpContextAccessor>((swaggerUiOptions, httpContextAccessor) =>
@@ -118,7 +131,7 @@ namespace DfE.ExternalApplications.Api
                     };
                 });
 
-            var appInsightsCnnStr = builder.Configuration.GetSection("ApplicationInsights")?["ConnectionString"];
+            var appInsightsCnnStr = startupConfiguration.GetSection("ApplicationInsights")?["ConnectionString"];
             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
             {
                 builder.Services.AddApplicationInsightsTelemetry(opt => { opt.ConnectionString = appInsightsCnnStr; });
@@ -144,6 +157,8 @@ namespace DfE.ExternalApplications.Api
             forwardOptions.KnownNetworks.Clear();
             forwardOptions.KnownProxies.Clear();
             app.UseForwardedHeaders(forwardOptions);
+
+            app.UseMiddleware<TenantResolutionMiddleware>();
 
             // CORS must be early in the pipeline to ensure headers are added to all responses (including errors)
             app.UseCors("Frontend");

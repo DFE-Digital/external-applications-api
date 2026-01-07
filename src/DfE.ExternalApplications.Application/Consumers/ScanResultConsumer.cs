@@ -8,8 +8,9 @@ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Helpers;
 using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using DfE.ExternalApplications.Domain.Tenancy;
+using System;
 using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Application.Consumers;
@@ -21,7 +22,7 @@ namespace DfE.ExternalApplications.Application.Consumers;
 public sealed class ScanResultConsumer(
     ILogger<ScanResultConsumer> logger,
     IEaRepository<File> fileRepository,
-    IConfiguration configuration,
+    ITenantContextAccessor tenantContextAccessor,
     ISender sender) : IConsumer<ScanResultEvent>
 {
     public async Task Consume(ConsumeContext<ScanResultEvent> context)
@@ -42,7 +43,9 @@ public sealed class ScanResultConsumer(
                 ? scanResult.Metadata["InstanceIdentifier"]?.ToString()
                 : null;
 
-            var localInstanceId = InstanceIdentifierHelper.GetInstanceIdentifier(configuration);
+            var tenantConfiguration = tenantContextAccessor.CurrentTenant?.Settings
+                                     ?? throw new InvalidOperationException("Tenant configuration has not been resolved for message handling.");
+            var localInstanceId = InstanceIdentifierHelper.GetInstanceIdentifier(tenantConfiguration);
 
             if (!InstanceIdentifierHelper.IsMessageForThisInstance(messageInstanceId, localInstanceId))
             {

@@ -1,17 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using DfE.ExternalApplications.Application.Common.EventHandlers;
 using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Helpers;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Models;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using DfE.ExternalApplications.Domain.Tenancy;
 
 namespace DfE.ExternalApplications.Application.Applications.EventHandlers;
 
 public sealed class FileUploadedDomainEventHandler(
     ILogger<FileUploadedDomainEventHandler> logger,
     IEventPublisher publishEndpoint,
-    IConfiguration configuration,
+    ITenantContextAccessor tenantContextAccessor,
     IAzureSpecificOperations azureSpecificOperations)
     : BaseEventHandler<Domain.Events.FileUploadedDomainEvent>(logger)
 {
@@ -34,7 +37,7 @@ public sealed class FileUploadedDomainEventHandler(
             // Build fake file:// URI so local function can load from disk
             var localPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", fileUrl);
             sasUri = $"file:///{localPath.Replace("\\", "/")}";
-            logger.LogInformation("Local environment detected — using fake SAS URI: {SasUri}", sasUri);
+            logger.LogInformation("Local environment detected - using fake SAS URI: {SasUri}", sasUri);
         }
         else
         {
@@ -59,7 +62,7 @@ public sealed class FileUploadedDomainEventHandler(
                 { "applicationId", file.ApplicationId.Value },
                 { "userId", file.UploadedBy.Value },
                 { "originalFileName", file.OriginalFileName },
-                { "InstanceIdentifier", InstanceIdentifierHelper.GetInstanceIdentifier(configuration) ?? "" },
+                { "InstanceIdentifier", InstanceIdentifierHelper.GetInstanceIdentifier(tenantContextAccessor.CurrentTenant?.Settings) ?? "" },
             }
         );
 

@@ -7,10 +7,11 @@ using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using System;
 using System.Security.Claims;
 using System.Text;
+using DfE.ExternalApplications.Domain.Tenancy;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -21,7 +22,7 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IStaticHtmlGeneratorService htmlGeneratorService,
-    IConfiguration configuration,
+    ITenantContextAccessor tenantContextAccessor,
     IOptions<InternalServiceAuthOptions> internalServiceAuthOptions)
     : IRequestHandler<GenerateApplicationPreviewHtmlQuery, Result<DownloadFileResult>>
 {
@@ -53,7 +54,9 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
                 return Result<DownloadFileResult>.Forbid("User does not have permission to access this application");
 
             // Get frontend base URL from configuration
-            var frontendBaseUrl = configuration["FrontendSettings:BaseUrl"];
+            var tenantConfig = tenantContextAccessor.CurrentTenant?.Settings
+                               ?? throw new InvalidOperationException("Tenant configuration has not been resolved for preview generation.");
+            var frontendBaseUrl = tenantConfig["FrontendSettings:BaseUrl"];
             if (string.IsNullOrEmpty(frontendBaseUrl))
             {
                 return Result<DownloadFileResult>.Failure(
@@ -82,7 +85,7 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
 
             // Optional: Specify a CSS selector to extract only a specific section of the page
             // For example, to extract only the main content area: ".govuk-grid-row" or "#main-content"
-            var contentSelector = configuration["FrontendSettings:PreviewContentSelector"];
+            var contentSelector = tenantConfig["FrontendSettings:PreviewContentSelector"];
 
             // Generate the static HTML using Playwright
             var htmlContent = await htmlGeneratorService.GenerateStaticHtmlAsync(
@@ -113,4 +116,3 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
         }
     }
 }
-
