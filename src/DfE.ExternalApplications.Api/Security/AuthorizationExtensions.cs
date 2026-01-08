@@ -25,16 +25,41 @@ namespace DfE.ExternalApplications.Api.Security
             IConfiguration configuration,
             ITenantConfigurationProvider tenantConfigurationProvider)
         {
-            // Get the first tenant's configuration for DfESignIn (now nested under tenants)
-            var firstTenantConfig = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()?.Settings;
+            // Collect all DfESignIn configurations from all tenants for multi-provider support
+            var allTenants = tenantConfigurationProvider.GetAllTenants();
+            var firstTenantConfig = allTenants.FirstOrDefault()?.Settings;
             var signInConfiguration = firstTenantConfig ?? configuration;
             
+            // Register external identity validation with first tenant's base config
             services.AddExternalIdentityValidation(signInConfiguration);
 
-            // Config - DfESignIn from tenant config (now nested under each tenant)
-            services
-                .Configure<OpenIdConnectOptions>(
-                    signInConfiguration.GetSection("DfESignIn"));
+            // Configure OpenIdConnectOptions with ALL tenants' DfESignIn settings
+            services.Configure<OpenIdConnectOptions>(opts =>
+            {
+                // Bind base settings from first tenant
+                signInConfiguration.GetSection("DfESignIn").Bind(opts);
+                
+                // Collect all valid issuers from all tenants
+                opts.ValidIssuers = allTenants
+                    .Select(t => t.Settings["DfESignIn:Issuer"])
+                    .Where(i => !string.IsNullOrEmpty(i))
+                    .Distinct()
+                    .ToList()!;
+                
+                // Collect all valid audiences (client IDs) from all tenants
+                opts.ValidAudiences = allTenants
+                    .Select(t => t.Settings["DfESignIn:ClientId"])
+                    .Where(a => !string.IsNullOrEmpty(a))
+                    .Distinct()
+                    .ToList()!;
+                
+                // Collect all discovery endpoints from all tenants
+                opts.DiscoveryEndpoints = allTenants
+                    .Select(t => t.Settings["DfESignIn:DiscoveryEndpoint"])
+                    .Where(d => !string.IsNullOrEmpty(d))
+                    .Distinct()
+                    .ToList()!;
+            });
 
             var tokenSettings = new TokenSettings();
             configuration.GetSection("Authorization:TokenSettings").Bind(tokenSettings);
