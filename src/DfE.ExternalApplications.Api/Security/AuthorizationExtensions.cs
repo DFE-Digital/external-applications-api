@@ -27,38 +27,55 @@ namespace DfE.ExternalApplications.Api.Security
         {
             // Collect all DfESignIn configurations from all tenants for multi-provider support
             var allTenants = tenantConfigurationProvider.GetAllTenants();
-            var firstTenantConfig = allTenants.FirstOrDefault()?.Settings;
-            var signInConfiguration = firstTenantConfig ?? configuration;
             
-            // Register external identity validation with first tenant's base config
-            services.AddExternalIdentityValidation(signInConfiguration);
-
-            // Configure OpenIdConnectOptions with ALL tenants' DfESignIn settings
-            services.Configure<OpenIdConnectOptions>(opts =>
+            // Register external identity validation with multi-provider support
+            // Each tenant's DfESignIn config is added as an isolated provider
+            // The validator will try each provider until one fully validates (issuer + audience must match same provider)
+            services.AddExternalIdentityValidation(configuration, multiOpts =>
             {
-                // Bind base settings from first tenant
-                signInConfiguration.GetSection("DfESignIn").Bind(opts);
-                
-                // Collect all valid issuers from all tenants
-                opts.ValidIssuers = allTenants
-                    .Select(t => t.Settings["DfESignIn:Issuer"])
-                    .Where(i => !string.IsNullOrEmpty(i))
-                    .Distinct()
-                    .ToList()!;
-                
-                // Collect all valid audiences (client IDs) from all tenants
-                opts.ValidAudiences = allTenants
-                    .Select(t => t.Settings["DfESignIn:ClientId"])
-                    .Where(a => !string.IsNullOrEmpty(a))
-                    .Distinct()
-                    .ToList()!;
-                
-                // Collect all discovery endpoints from all tenants
-                opts.DiscoveryEndpoints = allTenants
-                    .Select(t => t.Settings["DfESignIn:DiscoveryEndpoint"])
-                    .Where(d => !string.IsNullOrEmpty(d))
-                    .Distinct()
-                    .ToList()!;
+                foreach (var tenant in allTenants)
+                {
+                    var dfeSignInSection = tenant.Settings.GetSection("DfESignIn");
+                    var discoveryEndpoint = dfeSignInSection["DiscoveryEndpoint"];
+                    
+                    // Only add providers with valid discovery endpoints
+                    if (!string.IsNullOrEmpty(discoveryEndpoint))
+                    {
+                        var providerOpts = new OpenIdConnectOptions
+                        {
+                            // Identity
+                            Issuer = dfeSignInSection["Issuer"],
+                            Authority = dfeSignInSection["Authority"],
+                            ClientId = dfeSignInSection["ClientId"],
+                            ClientSecret = dfeSignInSection["ClientSecret"],
+                            DiscoveryEndpoint = discoveryEndpoint,
+                            
+                            // Validation settings
+                            ValidateIssuer = bool.TryParse(dfeSignInSection["ValidateIssuer"], out var vi) ? vi : true,
+                            ValidateAudience = bool.TryParse(dfeSignInSection["ValidateAudience"], out var va) ? va : true,
+                            ValidateLifetime = bool.TryParse(dfeSignInSection["ValidateLifetime"], out var vl) ? vl : true,
+                            
+                            // Other settings that may be configured
+                            RedirectUri = dfeSignInSection["RedirectUri"],
+                            Prompt = dfeSignInSection["Prompt"],
+                            ResponseType = dfeSignInSection["ResponseType"] ?? "code",
+                            RequireHttpsMetadata = bool.TryParse(dfeSignInSection["RequireHttpsMetadata"], out var rhm) ? rhm : true,
+                            GetClaimsFromUserInfoEndpoint = bool.TryParse(dfeSignInSection["GetClaimsFromUserInfoEndpoint"], out var gc) ? gc : true,
+                            SaveTokens = bool.TryParse(dfeSignInSection["SaveTokens"], out var st) ? st : true,
+                            UseTokenLifetime = bool.TryParse(dfeSignInSection["UseTokenLifetime"], out var utl) ? utl : true,
+                            NameClaimType = dfeSignInSection["NameClaimType"] ?? "email"
+                        };
+                        
+                        // Add scopes if configured
+                        var scopesSection = dfeSignInSection.GetSection("Scopes");
+                        if (scopesSection.Exists())
+                        {
+                            providerOpts.Scopes = scopesSection.Get<List<string>>() ?? new List<string> { "openid", "profile", "email" };
+                        }
+                        
+                        multiOpts.Providers.Add(providerOpts);
+                    }
+                }
             });
 
             var tokenSettings = new TokenSettings();
