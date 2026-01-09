@@ -39,10 +39,15 @@ namespace DfE.ExternalApplications.Api
             {
                 loggerConfiguration
                     .ReadFrom.Configuration(context.Configuration)
-                    .WriteTo.ApplicationInsights(services.GetRequiredService<TelemetryConfiguration>(),
-                        TelemetryConverter.Traces)
                     .Enrich.FromLogContext()
                     .WriteTo.Console();
+                
+                // Only add Application Insights sink if it's configured
+                var telemetryConfig = services.GetService<TelemetryConfiguration>();
+                if (telemetryConfig != null)
+                {
+                    loggerConfiguration.WriteTo.ApplicationInsights(telemetryConfig, TelemetryConverter.Traces);
+                }
             });
 
             builder.Services.AddControllers(opts =>
@@ -144,8 +149,9 @@ namespace DfE.ExternalApplications.Api
                     };
                 });
 
-            // Application Insights is configured from root config (shared across tenants)
-            var appInsightsCnnStr = builder.Configuration.GetSection("ApplicationInsights")?["ConnectionString"];
+            // Application Insights is configured from first tenant's config
+            var firstTenantConfig = allTenants.FirstOrDefault()?.Settings;
+            var appInsightsCnnStr = firstTenantConfig?.GetSection("ApplicationInsights")?["ConnectionString"];
             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
             {
                 builder.Services.AddApplicationInsightsTelemetry(opt => { opt.ConnectionString = appInsightsCnnStr; });

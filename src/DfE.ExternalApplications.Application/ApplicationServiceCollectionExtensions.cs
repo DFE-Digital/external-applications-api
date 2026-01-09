@@ -27,6 +27,12 @@ namespace Microsoft.Extensions.DependencyInjection
             IConfiguration config,
             ITenantConfigurationProvider tenantConfigurationProvider)
         {
+            // Get the first tenant's configuration for services that need root-level config
+            // (CoreLibs extensions like FileStorage, Email, Notifications read from root config)
+            var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()
+                ?? throw new InvalidOperationException("At least one tenant must be configured.");
+            var tenantConfig = firstTenant.Settings;
+            
             // Performance logging is enabled if any tenant has it enabled
             var performanceLoggingEnabled = tenantConfigurationProvider
                 .GetAllTenants()
@@ -58,17 +64,20 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<ITemplateFactory, TemplateFactory>();
             services.AddTransient<IFileFactory, FileFactory>();
 
-            // Configure email template resolution from root config (shared across tenants)
-            services.Configure<ApplicationTemplatesConfiguration>(config.GetSection("ApplicationTemplates"));
-            services.Configure<EmailTemplatesConfiguration>(config.GetSection("EmailTemplates"));
+            // Configure email template resolution from first tenant's config
+            services.Configure<ApplicationTemplatesConfiguration>(tenantConfig.GetSection("ApplicationTemplates"));
+            services.Configure<EmailTemplatesConfiguration>(tenantConfig.GetSection("EmailTemplates"));
             services.AddTransient<IEmailTemplateResolver, EmailTemplateResolver>();
 
             services.AddBackgroundService();
-            services.AddNotificationServicesWithRedis(config);
+            
+            // Use first tenant's config for CoreLibs services
+            // These services read from root-level config, so we pass the tenant's settings
+            services.AddNotificationServicesWithRedis(tenantConfig);
 
-            services.AddFileStorage(config);
+            services.AddFileStorage(tenantConfig);
 
-            services.AddEmailServicesWithGovUkNotify(config);
+            services.AddEmailServicesWithGovUkNotify(tenantConfig);
 
             // Register tenant bus factory for per-tenant Service Bus connections (publishing)
             services.AddSingleton<ITenantBusFactory, TenantBusFactory>();
@@ -77,6 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IEventPublisher, TenantAwareEventPublisher>();
 
             // Skip MassTransit during NSwag/CodeGeneration to prevent assembly loading issues
+            // Note: This reads from root config for backward compatibility with CodeGeneration environment
             var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
             if (!skipMassTransit)
             {

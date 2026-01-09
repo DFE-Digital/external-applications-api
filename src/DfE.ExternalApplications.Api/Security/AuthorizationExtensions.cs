@@ -28,10 +28,14 @@ namespace DfE.ExternalApplications.Api.Security
             // Collect all DfESignIn configurations from all tenants for multi-provider support
             var allTenants = tenantConfigurationProvider.GetAllTenants();
             
+            // Get first tenant's config for services that need root-level configuration
+            var firstTenantForConfig = allTenants.FirstOrDefault();
+            var baseConfig = firstTenantForConfig?.Settings ?? configuration;
+            
             // Register external identity validation with multi-provider support
             // Each tenant's DfESignIn config is added as an isolated provider
             // The validator will try each provider until one fully validates (issuer + audience must match same provider)
-            services.AddExternalIdentityValidation(configuration, multiOpts =>
+            services.AddExternalIdentityValidation(baseConfig, multiOpts =>
             {
                 foreach (var tenant in allTenants)
                 {
@@ -79,9 +83,9 @@ namespace DfE.ExternalApplications.Api.Security
             });
 
             var tokenSettings = new TokenSettings();
-            configuration.GetSection("Authorization:TokenSettings").Bind(tokenSettings);
+            baseConfig.GetSection("Authorization:TokenSettings").Bind(tokenSettings);
 
-            services.AddUserTokenService(configuration);
+            services.AddUserTokenService(baseConfig);
 
             services.AddAuthentication(options =>
                 {
@@ -319,7 +323,7 @@ namespace DfE.ExternalApplications.Api.Security
             });
 
             services.AddApplicationAuthorization(
-                configuration,
+                baseConfig,
                 policyCustomizations: policyCustomizations,
                 apiAuthenticationScheme: AuthConstants.CompositeScheme,
                 configureResourcePolicies: null);
