@@ -61,6 +61,13 @@ public class TenantConsumerHostedService : IHostedService, IAsyncDisposable
         CancellationToken cancellationToken)
     {
         var connectionString = tenant.GetConnectionString("ServiceBus");
+        
+        // Log the connection string being used (masked for security)
+        var maskedConnectionString = MaskConnectionString(connectionString);
+        _logger.LogInformation(
+            "Tenant {TenantId} ({TenantName}) ServiceBus connection for consumer: {ConnectionString}",
+            tenant.Id, tenant.Name, maskedConnectionString);
+
         if (string.IsNullOrEmpty(connectionString))
         {
             _logger.LogInformation(
@@ -166,6 +173,31 @@ public class TenantConsumerHostedService : IHostedService, IAsyncDisposable
 
         return dummyPatterns.Any(pattern => 
             connectionString.Contains(pattern, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Masks sensitive parts of the connection string for logging.
+    /// </summary>
+    private static string MaskConnectionString(string? connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString))
+            return "(empty)";
+
+        // Extract the namespace for identification
+        var endpointMatch = System.Text.RegularExpressions.Regex.Match(
+            connectionString, 
+            @"Endpoint=sb://([^/;]+)", 
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        if (endpointMatch.Success)
+        {
+            return $"sb://{endpointMatch.Groups[1].Value}/...";
+        }
+
+        // If can't parse, just show first 20 chars
+        return connectionString.Length > 20 
+            ? connectionString[..20] + "..." 
+            : connectionString;
     }
 
     /// <summary>

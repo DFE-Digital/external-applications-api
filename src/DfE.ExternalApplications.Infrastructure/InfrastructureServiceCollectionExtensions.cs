@@ -9,6 +9,7 @@ using DfE.ExternalApplications.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -23,6 +24,11 @@ namespace Microsoft.Extensions.DependencyInjection
             var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()
                 ?? throw new InvalidOperationException("At least one tenant must be configured.");
             var tenantConfig = firstTenant.Settings;
+            
+            // Store the first tenant's connection string for fallback in message consumers
+            // Message consumers may not have HTTP context to resolve tenant
+            var fallbackConnectionString = firstTenant.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException("First tenant must have a DefaultConnection connection string.");
 
             //Repos
             services.AddScoped(typeof(IEaRepository<>), typeof(EaRepository<>));
@@ -41,12 +47,35 @@ namespace Microsoft.Extensions.DependencyInjection
             // SignalR Services
             services.AddScoped<INotificationSignalRService, NotificationSignalRService>();
 
-            //Db
+            //Db - with fallback for message consumers that don't have tenant context yet
             services.AddDbContext<ExternalApplicationsContext>((serviceProvider, options) =>
             {
-                var tenantAccessor = serviceProvider.GetRequiredService<DfE.ExternalApplications.Domain.Tenancy.ITenantContextAccessor>();
-                var tenant = tenantAccessor.CurrentTenant ?? throw new InvalidOperationException("Tenant context not resolved for database access.");
-                var connectionString = tenant.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException($"Tenant '{tenant.Name}' is missing DefaultConnection connection string.");
+                var tenantAccessor = serviceProvider.GetRequiredService<ITenantContextAccessor>();
+                var tenantProvider = serviceProvider.GetRequiredService<ITenantConfigurationProvider>();
+                
+                string connectionString;
+                
+                if (tenantAccessor.CurrentTenant != null)
+                {
+                    // Normal case: tenant context is available (HTTP request)
+                    var tenant = tenantAccessor.CurrentTenant;
+                    connectionString = tenant.GetConnectionString("DefaultConnection") 
+                        ?? throw new InvalidOperationException($"Tenant '{tenant.Name}' is missing DefaultConnection connection string.");
+                }
+                else
+                {
+                    // Fallback case: no tenant context (message consumer)
+                    // Use first tenant's connection string and log a warning
+                    // The consumer should set tenant context from message headers before doing tenant-specific operations
+                    var logger = serviceProvider.GetService<ILogger<ExternalApplicationsContext>>();
+                    logger?.LogDebug(
+                        "No tenant context available during DbContext creation. Using fallback connection (first tenant). " +
+                        "This is expected for message consumers - tenant context will be set from message headers.");
+                    
+                    // Try to get first tenant's connection string from provider (in case it changed)
+                    var defaultTenant = tenantProvider.GetAllTenants().FirstOrDefault();
+                    connectionString = defaultTenant?.GetConnectionString("DefaultConnection") ?? fallbackConnectionString;
+                }
 
                 options.UseSqlServer(connectionString, sql =>
                 {

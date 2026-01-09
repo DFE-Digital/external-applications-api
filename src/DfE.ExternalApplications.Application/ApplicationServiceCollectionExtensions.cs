@@ -5,7 +5,6 @@ using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.Tenancy;
-using ITenantBusFactory = DfE.ExternalApplications.Application.Services.ITenantBusFactory;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +15,11 @@ using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using GovUK.Dfe.CoreLibs.Email;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
-using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces;
+using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Exceptions;
+using MassTransit;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -79,23 +82,58 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddEmailServicesWithGovUkNotify(tenantConfig);
 
-            // Register tenant bus factory for per-tenant Service Bus connections (publishing)
-            services.AddSingleton<ITenantBusFactory, TenantBusFactory>();
-            
-            // Register tenant-aware event publisher that uses tenant-specific bus
-            services.AddScoped<IEventPublisher, TenantAwareEventPublisher>();
-
             // Skip MassTransit during NSwag/CodeGeneration to prevent assembly loading issues
             // Note: This reads from root config for backward compatibility with CodeGeneration environment
             var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
             if (!skipMassTransit)
             {
-                // Register consumer for DI resolution
-                services.AddScoped<ScanResultConsumer>();
+                // Use CoreLibs AddDfEMassTransit for publishing
+                // This properly configures MassTransit with DI integration
+                // Publishing uses the first tenant's Service Bus connection (all tenants share the same namespace)
+                services.AddDfEMassTransit(
+                    tenantConfig, // Use first tenant's config which has MassTransit settings
+                    configureConsumers: x =>
+                    {
+                        // Register consumer for DI resolution
+                        x.AddConsumer<ScanResultConsumer>();
+                    },
+                    configureBus: (context, cfg) =>
+                    {
+                        // Configure topic names for message types
+                        cfg.Message<ScanRequestedEvent>(m => m.SetEntityName(TopicNames.ScanRequests));
+                        cfg.Message<ScanResultEvent>(m => m.SetEntityName(TopicNames.ScanResult));
+                    },
+                    configureAzureServiceBus: (context, cfg) =>
+                    {
+                        cfg.UseJsonSerializer();
+
+                        // Get subscription name from first tenant's config
+                        var subscriptionName = tenantConfig["MassTransit:AzureServiceBus:SubscriptionName"] ?? "extapi";
+
+                        // Configure subscription endpoint with tenant-specific name
+                        cfg.SubscriptionEndpoint<ScanResultEvent>(subscriptionName, e =>
+                        {
+                            e.UseMessageRetry(r =>
+                            {
+                                // For MessageNotForThisInstanceException (instance filtering in Local env)
+                                r.Handle<MessageNotForThisInstanceException>();
+                                r.Immediate(10);
+
+                                // For all OTHER exceptions (real errors)
+                                r.Ignore<MessageNotForThisInstanceException>();
+                                r.Interval(3, TimeSpan.FromSeconds(5));
+                            });
+
+                            e.ConfigureConsumeTopology = false;
+                            e.ConfigureConsumer<ScanResultConsumer>(context);
+                        });
+                    }
+                );
                 
-                // Register hosted service that starts per-tenant consumer buses
-                // Each tenant gets its own subscription based on their MassTransit config
-                services.AddHostedService<TenantConsumerHostedService>();
+                // For multi-tenant consuming (if tenants have different subscription names),
+                // register the hosted service that starts per-tenant consumer buses
+                // Note: This is in addition to the primary bus consumer configured above
+                // services.AddHostedService<TenantConsumerHostedService>();
             }
 
             return services;
