@@ -15,13 +15,8 @@ using GovUK.Dfe.CoreLibs.Notifications.Extensions;
 using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using GovUK.Dfe.CoreLibs.Email;
-using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
-using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
-using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces;
-using MassTransit;
-using GovUK.Dfe.CoreLibs.Messaging.Contracts.Exceptions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -75,30 +70,22 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddEmailServicesWithGovUkNotify(config);
 
-            // Register tenant bus factory for per-tenant Service Bus connections
+            // Register tenant bus factory for per-tenant Service Bus connections (publishing)
             services.AddSingleton<ITenantBusFactory, TenantBusFactory>();
             
             // Register tenant-aware event publisher that uses tenant-specific bus
             services.AddScoped<IEventPublisher, TenantAwareEventPublisher>();
 
-            // Skip standard MassTransit configuration - using per-tenant bus factory instead
-            // Consumer registration is handled by the TenantBusFactory
+            // Skip MassTransit during NSwag/CodeGeneration to prevent assembly loading issues
             var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
             if (!skipMassTransit)
             {
-                // Register MassTransit for DI container resolution (required for consumers)
-                services.AddMassTransit(x =>
-                {
-                    x.AddConsumer<ScanResultConsumer>();
-                    
-                    x.UsingInMemory((context, cfg) =>
-                    {
-                        // Configure message types for topic routing
-                        cfg.Message<ScanRequestedEvent>(m => m.SetEntityName(TopicNames.ScanRequests));
-                        cfg.Message<ScanResultEvent>(m => m.SetEntityName(TopicNames.ScanResult));
-                        cfg.ConfigureEndpoints(context);
-                    });
-                });
+                // Register consumer for DI resolution
+                services.AddScoped<ScanResultConsumer>();
+                
+                // Register hosted service that starts per-tenant consumer buses
+                // Each tenant gets its own subscription based on their MassTransit config
+                services.AddHostedService<TenantConsumerHostedService>();
             }
 
             return services;
