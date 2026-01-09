@@ -127,7 +127,7 @@ namespace DfE.ExternalApplications.Api
             ConfigureSignalR(builder.Services, allTenants, builder.Environment);
 
             builder.Services.AddApplicationDependencyGroup(builder.Configuration, tenantConfigurationProvider);
-            builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
+            builder.Services.AddInfrastructureDependencyGroup(builder.Configuration, tenantConfigurationProvider);
             builder.Services.AddCustomAuthorization(builder.Configuration, tenantConfigurationProvider);
 
             builder.Services.AddOptions<SwaggerUIOptions>()

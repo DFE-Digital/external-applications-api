@@ -1,6 +1,7 @@
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Infrastructure;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Infrastructure.Repositories;
@@ -14,15 +15,22 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class InfrastructureServiceCollectionExtensions
     {
         public static IServiceCollection AddInfrastructureDependencyGroup(
-            this IServiceCollection services, IConfiguration config)
+            this IServiceCollection services, 
+            IConfiguration config,
+            ITenantConfigurationProvider tenantConfigurationProvider)
         {
+            // Get the first tenant's configuration for services that need root-level config
+            var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()
+                ?? throw new InvalidOperationException("At least one tenant must be configured.");
+            var tenantConfig = firstTenant.Settings;
+
             //Repos
             services.AddScoped(typeof(IEaRepository<>), typeof(EaRepository<>));
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            //Cache service
-            services.AddServiceCaching(config);
+            //Cache service - use tenant config
+            services.AddServiceCaching(tenantConfig);
 
             services.AddTransient<IApplicationReferenceProvider, DefaultApplicationReferenceProvider>();
             services.AddTransient<IApplicationResponseAppender, ApplicationResponseAppender>();
