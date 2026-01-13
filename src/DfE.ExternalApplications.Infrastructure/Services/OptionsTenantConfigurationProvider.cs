@@ -5,14 +5,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace DfE.ExternalApplications.Infrastructure.Services;
 
-public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
+public class OptionsTenantConfigurationProvider(IConfiguration configuration) : ITenantConfigurationProvider
 {
-    private readonly IReadOnlyDictionary<Guid, TenantConfiguration> _tenants;
-
-    public OptionsTenantConfigurationProvider(IConfiguration configuration)
-    {
-        _tenants = BuildAllTenants(configuration);
-    }
+    private readonly IReadOnlyDictionary<Guid, TenantConfiguration> _tenants = BuildAllTenants(configuration);
 
     public TenantConfiguration? GetTenant(Guid id)
         => _tenants.TryGetValue(id, out var tenant) ? tenant : null;
@@ -27,28 +22,39 @@ public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
 
         foreach (var section in tenantsSection.GetChildren())
         {
-            if (Guid.TryParse(section.Key, out var key))
+            var tenantIdString = section["Id"];
+            
+            if (string.IsNullOrWhiteSpace(tenantIdString))
             {
-                var tenant = BuildTenantConfiguration(section, key);
-                result[key] = tenant;
+                throw new InvalidOperationException(
+                    $"Tenant '{section.Key}' is missing required 'Id' field. Each tenant must have a unique GUID as its Id.");
             }
+            
+            if (!Guid.TryParse(tenantIdString, out var tenantId))
+            {
+                throw new InvalidOperationException(
+                    $"Tenant '{section.Key}' has invalid Id '{tenantIdString}'. The Id must be a valid GUID.");
+            }
+            
+            if (result.ContainsKey(tenantId))
+            {
+                throw new InvalidOperationException(
+                    $"Duplicate tenant Id '{tenantId}' found. Each tenant must have a unique Id.");
+            }
+
+            var tenant = BuildTenantConfiguration(section, tenantId);
+            result[tenantId] = tenant;
         }
 
         return result;
     }
 
-    private static TenantConfiguration BuildTenantConfiguration(IConfigurationSection tenantSection, Guid key)
+    private static TenantConfiguration BuildTenantConfiguration(IConfigurationSection tenantSection, Guid tenantId)
     {
-        var configuredId = tenantSection.GetValue<Guid?>("Id") ?? key;
-        if (configuredId != key)
-        {
-            throw new InvalidOperationException($"Tenant key {key} does not match configured Id {configuredId}.");
-        }
-
         var name = tenantSection.GetValue<string>("Name");
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new InvalidOperationException($"Tenant {key} must have a non-empty Name.");
+            throw new InvalidOperationException($"Tenant '{tenantSection.Key}' (Id: {tenantId}) must have a non-empty Name.");
         }
 
         // Flatten the tenant section so consumers can read settings without the Tenants:{id} prefix
@@ -63,7 +69,7 @@ public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
 
         var origins = ResolveFrontendOrigins(settings);
 
-        return new TenantConfiguration(configuredId, name!, settings, origins);
+        return new TenantConfiguration(tenantId, name!, settings, origins);
     }
 
     private static void FlattenSection(
