@@ -12,6 +12,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
     /// <summary>
     /// HTTP message handler that forwards specific headers from incoming requests to outgoing API calls.
     /// This is used to forward authentication-related headers (like Cypress test headers) from the web app to the API.
+    /// Also automatically appends the X-Tenant-ID header if configured.
     /// </summary>
     [ExcludeFromCodeCoverage]
     public class HeaderForwardingHandler : DelegatingHandler
@@ -19,6 +20,12 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<HeaderForwardingHandler> _logger;
         private readonly string[] _headersToForward;
+        private readonly Guid? _tenantId;
+
+        /// <summary>
+        /// The header name used to identify the tenant for multi-tenant API requests.
+        /// </summary>
+        public const string TenantIdHeaderName = "X-Tenant-ID";
 
         /// <summary>
         /// Default headers that should be forwarded from incoming requests to API calls if not configured
@@ -42,6 +49,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
         {
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
+            _tenantId = apiSettings.TenantId;
             
             // Use configured headers if provided, otherwise use defaults
             _headersToForward = apiSettings.HeadersToForward?.Any() == true
@@ -51,11 +59,29 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
 
         /// <summary>
         /// Sends an HTTP request, forwarding configured headers from the incoming request
+        /// and appending the X-Tenant-ID header if configured.
         /// </summary>
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            // Always add the tenant ID header if configured
+            if (_tenantId.HasValue)
+            {
+                if (request.Headers.Contains(TenantIdHeaderName))
+                {
+                    request.Headers.Remove(TenantIdHeaderName);
+                }
+                
+                request.Headers.Add(TenantIdHeaderName, _tenantId.Value.ToString());
+                
+                _logger.LogDebug(
+                    "Added {HeaderName} header with value {TenantId} to API request: {RequestUri}",
+                    TenantIdHeaderName,
+                    _tenantId.Value,
+                    request.RequestUri);
+            }
+
             var httpContext = _httpContextAccessor.HttpContext;
 
             if (httpContext != null)

@@ -8,8 +8,9 @@ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Helpers;
 using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using DfE.ExternalApplications.Domain.Tenancy;
+using System;
 using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Application.Consumers;
@@ -21,12 +22,52 @@ namespace DfE.ExternalApplications.Application.Consumers;
 public sealed class ScanResultConsumer(
     ILogger<ScanResultConsumer> logger,
     IEaRepository<File> fileRepository,
-    IConfiguration configuration,
+    ITenantContextAccessor tenantContextAccessor,
+    ITenantConfigurationProvider tenantConfigurationProvider,
     ISender sender) : IConsumer<ScanResultEvent>
 {
     public async Task Consume(ConsumeContext<ScanResultEvent> context)
     {
         var scanResult = context.Message;
+        
+        // Resolve tenant from message headers (set by TenantAwareEventPublisher)
+        var tenantIdHeader = context.Headers.Get<string>("TenantId");
+        if (!string.IsNullOrEmpty(tenantIdHeader) && Guid.TryParse(tenantIdHeader, out var tenantId))
+        {
+            var tenant = tenantConfigurationProvider.GetTenant(tenantId);
+            if (tenant != null)
+            {
+                tenantContextAccessor.CurrentTenant = tenant;
+                logger.LogDebug(
+                    "Resolved tenant from message headers: {TenantId} ({TenantName})",
+                    tenantId, tenant.Name);
+            }
+            else
+            {
+                logger.LogWarning(
+                    "Tenant {TenantId} from message headers not found in configuration",
+                    tenantId);
+            }
+        }
+        else
+        {
+            // Fallback: Try to resolve from message metadata (legacy format)
+            var metadataTenantId = scanResult.Metadata?.ContainsKey("TenantId") == true
+                ? scanResult.Metadata["TenantId"]?.ToString()
+                : null;
+            
+            if (!string.IsNullOrEmpty(metadataTenantId) && Guid.TryParse(metadataTenantId, out var legacyTenantId))
+            {
+                var tenant = tenantConfigurationProvider.GetTenant(legacyTenantId);
+                if (tenant != null)
+                {
+                    tenantContextAccessor.CurrentTenant = tenant;
+                    logger.LogDebug(
+                        "Resolved tenant from message metadata: {TenantId} ({TenantName})",
+                        legacyTenantId, tenant.Name);
+                }
+            }
+        }
         
         logger.LogInformation(
             "Received scan result - FileName: {FileName}, Status: {Status}, Outcome: {Outcome}",
@@ -42,20 +83,28 @@ public sealed class ScanResultConsumer(
                 ? scanResult.Metadata["InstanceIdentifier"]?.ToString()
                 : null;
 
-            var localInstanceId = InstanceIdentifierHelper.GetInstanceIdentifier(configuration);
-
-            if (!InstanceIdentifierHelper.IsMessageForThisInstance(messageInstanceId, localInstanceId))
+            var tenantConfiguration = tenantContextAccessor.CurrentTenant?.Settings;
+            if (tenantConfiguration == null)
             {
-                logger.LogDebug(
-                    "Message {FileId} not for this instance (MessageInstanceId: '{MessageInstanceId}', LocalInstanceId: '{LocalInstanceId}') - throwing exception to requeue for other consumers",
-                    scanResult.FileId,
-                    messageInstanceId ?? "none",
-                    localInstanceId ?? "none");
+                logger.LogWarning("No tenant context available for instance identifier check");
+            }
+            else
+            {
+                var localInstanceId = InstanceIdentifierHelper.GetInstanceIdentifier(tenantConfiguration);
 
-                // Throw exception to prevent acknowledgment and allow other consumers to process
-                // Service Bus will redeliver this message to another consumer instance
-                throw new MessageNotForThisInstanceException(
-                    $"Message InstanceIdentifier '{messageInstanceId}' doesn't match local instance '{localInstanceId}'");
+                if (!InstanceIdentifierHelper.IsMessageForThisInstance(messageInstanceId, localInstanceId))
+                {
+                    logger.LogDebug(
+                        "Message {FileId} not for this instance (MessageInstanceId: '{MessageInstanceId}', LocalInstanceId: '{LocalInstanceId}') - throwing exception to requeue for other consumers",
+                        scanResult.FileId,
+                        messageInstanceId ?? "none",
+                        localInstanceId ?? "none");
+
+                    // Throw exception to prevent acknowledgment and allow other consumers to process
+                    // Service Bus will redeliver this message to another consumer instance
+                    throw new MessageNotForThisInstanceException(
+                        $"Message InstanceIdentifier '{messageInstanceId}' doesn't match local instance '{localInstanceId}'");
+                }
             }
         }
 

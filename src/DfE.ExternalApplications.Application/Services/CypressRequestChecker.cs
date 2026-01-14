@@ -1,14 +1,16 @@
-﻿using GovUK.Dfe.CoreLibs.Security.Interfaces;
+﻿using System;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using DfE.ExternalApplications.Domain.Tenancy;
 
 namespace DfE.ExternalApplications.Application.Services
 {
     public class CypressRequestChecker(
         IHostEnvironment env,
-        IConfiguration config,
+        ITenantContextAccessor tenantContextAccessor,
         ILogger<CypressRequestChecker> logger)
         : ICustomRequestChecker
     {
@@ -41,7 +43,9 @@ namespace DfE.ExternalApplications.Application.Services
             }
 
             // Check if Cypress toggle is allowed in configuration
-            var allowCypressToggle = config.GetValue<bool>("CypressAuthentication:AllowToggle");
+            var tenantConfig = tenantContextAccessor.CurrentTenant?.Settings
+                               ?? throw new InvalidOperationException("Tenant configuration has not been resolved for Cypress validation.");
+            var allowCypressToggle = tenantConfig.GetValue<bool>("CypressAuthentication:AllowToggle");
             if (!allowCypressToggle)
             {
                 logger.LogWarning(
@@ -51,7 +55,7 @@ namespace DfE.ExternalApplications.Application.Services
             }
 
             // Validate secret
-            var expectedSecret = config["CypressAuthentication:Secret"];
+            var expectedSecret = tenantConfig["CypressAuthentication:Secret"];
             var providedSecret = httpContext.Request.Headers[CypressSecretHeaderKey].ToString();
 
             if (string.IsNullOrWhiteSpace(expectedSecret) || string.IsNullOrWhiteSpace(providedSecret))

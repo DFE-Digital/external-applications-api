@@ -12,6 +12,7 @@ using GovUK.Dfe.CoreLibs.Http.Middlewares.CorrelationId;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
 using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.FeatureManagement;
 using NetEscapades.AspNetCore.SecurityHeaders;
 using Serilog;
@@ -20,6 +21,10 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Linq;
+using DfE.ExternalApplications.Api.Tenancy;
+using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Infrastructure.Services;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
 namespace DfE.ExternalApplications.Api
@@ -34,10 +39,15 @@ namespace DfE.ExternalApplications.Api
             {
                 loggerConfiguration
                     .ReadFrom.Configuration(context.Configuration)
-                    .WriteTo.ApplicationInsights(services.GetRequiredService<TelemetryConfiguration>(),
-                        TelemetryConverter.Traces)
                     .Enrich.FromLogContext()
                     .WriteTo.Console();
+                
+                // Only add Application Insights sink if it's configured
+                var telemetryConfig = services.GetService<TelemetryConfiguration>();
+                if (telemetryConfig != null)
+                {
+                    loggerConfiguration.WriteTo.ApplicationInsights(telemetryConfig, TelemetryConverter.Traces);
+                }
             });
 
             builder.Services.AddControllers(opts =>
@@ -81,23 +91,44 @@ namespace DfE.ExternalApplications.Api
             builder.Services.ConfigureOptions<SwaggerOptions>();
             builder.Services.AddFeatureManagement();
             builder.Services.AddHttpContextAccessor();
+            var tenantConfigurationProvider = new OptionsTenantConfigurationProvider(builder.Configuration);
+            var allTenants = tenantConfigurationProvider.GetAllTenants();
+            
+            // Startup validation: at least one tenant must be configured
+            if (!allTenants.Any())
+            {
+                throw new InvalidOperationException(
+                    "At least one tenant must be configured in the 'Tenants' section of appsettings.");
+            }
+
+            builder.Services.AddSingleton<ITenantConfigurationProvider>(tenantConfigurationProvider);
+            builder.Services.AddScoped<ITenantContextAccessor, TenantContextAccessor>();
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
             builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
 
+            // Collect all frontend origins from all tenants for the default CORS policy
+            // TenantCorsPolicyProvider will handle per-tenant CORS dynamically
+            var allFrontendOrigins = allTenants
+                .SelectMany(t => t.FrontendOrigins)
+                .Distinct()
+                .ToArray();
+            
             builder.Services.AddCors(o => o.AddPolicy("Frontend", p =>
-                p.WithOrigins(builder.Configuration["Frontend:Origin"] ?? "https://localhost:7020")
+                p.WithOrigins(allFrontendOrigins.Length > 0 ? allFrontendOrigins : new[] { "https://localhost:7020" })
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()));
 
-            // Configure SignalR
-            ConfigureSignalR(builder.Services, builder.Configuration, builder.Environment);
+            builder.Services.AddSingleton<ICorsPolicyProvider, TenantCorsPolicyProvider>();
 
-            builder.Services.AddApplicationDependencyGroup(builder.Configuration);
-            builder.Services.AddInfrastructureDependencyGroup(builder.Configuration);
-            builder.Services.AddCustomAuthorization(builder.Configuration);
+            // Configure SignalR with all tenant endpoints
+            ConfigureSignalR(builder.Services, allTenants, builder.Environment);
+
+            builder.Services.AddApplicationDependencyGroup(builder.Configuration, tenantConfigurationProvider);
+            builder.Services.AddInfrastructureDependencyGroup(builder.Configuration, tenantConfigurationProvider);
+            builder.Services.AddCustomAuthorization(builder.Configuration, tenantConfigurationProvider);
 
             builder.Services.AddOptions<SwaggerUIOptions>()
                 .Configure<IHttpContextAccessor>((swaggerUiOptions, httpContextAccessor) =>
@@ -118,7 +149,9 @@ namespace DfE.ExternalApplications.Api
                     };
                 });
 
-            var appInsightsCnnStr = builder.Configuration.GetSection("ApplicationInsights")?["ConnectionString"];
+            // Application Insights is configured from first tenant's config
+            var firstTenantConfig = allTenants.FirstOrDefault()?.Settings;
+            var appInsightsCnnStr = firstTenantConfig?.GetSection("ApplicationInsights")?["ConnectionString"];
             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
             {
                 builder.Services.AddApplicationInsightsTelemetry(opt => { opt.ConnectionString = appInsightsCnnStr; });
@@ -144,6 +177,8 @@ namespace DfE.ExternalApplications.Api
             forwardOptions.KnownNetworks.Clear();
             forwardOptions.KnownProxies.Clear();
             app.UseForwardedHeaders(forwardOptions);
+
+            app.UseMiddleware<TenantResolutionMiddleware>();
 
             // CORS must be early in the pipeline to ensure headers are added to all responses (including errors)
             app.UseCors("Frontend");
@@ -232,20 +267,34 @@ namespace DfE.ExternalApplications.Api
             await app.RunAsync();
         }
 
-        private static void ConfigureSignalR(IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+        private static void ConfigureSignalR(
+            IServiceCollection services, 
+            IReadOnlyCollection<TenantConfiguration> tenants, 
+            IWebHostEnvironment environment)
         {
-            // Check if we're running in Azure (has Azure SignalR connection string)
-            var azureSignalRConnectionString = configuration.GetConnectionString("AzureSignalR");
+            // Collect all Azure SignalR connection strings from all tenants
+            var signalREndpoints = tenants
+                .Select(t => new { Tenant = t, ConnectionString = t.GetConnectionString("AzureSignalR") })
+                .Where(x => !string.IsNullOrEmpty(x.ConnectionString))
+                .ToList();
 
-            if (!string.IsNullOrEmpty(azureSignalRConnectionString))
+            if (signalREndpoints.Any())
             {
-                // Use Azure SignalR Service
+                // Use Azure SignalR Service with multiple endpoints (one per tenant)
                 services.AddSignalR()
-                    .AddAzureSignalR(azureSignalRConnectionString);
+                    .AddAzureSignalR(options =>
+                    {
+                        options.Endpoints = signalREndpoints
+                            .Select(x => new Microsoft.Azure.SignalR.ServiceEndpoint(
+                                x.ConnectionString!, 
+                                Microsoft.Azure.SignalR.EndpointType.Primary, 
+                                x.Tenant.Id.ToString()))
+                            .ToArray();
+                    });
             }
             else
             {
-                // Use local ASP.NET Core SignalR
+                // Use local ASP.NET Core SignalR (development)
                 services.AddSignalR();
             }
 

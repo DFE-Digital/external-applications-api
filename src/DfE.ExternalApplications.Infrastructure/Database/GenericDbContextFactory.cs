@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using System.Linq;
+using DfE.ExternalApplications.Infrastructure.Services;
 
 namespace DfE.ExternalApplications.Infrastructure.Database
 {
@@ -21,7 +23,10 @@ namespace DfE.ExternalApplications.Infrastructure.Database
                 .AddEnvironmentVariables()
                 .Build();
 
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            var tenantProvider = new OptionsTenantConfigurationProvider(configuration);
+            var defaultTenant = tenantProvider.GetAllTenants().FirstOrDefault();
+            var tenantConfiguration = defaultTenant?.Settings ?? configuration;
+            var connectionString = tenantConfiguration.GetConnectionString("DefaultConnection");
 
             var services = new ServiceCollection();
 
@@ -69,7 +74,7 @@ namespace DfE.ExternalApplications.Infrastructure.Database
             return (TContext)Activator.CreateInstance(
             typeof(TContext),
                 optionsBuilder.Options,
-                configuration, serviceProvider)!;
+                tenantConfiguration, serviceProvider)!;
         }
     }
 }
