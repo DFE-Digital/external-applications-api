@@ -1,5 +1,6 @@
-﻿using GovUK.Dfe.CoreLibs.Http.Models;
+using DfE.ExternalApplications.Domain.Caching;
 using DfE.ExternalApplications.Infrastructure.Security;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,11 @@ using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Controllers
 {
-    public class HubAuthController(IDistributedCache cache) : ControllerBase
+    /// <summary>
+    /// Controller for SignalR hub authentication.
+    /// Uses tenant-aware distributed cache for ticket storage.
+    /// </summary>
+    public class HubAuthController(ITenantAwareDistributedCache cache) : ControllerBase
     {
         //Create a single use ticket for the hub, which is valid for 1 minute
         [HttpPost("auth/hub-ticket")]

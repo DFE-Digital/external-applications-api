@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
+using DfE.ExternalApplications.Domain.Caching;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -10,11 +11,12 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
 /// <summary>
 /// Implementation of cache manager using distributed cache and HTTP context
-/// Ensures atomic cache operations and consistency
+/// Ensures atomic cache operations and consistency.
+/// Uses ITenantAwareDistributedCache for automatic tenant isolation.
 /// </summary>
 [ExcludeFromCodeCoverage]
 public class DistributedCacheManager(
-    IDistributedCache distributedCache,
+    ITenantAwareDistributedCache distributedCache,
     IHttpContextAccessor httpContextAccessor,
     IInternalUserTokenStore tokenStore,
     ILogger<DistributedCacheManager> logger) : ICacheManager

@@ -3,16 +3,21 @@ using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
+using DfE.ExternalApplications.Domain.Caching;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
+/// <summary>
+/// Caches internal user tokens using the tenant-aware distributed cache
+/// for automatic tenant isolation in multi-tenant scenarios.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public class CachedInternalUserTokenStore(
     IHttpContextAccessor httpContextAccessor,
-    IDistributedCache distributedCache,
+    ITenantAwareDistributedCache distributedCache,
     ILogger<CachedInternalUserTokenStore> logger)
     : IInternalUserTokenStore
 {

@@ -24,7 +24,10 @@ using System.Text.Json.Serialization;
 using System.Linq;
 using DfE.ExternalApplications.Api.Tenancy;
 using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Domain.Caching;
+using DfE.ExternalApplications.Infrastructure.Caching;
 using DfE.ExternalApplications.Infrastructure.Services;
+using Microsoft.Extensions.Caching.Distributed;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
 namespace DfE.ExternalApplications.Api
@@ -86,7 +89,18 @@ namespace DfE.ExternalApplications.Api
                 c.EnableAnnotations();
             });
 
+            // Register the underlying distributed cache for tenant-aware wrapper
             builder.Services.AddDistributedMemoryCache();
+            
+            // Decorate IDistributedCache with tenant-aware wrapper
+            // This ensures all cache operations are automatically scoped to the current tenant
+            builder.Services.AddScoped<ITenantAwareDistributedCache>(sp =>
+            {
+                var innerCache = sp.GetRequiredService<IDistributedCache>();
+                var tenantAccessor = sp.GetRequiredService<ITenantContextAccessor>();
+                var logger = sp.GetRequiredService<ILogger<TenantAwareDistributedCache>>();
+                return new TenantAwareDistributedCache(innerCache, tenantAccessor, logger);
+            });
 
             builder.Services.ConfigureOptions<SwaggerOptions>();
             builder.Services.AddFeatureManagement();
