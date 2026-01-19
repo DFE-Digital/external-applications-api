@@ -5,6 +5,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Api.Security;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,8 @@ public class UserPermissionClaimProviderTests
     private readonly ISender _sender;
     private readonly ILogger<UserPermissionClaimProvider> _logger;
     private readonly IEaRepository<User> _userRepo;
-    private readonly ICacheService<IMemoryCacheType> _cacheService;
+    private readonly ICacheService<IRedisCacheType> _cacheService;
+    private readonly ITenantContextAccessor _tenantContextAccessor;
     private readonly UserPermissionClaimProvider _provider;
 
     public UserPermissionClaimProviderTests()
@@ -28,8 +30,9 @@ public class UserPermissionClaimProviderTests
         _sender = Substitute.For<ISender>();
         _logger = Substitute.For<ILogger<UserPermissionClaimProvider>>();
         _userRepo = Substitute.For<IEaRepository<User>>();
-        _cacheService = Substitute.For<ICacheService<IMemoryCacheType>>();
-        _provider = new UserPermissionClaimProvider(_sender, _logger, _userRepo, _cacheService);
+        _cacheService = Substitute.For<ICacheService<IRedisCacheType>>();
+        _tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
+        _provider = new UserPermissionClaimProvider(_sender, _logger, _userRepo, _cacheService, _tenantContextAccessor);
     }
 
     [Fact]

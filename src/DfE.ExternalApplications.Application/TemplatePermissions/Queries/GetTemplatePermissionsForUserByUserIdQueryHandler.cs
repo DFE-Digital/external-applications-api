@@ -1,9 +1,11 @@
-﻿using GovUK.Dfe.CoreLibs.Caching.Helpers;
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.TemplatePermissions.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +17,8 @@ namespace DfE.ExternalApplications.Application.TemplatePermissions.Queries
 
     public sealed class GetTemplatePermissionsForUserByUserIdQueryHandler(
         IEaRepository<User> userRepo,
-        ICacheService<IMemoryCacheType> cacheService)
+        ICacheService<IRedisCacheType> cacheService,
+        ITenantContextAccessor tenantContextAccessor)
         : IRequestHandler<GetTemplatePermissionsForUserByUserIdQuery, Result<IReadOnlyCollection<TemplatePermissionDto>>>
     {
         public async Task<Result<IReadOnlyCollection<TemplatePermissionDto>>> Handle(
@@ -24,7 +27,8 @@ namespace DfE.ExternalApplications.Application.TemplatePermissions.Queries
         {
             try
             {
-                var cacheKey = $"Template_Permissions_ByUiD_{CacheKeyHelper.GenerateHashedCacheKey(request.UserId.Value.ToString())}";
+                var baseCacheKey = $"Template_Permissions_ByUiD_{CacheKeyHelper.GenerateHashedCacheKey(request.UserId.Value.ToString())}";
+                var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
 
                 var methodName = nameof(GetTemplatePermissionsForUserByUserIdQueryHandler);
 

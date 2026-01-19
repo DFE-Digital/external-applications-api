@@ -35,8 +35,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            //Cache service - use tenant config
-            services.AddServiceCaching(tenantConfig);
+            //Cache service - use tenant config (Redis for everything + IDistributedCache)
+            services.AddHybridCaching(tenantConfig);
 
             services.AddTransient<IApplicationReferenceProvider, DefaultApplicationReferenceProvider>();
             services.AddTransient<IApplicationResponseAppender, ApplicationResponseAppender>();

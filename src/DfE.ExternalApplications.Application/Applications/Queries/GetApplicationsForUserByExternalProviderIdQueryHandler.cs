@@ -1,11 +1,13 @@
-﻿using GovUK.Dfe.CoreLibs.Caching.Helpers;
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
+using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +20,8 @@ public sealed record GetApplicationsForUserByExternalProviderIdQuery(string Exte
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
-    ICacheService<IMemoryCacheType> cacheService)
+    ICacheService<IRedisCacheType> cacheService,
+    ITenantContextAccessor tenantContextAccessor)
     : IRequestHandler<GetApplicationsForUserByExternalProviderIdQuery, Result<IReadOnlyCollection<ApplicationDto>>>
 {
     public async Task<Result<IReadOnlyCollection<ApplicationDto>>> Handle(
@@ -27,7 +30,8 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     {
         try
         {
-            var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}";
+            var baseCacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}";
+            var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserByExternalProviderIdQueryHandler);
 
             return await cacheService.GetOrAddAsync(

@@ -89,8 +89,6 @@ namespace DfE.ExternalApplications.Api
                 c.EnableAnnotations();
             });
 
-            // Register the underlying distributed cache for tenant-aware wrapper
-            builder.Services.AddDistributedMemoryCache();
             
             // Decorate IDistributedCache with tenant-aware wrapper
             // This ensures all cache operations are automatically scoped to the current tenant

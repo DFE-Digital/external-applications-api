@@ -8,6 +8,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Email.Interfaces;
 using GovUK.Dfe.CoreLibs.Email.Models;
+using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -18,7 +19,7 @@ public class SubmitUserFeedbackHandlerTests
 {
     private readonly IFixture _fixture;
 
-    private readonly IConfiguration _configuration;
+    private readonly ITenantContextAccessor _tenantContextAccessor;
     private readonly IEmailTemplateResolver _emailTemplateResolver;
     private readonly IEmailService _emailService;
 
@@ -30,8 +31,8 @@ public class SubmitUserFeedbackHandlerTests
 
         var logger = _fixture.Create<ILogger<SubmitUserFeedbackCommandHandler>>();
 
-        _configuration = _fixture.Create<IConfiguration>();
-        _fixture.Inject(_configuration);
+        _tenantContextAccessor = _fixture.Create<ITenantContextAccessor>();
+        _fixture.Inject(_tenantContextAccessor);
 
         _emailTemplateResolver = _fixture.Create<IEmailTemplateResolver>();
         _fixture.Inject(_emailTemplateResolver);
@@ -41,7 +42,7 @@ public class SubmitUserFeedbackHandlerTests
 
         _fixture.Register(() => _fixture.Build<EmailResponse>().Without(r => r.RecipientResponses).Create());
 
-        _handler = new SubmitUserFeedbackCommandHandler(logger, _configuration, _emailTemplateResolver,
+        _handler = new SubmitUserFeedbackCommandHandler(logger, _tenantContextAccessor, _emailTemplateResolver,
             _emailService);
     }
 
@@ -53,7 +54,7 @@ public class SubmitUserFeedbackHandlerTests
         string emailType)
     {
         var supportEmailAddress = $"{_fixture.Create<string>()}@education.gov.uk";
-        _configuration.GetSection("Email:ServiceSupportEmailAddress").Value.Returns(supportEmailAddress);
+        SetupTenantContextWithSupportEmail(supportEmailAddress);
 
         var eaTemplateId = _fixture.Create<TemplateId>();
         var emailTemplateId = _fixture.Create<string>();
@@ -80,7 +81,7 @@ public class SubmitUserFeedbackHandlerTests
         Type userFeedbackType, string emailType)
     {
         var supportEmailAddress = $"{_fixture.Create<string>()}@education.gov.uk";
-        _configuration.GetSection("Email:ServiceSupportEmailAddress").Value.Returns(null as string);
+        SetupTenantContextWithSupportEmail(null);
 
         var eaTemplateId = _fixture.Create<TemplateId>();
         var emailTemplateId = _fixture.Create<string>();
@@ -130,7 +131,7 @@ public class SubmitUserFeedbackHandlerTests
         string emailType)
     {
         var supportEmailAddress = $"{_fixture.Create<string>()}@education.gov.uk";
-        _configuration.GetSection("Email:ServiceSupportEmailAddress").Value.Returns(supportEmailAddress);
+        SetupTenantContextWithSupportEmail(supportEmailAddress);
 
         var eaTemplateId = _fixture.Create<TemplateId>();
         var emailTemplateId = _fixture.Create<string>();
@@ -215,4 +216,18 @@ public class SubmitUserFeedbackHandlerTests
         SatisfactionScore.VeryDissatisfied => "Very dissatisfied",
         _ => throw new ArgumentOutOfRangeException(nameof(score), score, null)
     };
+
+    private void SetupTenantContextWithSupportEmail(string? supportEmailAddress)
+    {
+        var mockConfiguration = Substitute.For<IConfiguration>();
+        mockConfiguration.GetValue<string?>("Email:ServiceSupportEmailAddress", Arg.Any<string?>()).Returns(supportEmailAddress);
+        
+        var mockTenantConfiguration = Substitute.For<TenantConfiguration>(
+            Guid.NewGuid(),
+            "TestTenant",
+            mockConfiguration);
+        mockTenantConfiguration.Settings.Returns(mockConfiguration);
+        
+        _tenantContextAccessor.CurrentTenant.Returns(mockTenantConfiguration);
+    }
 }

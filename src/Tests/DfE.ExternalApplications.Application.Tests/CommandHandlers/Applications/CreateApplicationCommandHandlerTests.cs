@@ -10,6 +10,7 @@ using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MediatR;
@@ -35,7 +36,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -97,6 +98,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -131,7 +133,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -191,6 +193,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -223,7 +226,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -241,6 +244,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -266,7 +270,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -288,6 +292,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -313,7 +318,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -339,6 +344,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -366,7 +372,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -406,6 +412,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -433,7 +440,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -476,6 +483,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -501,7 +509,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -545,6 +553,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -570,7 +579,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator,
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -585,6 +594,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act
@@ -610,7 +620,7 @@ public class CreateApplicationCommandHandlerTests
         IApplicationFactory applicationFactory,
         IPermissionCheckerService permissionCheckerService,
         ISender mediator, 
-        [Frozen] ICacheService<IMemoryCacheType> cache,
+        [Frozen] ICacheService<IRedisCacheType> cache,
         IUnitOfWork unitOfWork)
     {
         // Arrange
@@ -634,6 +644,7 @@ public class CreateApplicationCommandHandlerTests
             permissionCheckerService,
             mediator,
             cache,
+            Substitute.For<ITenantContextAccessor>(),
             unitOfWork);
 
         // Act

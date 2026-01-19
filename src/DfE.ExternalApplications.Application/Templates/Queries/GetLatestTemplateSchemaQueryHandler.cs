@@ -2,10 +2,12 @@ using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +22,8 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
     IHttpContextAccessor httpContextAccessor,
     IEaRepository<User> userRepo,
     IPermissionCheckerService permissionCheckerService,
-    ICacheService<IMemoryCacheType> cacheService,
+    ICacheService<IRedisCacheType> cacheService,
+    ITenantContextAccessor tenantContextAccessor,
     ISender mediator)
     : IRequestHandler<GetLatestTemplateSchemaQuery, Result<TemplateSchemaDto>>
 {
@@ -42,7 +45,8 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
             if (string.IsNullOrEmpty(principalId))
                 return Result<TemplateSchemaDto>.Forbid("No user identifier");
 
-            var cacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateId.ToString())}_{principalId}";
+            var baseCacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateId.ToString())}_{principalId}";
+            var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetLatestTemplateSchemaQueryHandler);
 
             return await cacheService.GetOrAddAsync(

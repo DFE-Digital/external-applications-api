@@ -1,8 +1,10 @@
 using AutoFixture;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Infrastructure.Services;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
+using Microsoft.Extensions.Logging;
 using MockQueryable;
 using NSubstitute;
 
@@ -19,7 +21,7 @@ public class DefaultApplicationReferenceProviderTests
         var emptyQueryable = Array.Empty<Domain.Entities.Application>().AsQueryable().BuildMock();
         applicationRepo.Query().Returns(emptyQueryable);
 
-        var provider = new DefaultApplicationReferenceProvider(applicationRepo);
+        var provider = new DefaultApplicationReferenceProvider(applicationRepo, Substitute.For<ITenantContextAccessor>(), Substitute.For<ILogger<DefaultApplicationReferenceProvider>>());
         var today = DateTime.UtcNow.Date;
 
         // Act
@@ -49,7 +51,7 @@ public class DefaultApplicationReferenceProviderTests
         var queryable = new[] { existingApp }.AsQueryable().BuildMock();
         applicationRepo.Query().Returns(queryable);
 
-        var provider = new DefaultApplicationReferenceProvider(applicationRepo);
+        var provider = new DefaultApplicationReferenceProvider(applicationRepo, Substitute.For<ITenantContextAccessor>(), Substitute.For<ILogger<DefaultApplicationReferenceProvider>>());
 
         // Act
         var reference = await provider.GenerateReferenceAsync(CancellationToken.None);
@@ -78,7 +80,7 @@ public class DefaultApplicationReferenceProviderTests
         var queryable = new[] { existingApp }.AsQueryable().BuildMock();
         applicationRepo.Query().Returns(queryable);
 
-        var provider = new DefaultApplicationReferenceProvider(applicationRepo);
+        var provider = new DefaultApplicationReferenceProvider(applicationRepo, Substitute.For<ITenantContextAccessor>(), Substitute.For<ILogger<DefaultApplicationReferenceProvider>>());
         var today = DateTime.UtcNow.Date;
 
         // Act
@@ -108,7 +110,7 @@ public class DefaultApplicationReferenceProviderTests
         var queryable = new[] { existingApp }.AsQueryable().BuildMock();
         applicationRepo.Query().Returns(queryable);
 
-        var provider = new DefaultApplicationReferenceProvider(applicationRepo);
+        var provider = new DefaultApplicationReferenceProvider(applicationRepo, Substitute.For<ITenantContextAccessor>(), Substitute.For<ILogger<DefaultApplicationReferenceProvider>>());
 
         // Act
         var reference = await provider.GenerateReferenceAsync(CancellationToken.None);

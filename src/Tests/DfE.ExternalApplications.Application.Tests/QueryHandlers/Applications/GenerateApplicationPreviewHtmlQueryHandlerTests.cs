@@ -5,6 +5,7 @@ using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.AspNetCore.Http;
@@ -23,7 +24,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IPermissionCheckerService _permissionCheckerService;
     private readonly IStaticHtmlGeneratorService _htmlGeneratorService;
-    private readonly IConfiguration _configuration;
+    private readonly ITenantContextAccessor _tenantContextAccessor;
     private readonly IOptions<InternalServiceAuthOptions> _internalServiceAuthOptions;
     private readonly GenerateApplicationPreviewHtmlQueryHandler _handler;
 
@@ -33,7 +34,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
         _htmlGeneratorService = Substitute.For<IStaticHtmlGeneratorService>();
-        _configuration = Substitute.For<IConfiguration>();
+        _tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
         _internalServiceAuthOptions = Substitute.For<IOptions<InternalServiceAuthOptions>>();
 
         _handler = new GenerateApplicationPreviewHtmlQueryHandler(
@@ -41,7 +42,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             _httpContextAccessor,
             _permissionCheckerService,
             _htmlGeneratorService,
-            _configuration,
+            _tenantContextAccessor,
             _internalServiceAuthOptions);
     }
 
@@ -96,8 +97,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             AccessType.Read)
             .Returns(true);
 
-        _configuration["FrontendSettings:BaseUrl"].Returns("https://test.com");
-        _configuration["FrontendSettings:PreviewContentSelector"].Returns(".content");
+        SetupTenantContext("https://test.com", ".content");
 
         var authOptions = new InternalServiceAuthOptions
         {
@@ -251,7 +251,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             AccessType.Read)
             .Returns(true);
 
-        _configuration["FrontendSettings:BaseUrl"].Returns((string?)null);
+        SetupTenantContext(null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -293,7 +293,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             AccessType.Read)
             .Returns(true);
 
-        _configuration["FrontendSettings:BaseUrl"].Returns("https://test.com");
+        SetupTenantContext("https://test.com", null);
 
         var authOptions = new InternalServiceAuthOptions
         {
@@ -342,7 +342,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             .Returns(true);
 
         var frontendBaseUrl = "https://frontend.test.com";
-        _configuration["FrontendSettings:BaseUrl"].Returns(frontendBaseUrl);
+        SetupTenantContext(frontendBaseUrl, null);
 
         var authOptions = new InternalServiceAuthOptions
         {
@@ -404,7 +404,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             AccessType.Read)
             .Returns(true);
 
-        _configuration["FrontendSettings:BaseUrl"].Returns("https://test.com");
+        SetupTenantContext("https://test.com", null);
 
         var expectedEmail = "test-service@test.com";
         var expectedApiKey = "test-api-key";
@@ -435,6 +435,21 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
                 headers["x-service-api-key"] == expectedApiKey),
             Arg.Any<string>(),
             Arg.Any<CancellationToken>());
+    }
+
+    private void SetupTenantContext(string? frontendBaseUrl, string? contentSelector)
+    {
+        var mockConfiguration = Substitute.For<IConfiguration>();
+        mockConfiguration["FrontendSettings:BaseUrl"].Returns(frontendBaseUrl);
+        mockConfiguration["FrontendSettings:PreviewContentSelector"].Returns(contentSelector);
+        
+        var mockTenantConfiguration = Substitute.For<TenantConfiguration>(
+            Guid.NewGuid(),
+            "TestTenant",
+            mockConfiguration);
+        mockTenantConfiguration.Settings.Returns(mockConfiguration);
+        
+        _tenantContextAccessor.CurrentTenant.Returns(mockTenantConfiguration);
     }
 }
 
