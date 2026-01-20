@@ -1,5 +1,6 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.Extensions.Logging;
 
 namespace DfE.ExternalApplications.Infrastructure.Services;
@@ -7,31 +8,37 @@ namespace DfE.ExternalApplications.Infrastructure.Services;
 /// <summary>
 /// Implementation of SignalR notification service
 /// </summary>
-public class NotificationSignalRService : INotificationSignalRService
+public class NotificationSignalRService(
+    INotificationHubContext hubContext,
+    ITenantContextAccessor tenantContextAccessor,
+    ILogger<NotificationSignalRService> logger)
+    : INotificationSignalRService
 {
-    private readonly INotificationHubContext _hubContext;
-    private readonly ILogger<NotificationSignalRService> _logger;
-
-    public NotificationSignalRService(
-        INotificationHubContext hubContext,
-        ILogger<NotificationSignalRService> logger)
+    /// <summary>
+    /// Gets the tenant-scoped group name for a user.
+    /// Format: "tenant:{tenantId}:user:{userEmail}" or "user:{userEmail}" if no tenant context.
+    /// </summary>
+    private string GetUserGroupName(string userEmail)
     {
-        _hubContext = hubContext;
-        _logger = logger;
+        var tenantId = tenantContextAccessor.CurrentTenant?.Id;
+        return tenantId.HasValue 
+            ? $"tenant:{tenantId}:user:{userEmail}" 
+            : $"user:{userEmail}";
     }
 
     public async Task SendNotificationToUserAsync(string userEmail, NotificationDto notification, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _hubContext.SendToGroupAsync($"user:{userEmail}", "notification.upserted", new object?[] { notification }, cancellationToken);
+            var groupName = GetUserGroupName(userEmail);
+            await hubContext.SendToGroupAsync(groupName, "notification.upserted", new object?[] { notification }, cancellationToken);
             
-            _logger.LogDebug("Sent notification.upserted to user {UserEmail} for notification {NotificationId}", 
-                userEmail, notification.Id);
+            logger.LogDebug("Sent notification.upserted to group {GroupName} for notification {NotificationId}", 
+                groupName, notification.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send notification.upserted to user {UserEmail} for notification {NotificationId}", 
+            logger.LogError(ex, "Failed to send notification.upserted to user {UserEmail} for notification {NotificationId}", 
                 userEmail, notification.Id);
         }
     }
@@ -40,14 +47,15 @@ public class NotificationSignalRService : INotificationSignalRService
     {
         try
         {
-            await _hubContext.SendToGroupAsync($"user:{userEmail}", "notification.updated", new object?[] { notification }, cancellationToken);
+            var groupName = GetUserGroupName(userEmail);
+            await hubContext.SendToGroupAsync(groupName, "notification.updated", new object?[] { notification }, cancellationToken);
             
-            _logger.LogDebug("Sent notification.updated to user {UserEmail} for notification {NotificationId}", 
-                userEmail, notification.Id);
+            logger.LogDebug("Sent notification.updated to group {GroupName} for notification {NotificationId}", 
+                groupName, notification.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send notification.updated to user {UserEmail} for notification {NotificationId}", 
+            logger.LogError(ex, "Failed to send notification.updated to user {UserEmail} for notification {NotificationId}", 
                 userEmail, notification.Id);
         }
     }
@@ -56,14 +64,15 @@ public class NotificationSignalRService : INotificationSignalRService
     {
         try
         {
-            await _hubContext.SendToGroupAsync($"user:{userEmail}", "notification.deleted", new object?[] { notificationId }, cancellationToken);
+            var groupName = GetUserGroupName(userEmail);
+            await hubContext.SendToGroupAsync(groupName, "notification.deleted", new object?[] { notificationId }, cancellationToken);
             
-            _logger.LogDebug("Sent notification.deleted to user {UserEmail} for notification {NotificationId}", 
-                userEmail, notificationId);
+            logger.LogDebug("Sent notification.deleted to group {GroupName} for notification {NotificationId}", 
+                groupName, notificationId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send notification.deleted to user {UserEmail} for notification {NotificationId}", 
+            logger.LogError(ex, "Failed to send notification.deleted to user {UserEmail} for notification {NotificationId}", 
                 userEmail, notificationId);
         }
     }
@@ -72,13 +81,14 @@ public class NotificationSignalRService : INotificationSignalRService
     {
         try
         {
-            await _hubContext.SendToGroupAsync($"user:{userEmail}", "notifications.refresh", new object?[] { }, cancellationToken);
+            var groupName = GetUserGroupName(userEmail);
+            await hubContext.SendToGroupAsync(groupName, "notifications.refresh", new object?[] { }, cancellationToken);
             
-            _logger.LogDebug("Sent notifications.refresh to user {UserEmail}", userEmail);
+            logger.LogDebug("Sent notifications.refresh to group {GroupName}", groupName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send notifications.refresh to user {UserEmail}", userEmail);
+            logger.LogError(ex, "Failed to send notifications.refresh to user {UserEmail}", userEmail);
         }
     }
 }
