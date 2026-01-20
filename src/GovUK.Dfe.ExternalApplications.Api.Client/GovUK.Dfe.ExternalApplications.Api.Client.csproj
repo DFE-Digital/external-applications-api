@@ -39,8 +39,5 @@
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.10.0" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\DfE.ExternalApplications.Domain\DfE.ExternalApplications.Domain.csproj" />
-	</ItemGroup>
 
 </Project>
