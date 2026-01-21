@@ -2,6 +2,7 @@ using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using Microsoft.EntityFrameworkCore;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
@@ -35,6 +36,7 @@ public sealed class ApplicationRepository(ExternalApplicationsContext dbContext)
         await DbContext.Applications
             .Where(a => a.Id == applicationId)
             .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(a => a.Status, ApplicationStatus.InProgress)
                     .SetProperty(a => a.LastModifiedOn, lastModifiedOn)
                     .SetProperty(a => a.LastModifiedBy, lastModifiedBy),
                 cancellationToken);
