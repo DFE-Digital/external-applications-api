@@ -1,13 +1,15 @@
-﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +22,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         IEaRepository<User> userRepo,
         IUserTokenService tokenSvc,
         IHttpContextAccessor httpCtxAcc,
+        ITenantContextAccessor tenantContextAccessor,
         [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
         : IRequestHandler<ExchangeTokenQuery, Result<ExchangeTokenDto>>
     {
@@ -27,8 +30,18 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         {
             var validInternalAuthReq = internalRequestChecker.IsValidRequest(httpCtxAcc.HttpContext!);
 
+            // Get tenant-specific internal auth options for multi-tenant support
+            InternalServiceAuthOptions? tenantInternalAuthOptions = null;
+            if (validInternalAuthReq && tenantContextAccessor.CurrentTenant != null)
+            {
+                tenantInternalAuthOptions = new InternalServiceAuthOptions();
+                tenantContextAccessor.CurrentTenant.Settings
+                    .GetSection(InternalServiceAuthOptions.SectionName)
+                    .Bind(tenantInternalAuthOptions);
+            }
+
             var externalUser = await externalValidator
-                .ValidateIdTokenAsync(req.SubjectToken, false, validInternalAuthReq, ct);
+                .ValidateIdTokenAsync(req.SubjectToken, false, validInternalAuthReq, tenantInternalAuthOptions, ct);
 
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value;
                         
