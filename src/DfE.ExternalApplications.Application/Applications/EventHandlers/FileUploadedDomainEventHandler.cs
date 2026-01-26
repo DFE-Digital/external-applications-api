@@ -58,7 +58,7 @@ public sealed class FileUploadedDomainEventHandler(
             Path:file.Path,
             IsAzureFileShare: true,
             FileUri: sasUri,
-            ServiceName: "extapi",
+            ServiceName: $"extapi-{tenant.Name}",
             Metadata: new Dictionary<string, object>
             {
                 { "TenantId", tenant.Id.ToString() },
@@ -74,7 +74,7 @@ public sealed class FileUploadedDomainEventHandler(
         // Build Azure Service Bus message properties
         var messageProperties = AzureServiceBusMessagePropertiesBuilder
             .Create()
-            .AddCustomProperty("serviceName", "extapi")
+            .AddCustomProperty("serviceName", $"extapi-{tenant.Name}")
             .Build();
 
         // Publish to Azure Service Bus via MassTransit

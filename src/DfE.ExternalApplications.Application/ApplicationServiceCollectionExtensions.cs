@@ -87,14 +87,21 @@ namespace Microsoft.Extensions.DependencyInjection
             var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
             if (!skipMassTransit)
             {
-                // Use CoreLibs AddDfEMassTransit for publishing
-                // This properly configures MassTransit with DI integration
-                // Publishing uses the first tenant's Service Bus connection (all tenants share the same namespace)
+                // Register TenantBusFactory for publishing (creates per-tenant Azure Service Bus connections)
+                services.AddSingleton<ITenantBusFactory, TenantBusFactory>();
+                
+                // Register TenantAwareEventPublisher as the IEventPublisher implementation
+                // This replaces the CoreLibs default publisher with our multi-tenant aware version
+                services.AddScoped<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, TenantAwareEventPublisher>();
+                
+                // Get all tenants upfront for configuring subscription endpoints
+                var allTenants = tenantConfigurationProvider.GetAllTenants().ToList();
+                
+                // Use CoreLibs AddDfEMassTransit - same pattern as the working service
                 services.AddDfEMassTransit(
-                    tenantConfig, // Use first tenant's config which has MassTransit settings
+                    tenantConfig,
                     configureConsumers: x =>
                     {
-                        // Register consumer for DI resolution
                         x.AddConsumer<ScanResultConsumer>();
                     },
                     configureBus: (context, cfg) =>
@@ -106,34 +113,31 @@ namespace Microsoft.Extensions.DependencyInjection
                     configureAzureServiceBus: (context, cfg) =>
                     {
                         cfg.UseJsonSerializer();
-
-                        // Get subscription name from first tenant's config
-                        var subscriptionName = tenantConfig["MassTransit:AzureServiceBus:SubscriptionName"] ?? "extapi";
-
-                        // Configure subscription endpoint with tenant-specific name
-                        cfg.SubscriptionEndpoint<ScanResultEvent>(subscriptionName, e =>
+                        
+                        // Register subscription endpoints for ALL tenants
+                        // Using typed SubscriptionEndpoint<ScanResultEvent> like the working service
+                        foreach (var tenant in allTenants)
                         {
-                            e.UseMessageRetry(r =>
+                            var subscriptionName = $"extapi-{tenant.Name}";
+                            
+                            Console.WriteLine($"[MassTransit] Registering subscription: '{subscriptionName}'");
+                            
+                            cfg.SubscriptionEndpoint<ScanResultEvent>(subscriptionName, e =>
                             {
-                                // For MessageNotForThisInstanceException (instance filtering in Local env)
-                                r.Handle<MessageNotForThisInstanceException>();
-                                r.Immediate(10);
-
-                                // For all OTHER exceptions (real errors)
-                                r.Ignore<MessageNotForThisInstanceException>();
-                                r.Interval(3, TimeSpan.FromSeconds(5));
+                                e.UseMessageRetry(r =>
+                                {
+                                    r.Handle<MessageNotForThisInstanceException>();
+                                    r.Immediate(10);
+                                    r.Ignore<MessageNotForThisInstanceException>();
+                                    r.Interval(3, TimeSpan.FromSeconds(5));
+                                });
+                                
+                                e.ConfigureConsumeTopology = false;
+                                e.ConfigureConsumer<ScanResultConsumer>(context);
                             });
-
-                            e.ConfigureConsumeTopology = false;
-                            e.ConfigureConsumer<ScanResultConsumer>(context);
-                        });
+                        }
                     }
                 );
-                
-                // For multi-tenant consuming (if tenants have different subscription names),
-                // register the hosted service that starts per-tenant consumer buses
-                // Note: This is in addition to the primary bus consumer configured above
-                // services.AddHostedService<TenantConsumerHostedService>();
             }
 
             return services;
