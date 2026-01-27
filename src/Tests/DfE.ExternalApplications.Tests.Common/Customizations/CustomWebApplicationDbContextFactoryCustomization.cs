@@ -134,6 +134,10 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         services.RemoveAll<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IFileStorageService>();
                         services.AddSingleton<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IFileStorageService, MockFileStorageService>();
                         
+                        // Also register our mock for the tenant-aware interface used by handlers
+                        services.RemoveAll<DfE.ExternalApplications.Application.Services.ITenantAwareFileStorageService>();
+                        services.AddSingleton<DfE.ExternalApplications.Application.Services.ITenantAwareFileStorageService, MockFileStorageService>();
+                        
                         // Replace IAzureSpecificOperations with our mock to avoid requiring actual Azure Storage for SAS token generation
                         services.RemoveAll<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IAzureSpecificOperations>();
                         services.AddSingleton<GovUK.Dfe.CoreLibs.FileStorage.Interfaces.IAzureSpecificOperations, MockAzureSpecificOperations>();

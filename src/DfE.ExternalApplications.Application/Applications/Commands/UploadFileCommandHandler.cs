@@ -1,6 +1,6 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
@@ -36,7 +36,7 @@ public class UploadFileCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepository,
     IEaRepository<User> userRepository,
     IUnitOfWork unitOfWork,
-    IFileStorageService fileStorageService,
+    ITenantAwareFileStorageService fileStorageService,
     IFileFactory fileFactory,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService)

@@ -1,9 +1,9 @@
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -18,7 +18,7 @@ namespace DfE.ExternalApplications.Application.Applications.Commands;
 internal sealed class DeleteInfectedFileCommandHandler(
     IEaRepository<File> fileRepository,
     IUnitOfWork unitOfWork,
-    IFileStorageService fileStorageService,
+    ITenantAwareFileStorageService fileStorageService,
     IFileFactory fileFactory,
     ILogger<DeleteInfectedFileCommandHandler> logger)
     : IRequestHandler<DeleteInfectedFileCommand, Result<bool>>

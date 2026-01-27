@@ -1,6 +1,6 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
@@ -23,7 +23,7 @@ public sealed record DownloadFileQuery(Guid FileId, ApplicationId ApplicationId)
 public class DownloadFileQueryHandler(
     IEaRepository<File> uploadRepository,
     IEaRepository<User> userRepository,
-    IFileStorageService fileStorageService,
+    ITenantAwareFileStorageService fileStorageService,
     IEaRepository<Domain.Entities.Application> applicationRepository,
     IPermissionCheckerService permissionCheckerService,
     IHttpContextAccessor httpContextAccessor)

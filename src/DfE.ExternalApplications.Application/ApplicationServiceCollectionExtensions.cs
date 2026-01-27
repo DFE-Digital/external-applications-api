@@ -19,6 +19,8 @@ using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Exceptions;
+using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using Microsoft.Extensions.Logging;
 using MassTransit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -79,6 +81,10 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddNotificationServicesWithRedis(tenantConfig);
 
             services.AddFileStorage(tenantConfig);
+            
+            // Register the tenant-aware file storage wrapper
+            // Register under a DIFFERENT interface to avoid breaking CoreLibs internal 
+            services.AddScoped<ITenantAwareFileStorageService, TenantAwareFileStorageService>();
 
             services.AddEmailServicesWithGovUkNotify(tenantConfig);
 
