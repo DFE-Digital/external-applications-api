@@ -1,4 +1,3 @@
-using DfE.ExternalApplications.Domain.Caching;
 using DfE.ExternalApplications.Infrastructure.Security;
 using GovUK.Dfe.CoreLibs.Http.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -12,9 +11,13 @@ namespace DfE.ExternalApplications.Api.Controllers
 {
     /// <summary>
     /// Controller for SignalR hub authentication.
-    /// Uses tenant-aware distributed cache for ticket storage.
+    /// 
+    /// IMPORTANT: Uses IDistributedCache directly (NOT tenant-aware) because:
+    /// - CreateHubTicket is called via AJAX with tenant headers
+    /// - RedeemHubCookie is called via browser redirect WITHOUT tenant headers
+    /// - The ticket must be accessible across these different request contexts
     /// </summary>
-    public class HubAuthController(ITenantAwareDistributedCache cache) : ControllerBase
+    public class HubAuthController(IDistributedCache cache) : ControllerBase
     {
         //Create a single use ticket for the hub, which is valid for 1 minute
         [HttpPost("auth/hub-ticket")]
