@@ -1,6 +1,5 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
-using Azure.Core.Diagnostics;
 using DfE.ExternalApplications.Api.ExceptionHandlers;
 using DfE.ExternalApplications.Api.Filters;
 using DfE.ExternalApplications.Api.Middleware;
@@ -160,24 +159,12 @@ namespace DfE.ExternalApplications.Api
             var firstTenantConfig = allTenants.FirstOrDefault()?.Settings;
             var appInsightsCnnStr = firstTenantConfig?.GetSection("ApplicationInsights")?["ConnectionString"];
             
-            // Debug: Log App Insights configuration status
-            Console.WriteLine($"=== APP INSIGHTS DEBUG ===");
-            Console.WriteLine($"First tenant found: {allTenants.FirstOrDefault()?.Name ?? "NULL"}");
-            Console.WriteLine($"Connection string found: {!string.IsNullOrWhiteSpace(appInsightsCnnStr)}");
-            Console.WriteLine($"Connection string (first 50 chars): {appInsightsCnnStr?.Substring(0, Math.Min(50, appInsightsCnnStr?.Length ?? 0))}...");
-            
             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
             {
-                Console.WriteLine("=== REGISTERING APP INSIGHTS TELEMETRY ===");
-                // Configure App Insights for request/dependency tracking only
                 builder.Services.AddApplicationInsightsTelemetry(opt =>
                 {
                     opt.ConnectionString = appInsightsCnnStr;
                 });
-            }
-            else
-            {
-                Console.WriteLine("=== APP INSIGHTS NOT REGISTERED - NO CONNECTION STRING ===");
             }
             
             // Disable the App Insights ILogger provider completely
@@ -198,7 +185,6 @@ namespace DfE.ExternalApplications.Api
             var app = builder.Build();
 
             // Reconfigure Serilog to add Application Insights sink now that TelemetryConfiguration is available
-            // This couldn't be done in UseSerilog because App Insights wasn't registered yet
             var telemetryConfig = app.Services.GetService<TelemetryConfiguration>();
             if (telemetryConfig != null)
             {
@@ -210,48 +196,6 @@ namespace DfE.ExternalApplications.Api
                         telemetryConfig,
                         new DfE.ExternalApplications.Api.Telemetry.ExceptionTrackingTelemetryConverter())
                     .CreateLogger();
-                
-                // Diagnostic: Log to verify Serilog App Insights sink is configured
-                Log.Information("=== SERILOG APP INSIGHTS CONFIGURED ===");
-                Log.Information("TelemetryConfiguration ConnectionString: {ConnectionString}", 
-                    telemetryConfig.ConnectionString?.Substring(0, Math.Min(50, telemetryConfig.ConnectionString?.Length ?? 0)) + "...");
-                Log.Information("InstrumentationKey present: {HasKey}", !string.IsNullOrEmpty(telemetryConfig.InstrumentationKey));
-                
-                // Test exception logging with ErrorId pattern via SERILOG
-                try
-                {
-                    throw new InvalidOperationException("SERILOG_APPINSIGHTS_TEST: This is a startup test exception");
-                }
-                catch (Exception testEx)
-                {
-                    Log.Error(testEx, "=== SERILOG TEST === Exception with ErrorId: {ErrorId}, CorrelationId: {CorrelationId}", 
-                        "STARTUP-TEST-123", "test-correlation-456");
-                }
-                
-                // Also test DIRECT TelemetryClient to compare
-                var testTelemetryClient = new Microsoft.ApplicationInsights.TelemetryClient(telemetryConfig);
-                
-                // Check if telemetry channel is active
-                Console.WriteLine($"=== TELEMETRY CHANNEL STATUS ===");
-                Console.WriteLine($"TelemetryChannel: {telemetryConfig.TelemetryChannel?.GetType().Name ?? "NULL"}");
-                Console.WriteLine($"DeveloperMode: {telemetryConfig.TelemetryChannel?.DeveloperMode}");
-                
-                var directException = new InvalidOperationException("DIRECT_TELEMETRYCLIENT_TEST: Direct test");
-                var exTelemetry = new Microsoft.ApplicationInsights.DataContracts.ExceptionTelemetry(directException);
-                exTelemetry.Properties["ErrorId"] = "DIRECT-TEST-789";
-                exTelemetry.Properties["Source"] = "DirectTelemetryClient";
-                exTelemetry.Properties["TestTimestamp"] = DateTime.UtcNow.ToString("o");
-                testTelemetryClient.TrackException(exTelemetry);
-                
-                // Force immediate send
-                testTelemetryClient.Flush();
-                Console.WriteLine("=== WAITING FOR TELEMETRY TO SEND ===");
-                Thread.Sleep(5000); // Wait 5 seconds for transmission
-                Console.WriteLine("=== DIRECT TELEMETRYCLIENT TEST SENT ===");
-            }
-            else
-            {
-                Log.Warning("=== SERILOG APP INSIGHTS NOT CONFIGURED === TelemetryConfiguration is null!");
             }
 
             var forwardOptions = new ForwardedHeadersOptions
@@ -355,22 +299,7 @@ namespace DfE.ExternalApplications.Api
             }
             finally
             {
-                // Ensure all telemetry is flushed before shutdown
-                Console.WriteLine("=== FLUSHING TELEMETRY ===");
-                
-                // Flush Serilog
                 Log.CloseAndFlush();
-                
-                // Flush App Insights
-                var telemetryClient = app.Services.GetService<Microsoft.ApplicationInsights.TelemetryClient>();
-                if (telemetryClient != null)
-                {
-                    telemetryClient.Flush();
-                    // Give it time to send
-                    await Task.Delay(2000);
-                }
-                
-                Console.WriteLine("=== TELEMETRY FLUSHED ===");
             }
         }
 
