@@ -159,21 +159,31 @@ namespace DfE.ExternalApplications.Api
             // Application Insights is configured from first tenant's config
             var firstTenantConfig = allTenants.FirstOrDefault()?.Settings;
             var appInsightsCnnStr = firstTenantConfig?.GetSection("ApplicationInsights")?["ConnectionString"];
+            
+            // Debug: Log App Insights configuration status
+            Console.WriteLine($"=== APP INSIGHTS DEBUG ===");
+            Console.WriteLine($"First tenant found: {allTenants.FirstOrDefault()?.Name ?? "NULL"}");
+            Console.WriteLine($"Connection string found: {!string.IsNullOrWhiteSpace(appInsightsCnnStr)}");
+            Console.WriteLine($"Connection string (first 50 chars): {appInsightsCnnStr?.Substring(0, Math.Min(50, appInsightsCnnStr?.Length ?? 0))}...");
+            
             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
             {
+                Console.WriteLine("=== REGISTERING APP INSIGHTS TELEMETRY ===");
+                // Configure App Insights for request/dependency tracking only
                 builder.Services.AddApplicationInsightsTelemetry(opt =>
                 {
                     opt.ConnectionString = appInsightsCnnStr;
-                    // Disable the built-in ILogger provider - we use Serilog with custom converter instead
-                    // This ensures exceptions are tracked via Serilog with ErrorId in customDimensions
-                    opt.EnableDiagnosticsTelemetryModule = true;
                 });
-                
-                // Remove the App Insights ILogger provider so only Serilog sends logs/exceptions to App Insights
-                // This prevents duplicate entries and ensures our custom converter is used
-                builder.Logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>(
-                    "", LogLevel.None);
             }
+            else
+            {
+                Console.WriteLine("=== APP INSIGHTS NOT REGISTERED - NO CONNECTION STRING ===");
+            }
+            
+            // Disable the App Insights ILogger provider completely
+            // All logs/exceptions should go through Serilog with our custom converter (includes ErrorId)
+            builder.Logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>(
+                (category, level) => false);
 
             builder.Services.AddHsts(options =>
             {
@@ -200,6 +210,48 @@ namespace DfE.ExternalApplications.Api
                         telemetryConfig,
                         new DfE.ExternalApplications.Api.Telemetry.ExceptionTrackingTelemetryConverter())
                     .CreateLogger();
+                
+                // Diagnostic: Log to verify Serilog App Insights sink is configured
+                Log.Information("=== SERILOG APP INSIGHTS CONFIGURED ===");
+                Log.Information("TelemetryConfiguration ConnectionString: {ConnectionString}", 
+                    telemetryConfig.ConnectionString?.Substring(0, Math.Min(50, telemetryConfig.ConnectionString?.Length ?? 0)) + "...");
+                Log.Information("InstrumentationKey present: {HasKey}", !string.IsNullOrEmpty(telemetryConfig.InstrumentationKey));
+                
+                // Test exception logging with ErrorId pattern via SERILOG
+                try
+                {
+                    throw new InvalidOperationException("SERILOG_APPINSIGHTS_TEST: This is a startup test exception");
+                }
+                catch (Exception testEx)
+                {
+                    Log.Error(testEx, "=== SERILOG TEST === Exception with ErrorId: {ErrorId}, CorrelationId: {CorrelationId}", 
+                        "STARTUP-TEST-123", "test-correlation-456");
+                }
+                
+                // Also test DIRECT TelemetryClient to compare
+                var testTelemetryClient = new Microsoft.ApplicationInsights.TelemetryClient(telemetryConfig);
+                
+                // Check if telemetry channel is active
+                Console.WriteLine($"=== TELEMETRY CHANNEL STATUS ===");
+                Console.WriteLine($"TelemetryChannel: {telemetryConfig.TelemetryChannel?.GetType().Name ?? "NULL"}");
+                Console.WriteLine($"DeveloperMode: {telemetryConfig.TelemetryChannel?.DeveloperMode}");
+                
+                var directException = new InvalidOperationException("DIRECT_TELEMETRYCLIENT_TEST: Direct test");
+                var exTelemetry = new Microsoft.ApplicationInsights.DataContracts.ExceptionTelemetry(directException);
+                exTelemetry.Properties["ErrorId"] = "DIRECT-TEST-789";
+                exTelemetry.Properties["Source"] = "DirectTelemetryClient";
+                exTelemetry.Properties["TestTimestamp"] = DateTime.UtcNow.ToString("o");
+                testTelemetryClient.TrackException(exTelemetry);
+                
+                // Force immediate send
+                testTelemetryClient.Flush();
+                Console.WriteLine("=== WAITING FOR TELEMETRY TO SEND ===");
+                Thread.Sleep(5000); // Wait 5 seconds for transmission
+                Console.WriteLine("=== DIRECT TELEMETRYCLIENT TEST SENT ===");
+            }
+            else
+            {
+                Log.Warning("=== SERILOG APP INSIGHTS NOT CONFIGURED === TelemetryConfiguration is null!");
             }
 
             var forwardOptions = new ForwardedHeadersOptions
@@ -297,7 +349,29 @@ namespace DfE.ExternalApplications.Api
             ILogger<Program> logger = app.Services.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Logger is working...");
 
-            await app.RunAsync();
+            try
+            {
+                await app.RunAsync();
+            }
+            finally
+            {
+                // Ensure all telemetry is flushed before shutdown
+                Console.WriteLine("=== FLUSHING TELEMETRY ===");
+                
+                // Flush Serilog
+                Log.CloseAndFlush();
+                
+                // Flush App Insights
+                var telemetryClient = app.Services.GetService<Microsoft.ApplicationInsights.TelemetryClient>();
+                if (telemetryClient != null)
+                {
+                    telemetryClient.Flush();
+                    // Give it time to send
+                    await Task.Delay(2000);
+                }
+                
+                Console.WriteLine("=== TELEMETRY FLUSHED ===");
+            }
         }
 
         private static void ConfigureSignalR(
