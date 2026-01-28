@@ -161,7 +161,18 @@ namespace DfE.ExternalApplications.Api
             var appInsightsCnnStr = firstTenantConfig?.GetSection("ApplicationInsights")?["ConnectionString"];
             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
             {
-                builder.Services.AddApplicationInsightsTelemetry(opt => { opt.ConnectionString = appInsightsCnnStr; });
+                builder.Services.AddApplicationInsightsTelemetry(opt =>
+                {
+                    opt.ConnectionString = appInsightsCnnStr;
+                    // Disable the built-in ILogger provider - we use Serilog with custom converter instead
+                    // This ensures exceptions are tracked via Serilog with ErrorId in customDimensions
+                    opt.EnableDiagnosticsTelemetryModule = true;
+                });
+                
+                // Remove the App Insights ILogger provider so only Serilog sends logs/exceptions to App Insights
+                // This prevents duplicate entries and ensures our custom converter is used
+                builder.Logging.AddFilter<Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider>(
+                    "", LogLevel.None);
             }
 
             builder.Services.AddHsts(options =>
