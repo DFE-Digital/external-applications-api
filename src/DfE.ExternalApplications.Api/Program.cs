@@ -37,19 +37,21 @@ namespace DfE.ExternalApplications.Api
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.Logging.AddConsole();
+
             builder.Host.UseSerilog((context, services, loggerConfiguration) =>
             {
                 loggerConfiguration
                     .ReadFrom.Configuration(context.Configuration)
                     .Enrich.FromLogContext()
                     .WriteTo.Console();
-                
-                // Only add Application Insights sink if it's configured
+
                 var telemetryConfig = services.GetService<TelemetryConfiguration>();
                 if (telemetryConfig != null)
                 {
-                    loggerConfiguration.WriteTo.ApplicationInsights(telemetryConfig, TelemetryConverter.Traces);
+                    loggerConfiguration.WriteTo.ApplicationInsights(
+                        telemetryConfig,
+                        new DfE.ExternalApplications.Api.Telemetry.ExceptionTrackingTelemetryConverter()
+                    );
                 }
             });
 
