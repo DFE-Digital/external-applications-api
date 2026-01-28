@@ -1422,6 +1422,26 @@
         ],
         "summary": "Gets all notifications (read and unread) for the current user.",
         "operationId": "Notifications_GetAllNotifications",
+        "parameters": [
+          {
+            "name": "context",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of all notifications.",
@@ -1486,6 +1506,26 @@
         ],
         "summary": "Gets all unread notifications for the current user.",
         "operationId": "Notifications_GetUnreadNotifications",
+        "parameters": [
+          {
+            "name": "context",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of unread notifications.",
@@ -1714,6 +1754,26 @@
         ],
         "summary": "Gets the count of unread notifications for the current user.",
         "operationId": "Notifications_GetUnreadNotificationCount",
+        "parameters": [
+          {
+            "name": "context",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
         "responses": {
           "200": {
             "description": "Count of unread notifications.",
@@ -1868,6 +1928,26 @@
         ],
         "summary": "Marks all notifications as read for the current user.",
         "operationId": "Notifications_MarkAllNotificationsAsRead",
+        "parameters": [
+          {
+            "name": "context",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
         "responses": {
           "200": {
             "description": "All notifications marked as read successfully.",

@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 
@@ -13,7 +14,13 @@ namespace DfE.ExternalApplications.Tests.Common.Helpers
     public class TestExternalIdentityValidator : IExternalIdentityValidator
     {
         private const string Secret = "9b4824fc-3360-4040-8781-75c2db3e1813";
+
         public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, bool validCypressRequest, bool validInternalRequest = false, CancellationToken cancellationToken = default)
+        {
+            return ValidateIdTokenAsync(token, validCypressRequest, validInternalRequest, null, cancellationToken);
+        }
+
+        public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, bool validCypressRequest, bool validInternalRequest = false, InternalServiceAuthOptions? internalServiceAuthOptions = null, CancellationToken cancellationToken = default)
         {
             var handler = new JwtSecurityTokenHandler();
             var parameters = new TokenValidationParameters

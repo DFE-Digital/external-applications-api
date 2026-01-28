@@ -2508,7 +2508,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>List of all notifications.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetAllNotificationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetAllNotificationsAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -2523,6 +2523,16 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                     // Operation Path: "v1/Notifications"
                     urlBuilder_.Append("v1/Notifications");
+                    urlBuilder_.Append('?');
+                    if (context != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("context")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(context, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (category != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("category")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(category, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -2622,7 +2632,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>List of unread notifications.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetUnreadNotificationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetUnreadNotificationsAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -2637,6 +2647,16 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                     // Operation Path: "v1/Notifications/unread"
                     urlBuilder_.Append("v1/Notifications/unread");
+                    urlBuilder_.Append('?');
+                    if (context != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("context")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(context, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (category != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("category")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(category, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -2988,7 +3008,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>Count of unread notifications.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<int> GetUnreadNotificationCountAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<int> GetUnreadNotificationCountAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -3003,6 +3023,16 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                     // Operation Path: "v1/Notifications/unread/count"
                     urlBuilder_.Append("v1/Notifications/unread/count");
+                    urlBuilder_.Append('?');
+                    if (context != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("context")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(context, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (category != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("category")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(category, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -3242,7 +3272,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>All notifications marked as read successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<bool> MarkAllNotificationsAsReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<bool> MarkAllNotificationsAsReadAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -3258,6 +3288,16 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                     // Operation Path: "v1/Notifications/read-all"
                     urlBuilder_.Append("v1/Notifications/read-all");
+                    urlBuilder_.Append('?');
+                    if (context != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("context")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(context, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (category != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("category")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(category, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 

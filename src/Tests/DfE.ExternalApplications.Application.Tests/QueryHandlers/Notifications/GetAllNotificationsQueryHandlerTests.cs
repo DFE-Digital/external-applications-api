@@ -58,7 +58,7 @@ public class GetAllNotificationsQueryHandlerTests
             notification.Priority = NotificationPriority.Normal;
         }
 
-        _notificationService.GetAllNotificationsAsync(email, Arg.Any<CancellationToken>())
+        _notificationService.GetAllNotificationsAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(notifications);
 
         // Act
@@ -79,7 +79,7 @@ public class GetAllNotificationsQueryHandlerTests
             Assert.Equal(notifications[i].IsRead, resultList[i].IsRead);
         }
 
-        await _notificationService.Received(1).GetAllNotificationsAsync(email, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).GetAllNotificationsAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -105,7 +105,7 @@ public class GetAllNotificationsQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("User does not have permission to read notifications", result.Error);
-        await _notificationService.DidNotReceive().GetAllNotificationsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().GetAllNotificationsAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -124,7 +124,7 @@ public class GetAllNotificationsQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Not authenticated", result.Error);
-        await _notificationService.DidNotReceive().GetAllNotificationsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().GetAllNotificationsAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -144,7 +144,7 @@ public class GetAllNotificationsQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("No user identifier", result.Error);
-        await _notificationService.DidNotReceive().GetAllNotificationsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().GetAllNotificationsAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -165,7 +165,7 @@ public class GetAllNotificationsQueryHandlerTests
 
         _permissionCheckerService.HasPermission(ResourceType.Notifications, appId, AccessType.Read).Returns(true);
 
-        _notificationService.GetAllNotificationsAsync(appId, Arg.Any<CancellationToken>())
+        _notificationService.GetAllNotificationsAsync(appId, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(notifications);
 
         // Act
@@ -174,7 +174,7 @@ public class GetAllNotificationsQueryHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         _permissionCheckerService.Received(1).HasPermission(ResourceType.Notifications, appId, AccessType.Read);
-        await _notificationService.Received(1).GetAllNotificationsAsync(appId, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).GetAllNotificationsAsync(appId, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -195,7 +195,7 @@ public class GetAllNotificationsQueryHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Read).Returns(true);
 
         var exceptionMessage = "Test exception";
-        _notificationService.GetAllNotificationsAsync(email, Arg.Any<CancellationToken>())
+        _notificationService.GetAllNotificationsAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception(exceptionMessage));
 
         // Act
@@ -223,7 +223,7 @@ public class GetAllNotificationsQueryHandlerTests
 
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Read).Returns(true);
 
-        _notificationService.GetAllNotificationsAsync(email, Arg.Any<CancellationToken>())
+        _notificationService.GetAllNotificationsAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(new List<Notification>());
 
         // Act

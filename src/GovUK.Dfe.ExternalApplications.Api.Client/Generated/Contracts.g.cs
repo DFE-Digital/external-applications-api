@@ -173,7 +173,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>List of all notifications.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetAllNotificationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetAllNotificationsAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -181,7 +181,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>List of unread notifications.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetUnreadNotificationsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<NotificationDto>> GetUnreadNotificationsAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -205,7 +205,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>Count of unread notifications.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<int> GetUnreadNotificationCountAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<int> GetUnreadNotificationCountAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -221,7 +221,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>All notifications marked as read successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<bool> MarkAllNotificationsAsReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<bool> MarkAllNotificationsAsReadAsync(string context = null, string category = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>

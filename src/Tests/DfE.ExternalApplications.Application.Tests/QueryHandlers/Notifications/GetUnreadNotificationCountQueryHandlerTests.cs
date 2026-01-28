@@ -48,7 +48,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
 
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Read).Returns(true);
 
-        _notificationService.GetUnreadCountAsync(email, Arg.Any<CancellationToken>())
+        _notificationService.GetUnreadCountAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(expectedCount);
 
         // Act
@@ -57,7 +57,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(expectedCount, result.Value);
-        await _notificationService.Received(1).GetUnreadCountAsync(email, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).GetUnreadCountAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -83,7 +83,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("User does not have permission to read notifications", result.Error);
-        await _notificationService.DidNotReceive().GetUnreadCountAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().GetUnreadCountAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -102,7 +102,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Not authenticated", result.Error);
-        await _notificationService.DidNotReceive().GetUnreadCountAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().GetUnreadCountAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -122,7 +122,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("No user identifier", result.Error);
-        await _notificationService.DidNotReceive().GetUnreadCountAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().GetUnreadCountAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -143,7 +143,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
 
         _permissionCheckerService.HasPermission(ResourceType.Notifications, appId, AccessType.Read).Returns(true);
 
-        _notificationService.GetUnreadCountAsync(appId, Arg.Any<CancellationToken>())
+        _notificationService.GetUnreadCountAsync(appId, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(expectedCount);
 
         // Act
@@ -153,7 +153,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(expectedCount, result.Value);
         _permissionCheckerService.Received(1).HasPermission(ResourceType.Notifications, appId, AccessType.Read);
-        await _notificationService.Received(1).GetUnreadCountAsync(appId, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).GetUnreadCountAsync(appId, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -174,7 +174,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Read).Returns(true);
 
         var exceptionMessage = "Test exception";
-        _notificationService.GetUnreadCountAsync(email, Arg.Any<CancellationToken>())
+        _notificationService.GetUnreadCountAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception(exceptionMessage));
 
         // Act
@@ -202,7 +202,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
 
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Read).Returns(true);
 
-        _notificationService.GetUnreadCountAsync(email, Arg.Any<CancellationToken>())
+        _notificationService.GetUnreadCountAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(0);
 
         // Act
@@ -231,7 +231,7 @@ public class GetUnreadNotificationCountQueryHandlerTests
 
         _permissionCheckerService.HasPermission(ResourceType.Notifications, azp, AccessType.Read).Returns(true);
 
-        _notificationService.GetUnreadCountAsync(azp, Arg.Any<CancellationToken>())
+        _notificationService.GetUnreadCountAsync(azp, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(expectedCount);
 
         // Act
@@ -241,6 +241,6 @@ public class GetUnreadNotificationCountQueryHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(expectedCount, result.Value);
         _permissionCheckerService.Received(1).HasPermission(ResourceType.Notifications, azp, AccessType.Read);
-        await _notificationService.Received(1).GetUnreadCountAsync(azp, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).GetUnreadCountAsync(azp, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 }
