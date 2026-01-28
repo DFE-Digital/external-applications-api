@@ -38,21 +38,14 @@ namespace DfE.ExternalApplications.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Initial Serilog config with console only
+            // App Insights sink is added AFTER builder.Build() when TelemetryConfiguration is available
             builder.Host.UseSerilog((context, services, loggerConfiguration) =>
             {
                 loggerConfiguration
                     .ReadFrom.Configuration(context.Configuration)
                     .Enrich.FromLogContext()
                     .WriteTo.Console();
-
-                var telemetryConfig = services.GetService<TelemetryConfiguration>();
-                if (telemetryConfig != null)
-                {
-                    loggerConfiguration.WriteTo.ApplicationInsights(
-                        telemetryConfig,
-                        new DfE.ExternalApplications.Api.Telemetry.ExceptionTrackingTelemetryConverter()
-                    );
-                }
             });
 
             builder.Services.AddControllers(opts =>
@@ -182,6 +175,21 @@ namespace DfE.ExternalApplications.Api
 
 
             var app = builder.Build();
+
+            // Reconfigure Serilog to add Application Insights sink now that TelemetryConfiguration is available
+            // This couldn't be done in UseSerilog because App Insights wasn't registered yet
+            var telemetryConfig = app.Services.GetService<TelemetryConfiguration>();
+            if (telemetryConfig != null)
+            {
+                Log.Logger = new Serilog.LoggerConfiguration()
+                    .ReadFrom.Configuration(builder.Configuration)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .WriteTo.ApplicationInsights(
+                        telemetryConfig,
+                        new DfE.ExternalApplications.Api.Telemetry.ExceptionTrackingTelemetryConverter())
+                    .CreateLogger();
+            }
 
             var forwardOptions = new ForwardedHeadersOptions
             {
