@@ -1,6 +1,8 @@
-﻿using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Exceptions;
+using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Reflection;
@@ -10,7 +12,9 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
 {
     internal class RateLimitingBehaviour<TReq, TRes>(
         IRateLimiterFactory<string> factory,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IPermissionCheckerService permissionCheckerService,
+        ICustomRequestChecker internalAuthRequestChecker)
         : IPipelineBehavior<TReq, TRes>
         where TReq : IRateLimitedRequest, IRequest<TRes>
     {
@@ -21,7 +25,16 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
             var attr = request.GetType().GetCustomAttribute<RateLimitAttribute>();
             if (attr != null)
             {
-                var user = httpContextAccessor.HttpContext?.User;
+                // Bypass rate limiting for admin users
+                if (permissionCheckerService.IsAdmin())
+                    return await next(ct);
+
+                // Bypass rate limiting for internal auth requests
+                var httpContext = httpContextAccessor.HttpContext;
+                if (httpContext != null && internalAuthRequestChecker.IsValidRequest(httpContext))
+                    return await next(ct);
+
+                var user = httpContext?.User;
 
                 var principalId = user?.FindFirstValue("appid") ?? user?.FindFirstValue("azp");
 
@@ -29,7 +42,7 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
                     principalId = user?.FindFirstValue(ClaimTypes.Email);
                 
                 if (string.IsNullOrEmpty(principalId))
-                    principalId = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+                    principalId = httpContext?.Connection.RemoteIpAddress?.ToString();
 
                 if (string.IsNullOrEmpty(principalId))
                             throw new InvalidOperationException("RateLimiter > Email/AppId claim missing");

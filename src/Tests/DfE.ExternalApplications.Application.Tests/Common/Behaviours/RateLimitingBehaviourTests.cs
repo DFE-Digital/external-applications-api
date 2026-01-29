@@ -1,8 +1,10 @@
 using System.Net;
+using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
 using DfE.ExternalApplications.Application.Common.Exceptions;
+using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
@@ -15,6 +17,8 @@ public class RateLimitingBehaviourTests
 {
     private readonly IRateLimiterFactory<string> _rateLimiterFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IPermissionCheckerService _permissionCheckerService;
+    private readonly ICustomRequestChecker _internalAuthRequestChecker;
     private readonly IRateLimiter<string> _rateLimiter;
     private readonly RateLimitingBehaviour<TestRateLimitedRequest, string> _behaviour;
 
@@ -22,8 +26,14 @@ public class RateLimitingBehaviourTests
     {
         _rateLimiterFactory = Substitute.For<IRateLimiterFactory<string>>();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
+        _internalAuthRequestChecker = Substitute.For<ICustomRequestChecker>();
         _rateLimiter = Substitute.For<IRateLimiter<string>>();
-        _behaviour = new RateLimitingBehaviour<TestRateLimitedRequest, string>(_rateLimiterFactory, _httpContextAccessor);
+        _behaviour = new RateLimitingBehaviour<TestRateLimitedRequest, string>(
+            _rateLimiterFactory, 
+            _httpContextAccessor,
+            _permissionCheckerService,
+            _internalAuthRequestChecker);
     }
 
     [RateLimit(5, 60)]
@@ -313,5 +323,119 @@ public class RateLimitingBehaviourTests
         _rateLimiterFactory.Received(1).Create(
             Arg.Is<int>(max => max == 5),
             Arg.Is<TimeSpan>(timeSpan => timeSpan == TimeSpan.FromSeconds(60)));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldBypassRateLimiting_WhenUserIsAdmin()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new("appid", "test-app-id")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+        _permissionCheckerService.IsAdmin().Returns(true);
+
+        var request = new TestRateLimitedRequest("test");
+        var next = Substitute.For<RequestHandlerDelegate<string>>();
+        next().Returns("success");
+
+        // Act
+        var result = await _behaviour.Handle(request, next, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("success", result);
+        await next.Received(1).Invoke();
+        _rateLimiterFactory.DidNotReceive().Create(Arg.Any<int>(), Arg.Any<TimeSpan>());
+        _rateLimiter.DidNotReceive().IsAllowed(Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldBypassRateLimiting_WhenInternalAuthRequest()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new("appid", "test-app-id")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+        _permissionCheckerService.IsAdmin().Returns(false);
+        _internalAuthRequestChecker.IsValidRequest(httpContext).Returns(true);
+
+        var request = new TestRateLimitedRequest("test");
+        var next = Substitute.For<RequestHandlerDelegate<string>>();
+        next().Returns("success");
+
+        // Act
+        var result = await _behaviour.Handle(request, next, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("success", result);
+        await next.Received(1).Invoke();
+        _rateLimiterFactory.DidNotReceive().Create(Arg.Any<int>(), Arg.Any<TimeSpan>());
+        _rateLimiter.DidNotReceive().IsAllowed(Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldApplyRateLimiting_WhenNotAdminAndNotInternalAuth()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new("appid", "test-app-id")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+        _permissionCheckerService.IsAdmin().Returns(false);
+        _internalAuthRequestChecker.IsValidRequest(httpContext).Returns(false);
+
+        _rateLimiterFactory.Create(5, TimeSpan.FromSeconds(60)).Returns(_rateLimiter);
+        _rateLimiter.IsAllowed("test-app-id_TestRateLimitedRequest").Returns(true);
+
+        var request = new TestRateLimitedRequest("test");
+        var next = Substitute.For<RequestHandlerDelegate<string>>();
+        next().Returns("success");
+
+        // Act
+        var result = await _behaviour.Handle(request, next, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("success", result);
+        await next.Received(1).Invoke();
+        _rateLimiterFactory.Received(1).Create(5, TimeSpan.FromSeconds(60));
+        _rateLimiter.Received(1).IsAllowed("test-app-id_TestRateLimitedRequest");
+    }
+
+    [Fact]
+    public async Task Handle_ShouldCheckAdminBeforeInternalAuth()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var claims = new List<Claim>
+        {
+            new("appid", "test-app-id")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+        _permissionCheckerService.IsAdmin().Returns(true);
+        // Internal auth would also return true, but shouldn't be checked if user is admin
+        _internalAuthRequestChecker.IsValidRequest(httpContext).Returns(true);
+
+        var request = new TestRateLimitedRequest("test");
+        var next = Substitute.For<RequestHandlerDelegate<string>>();
+        next().Returns("success");
+
+        // Act
+        var result = await _behaviour.Handle(request, next, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("success", result);
+        _permissionCheckerService.Received(1).IsAdmin();
+        _internalAuthRequestChecker.DidNotReceive().IsValidRequest(Arg.Any<HttpContext>());
     }
 }
