@@ -5,6 +5,7 @@ using DfE.ExternalApplications.Application.Common.Exceptions;
 using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Security.Claims;
 
@@ -14,7 +15,7 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
         IRateLimiterFactory<string> factory,
         IHttpContextAccessor httpContextAccessor,
         IPermissionCheckerService permissionCheckerService,
-        ICustomRequestChecker internalAuthRequestChecker)
+        [FromKeyedServices("internal")] ICustomRequestChecker internalAuthRequestChecker)
         : IPipelineBehavior<TReq, TRes>
         where TReq : IRateLimitedRequest, IRequest<TRes>
     {
