@@ -53,4 +53,15 @@ public sealed class File : BaseAggregateRoot, IEntity<FileId>
             throw new InvalidOperationException("File is already deleted.");
         IsDeleted = true;
     }
+
+    public void SetApplication(Application application)
+    {
+        if (application == null)
+            throw new ArgumentNullException(nameof(application));
+
+        if (application.Id != ApplicationId)
+            throw new InvalidOperationException("Application Id must match the File's ApplicationId");
+
+        Application = application;
+    }
 } 

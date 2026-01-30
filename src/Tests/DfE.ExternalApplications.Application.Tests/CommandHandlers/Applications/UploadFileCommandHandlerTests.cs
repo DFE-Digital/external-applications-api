@@ -128,7 +128,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -525,7 +525,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -647,7 +647,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -758,7 +758,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -932,7 +932,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -1041,7 +1041,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
