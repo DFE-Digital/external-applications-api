@@ -32,6 +32,7 @@ public class UserAutoRegistrationHandler : DelegatingHandler
     private readonly ApiClientSettings _settings;
     private readonly ILogger<UserAutoRegistrationHandler> _logger;
     private readonly SemaphoreSlim _registrationLock = new(1, 1);
+    public const string TenantIdHeaderName = "X-Tenant-ID";
 
     public UserAutoRegistrationHandler(
         IHttpClientFactory httpClientFactory,
@@ -194,6 +195,7 @@ public class UserAutoRegistrationHandler : DelegatingHandler
             var client = _httpClientFactory.CreateClient();
             client.BaseAddress = new Uri(_settings.BaseUrl!);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", azureToken);
+            client.DefaultRequestHeaders.Add(TenantIdHeaderName, _settings.TenantId.ToString());
 
             var usersClient = new UsersClient(_settings.BaseUrl!, client);
             var result = await usersClient.RegisterUserAsync(registerRequest, cancellationToken);
