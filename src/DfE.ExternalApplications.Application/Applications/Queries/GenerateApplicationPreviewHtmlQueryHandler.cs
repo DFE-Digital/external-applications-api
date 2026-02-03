@@ -7,11 +7,11 @@ using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using System;
 using System.Security.Claims;
 using System.Text;
 using DfE.ExternalApplications.Domain.Tenancy;
+using Microsoft.Extensions.Configuration;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -22,8 +22,7 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IStaticHtmlGeneratorService htmlGeneratorService,
-    ITenantContextAccessor tenantContextAccessor,
-    IOptions<InternalServiceAuthOptions> internalServiceAuthOptions)
+    ITenantContextAccessor tenantContextAccessor)
     : IRequestHandler<GenerateApplicationPreviewHtmlQuery, Result<DownloadFileResult>>
 {
     public async Task<Result<DownloadFileResult>> Handle(
@@ -66,21 +65,23 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
             // Build the preview URL
             var previewUrl = $"{frontendBaseUrl}/applications/{request.ApplicationReference}?preview=true";
 
-            // Get internal service authentication configuration
-            var authConfig = internalServiceAuthOptions.Value;
-            var serviceConfig = authConfig.Services?.FirstOrDefault();
+            // Get tenant-specific internal service authentication configuration
+            var internalAuthConfig = new InternalServiceAuthOptions();
+            tenantConfig.GetSection(InternalServiceAuthOptions.SectionName).Bind(internalAuthConfig);
             
+            var serviceConfig = internalAuthConfig.Services?.FirstOrDefault();
             if (serviceConfig == null)
             {
                 return Result<DownloadFileResult>.Failure(
-                    "Internal service authentication is not configured. Please configure 'InternalServiceAuth:Services' in application settings.");
+                    "Internal service authentication is not configured for tenant. Please configure 'InternalServiceAuth:Services' in tenant settings.");
             }
 
             // Build authentication headers for internal service authentication
             var authenticationHeaders = new Dictionary<string, string>
             {
                 { "x-service-email", serviceConfig.Email },
-                { "x-service-api-key", serviceConfig.ApiKey }
+                { "x-service-api-key", serviceConfig.ApiKey },
+                { "x-tenant-id", tenantContextAccessor.CurrentTenant.Id.ToString()}
             };
 
             // Optional: Specify a CSS selector to extract only a specific section of the page

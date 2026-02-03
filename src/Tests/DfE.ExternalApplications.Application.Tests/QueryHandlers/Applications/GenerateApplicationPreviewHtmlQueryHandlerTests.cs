@@ -10,7 +10,6 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using MockQueryable.NSubstitute;
 using NSubstitute;
 using System.Security.Claims;
@@ -25,7 +24,6 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
     private readonly IPermissionCheckerService _permissionCheckerService;
     private readonly IStaticHtmlGeneratorService _htmlGeneratorService;
     private readonly ITenantContextAccessor _tenantContextAccessor;
-    private readonly IOptions<InternalServiceAuthOptions> _internalServiceAuthOptions;
     private readonly GenerateApplicationPreviewHtmlQueryHandler _handler;
 
     public GenerateApplicationPreviewHtmlQueryHandlerTests()
@@ -35,15 +33,13 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
         _htmlGeneratorService = Substitute.For<IStaticHtmlGeneratorService>();
         _tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
-        _internalServiceAuthOptions = Substitute.For<IOptions<InternalServiceAuthOptions>>();
 
         _handler = new GenerateApplicationPreviewHtmlQueryHandler(
             _applicationRepo,
             _httpContextAccessor,
             _permissionCheckerService,
             _htmlGeneratorService,
-            _tenantContextAccessor,
-            _internalServiceAuthOptions);
+            _tenantContextAccessor);
     }
 
     [Theory]
@@ -97,16 +93,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             AccessType.Read)
             .Returns(true);
 
-        SetupTenantContext("https://test.com", ".content");
-
-        var authOptions = new InternalServiceAuthOptions
-        {
-            Services = new List<InternalServiceCredentials>
-            {
-                new() { Email = "test-service@test.com", ApiKey = "test-key" }
-            }
-        };
-        _internalServiceAuthOptions.Value.Returns(authOptions);
+        SetupTenantContext("https://test.com", ".content", "test-service@test.com", "test-key");
 
         var htmlContent = "<html><body>Test</body></html>";
         _htmlGeneratorService.GenerateStaticHtmlAsync(
@@ -293,13 +280,8 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             AccessType.Read)
             .Returns(true);
 
-        SetupTenantContext("https://test.com", null);
-
-        var authOptions = new InternalServiceAuthOptions
-        {
-            Services = new List<InternalServiceCredentials>()
-        };
-        _internalServiceAuthOptions.Value.Returns(authOptions);
+        // Setup tenant context without internal service auth configured
+        SetupTenantContext("https://test.com", null, null, null);
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -342,16 +324,7 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             .Returns(true);
 
         var frontendBaseUrl = "https://frontend.test.com";
-        SetupTenantContext(frontendBaseUrl, null);
-
-        var authOptions = new InternalServiceAuthOptions
-        {
-            Services = new List<InternalServiceCredentials>
-            {
-                new() { Email = "test-service@test.com", ApiKey = "test-key" }
-            }
-        };
-        _internalServiceAuthOptions.Value.Returns(authOptions);
+        SetupTenantContext(frontendBaseUrl, null, "test-service@test.com", "test-key");
 
         _htmlGeneratorService.GenerateStaticHtmlAsync(
             Arg.Any<string>(),
@@ -404,18 +377,9 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             AccessType.Read)
             .Returns(true);
 
-        SetupTenantContext("https://test.com", null);
-
         var expectedEmail = "test-service@test.com";
         var expectedApiKey = "test-api-key";
-        var authOptions = new InternalServiceAuthOptions
-        {
-            Services = new List<InternalServiceCredentials>
-            {
-                new() { Email = expectedEmail, ApiKey = expectedApiKey }
-            }
-        };
-        _internalServiceAuthOptions.Value.Returns(authOptions);
+        SetupTenantContext("https://test.com", null, expectedEmail, expectedApiKey);
 
         _htmlGeneratorService.GenerateStaticHtmlAsync(
             Arg.Any<string>(),
@@ -437,17 +401,33 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
             Arg.Any<CancellationToken>());
     }
 
-    private void SetupTenantContext(string? frontendBaseUrl, string? contentSelector)
+    private void SetupTenantContext(
+        string? frontendBaseUrl, 
+        string? contentSelector, 
+        string? serviceEmail = "test-service@test.com", 
+        string? serviceApiKey = "test-api-key")
     {
-        var mockConfiguration = Substitute.For<IConfiguration>();
-        mockConfiguration["FrontendSettings:BaseUrl"].Returns(frontendBaseUrl);
-        mockConfiguration["FrontendSettings:PreviewContentSelector"].Returns(contentSelector);
+        var configData = new Dictionary<string, string?>();
+        
+        if (frontendBaseUrl != null)
+            configData["FrontendSettings:BaseUrl"] = frontendBaseUrl;
+        if (contentSelector != null)
+            configData["FrontendSettings:PreviewContentSelector"] = contentSelector;
+        if (serviceEmail != null && serviceApiKey != null)
+        {
+            configData["InternalServiceAuth:Services:0:Email"] = serviceEmail;
+            configData["InternalServiceAuth:Services:0:ApiKey"] = serviceApiKey;
+        }
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
         
         var mockTenantConfiguration = Substitute.For<TenantConfiguration>(
             Guid.NewGuid(),
             "TestTenant",
-            mockConfiguration);
-        mockTenantConfiguration.Settings.Returns(mockConfiguration);
+            configuration);
+        mockTenantConfiguration.Settings.Returns(configuration);
         
         _tenantContextAccessor.CurrentTenant.Returns(mockTenantConfiguration);
     }
