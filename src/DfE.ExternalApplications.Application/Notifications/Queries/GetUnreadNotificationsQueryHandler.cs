@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Notifications.Queries;
 
-public sealed record GetUnreadNotificationsQuery() : IRequest<Result<IEnumerable<NotificationDto>>>;
+public sealed record GetUnreadNotificationsQuery(string? Context = null, string? Category = null) : IRequest<Result<IEnumerable<NotificationDto>>>;
 
 public sealed class GetUnreadNotificationsQueryHandler(
     INotificationService notificationService,
@@ -38,7 +38,7 @@ public sealed class GetUnreadNotificationsQueryHandler(
             if (!canAccess)
                 return Result<IEnumerable<NotificationDto>>.Forbid("User does not have permission to read notifications");
 
-            var notifications = await notificationService.GetUnreadNotificationsAsync(principalId, cancellationToken);
+            var notifications = await notificationService.GetUnreadNotificationsAsync(principalId, request.Context, request.Category, cancellationToken);
 
             var dtos = notifications.Select(n => new NotificationDto
             {

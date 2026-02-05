@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using AutoFixture.Xunit2;
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
@@ -8,6 +8,7 @@ using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
@@ -26,7 +27,8 @@ public class GetApplicationsForUserQueryHandlerTests
         ApplicationCustomization appCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         userCustom.OverrideEmail = rawEmail;
         userCustom.OverridePermissions = Array.Empty<Permission>();
@@ -63,15 +65,14 @@ public class GetApplicationsForUserQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, true), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -92,7 +93,8 @@ public class GetApplicationsForUserQueryHandlerTests
         ApplicationCustomization appCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         userCustom.OverrideEmail = rawEmail;
         userCustom.OverridePermissions = Array.Empty<Permission>();
@@ -129,15 +131,14 @@ public class GetApplicationsForUserQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -154,7 +155,8 @@ public class GetApplicationsForUserQueryHandlerTests
         ApplicationCustomization appCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         userCustom.OverrideEmail = rawEmail;
         userCustom.OverridePermissions = Array.Empty<Permission>();
@@ -191,15 +193,14 @@ public class GetApplicationsForUserQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -214,22 +215,22 @@ public class GetApplicationsForUserQueryHandlerTests
         UserCustomization userCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Return empty query result to simulate user not found
         var userQ = new List<User>().AsQueryable().BuildMock();
         userRepo.Query().Returns(userQ);
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
@@ -242,14 +243,14 @@ public class GetApplicationsForUserQueryHandlerTests
         List<ApplicationDto> cached,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         var readOnly = cached.AsReadOnly();
-        var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(rawEmail)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(Task.FromResult(Result<IReadOnlyCollection<ApplicationDto>>.Success(readOnly)));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -262,12 +263,13 @@ public class GetApplicationsForUserQueryHandlerTests
         string rawEmail,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), Arg.Any<string>())
             .Throws(new Exception("Boom"));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);

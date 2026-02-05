@@ -535,6 +535,232 @@ sequenceDiagram
 
 ---
 
+## 🏢 Multi-Tenancy Architecture
+
+The API is designed to serve **multiple frontend applications** (tenants) simultaneously, each with completely isolated configurations. This enables a single API deployment to support different government services with distinct authentication providers, connection strings, and security settings.
+
+### Multi-Tenant Design Pattern
+
+```mermaid
+flowchart TB
+    subgraph Frontends["Frontend Applications"]
+        FA["🌐 Frontend A<br/>(Tenant A)"]
+        FB["🌐 Frontend B<br/>(Tenant B)"]
+        FC["🌐 Frontend C<br/>(Tenant C)"]
+    end
+
+    subgraph API["External Applications API (Azure Container App)"]
+        direction TB
+        
+        subgraph Middleware["Request Pipeline"]
+            TM["🔑 Tenant Resolution<br/>Middleware"]
+            TCA["📋 Tenant Context<br/>Accessor"]
+        end
+        
+        subgraph Config["Configuration"]
+            TC["⚙️ Tenant Configurations<br/>(Loaded at Startup)"]
+        end
+        
+        subgraph Auth["Multi-Provider Authentication"]
+            AzureAD["🔐 Azure AD<br/>(Per-Tenant)"]
+            DfESign["🔐 DfE Sign-In<br/>(Per-Tenant)"]
+            Validator["✅ External Identity<br/>Validator"]
+        end
+        
+        subgraph Services["Tenant-Isolated Services"]
+            CORS["🌍 Dynamic CORS"]
+            SignalR["📡 SignalR Endpoints"]
+            ServiceBus["📬 Service Bus"]
+        end
+    end
+
+    subgraph Azure["Azure Platform (Per-Tenant Resources)"]
+        direction LR
+        ADA["🔐 Azure AD A"]
+        ADB["🔐 Azure AD B"]
+        ADC["🔐 Azure AD C"]
+        SBA["📬 Service Bus A"]
+        SBB["📬 Service Bus B"]
+        SBC["📬 Service Bus C"]
+    end
+
+    FA -->|"X-Tenant-ID: A"| TM
+    FB -->|"X-Tenant-ID: B"| TM
+    FC -->|"X-Tenant-ID: C"| TM
+    
+    TM --> TCA
+    TCA --> TC
+    TC --> Auth
+    TC --> Services
+    
+    AzureAD --> ADA
+    AzureAD --> ADB
+    AzureAD --> ADC
+    
+    ServiceBus --> SBA
+    ServiceBus --> SBB
+    ServiceBus --> SBC
+
+    style API fill:#e1f5fe
+    style Middleware fill:#fff3e0
+    style Auth fill:#f3e5f5
+    style Services fill:#e8f5e9
+```
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    
+    participant FE as Frontend (Tenant A)
+    participant API as External Applications API
+    participant TM as Tenant Middleware
+    participant TC as Tenant Config
+    participant Val as Identity Validator
+    participant Svc as Business Services
+    
+    FE->>API: Request with X-Tenant-ID header
+    API->>TM: Resolve tenant from header
+    
+    alt Valid Tenant ID
+        TM->>TC: Load tenant configuration
+        TC-->>TM: Tenant A config (AzureAd, DfESignIn, ConnectionStrings)
+        TM->>API: Set ITenantContextAccessor.CurrentTenant
+        
+        API->>Val: Validate token (multi-provider)
+        
+        alt Token matches Tenant A's provider
+            Val-->>API: ClaimsPrincipal
+            API->>Svc: Execute request with tenant context
+            Svc-->>FE: Response
+        else Token from different provider
+            Val-->>API: SecurityTokenValidationException
+            API-->>FE: 401 Unauthorized
+        end
+    else Invalid/Missing Tenant ID
+        TM-->>FE: 400 Bad Request<br/>("Missing or invalid X-Tenant-ID")
+    end
+```
+
+### Configuration Structure
+
+Each tenant is configured as a separate section in `appsettings.json`:
+
+```json
+{
+  "Tenants": {
+    "11111111-1111-1111-1111-111111111111": {
+      "Id": "11111111-1111-1111-1111-111111111111",
+      "Name": "Service A",
+      "Frontend": {
+        "Origin": "https://service-a.education.gov.uk"
+      },
+      "AzureAd": {
+        "Instance": "https://login.microsoftonline.com/",
+        "TenantId": "tenant-a-guid",
+        "ClientId": "client-a-id",
+        "Audience": "api://client-a-id"
+      },
+      "DfESignIn": {
+        "Issuer": "https://oidc.service-a.signin.education.gov.uk/",
+        "ClientId": "service-a-client",
+        "DiscoveryEndpoint": "https://oidc.service-a.signin.education.gov.uk/.well-known/openid-configuration"
+      },
+      "ConnectionStrings": {
+        "ServiceBus": "Endpoint=sb://service-a.servicebus.windows.net/;...",
+        "AzureSignalR": "Endpoint=https://service-a-signalr.signalr.net;..."
+      }
+    },
+    "22222222-2222-2222-2222-222222222222": {
+      "Id": "22222222-2222-2222-2222-222222222222",
+      "Name": "Service B",
+      "Frontend": {
+        "Origin": "https://service-b.education.gov.uk"
+      },
+      "AzureAd": {
+        "Instance": "https://login.microsoftonline.com/",
+        "TenantId": "tenant-b-guid",
+        "ClientId": "client-b-id",
+        "Audience": "api://client-b-id"
+      },
+      "DfESignIn": {
+        "Issuer": "https://oidc.service-b.signin.education.gov.uk/",
+        "ClientId": "service-b-client",
+        "DiscoveryEndpoint": "https://oidc.service-b.signin.education.gov.uk/.well-known/openid-configuration"
+      },
+      "ConnectionStrings": {
+        "ServiceBus": "Endpoint=sb://service-b.servicebus.windows.net/;...",
+        "AzureSignalR": "Endpoint=https://service-b-signalr.signalr.net;..."
+      }
+    }
+  }
+}
+```
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| **`TenantResolutionMiddleware`** | Extracts `X-Tenant-ID` header and resolves tenant configuration |
+| **`ITenantContextAccessor`** | Scoped service providing access to the current request's tenant |
+| **`ITenantConfigurationProvider`** | Singleton cache of all tenant configurations loaded at startup |
+| **`TenantCorsPolicyProvider`** | Dynamic CORS policy based on tenant's frontend origin |
+| **`ExternalIdentityValidator`** | Multi-provider OIDC validator (isolated per tenant, no cross-tenant leaks) |
+
+### Security Features
+
+```mermaid
+flowchart LR
+    subgraph Isolation["Tenant Isolation"]
+        A1["🔐 Token from<br/>Tenant A Provider"]
+        A2["🔐 Token from<br/>Tenant B Provider"]
+    end
+    
+    subgraph Validator["Multi-Provider Validator"]
+        V1["Provider A Config<br/>(Issuer A, Audience A)"]
+        V2["Provider B Config<br/>(Issuer B, Audience B)"]
+    end
+    
+    subgraph Result["Validation Result"]
+        R1["✅ Valid for Tenant A"]
+        R2["❌ Invalid - Cross-tenant attempt blocked"]
+    end
+    
+    A1 --> V1
+    V1 --> R1
+    
+    A2 -.->|"Attempt to use on<br/>Tenant A endpoint"| V1
+    V1 -.-> R2
+    
+    style R1 fill:#c8e6c9
+    style R2 fill:#ffcdd2
+```
+
+**Key Security Properties:**
+- ✅ **Complete Isolation**: Each tenant's authentication is validated against its own OIDC provider
+- ✅ **No Cross-Tenant Leaks**: Tokens from Tenant A cannot be used for Tenant B requests
+- ✅ **Startup Validation**: All tenant configurations validated at application startup
+- ✅ **Dynamic CORS**: Only the current tenant's frontend origin is allowed
+- ✅ **Isolated Connection Strings**: Each tenant uses its own Service Bus, SignalR, etc.
+
+### Using the API Client with Multi-Tenancy
+
+When consuming this API from a frontend application, configure the tenant ID in the client:
+
+```csharp
+// In your frontend's Startup/Program.cs
+services.AddExternalApplicationsApiClient(options =>
+{
+    options.BaseUrl = "https://external-applications-api.azurecontainerapps.io";
+    options.TenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+});
+```
+
+The client automatically includes the `X-Tenant-ID` header in all requests.
+
+---
+
 ## 📦 Dependencies
 
 ### GovUK.Dfe.CoreLibs Ecosystem

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
+using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
@@ -10,15 +11,29 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
 /// <summary>
 /// Implementation of cache manager using distributed cache and HTTP context
-/// Ensures atomic cache operations and consistency
+/// Ensures atomic cache operations and consistency.
+/// Uses tenant prefix from ApiClientSettings.TenantId for cache key isolation.
 /// </summary>
 [ExcludeFromCodeCoverage]
 public class DistributedCacheManager(
     IDistributedCache distributedCache,
     IHttpContextAccessor httpContextAccessor,
     IInternalUserTokenStore tokenStore,
+    ApiClientSettings apiClientSettings,
     ILogger<DistributedCacheManager> logger) : ICacheManager
 {
+    /// <summary>
+    /// Gets a tenant-prefixed cache key if TenantId is configured.
+    /// Format: t:{tenantId}:{key}
+    /// </summary>
+    private string GetTenantPrefixedKey(string key)
+    {
+        if (apiClientSettings.TenantId.HasValue)
+        {
+            return $"t:{apiClientSettings.TenantId}:{key}";
+        }
+        return key;
+    }
 
     public async Task ClearAllTokenCachesAsync(string userId)
     {
@@ -30,9 +45,9 @@ public class DistributedCacheManager(
             // Clear distributed cache entries
             var cacheKeys = new[]
             {
-                $"obo_token_{userId}",
-                $"token_expiry_{userId}",
-                $"user_tokens_{userId}"
+                GetTenantPrefixedKey($"obo_token_{userId}"),
+                GetTenantPrefixedKey($"token_expiry_{userId}"),
+                GetTenantPrefixedKey($"user_tokens_{userId}")
             };
 
             foreach (var key in cacheKeys)
@@ -92,7 +107,7 @@ public class DistributedCacheManager(
             }
 
             // Check distributed cache
-            var key = $"logout_forced_{userId}";
+            var key = GetTenantPrefixedKey($"logout_forced_{userId}");
             var value = await distributedCache.GetStringAsync(key);
             var isSet = !string.IsNullOrEmpty(value);
             
@@ -108,7 +123,7 @@ public class DistributedCacheManager(
     {
         try
         {
-            var key = $"logout_forced_{userId}";
+            var key = GetTenantPrefixedKey($"logout_forced_{userId}");
             await distributedCache.RemoveAsync(key);
             
             // Clear request scope as well
@@ -152,7 +167,7 @@ public class DistributedCacheManager(
     {
         try
         {
-            var key = $"last_activity_{userId}";
+            var key = GetTenantPrefixedKey($"last_activity_{userId}");
             var value = await distributedCache.GetStringAsync(key);
             if (!string.IsNullOrEmpty(value))
             {
@@ -188,7 +203,7 @@ public class DistributedCacheManager(
     {
         try
         {
-            var key = $"last_activity_{userId}";
+            var key = GetTenantPrefixedKey($"last_activity_{userId}");
             var options = new DistributedCacheEntryOptions();
             if (ttl.HasValue)
             {

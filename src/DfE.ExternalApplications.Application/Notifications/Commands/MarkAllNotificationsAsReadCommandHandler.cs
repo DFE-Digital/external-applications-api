@@ -11,7 +11,7 @@ using System.Security.Claims;
 namespace DfE.ExternalApplications.Application.Notifications.Commands;
 
 [RateLimit(10, 60)]
-public sealed record MarkAllNotificationsAsReadCommand() : IRequest<Result<bool>>, IRateLimitedRequest;
+public sealed record MarkAllNotificationsAsReadCommand(string? Context = null, string? Category = null) : IRequest<Result<bool>>, IRateLimitedRequest;
 
 public sealed class MarkAllNotificationsAsReadCommandHandler(
     INotificationService notificationService,
@@ -42,7 +42,7 @@ public sealed class MarkAllNotificationsAsReadCommandHandler(
             if (!canAccess)
                 return Result<bool>.Forbid("User does not have permission to modify notifications");
 
-            await notificationService.MarkAllAsReadAsync(principalId, cancellationToken);
+            await notificationService.MarkAllAsReadAsync(principalId, request.Context, request.Category, cancellationToken);
 
             // Send real-time notification list refresh via SignalR
             await notificationSignalRService.SendNotificationListRefreshToUserAsync(principalId, cancellationToken);

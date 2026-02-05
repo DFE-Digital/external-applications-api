@@ -4,6 +4,7 @@ using DfE.ExternalApplications.Application.Consumers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -13,21 +14,34 @@ using GovUK.Dfe.CoreLibs.Notifications.Extensions;
 using GovUK.Dfe.CoreLibs.Utilities.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using GovUK.Dfe.CoreLibs.Email;
-using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
-using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
+using GovUK.Dfe.CoreLibs.Messaging.MassTransit.Extensions;
+using GovUK.Dfe.CoreLibs.Messaging.Contracts.Entities.Topics;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
-using MassTransit;
 using GovUK.Dfe.CoreLibs.Messaging.Contracts.Exceptions;
+using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using Microsoft.Extensions.Logging;
+using MassTransit;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ApplicationServiceCollectionExtensions
     {
         public static IServiceCollection AddApplicationDependencyGroup(
-            this IServiceCollection services, IConfiguration config)
+            this IServiceCollection services, 
+            IConfiguration config,
+            ITenantConfigurationProvider tenantConfigurationProvider)
         {
-            var performanceLoggingEnabled = config.GetValue<bool>("Features:PerformanceLoggingEnabled");
+            // Get the first tenant's configuration for services that need root-level config
+            // (CoreLibs extensions like FileStorage, Email, Notifications read from root config)
+            var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()
+                ?? throw new InvalidOperationException("At least one tenant must be configured.");
+            var tenantConfig = firstTenant.Settings;
+            
+            // Performance logging is enabled if any tenant has it enabled
+            var performanceLoggingEnabled = tenantConfigurationProvider
+                .GetAllTenants()
+                .Any(t => t.Settings.GetValue<bool>("Features:PerformanceLoggingEnabled"));
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), includeInternalTypes: true);
 
@@ -55,24 +69,43 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<ITemplateFactory, TemplateFactory>();
             services.AddTransient<IFileFactory, FileFactory>();
 
-            // Configure email template resolution
-            services.Configure<ApplicationTemplatesConfiguration>(config.GetSection("ApplicationTemplates"));
-            services.Configure<EmailTemplatesConfiguration>(config.GetSection("EmailTemplates"));
+            // Configure email template resolution from first tenant's config
+            services.Configure<ApplicationTemplatesConfiguration>(tenantConfig.GetSection("ApplicationTemplates"));
+            services.Configure<EmailTemplatesConfiguration>(tenantConfig.GetSection("EmailTemplates"));
             services.AddTransient<IEmailTemplateResolver, EmailTemplateResolver>();
 
             services.AddBackgroundService();
-            services.AddNotificationServicesWithRedis(config);
+            
+            // Use first tenant's config for CoreLibs services
+            // These services read from root-level config, so we pass the tenant's settings
+            services.AddNotificationServicesWithRedis(tenantConfig);
 
-            services.AddFileStorage(config);
+            services.AddFileStorage(tenantConfig);
+            
+            // Register the tenant-aware file storage wrapper
+            // Register under a DIFFERENT interface to avoid breaking CoreLibs internal 
+            services.AddScoped<ITenantAwareFileStorageService, TenantAwareFileStorageService>();
 
-            services.AddEmailServicesWithGovUkNotify(config);
+            services.AddEmailServicesWithGovUkNotify(tenantConfig);
 
             // Skip MassTransit during NSwag/CodeGeneration to prevent assembly loading issues
+            // Note: This reads from root config for backward compatibility with CodeGeneration environment
             var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
             if (!skipMassTransit)
             {
+                // Register TenantBusFactory for publishing (creates per-tenant Azure Service Bus connections)
+                services.AddSingleton<ITenantBusFactory, TenantBusFactory>();
+                
+                // Register TenantAwareEventPublisher as the IEventPublisher implementation
+                // This replaces the CoreLibs default publisher with our multi-tenant aware version
+                services.AddScoped<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, TenantAwareEventPublisher>();
+                
+                // Get all tenants upfront for configuring subscription endpoints
+                var allTenants = tenantConfigurationProvider.GetAllTenants().ToList();
+                
+                // Use CoreLibs AddDfEMassTransit - same pattern as the working service
                 services.AddDfEMassTransit(
-                    config,
+                    tenantConfig,
                     configureConsumers: x =>
                     {
                         x.AddConsumer<ScanResultConsumer>();
@@ -86,30 +119,31 @@ namespace Microsoft.Extensions.DependencyInjection
                     configureAzureServiceBus: (context, cfg) =>
                     {
                         cfg.UseJsonSerializer();
-
-                        // Azure Service Bus specific configuration
-                        // Use existing "extapi" subscription (topic is determined by Message<ScanResultEvent> config above)
-                        cfg.SubscriptionEndpoint<ScanResultEvent>("extapi", e =>
+                        
+                        // Register subscription endpoints for ALL tenants
+                        // Using typed SubscriptionEndpoint<ScanResultEvent> like the working service
+                        foreach (var tenant in allTenants)
                         {
-                            e.UseMessageRetry(r =>
+                            var subscriptionName = $"extapi-{tenant.Name}";
+                            
+                            Console.WriteLine($"[MassTransit] Registering subscription: '{subscriptionName}'");
+                            
+                            cfg.SubscriptionEndpoint<ScanResultEvent>(subscriptionName, e =>
                             {
-                                // For MessageNotForThisInstanceException (instance filtering in Local env)
-                                // Retry immediately and frequently so other consumers pick it up fast
-                                r.Handle<MessageNotForThisInstanceException>();
-                                r.Immediate(10); // Try 10 times (supports up to 10 concurrent local developers)
-
-                                // For all OTHER exceptions (real errors)
-                                // Retry with delay for transient issues
-                                r.Ignore<MessageNotForThisInstanceException>(); // Don't apply interval retry to this
-                                r.Interval(3, TimeSpan.FromSeconds(5)); // 3 retries, 5 seconds apart for real errors
+                                e.UseMessageRetry(r =>
+                                {
+                                    r.Handle<MessageNotForThisInstanceException>();
+                                    r.Immediate(10);
+                                    r.Ignore<MessageNotForThisInstanceException>();
+                                    r.Interval(3, TimeSpan.FromSeconds(5));
+                                });
+                                
+                                e.ConfigureConsumeTopology = false;
+                                e.ConfigureConsumer<ScanResultConsumer>(context);
                             });
-                            // Don't try to create new topology - use existing subscription
-                            e.ConfigureConsumeTopology = false;
-
-                            // Configure the consumer to process messages from this endpoint
-                            e.ConfigureConsumer<ScanResultConsumer>(context);
-                        });
-                    });
+                        }
+                    }
+                );
             }
 
             return services;

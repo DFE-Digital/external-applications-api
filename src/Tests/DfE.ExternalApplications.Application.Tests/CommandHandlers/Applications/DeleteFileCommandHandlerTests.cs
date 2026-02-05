@@ -1,5 +1,5 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
-using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using DfE.ExternalApplications.Application.Services;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
@@ -28,7 +28,7 @@ public class DeleteFileCommandHandlerTests
     private readonly IEaRepository<User> _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEaRepository<Domain.Entities.Application> _applicationRepo;
-    private readonly IFileStorageService _fileStorageService;
+    private readonly ITenantAwareFileStorageService _fileStorageService;
     private readonly IPermissionCheckerService _permissionCheckerService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IFileFactory _fileFactory;
@@ -40,7 +40,7 @@ public class DeleteFileCommandHandlerTests
         _userRepository = Substitute.For<IEaRepository<User>>();
         _unitOfWork = Substitute.For<IUnitOfWork>();
         _applicationRepo = Substitute.For<IEaRepository<Domain.Entities.Application>>();
-        _fileStorageService = Substitute.For<IFileStorageService>();
+        _fileStorageService = Substitute.For<ITenantAwareFileStorageService>();
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         _fileFactory = Substitute.For<IFileFactory>();

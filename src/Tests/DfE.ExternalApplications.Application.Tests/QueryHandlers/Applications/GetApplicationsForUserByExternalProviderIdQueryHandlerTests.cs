@@ -8,6 +8,7 @@ using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
@@ -28,7 +29,8 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         ApplicationCustomization appCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         userCustom.OverrideExternalProviderId = externalProviderId;
@@ -49,15 +51,14 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -73,7 +74,8 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         UserCustomization userCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         userCustom.OverrideExternalProviderId = "different-id";
@@ -82,15 +84,14 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         userRepo.Query().Returns(userQ);
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -105,15 +106,15 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         List<ApplicationDto> cached,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         var readOnly = cached.AsReadOnly();
-        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(Task.FromResult(Result<IReadOnlyCollection<ApplicationDto>>.Success(readOnly)));
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -128,13 +129,14 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         string externalProviderId,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), Arg.Any<string>())
             .Throws(new Exception("Boom"));
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -152,7 +154,8 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         ApplicationCustomization appCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         userCustom.OverrideExternalProviderId = externalProviderId;
@@ -173,15 +176,14 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         // Setup application repository to throw an exception
         appRepo.Query().Throws(new InvalidOperationException("Database connection failed"));
 
-        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -198,7 +200,8 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         ApplicationCustomization appCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         userCustom.OverrideExternalProviderId = externalProviderId;
@@ -225,15 +228,14 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -249,7 +251,8 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         UserCustomization userCustom,
         [Frozen] IEaRepository<User> userRepo,
         [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cache)
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         userCustom.OverrideExternalProviderId = externalProviderId;
@@ -277,15 +280,14 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var cacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}";
-        cache.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
                 var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
                 return f();
             });
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache);
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert

@@ -55,7 +55,7 @@ public class MarkAllNotificationsAsReadCommandHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        await _notificationService.Received(1).MarkAllAsReadAsync(email, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).MarkAllAsReadAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -81,7 +81,7 @@ public class MarkAllNotificationsAsReadCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("User does not have permission to modify notifications", result.Error);
-        await _notificationService.DidNotReceive().MarkAllAsReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().MarkAllAsReadAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -100,7 +100,7 @@ public class MarkAllNotificationsAsReadCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Not authenticated", result.Error);
-        await _notificationService.DidNotReceive().MarkAllAsReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().MarkAllAsReadAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -120,7 +120,7 @@ public class MarkAllNotificationsAsReadCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("No user identifier", result.Error);
-        await _notificationService.DidNotReceive().MarkAllAsReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().MarkAllAsReadAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -146,7 +146,7 @@ public class MarkAllNotificationsAsReadCommandHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         _permissionCheckerService.Received(1).HasPermission(ResourceType.Notifications, appId, AccessType.Write);
-        await _notificationService.Received(1).MarkAllAsReadAsync(appId, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).MarkAllAsReadAsync(appId, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -167,7 +167,7 @@ public class MarkAllNotificationsAsReadCommandHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Write).Returns(true);
 
         var exceptionMessage = "Test exception";
-        _notificationService.MarkAllAsReadAsync(email, Arg.Any<CancellationToken>())
+        _notificationService.MarkAllAsReadAsync(email, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception(exceptionMessage));
 
         // Act

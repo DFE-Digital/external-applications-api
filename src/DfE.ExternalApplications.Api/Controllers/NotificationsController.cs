@@ -63,9 +63,12 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadNotifications")]
-    public async Task<IActionResult> GetUnreadNotificationsAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetUnreadNotificationsAsync(
+        [FromQuery] string? context = null,
+        [FromQuery] string? category = null,
+        CancellationToken cancellationToken = default)
     {
-        var query = new GetUnreadNotificationsQuery();
+        var query = new GetUnreadNotificationsQuery(context, category);
         var result = await sender.Send(query, cancellationToken);
 
         return new ObjectResult(result)
@@ -84,9 +87,12 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadNotifications")]
-    public async Task<IActionResult> GetAllNotificationsAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllNotificationsAsync(
+        [FromQuery] string? context = null,
+        [FromQuery] string? category = null,
+        CancellationToken cancellationToken = default)
     {
-        var query = new GetAllNotificationsQuery();
+        var query = new GetAllNotificationsQuery(context, category);
         var result = await sender.Send(query, cancellationToken);
 
         return new ObjectResult(result)
@@ -129,9 +135,12 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanReadNotifications")]
-    public async Task<IActionResult> GetUnreadNotificationCountAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetUnreadNotificationCountAsync(
+        [FromQuery] string? context = null,
+        [FromQuery] string? category = null,
+        CancellationToken cancellationToken = default)
     {
-        var query = new GetUnreadNotificationCountQuery();
+        var query = new GetUnreadNotificationCountQuery(context, category);
         var result = await sender.Send(query, cancellationToken);
 
         return new ObjectResult(result)
@@ -176,9 +185,12 @@ public class NotificationsController(ISender sender) : ControllerBase
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteNotifications")]
-    public async Task<IActionResult> MarkAllNotificationsAsReadAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> MarkAllNotificationsAsReadAsync(
+        [FromQuery] string? context = null,
+        [FromQuery] string? category = null,
+        CancellationToken cancellationToken = default)
     {
-        var command = new MarkAllNotificationsAsReadCommand();
+        var command = new MarkAllNotificationsAsReadCommand(context, category);
         var result = await sender.Send(command, cancellationToken);
 
         return new ObjectResult(result)

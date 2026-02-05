@@ -42,7 +42,7 @@ public sealed class ClearNotificationsByContextCommandHandler(
             if (!canAccess)
                 return Result<bool>.Forbid("User does not have permission to modify notifications");
 
-            await notificationService.ClearNotificationsByContextAsync(principalId, request.Context, cancellationToken);
+            await notificationService.ClearNotificationsByContextAsync(request.Context, principalId, cancellationToken);
 
             // Send real-time notification list refresh via SignalR
             await notificationSignalRService.SendNotificationListRefreshToUserAsync(principalId, cancellationToken);

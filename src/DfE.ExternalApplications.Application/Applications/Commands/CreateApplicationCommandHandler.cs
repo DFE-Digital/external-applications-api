@@ -1,11 +1,13 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.Queries;
+using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -33,7 +35,8 @@ public sealed class CreateApplicationCommandHandler(
     IApplicationFactory applicationFactory,
     IPermissionCheckerService permissionCheckerService,
     ISender mediator,
-    ICacheService<IMemoryCacheType> cacheService,
+    ICacheService<IRedisCacheType> cacheService,
+    ITenantContextAccessor tenantContextAccessor,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateApplicationCommand, Result<ApplicationDto>>
 {
     public async Task<Result<ApplicationDto>> Handle(
@@ -98,8 +101,10 @@ public sealed class CreateApplicationCommandHandler(
             await applicationRepo.AddAsync(application, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
 
-            // invalidate the user claim cache
-            cacheService.Remove($"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(dbUser.Email.ToLower())}");
+            // invalidate the user claim cache (with tenant scope)
+            var baseCacheKey = $"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(dbUser.Email.ToLower())}";
+            var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
+            cacheService.Remove(cacheKey);
 
             return Result<ApplicationDto>.Success(new ApplicationDto
             {

@@ -1,6 +1,6 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using DfE.ExternalApplications.Application.Services;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
@@ -31,7 +31,7 @@ public class UploadFileCommandHandlerTests
     private readonly IEaRepository<Domain.Entities.Application> _applicationRepository;
     private readonly IEaRepository<User> _userRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IFileStorageService _fileStorageService;
+    private readonly ITenantAwareFileStorageService _fileStorageService;
     private readonly IFileFactory _fileFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IPermissionCheckerService _permissionCheckerService;
@@ -43,7 +43,7 @@ public class UploadFileCommandHandlerTests
         _applicationRepository = Substitute.For<IEaRepository<Domain.Entities.Application>>();
         _userRepository = Substitute.For<IEaRepository<User>>();
         _unitOfWork = Substitute.For<IUnitOfWork>();
-        _fileStorageService = Substitute.For<IFileStorageService>();
+        _fileStorageService = Substitute.For<ITenantAwareFileStorageService>();
         _fileFactory = Substitute.For<IFileFactory>();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
@@ -128,7 +128,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -525,7 +525,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -647,7 +647,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -758,7 +758,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -932,7 +932,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),
@@ -1041,7 +1041,7 @@ public class UploadFileCommandHandlerTests
 
         _fileFactory.CreateUpload(
             Arg.Any<FileId>(),
-            Arg.Any<ApplicationId>(),
+            Arg.Any<Domain.Entities.Application>(),
             Arg.Any<string>(),
             Arg.Any<string?>(),
             Arg.Any<string>(),

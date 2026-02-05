@@ -66,7 +66,7 @@ public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfac
         return Task.FromResult(notification);
     }
 
-    public Task<IEnumerable<Notification>> GetUnreadNotificationsAsync(string? userId = null, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<Notification>> GetUnreadNotificationsAsync(string? userId = null, string? context = null, string? category = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -76,13 +76,20 @@ public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfac
         if (_userNotifications.TryGetValue(userId, out var notifications))
         {
             var unreadNotifications = notifications.Where(n => !n.IsRead);
+            
+            if (!string.IsNullOrEmpty(context))
+                unreadNotifications = unreadNotifications.Where(n => n.Context == context);
+            
+            if (!string.IsNullOrEmpty(category))
+                unreadNotifications = unreadNotifications.Where(n => n.Category == category);
+            
             return Task.FromResult<IEnumerable<Notification>>(unreadNotifications);
         }
 
         return Task.FromResult<IEnumerable<Notification>>(new List<Notification>());
     }
 
-    public Task<IEnumerable<Notification>> GetAllNotificationsAsync(string? userId = null, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<Notification>> GetAllNotificationsAsync(string? userId = null, string? context = null, string? category = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -91,13 +98,21 @@ public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfac
 
         if (_userNotifications.TryGetValue(userId, out var notifications))
         {
-            return Task.FromResult<IEnumerable<Notification>>(notifications);
+            IEnumerable<Notification> result = notifications;
+            
+            if (!string.IsNullOrEmpty(context))
+                result = result.Where(n => n.Context == context);
+            
+            if (!string.IsNullOrEmpty(category))
+                result = result.Where(n => n.Category == category);
+            
+            return Task.FromResult<IEnumerable<Notification>>(result);
         }
 
         return Task.FromResult<IEnumerable<Notification>>(new List<Notification>());
     }
 
-    public Task<IEnumerable<Notification>> GetNotificationsByCategoryAsync(string category, bool unreadOnly = false, string? userId = null, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<Notification>> GetNotificationsByCategoryAsync(string category, bool unreadOnly = false, string? userId = null, string? context = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -107,6 +122,34 @@ public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfac
         if (_userNotifications.TryGetValue(userId, out var notifications))
         {
             var filteredNotifications = notifications.Where(n => n.Category == category);
+            
+            if (!string.IsNullOrEmpty(context))
+                filteredNotifications = filteredNotifications.Where(n => n.Context == context);
+            
+            if (unreadOnly)
+            {
+                filteredNotifications = filteredNotifications.Where(n => !n.IsRead);
+            }
+
+            return Task.FromResult<IEnumerable<Notification>>(filteredNotifications);
+        }
+
+        return Task.FromResult<IEnumerable<Notification>>(new List<Notification>());
+    }
+
+    public Task<IEnumerable<Notification>> GetNotificationsByContextAsync(string context, bool unreadOnly = false, string? userId = null, string? category = null, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Task.FromResult<IEnumerable<Notification>>(new List<Notification>());
+        }
+
+        if (_userNotifications.TryGetValue(userId, out var notifications))
+        {
+            var filteredNotifications = notifications.Where(n => n.Context == context);
+            
+            if (!string.IsNullOrEmpty(category))
+                filteredNotifications = filteredNotifications.Where(n => n.Category == category);
             
             if (unreadOnly)
             {
@@ -134,11 +177,19 @@ public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfac
         return Task.CompletedTask;
     }
 
-    public Task MarkAllAsReadAsync(string? userId = null, CancellationToken cancellationToken = default)
+    public Task MarkAllAsReadAsync(string? userId = null, string? context = null, string? category = null, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrEmpty(userId) && _userNotifications.TryGetValue(userId, out var notifications))
         {
-            foreach (var notification in notifications)
+            var toMark = notifications.AsEnumerable();
+            
+            if (!string.IsNullOrEmpty(context))
+                toMark = toMark.Where(n => n.Context == context);
+            
+            if (!string.IsNullOrEmpty(category))
+                toMark = toMark.Where(n => n.Category == category);
+            
+            foreach (var notification in toMark)
             {
                 notification.IsRead = true;
             }
@@ -200,7 +251,7 @@ public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfac
         return Task.CompletedTask;
     }
 
-    public Task<int> GetUnreadCountAsync(string? userId = null, CancellationToken cancellationToken = default)
+    public Task<int> GetUnreadCountAsync(string? userId = null, string? context = null, string? category = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -209,8 +260,15 @@ public class MockNotificationService : GovUK.Dfe.CoreLibs.Notifications.Interfac
 
         if (_userNotifications.TryGetValue(userId, out var notifications))
         {
-            var count = notifications.Count(n => !n.IsRead);
-            return Task.FromResult(count);
+            var unread = notifications.Where(n => !n.IsRead);
+            
+            if (!string.IsNullOrEmpty(context))
+                unread = unread.Where(n => n.Context == context);
+            
+            if (!string.IsNullOrEmpty(category))
+                unread = unread.Where(n => n.Category == category);
+            
+            return Task.FromResult(unread.Count());
         }
 
         return Task.FromResult(0);

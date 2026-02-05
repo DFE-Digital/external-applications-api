@@ -1,4 +1,5 @@
 using Asp.Versioning.ApiExplorer;
+using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -8,13 +9,20 @@ namespace DfE.ExternalApplications.Api.Swagger
     public class SwaggerOptions : IConfigureNamedOptions<SwaggerGenOptions>
     {
         private readonly IApiVersionDescriptionProvider _provider;
+        private readonly ITenantConfigurationProvider _tenantConfigurationProvider;
 
         private const string ServiceTitle = "API";
         private const string ContactName = "Support";
         private const string ContactEmail = "update_to_contact_email_here";
         private const string DepreciatedMessage = "- API version has been depreciated.";
         
-        public SwaggerOptions(IApiVersionDescriptionProvider provider) => _provider = provider;
+        public SwaggerOptions(
+            IApiVersionDescriptionProvider provider,
+            ITenantConfigurationProvider tenantConfigurationProvider)
+        {
+            _provider = provider;
+            _tenantConfigurationProvider = tenantConfigurationProvider;
+        }
         
         public void Configure(string? name, SwaggerGenOptions options) => Configure(options);
         
@@ -52,6 +60,7 @@ namespace DfE.ExternalApplications.Api.Swagger
                 }
             });
             options.OperationFilter<AuthenticationHeaderOperationFilter>();
+            options.OperationFilter<TenantHeaderOperationFilter>(_tenantConfigurationProvider);
             
             options.UseAllOfForInheritance();
             options.UseOneOfForPolymorphism();

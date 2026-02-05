@@ -1,5 +1,5 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
-using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
+using DfE.ExternalApplications.Application.Services;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Domain.Entities;
@@ -22,7 +22,7 @@ public class DownloadFileQueryHandlerTests
 {
     private readonly IEaRepository<File> _uploadRepository;
     private readonly IEaRepository<User> _userRepository;
-    private readonly IFileStorageService _fileStorageService;
+    private readonly ITenantAwareFileStorageService _fileStorageService;
     private readonly IEaRepository<Domain.Entities.Application> _applicationRepository;
     private readonly IPermissionCheckerService _permissionCheckerService;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -32,7 +32,7 @@ public class DownloadFileQueryHandlerTests
     {
         _uploadRepository = Substitute.For<IEaRepository<File>>();
         _userRepository = Substitute.For<IEaRepository<User>>();
-        _fileStorageService = Substitute.For<IFileStorageService>();
+        _fileStorageService = Substitute.For<ITenantAwareFileStorageService>();
         _applicationRepository = Substitute.For<IEaRepository<Domain.Entities.Application>>();
         _permissionCheckerService = Substitute.For<IPermissionCheckerService>();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();

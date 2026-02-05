@@ -63,6 +63,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
                 query.Category,
                 query.UnreadOnly,
                 email,
+                Arg.Any<string?>(),
                 Arg.Any<CancellationToken>())
             .Returns(notifications);
 
@@ -89,6 +90,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
             query.Category,
             query.UnreadOnly,
             email,
+            Arg.Any<string?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -119,6 +121,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
             Arg.Any<string>(),
             Arg.Any<bool>(),
             Arg.Any<string>(),
+            Arg.Any<string?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -142,6 +145,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
             Arg.Any<string>(),
             Arg.Any<bool>(),
             Arg.Any<string>(),
+            Arg.Any<string?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -166,6 +170,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
             Arg.Any<string>(),
             Arg.Any<bool>(),
             Arg.Any<string>(),
+            Arg.Any<string?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -191,6 +196,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
                 query.Category,
                 query.UnreadOnly,
                 appId,
+                Arg.Any<string?>(),
                 Arg.Any<CancellationToken>())
             .Returns(notifications);
 
@@ -204,6 +210,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
             query.Category,
             query.UnreadOnly,
             appId,
+            Arg.Any<string?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -229,6 +236,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
                 query.Category,
                 query.UnreadOnly,
                 email,
+                Arg.Any<string?>(),
                 Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception(exceptionMessage));
 
@@ -262,6 +270,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
                 "TestCategory",
                 true,
                 email,
+                Arg.Any<string?>(),
                 Arg.Any<CancellationToken>())
             .Returns(notifications);
 
@@ -274,6 +283,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
             "TestCategory",
             true,
             email,
+            Arg.Any<string?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -298,6 +308,7 @@ public class GetNotificationsByCategoryQueryHandlerTests
                 query.Category,
                 query.UnreadOnly,
                 email,
+                Arg.Any<string?>(),
                 Arg.Any<CancellationToken>())
             .Returns(new List<Notification>());
 

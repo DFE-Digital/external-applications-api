@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Notifications.Queries;
 
-public sealed record GetUnreadNotificationCountQuery() : IRequest<Result<int>>;
+public sealed record GetUnreadNotificationCountQuery(string? Context = null, string? Category = null) : IRequest<Result<int>>;
 
 public sealed class GetUnreadNotificationCountQueryHandler(
     INotificationService notificationService,
@@ -38,7 +38,7 @@ public sealed class GetUnreadNotificationCountQueryHandler(
             if (!canAccess)
                 return Result<int>.Forbid("User does not have permission to read notifications");
 
-            var count = await notificationService.GetUnreadCountAsync(principalId, cancellationToken);
+            var count = await notificationService.GetUnreadCountAsync(principalId, request.Context, request.Category, cancellationToken);
 
             return Result<int>.Success(count);
         }

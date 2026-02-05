@@ -9,6 +9,8 @@ using GovUK.Dfe.CoreLibs.Email.Models;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using DfE.ExternalApplications.Domain.Tenancy;
+using System;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
@@ -18,7 +20,7 @@ public sealed record SubmitUserFeedbackCommand(UserFeedbackRequest Request)
 
 public sealed class SubmitUserFeedbackCommandHandler(
     ILogger<SubmitUserFeedbackCommandHandler> logger,
-    IConfiguration configuration,
+    ITenantContextAccessor tenantContextAccessor,
     IEmailTemplateResolver emailTemplateResolver,
     IEmailService emailService) : IRequestHandler<SubmitUserFeedbackCommand, Result<bool>>
 {
@@ -26,7 +28,9 @@ public sealed class SubmitUserFeedbackCommandHandler(
 
     public async Task<Result<bool>> Handle(SubmitUserFeedbackCommand request, CancellationToken cancellationToken)
     {
-        var supportEmailAddress = configuration.GetValue<string?>(ServiceSupportEmailAddressConfigurationKey);
+        var tenantConfig = tenantContextAccessor.CurrentTenant?.Settings
+                           ?? throw new InvalidOperationException("Tenant configuration has not been resolved for user feedback handling.");
+        var supportEmailAddress = tenantConfig.GetValue<string?>(ServiceSupportEmailAddressConfigurationKey);
 
         if (supportEmailAddress is null)
         {

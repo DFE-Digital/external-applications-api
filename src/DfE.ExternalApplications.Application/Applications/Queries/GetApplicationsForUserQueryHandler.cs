@@ -1,11 +1,13 @@
-﻿using GovUK.Dfe.CoreLibs.Caching.Helpers;
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
+using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +20,8 @@ public sealed record GetApplicationsForUserQuery(string Email, bool IncludeSchem
 public sealed class GetApplicationsForUserQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
-    ICacheService<IMemoryCacheType> cacheService)
+    ICacheService<IRedisCacheType> cacheService,
+    ITenantContextAccessor tenantContextAccessor)
     : IRequestHandler<GetApplicationsForUserQuery, Result<IReadOnlyCollection<ApplicationDto>>>
 {
     public async Task<Result<IReadOnlyCollection<ApplicationDto>>> Handle(
@@ -27,7 +30,8 @@ public sealed class GetApplicationsForUserQueryHandler(
     {
         try
         {
-            var cacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}";
+            var baseCacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}";
+            var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserQueryHandler);
 
             return await cacheService.GetOrAddAsync(

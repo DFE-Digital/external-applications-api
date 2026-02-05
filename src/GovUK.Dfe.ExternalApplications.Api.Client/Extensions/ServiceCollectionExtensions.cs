@@ -37,17 +37,19 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
             
             if (apiSettings.RequestTokenExchange)
             {
-                // Frontend clients need internal token storage and exchange handler
-                services.AddScoped<IInternalUserTokenStore, CachedInternalUserTokenStore>();
-                
-                services.AddScoped<ICacheManager, DistributedCacheManager>();
-                services.AddScoped<ITokenStateManager, TokenStateManager>();
-
+                // Ensure distributed cache is registered
                 if (!services.Any(x => x.ServiceType == typeof(IDistributedCache)))
                 {
                     services.AddMemoryCache();
                     services.AddDistributedMemoryCache();
                 }
+                
+                // Frontend clients need internal token storage and exchange handler
+                // CachedInternalUserTokenStore uses ApiClientSettings.TenantId for cache key prefixing
+                services.AddScoped<IInternalUserTokenStore, CachedInternalUserTokenStore>();
+                
+                services.AddScoped<ICacheManager, DistributedCacheManager>();
+                services.AddScoped<ITokenStateManager, TokenStateManager>();
                 
                 services.AddTransient<TokenExchangeHandler>(serviceProvider =>
                 {

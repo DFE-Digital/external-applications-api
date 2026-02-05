@@ -1,6 +1,6 @@
+using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.ValueObjects;
-using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Domain.Factories;
@@ -9,7 +9,7 @@ public class FileFactory : IFileFactory
 {
     public File CreateUpload(
         FileId id,
-        ApplicationId applicationId,
+        Application application,
         string name,
         string? description,
         string originalFileName,
@@ -20,9 +20,11 @@ public class FileFactory : IFileFactory
         long fileSize,
         string fileHash)
     {
+        ArgumentNullException.ThrowIfNull(application);
+
         var file = new File(
             id,
-            applicationId,
+            application.Id!,
             name,
             description,
             originalFileName,
@@ -33,7 +35,10 @@ public class FileFactory : IFileFactory
             fileSize
         );
 
-        file.AddDomainEvent(new FileUploadedDomainEvent(file, fileHash,uploadedOn));
+        // Set the navigation property so domain events have access to the Application
+        file.SetApplication(application);
+
+        file.AddDomainEvent(new FileUploadedDomainEvent(file, fileHash, uploadedOn));
 
         return file;
     }

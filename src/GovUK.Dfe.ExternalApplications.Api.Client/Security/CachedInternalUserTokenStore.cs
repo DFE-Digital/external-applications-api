@@ -3,21 +3,40 @@ using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
+using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 
+/// <summary>
+/// Caches internal user tokens using the distributed cache with tenant prefix
+/// based on the configured TenantId in ApiClientSettings.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public class CachedInternalUserTokenStore(
     IHttpContextAccessor httpContextAccessor,
     IDistributedCache distributedCache,
+    ApiClientSettings apiClientSettings,
     ILogger<CachedInternalUserTokenStore> logger)
     : IInternalUserTokenStore
 {
     private const string TokenKey = "__InternalUserToken";
     private const string CacheKeyPrefix = "InternalToken:";
+    
+    /// <summary>
+    /// Gets a tenant-prefixed cache key if TenantId is configured.
+    /// Format: t:{tenantId}:{key}
+    /// </summary>
+    private string GetTenantPrefixedKey(string key)
+    {
+        if (apiClientSettings.TenantId.HasValue)
+        {
+            return $"t:{apiClientSettings.TenantId}:{key}";
+        }
+        return key;
+    }
     /// <summary>
     /// Unified expiry buffer - consistent with TokenExpiryService
     /// </summary>
@@ -46,7 +65,7 @@ public class CachedInternalUserTokenStore(
         var userId = GetUserIdFromContext(ctx);
         if (userId != null)
         {
-            var cacheKey = $"{CacheKeyPrefix}{userId}";
+            var cacheKey = GetTenantPrefixedKey($"{CacheKeyPrefix}{userId}");
             
             var cachedTokenJson = distributedCache.GetString(cacheKey);
             
@@ -103,7 +122,7 @@ public class CachedInternalUserTokenStore(
         var userId = GetUserIdFromContext(ctx);
         if (userId != null)
         {
-            var cacheKey = $"{CacheKeyPrefix}{userId}";
+            var cacheKey = GetTenantPrefixedKey($"{CacheKeyPrefix}{userId}");
             var tokenExpiry = GetTokenExpiry(token);
             var tokenData = new CachedTokenData(token, tokenExpiry);
             
@@ -145,7 +164,7 @@ public class CachedInternalUserTokenStore(
         var userId = GetUserIdFromContext(ctx);
         if (userId != null)
         {
-            var cacheKey = $"{CacheKeyPrefix}{userId}";
+            var cacheKey = GetTenantPrefixedKey($"{CacheKeyPrefix}{userId}");
             
             try
             {

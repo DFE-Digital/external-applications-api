@@ -42,7 +42,7 @@ public sealed class ClearNotificationsByCategoryCommandHandler(
             if (!canAccess)
                 return Result<bool>.Forbid("User does not have permission to modify notifications");
 
-            await notificationService.ClearNotificationsByCategoryAsync(principalId, request.Category, cancellationToken);
+            await notificationService.ClearNotificationsByCategoryAsync(request.Category,principalId, cancellationToken);
 
             // Send real-time notification list refresh via SignalR
             await notificationSignalRService.SendNotificationListRefreshToUserAsync(principalId, cancellationToken);

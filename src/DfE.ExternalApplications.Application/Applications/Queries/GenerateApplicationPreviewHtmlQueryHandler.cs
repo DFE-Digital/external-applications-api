@@ -7,10 +7,11 @@ using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
+using System;
 using System.Security.Claims;
 using System.Text;
+using DfE.ExternalApplications.Domain.Tenancy;
+using Microsoft.Extensions.Configuration;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -21,8 +22,7 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IStaticHtmlGeneratorService htmlGeneratorService,
-    IConfiguration configuration,
-    IOptions<InternalServiceAuthOptions> internalServiceAuthOptions)
+    ITenantContextAccessor tenantContextAccessor)
     : IRequestHandler<GenerateApplicationPreviewHtmlQuery, Result<DownloadFileResult>>
 {
     public async Task<Result<DownloadFileResult>> Handle(
@@ -53,7 +53,9 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
                 return Result<DownloadFileResult>.Forbid("User does not have permission to access this application");
 
             // Get frontend base URL from configuration
-            var frontendBaseUrl = configuration["FrontendSettings:BaseUrl"];
+            var tenantConfig = tenantContextAccessor.CurrentTenant?.Settings
+                               ?? throw new InvalidOperationException("Tenant configuration has not been resolved for preview generation.");
+            var frontendBaseUrl = tenantConfig["FrontendSettings:BaseUrl"];
             if (string.IsNullOrEmpty(frontendBaseUrl))
             {
                 return Result<DownloadFileResult>.Failure(
@@ -63,26 +65,28 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
             // Build the preview URL
             var previewUrl = $"{frontendBaseUrl}/applications/{request.ApplicationReference}?preview=true";
 
-            // Get internal service authentication configuration
-            var authConfig = internalServiceAuthOptions.Value;
-            var serviceConfig = authConfig.Services?.FirstOrDefault();
+            // Get tenant-specific internal service authentication configuration
+            var internalAuthConfig = new InternalServiceAuthOptions();
+            tenantConfig.GetSection(InternalServiceAuthOptions.SectionName).Bind(internalAuthConfig);
             
+            var serviceConfig = internalAuthConfig.Services?.FirstOrDefault();
             if (serviceConfig == null)
             {
                 return Result<DownloadFileResult>.Failure(
-                    "Internal service authentication is not configured. Please configure 'InternalServiceAuth:Services' in application settings.");
+                    "Internal service authentication is not configured for tenant. Please configure 'InternalServiceAuth:Services' in tenant settings.");
             }
 
             // Build authentication headers for internal service authentication
             var authenticationHeaders = new Dictionary<string, string>
             {
                 { "x-service-email", serviceConfig.Email },
-                { "x-service-api-key", serviceConfig.ApiKey }
+                { "x-service-api-key", serviceConfig.ApiKey },
+                { "x-tenant-id", tenantContextAccessor.CurrentTenant.Id.ToString()}
             };
 
             // Optional: Specify a CSS selector to extract only a specific section of the page
             // For example, to extract only the main content area: ".govuk-grid-row" or "#main-content"
-            var contentSelector = configuration["FrontendSettings:PreviewContentSelector"];
+            var contentSelector = tenantConfig["FrontendSettings:PreviewContentSelector"];
 
             // Generate the static HTML using Playwright
             var htmlContent = await htmlGeneratorService.GenerateStaticHtmlAsync(
@@ -113,4 +117,3 @@ public sealed class GenerateApplicationPreviewHtmlQueryHandler(
         }
     }
 }
-

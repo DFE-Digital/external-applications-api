@@ -41,7 +41,8 @@ public sealed class GetNotificationsByCategoryQueryHandler(
             var notifications = await notificationService.GetNotificationsByCategoryAsync(
                 request.Category, 
                 request.UnreadOnly, 
-                principalId, 
+                principalId,
+                null,
                 cancellationToken);
 
             var dtos = notifications.Select(n => new NotificationDto

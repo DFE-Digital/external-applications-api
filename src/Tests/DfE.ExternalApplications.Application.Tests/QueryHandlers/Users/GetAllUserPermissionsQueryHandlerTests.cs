@@ -7,6 +7,7 @@ using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
@@ -25,7 +26,8 @@ public class GetAllUserPermissionsQueryHandlerTests
         UserCustomization userCustom,
         PermissionCustomization permCustom,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cacheService)
+        [Frozen] ICacheService<IRedisCacheType> cacheService,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         userCustom.OverrideId = userId;
@@ -45,9 +47,8 @@ public class GetAllUserPermissionsQueryHandlerTests
         var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
         userRepo.Query().Returns(userQueryable);
 
-        var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
-            cacheKey,
+            Arg.Any<string>(),
             Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
             .Returns(call =>
@@ -56,7 +57,7 @@ public class GetAllUserPermissionsQueryHandlerTests
                 return func();
             });
 
-        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService);
+        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService, tenantContextAccessor);
 
         // Act
         var result = await handler.Handle(new GetAllUserPermissionsQuery(userId), CancellationToken.None);
@@ -83,15 +84,15 @@ public class GetAllUserPermissionsQueryHandlerTests
     public async Task Handle_UserNotFound_ShouldReturnEmptyData(
         UserId userId,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cacheService)
+        [Frozen] ICacheService<IRedisCacheType> cacheService,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         var emptyQueryable = new List<User>().AsQueryable().BuildMock();
         userRepo.Query().Returns(emptyQueryable);
 
-        var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
-            cacheKey,
+            Arg.Any<string>(),
             Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
             .Returns(call =>
@@ -100,7 +101,7 @@ public class GetAllUserPermissionsQueryHandlerTests
                 return func();
             });
 
-        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService);
+        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService, tenantContextAccessor);
 
         // Act
         var result = await handler.Handle(new GetAllUserPermissionsQuery(userId), CancellationToken.None);
@@ -117,14 +118,14 @@ public class GetAllUserPermissionsQueryHandlerTests
     public async Task Handle_Exception_ShouldReturnFailure(
         UserId userId,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cacheService)
+        [Frozen] ICacheService<IRedisCacheType> cacheService,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
         userRepo.Query().Throws(new Exception("Test exception"));
 
-        var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
-            cacheKey,
+            Arg.Any<string>(),
             Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
             .Returns(call =>
@@ -133,7 +134,7 @@ public class GetAllUserPermissionsQueryHandlerTests
                 return func();
             });
 
-        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService);
+        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService, tenantContextAccessor);
 
         // Act
         var result = await handler.Handle(new GetAllUserPermissionsQuery(userId), CancellationToken.None);
@@ -149,17 +150,17 @@ public class GetAllUserPermissionsQueryHandlerTests
         UserId userId,
         UserAuthorizationDto cachedAuthorization,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] ICacheService<IMemoryCacheType> cacheService)
+        [Frozen] ICacheService<IRedisCacheType> cacheService,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
-        var cacheKey = $"Permissions_All_UserId_{CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString())}";
         cacheService.GetOrAddAsync(
-            cacheKey,
+            Arg.Any<string>(),
             Arg.Any<Func<Task<Result<UserAuthorizationDto>>>>(),
             nameof(GetAllUserPermissionsQueryHandler))
             .Returns(Result<UserAuthorizationDto>.Success(cachedAuthorization));
 
-        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService);
+        var handler = new GetAllUserPermissionsQueryHandler(userRepo, cacheService, tenantContextAccessor);
 
         // Act
         var result = await handler.Handle(new GetAllUserPermissionsQuery(userId), CancellationToken.None);
