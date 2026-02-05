@@ -18,3 +18,7 @@ All notable changes to this service will be documented in this file.
 ### Notes
 - Improved loading of application response performance.
 - Improved file upload performance.
+
+## [1.1.0] – Public Beta
+### Notes
+- Added multi-tenancy support.
