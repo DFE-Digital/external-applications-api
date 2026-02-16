@@ -269,6 +269,28 @@ public class UserFactory : IUserFactory
         }
     }
 
+    /// <inheritdoc />
+    public void EnsureUserHasTemplatePermission(
+        User user,
+        TemplateId templateId,
+        UserId grantedBy,
+        DateTime? grantedOn = null)
+    {
+        if (user == null)
+            throw new ArgumentException("User cannot be null", nameof(user));
+        if (templateId == null)
+            throw new ArgumentException("TemplateId cannot be null", nameof(templateId));
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        AddTemplatePermissionToUser(
+            user,
+            templateId.Value.ToString(),
+            new[] { AccessType.Read, AccessType.Write },
+            grantedBy,
+            grantedOn);
+    }
+
     public bool RemovePermissionFromUser(
         User user,
         Permission permission)

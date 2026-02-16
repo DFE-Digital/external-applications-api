@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Security.Claims;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
@@ -51,35 +51,89 @@ public sealed class RegisterUserCommandHandler(
             if (string.IsNullOrWhiteSpace(fullName))
                 fullName = name;
 
-            // Check if user already exists
-            var dbUser = await (new GetUserByEmailQueryObject(email))
-                .Apply(userRepo.Query().AsNoTracking())
-                .FirstOrDefaultAsync(cancellationToken: cancellationToken);
-
-            if (dbUser is not null)
-            {
-                // User already exists, return their information
-                return Result<UserDto>.Success(new UserDto
-                {
-                    UserId = dbUser.Id!.Value,
-                    Name = dbUser.Name,
-                    Email = dbUser.Email,
-                    RoleId = dbUser.RoleId.Value,
-                    Authorization = CreateAuthorizationFromUser(dbUser)
-                });
-            }
-
-            // Create new user with User role
-            var userId = new UserId(Guid.NewGuid());
             var now = DateTime.UtcNow;
 
-            // TemplateId is required for user registration
+            // TemplateId is required for new user registration
             if (!request.TemplateId.HasValue)
             {
+                // When no TemplateId, only return existing user if they exist
+                var existingUser = await (new GetUserByEmailQueryObject(email))
+                    .Apply(userRepo.Query().AsNoTracking())
+                    .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+
+                if (existingUser is not null)
+                {
+                    return Result<UserDto>.Success(new UserDto
+                    {
+                        UserId = existingUser.Id!.Value,
+                        Name = existingUser.Name,
+                        Email = existingUser.Email,
+                        RoleId = existingUser.RoleId.Value,
+                        Authorization = CreateAuthorizationFromUser(existingUser)
+                    });
+                }
+
                 return Result<UserDto>.Failure("Template ID is required for user registration");
             }
 
             var templateId = new TemplateId(request.TemplateId.Value);
+
+            // Load user by email with template permissions to check access
+            var dbUser = await (new GetUserWithAllTemplatePermissionsQueryObject(email))
+                .Apply(userRepo.Query().AsNoTracking())
+                .Include(u => u.Role)
+                .Include(u => u.Permissions)
+                .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+
+            if (dbUser is not null)
+            {
+                // User exists: check if they already have permission to the provided template
+                var hasTemplatePermission = dbUser.TemplatePermissions
+                    .Any(tp => tp.TemplateId.Value == request.TemplateId!.Value);
+
+                if (hasTemplatePermission)
+                {
+                    // User already has access to this template, return their information
+                    return Result<UserDto>.Success(new UserDto
+                    {
+                        UserId = dbUser.Id!.Value,
+                        Name = dbUser.Name,
+                        Email = dbUser.Email,
+                        RoleId = dbUser.RoleId.Value,
+                        Authorization = CreateAuthorizationFromUser(dbUser)
+                    });
+                }
+
+                // User exists but does not have permission to this template: grant it
+                var userToUpdate = await (new GetUserWithAllTemplatePermissionsQueryObject(email))
+                    .Apply(userRepo.Query())
+                    .Include(u => u.Role)
+                    .Include(u => u.Permissions)
+                    .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+
+                if (userToUpdate is null)
+                    return Result<UserDto>.Failure("User not found for permission update");
+
+                userFactory.EnsureUserHasTemplatePermission(
+                    userToUpdate,
+                    templateId,
+                    userToUpdate.Id!,
+                    now);
+
+                await unitOfWork.CommitAsync(cancellationToken);
+
+                return Result<UserDto>.Success(new UserDto
+                {
+                    UserId = userToUpdate.Id!.Value,
+                    Name = userToUpdate.Name,
+                    Email = userToUpdate.Email,
+                    RoleId = userToUpdate.RoleId.Value,
+                    Authorization = CreateAuthorizationFromUser(userToUpdate)
+                });
+            }
+
+            // Create new user with User role and template permission
+            var userId = new UserId(Guid.NewGuid());
 
             var newUser = userFactory.CreateUser(
                 userId,
