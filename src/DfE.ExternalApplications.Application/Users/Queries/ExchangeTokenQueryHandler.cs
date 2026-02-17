@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,7 +24,8 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         IUserTokenService tokenSvc,
         IHttpContextAccessor httpCtxAcc,
         ITenantContextAccessor tenantContextAccessor,
-        [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        ILogger<ExchangeTokenQueryHandler> logger)
         : IRequestHandler<ExchangeTokenQuery, Result<ExchangeTokenDto>>
     {
         public async Task<Result<ExchangeTokenDto>> Handle(ExchangeTokenQuery req, CancellationToken ct)
@@ -49,7 +51,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 return Result<ExchangeTokenDto>.Failure("Missing email");
 
             // Resolve template ID for current tenant so we can enforce template-level access (triggers auto-registration if missing).
-            var requestTemplateId = ResolveRequestTemplateId(tenantContextAccessor);
+            var requestTemplateId = ResolveRequestTemplateId(tenantContextAccessor, logger);
             if (requestTemplateId is null)
                 return Result<ExchangeTokenDto>.Failure("Template could not be resolved for current tenant. Ensure ApplicationTemplates:HostMappings or DefaultTemplateKey is configured.");
 
@@ -138,34 +140,97 @@ namespace DfE.ExternalApplications.Application.Users.Queries
 
         /// <summary>
         /// Resolves the template ID for the current request from tenant-scoped ApplicationTemplates config.
+        /// Tries: DefaultTemplateKey, then tenant name as HostMappings key, then single HostMappings entry.
         /// </summary>
-        private static Guid? ResolveRequestTemplateId(ITenantContextAccessor tenantContextAccessor)
+        private static Guid? ResolveRequestTemplateId(ITenantContextAccessor tenantContextAccessor, ILogger<ExchangeTokenQueryHandler> logger)
         {
             var tenant = tenantContextAccessor.CurrentTenant;
             if (tenant is null)
+            {
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: No current tenant. Ensure X-Tenant-ID header or Origin is set so tenant resolution can run.");
                 return null;
+            }
+
+            logger.LogDebug(
+                "ResolveRequestTemplateId: Tenant resolved. TenantId={TenantId}, TenantName={TenantName}",
+                tenant.Id,
+                tenant.Name);
 
             var appTemplates = tenant.Settings.GetSection("ApplicationTemplates");
-            var hostMappings = appTemplates.GetSection("HostMappings").GetChildren()
+            var hostMappingsSection = appTemplates.GetSection("HostMappings");
+            var hostMappings = hostMappingsSection.GetChildren()
                 .ToDictionary(c => c.Key, c => c.Value, StringComparer.OrdinalIgnoreCase);
+
             if (hostMappings.Count == 0)
+            {
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: No HostMappings found for tenant {TenantName} (Id={TenantId}). " +
+                    "Check ApplicationTemplates:HostMappings in appsettings for this tenant.",
+                    tenant.Name,
+                    tenant.Id);
                 return null;
+            }
+
+            var mappingKeys = string.Join(", ", hostMappings.Keys);
+            var mappingPreview = string.Join(", ", hostMappings.Select(kv => $"{kv.Key}={kv.Value ?? "(null)"}"));
+            logger.LogDebug(
+                "ResolveRequestTemplateId: HostMappings keys=[{Keys}], values=[{Values}]",
+                mappingKeys,
+                mappingPreview);
 
             string? templateIdString = null;
-
             var defaultKey = appTemplates["DefaultTemplateKey"];
+
             if (!string.IsNullOrEmpty(defaultKey) && hostMappings.TryGetValue(defaultKey, out var fromDefault))
+            {
                 templateIdString = fromDefault;
+                logger.LogDebug(
+                    "ResolveRequestTemplateId: Using DefaultTemplateKey. Key={DefaultTemplateKey}, TemplateId={TemplateId}",
+                    defaultKey,
+                    templateIdString);
+            }
 
             if (templateIdString is null && hostMappings.TryGetValue(tenant.Name.Trim(), out var fromTenantName))
+            {
                 templateIdString = fromTenantName;
+                logger.LogDebug(
+                    "ResolveRequestTemplateId: Using tenant name as HostMappings key. TenantName={TenantName}, TemplateId={TemplateId}",
+                    tenant.Name,
+                    templateIdString);
+            }
 
             if (templateIdString is null && hostMappings.Count == 1)
+            {
                 templateIdString = hostMappings.Values.Single();
+                logger.LogDebug(
+                    "ResolveRequestTemplateId: Using single HostMappings entry. TemplateId={TemplateId}",
+                    templateIdString);
+            }
 
-            if (string.IsNullOrEmpty(templateIdString) || !Guid.TryParse(templateIdString, out var templateId))
+            if (string.IsNullOrEmpty(templateIdString))
+            {
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: Could not resolve template. TenantName={TenantName}, HostMappingsKeys=[{Keys}]. " +
+                    "Either set ApplicationTemplates:DefaultTemplateKey to one of the keys, or ensure tenant name matches a key (case-insensitive), or use a single HostMappings entry.",
+                    tenant.Name,
+                    mappingKeys);
                 return null;
+            }
 
+            if (!Guid.TryParse(templateIdString, out var templateId))
+            {
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: Resolved template value is not a valid GUID. TenantName={TenantName}, RawValue={RawValue}",
+                    tenant.Name,
+                    templateIdString);
+                return null;
+            }
+
+            logger.LogDebug(
+                "ResolveRequestTemplateId: Resolved TemplateId={TemplateId} for tenant {TenantName}",
+                templateId,
+                tenant.Name);
             return templateId;
         }
     }

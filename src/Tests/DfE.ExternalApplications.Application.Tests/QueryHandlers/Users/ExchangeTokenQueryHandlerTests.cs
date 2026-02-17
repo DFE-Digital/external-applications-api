@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using MockQueryable;
 using MockQueryable.NSubstitute;
@@ -54,7 +55,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange
         var (tenant, templateId) = CreateTenantWithSingleTemplate();
@@ -117,7 +119,8 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor,
             tenantContextAccessor,
-            internalRequestChecker);
+            internalRequestChecker,
+            logger);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -138,7 +141,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange
         var (tenant, _) = CreateTenantWithSingleTemplate();
@@ -165,7 +169,8 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor,
             tenantContextAccessor,
-            internalRequestChecker);
+            internalRequestChecker,
+            logger);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -185,7 +190,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>()));
@@ -198,7 +204,8 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor,
             tenantContextAccessor,
-            internalRequestChecker);
+            internalRequestChecker,
+            logger);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -218,7 +225,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange
         var (tenant, _) = CreateTenantWithSingleTemplate();
@@ -243,7 +251,8 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor,
             tenantContextAccessor,
-            internalRequestChecker);
+            internalRequestChecker,
+            logger);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -262,14 +271,15 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IUserTokenService tokenSvc,
         [Frozen] IHttpContextAccessor httpCtxAcc,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange
         var exception = new SecurityTokenException("Invalid token");
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Throws(exception);
 
-        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, tenantContextAccessor, internalRequestChecker);
+        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, tenantContextAccessor, internalRequestChecker, logger);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<SecurityTokenException>(
@@ -288,7 +298,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange: tenant has template A; user exists but has permission only for a different template B
         var (tenant, requestTemplateId) = CreateTenantWithSingleTemplate();
@@ -323,7 +334,8 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor,
             tenantContextAccessor,
-            internalRequestChecker);
+            internalRequestChecker,
+            logger);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
@@ -343,7 +355,8 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] IUserTokenService tokenService,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange: tenant has no ApplicationTemplates:HostMappings
         var configData = new Dictionary<string, string?>();
@@ -361,7 +374,8 @@ public class ExchangeTokenQueryHandlerTests
             tokenService,
             httpContextAccessor,
             tenantContextAccessor,
-            internalRequestChecker);
+            internalRequestChecker,
+            logger);
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
