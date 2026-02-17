@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using AutoFixture.Kernel;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
@@ -20,6 +20,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
         public DateTime? OverrideLastModifiedOn { get; set; }
         public UserId? OverrideLastModifiedBy { get; set; }
         public IEnumerable<Permission>? OverridePermissions { get; set; }
+        public IEnumerable<TemplatePermission>? OverrideTemplatePermissions { get; set; }
         public string? OverrideExternalProviderId { get; set; }
 
         public void Customize(IFixture fixture)
@@ -41,6 +42,7 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
                     var externalProviderId = OverrideExternalProviderId ?? null;
 
                     var perms = OverridePermissions ?? new List<Permission>();
+                    var templatePerms = OverrideTemplatePermissions ?? new List<TemplatePermission>();
 
                     return new User(
                         id,
@@ -52,7 +54,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities
                         lastModifiedOn,
                         lastModifiedBy,
                         externalProviderId,
-                        perms);
+                        perms,
+                        templatePerms);
                 }));
         }
     }

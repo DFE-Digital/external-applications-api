@@ -6,11 +6,13 @@ using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security.Models;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using MockQueryable;
@@ -23,6 +25,24 @@ namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Users;
 
 public class ExchangeTokenQueryHandlerTests
 {
+    private static (TenantConfiguration Tenant, Guid TemplateId) CreateTenantWithSingleTemplate()
+    {
+        var templateId = Guid.NewGuid();
+        var configData = new Dictionary<string, string?>
+        {
+            ["ApplicationTemplates:HostMappings:transfer"] = templateId.ToString()
+        };
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
+        var tenant = new TenantConfiguration(
+            Guid.NewGuid(),
+            "TestTenant",
+            configuration,
+            Array.Empty<string>());
+        return (tenant, templateId);
+    }
+
     [Theory]
     [CustomAutoData(typeof(UserCustomization))]
     public async Task Handle_ValidToken_ShouldReturnExchangeTokenDto(
@@ -37,6 +57,9 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
+        var (tenant, templateId) = CreateTenantWithSingleTemplate();
+        tenantContextAccessor.CurrentTenant.Returns(tenant);
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.Email, email)
@@ -48,6 +71,16 @@ public class ExchangeTokenQueryHandlerTests
             .Returns(claimsPrincipal);
 
         userCustom.OverrideEmail = email;
+        userCustom.OverrideTemplatePermissions = new[]
+        {
+            new TemplatePermission(
+                new TemplatePermissionId(Guid.NewGuid()),
+                new UserId(Guid.NewGuid()),
+                new TemplateId(templateId),
+                AccessType.Read,
+                DateTime.UtcNow,
+                new UserId(Guid.NewGuid()))
+        };
         var user = new Fixture().Customize(userCustom).Create<User>();
         var role = new Role(user.RoleId, "TestRole");
         user.GetType().GetProperty("Role")!.SetValue(user, role);
@@ -108,6 +141,9 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
+        var (tenant, _) = CreateTenantWithSingleTemplate();
+        tenantContextAccessor.CurrentTenant.Returns(tenant);
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.Email, email)
@@ -185,6 +221,9 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
     {
         // Arrange
+        var (tenant, _) = CreateTenantWithSingleTemplate();
+        tenantContextAccessor.CurrentTenant.Returns(tenant);
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.Email, email)
@@ -236,5 +275,99 @@ public class ExchangeTokenQueryHandlerTests
         var ex = await Assert.ThrowsAsync<SecurityTokenException>(
             () => handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None));
         Assert.Equal("Invalid token", ex.Message);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_UserWithoutTemplateAccess_ReturnsNotFound(
+        string subjectToken,
+        string email,
+        UserCustomization userCustom,
+        [Frozen] IExternalIdentityValidator externalValidator,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IUserTokenService tokenService,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ITenantContextAccessor tenantContextAccessor,
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+    {
+        // Arrange: tenant has template A; user exists but has permission only for a different template B
+        var (tenant, requestTemplateId) = CreateTenantWithSingleTemplate();
+        tenantContextAccessor.CurrentTenant.Returns(tenant);
+
+        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+            .Returns(new ClaimsPrincipal(new ClaimsIdentity(claims)));
+
+        userCustom.OverrideEmail = email;
+        var otherTemplateId = Guid.NewGuid(); // different from requestTemplateId
+        userCustom.OverrideTemplatePermissions = new[]
+        {
+            new TemplatePermission(
+                new TemplatePermissionId(Guid.NewGuid()),
+                new UserId(Guid.NewGuid()),
+                new TemplateId(otherTemplateId),
+                AccessType.Read,
+                DateTime.UtcNow,
+                new UserId(Guid.NewGuid()))
+        };
+        var user = new Fixture().Customize(userCustom).Create<User>();
+        var role = new Role(user.RoleId, "TestRole");
+        user.GetType().GetProperty("Role")!.SetValue(user, role);
+
+        var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
+        userRepo.Query().Returns(userQueryable);
+
+        var handler = new ExchangeTokenQueryHandler(
+            externalValidator,
+            userRepo,
+            tokenService,
+            httpContextAccessor,
+            tenantContextAccessor,
+            internalRequestChecker);
+
+        // Act
+        var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
+
+        // Assert: treated as "user not found" so client triggers auto-registration
+        Assert.False(result.IsSuccess);
+        Assert.Equal($"User not found for email {email}", result.Error);
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_WhenTenantHasNoTemplateConfig_ReturnsFailure(
+        string subjectToken,
+        string email,
+        [Frozen] IExternalIdentityValidator externalValidator,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IUserTokenService tokenService,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ITenantContextAccessor tenantContextAccessor,
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+    {
+        // Arrange: tenant has no ApplicationTemplates:HostMappings
+        var configData = new Dictionary<string, string?>();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(configData).Build();
+        var tenant = new TenantConfiguration(Guid.NewGuid(), "TestTenant", configuration, Array.Empty<string>());
+        tenantContextAccessor.CurrentTenant.Returns(tenant);
+
+        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+            .Returns(new ClaimsPrincipal(new ClaimsIdentity(claims)));
+
+        var handler = new ExchangeTokenQueryHandler(
+            externalValidator,
+            userRepo,
+            tokenService,
+            httpContextAccessor,
+            tenantContextAccessor,
+            internalRequestChecker);
+
+        // Act
+        var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Template could not be resolved", result.Error);
     }
 } 

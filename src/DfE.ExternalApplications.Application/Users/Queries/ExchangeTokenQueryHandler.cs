@@ -48,8 +48,14 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             if (email is null)
                 return Result<ExchangeTokenDto>.Failure("Missing email");
 
-            var dbUser = await (new GetUserByEmailQueryObject(email))
+            // Resolve template ID for current tenant so we can enforce template-level access (triggers auto-registration if missing).
+            var requestTemplateId = ResolveRequestTemplateId(tenantContextAccessor);
+            if (requestTemplateId is null)
+                return Result<ExchangeTokenDto>.Failure("Template could not be resolved for current tenant. Ensure ApplicationTemplates:HostMappings or DefaultTemplateKey is configured.");
+
+            var dbUser = await (new GetUserWithAllTemplatePermissionsQueryObject(email))
                 .Apply(userRepo.Query().AsNoTracking())
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(cancellationToken: ct);
 
             if (dbUser is null)
@@ -57,6 +63,12 @@ namespace DfE.ExternalApplications.Application.Users.Queries
 
             if (dbUser.Role is null)
                 return Result<ExchangeTokenDto>.Conflict($"User {email} has no role assigned");
+
+            // User must have access to the request's template; otherwise treat as "not found" so client auto-registration runs.
+            var hasTemplateAccess = dbUser.TemplatePermissions
+                .Any(tp => tp.TemplateId.Value == requestTemplateId.Value);
+            if (!hasTemplateAccess)
+                return Result<ExchangeTokenDto>.NotFound($"User not found for email {email}");
 
             var httpCtx = httpCtxAcc.HttpContext!;
             var azureAuth = await httpCtx.AuthenticateAsync("AzureEntra");
@@ -122,6 +134,39 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 IdToken = internalToken.IdToken,
                 RefreshExpiresIn = internalToken.RefreshExpiresIn
             });
+        }
+
+        /// <summary>
+        /// Resolves the template ID for the current request from tenant-scoped ApplicationTemplates config.
+        /// </summary>
+        private static Guid? ResolveRequestTemplateId(ITenantContextAccessor tenantContextAccessor)
+        {
+            var tenant = tenantContextAccessor.CurrentTenant;
+            if (tenant is null)
+                return null;
+
+            var appTemplates = tenant.Settings.GetSection("ApplicationTemplates");
+            var hostMappings = appTemplates.GetSection("HostMappings").GetChildren()
+                .ToDictionary(c => c.Key, c => c.Value, StringComparer.OrdinalIgnoreCase);
+            if (hostMappings.Count == 0)
+                return null;
+
+            string? templateIdString = null;
+
+            var defaultKey = appTemplates["DefaultTemplateKey"];
+            if (!string.IsNullOrEmpty(defaultKey) && hostMappings.TryGetValue(defaultKey, out var fromDefault))
+                templateIdString = fromDefault;
+
+            if (templateIdString is null && hostMappings.TryGetValue(tenant.Name.Trim(), out var fromTenantName))
+                templateIdString = fromTenantName;
+
+            if (templateIdString is null && hostMappings.Count == 1)
+                templateIdString = hostMappings.Values.Single();
+
+            if (string.IsNullOrEmpty(templateIdString) || !Guid.TryParse(templateIdString, out var templateId))
+                return null;
+
+            return templateId;
         }
     }
 }
