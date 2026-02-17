@@ -22,3 +22,7 @@ All notable changes to this service will be documented in this file.
 ## [1.1.0] – Public Beta
 ### Notes
 - Added multi-tenancy support.
+
+## [1.1.1] – Public Beta
+### Notes
+- Improved Auto-Registration to support multi-tenancy and multi-template users 

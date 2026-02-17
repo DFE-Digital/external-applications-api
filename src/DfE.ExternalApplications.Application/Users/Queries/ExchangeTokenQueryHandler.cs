@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,7 +24,8 @@ namespace DfE.ExternalApplications.Application.Users.Queries
         IUserTokenService tokenSvc,
         IHttpContextAccessor httpCtxAcc,
         ITenantContextAccessor tenantContextAccessor,
-        [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker)
+        [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        ILogger<ExchangeTokenQueryHandler> logger)
         : IRequestHandler<ExchangeTokenQuery, Result<ExchangeTokenDto>>
     {
         public async Task<Result<ExchangeTokenDto>> Handle(ExchangeTokenQuery req, CancellationToken ct)
@@ -48,8 +50,14 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             if (email is null)
                 return Result<ExchangeTokenDto>.Failure("Missing email");
 
-            var dbUser = await (new GetUserByEmailQueryObject(email))
+            // Resolve template ID for current tenant so we can enforce template-level access (triggers auto-registration if missing).
+            var requestTemplateId = ResolveRequestTemplateId(tenantContextAccessor, logger);
+            if (requestTemplateId is null)
+                return Result<ExchangeTokenDto>.Failure("Template could not be resolved for current tenant. Ensure ApplicationTemplates:HostMappings or DefaultTemplateKey is configured.");
+
+            var dbUser = await (new GetUserWithAllTemplatePermissionsQueryObject(email))
                 .Apply(userRepo.Query().AsNoTracking())
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(cancellationToken: ct);
 
             if (dbUser is null)
@@ -57,6 +65,12 @@ namespace DfE.ExternalApplications.Application.Users.Queries
 
             if (dbUser.Role is null)
                 return Result<ExchangeTokenDto>.Conflict($"User {email} has no role assigned");
+
+            // User must have access to the request's template; otherwise treat as "not found" so client auto-registration runs.
+            var hasTemplateAccess = dbUser.TemplatePermissions
+                .Any(tp => tp.TemplateId.Value == requestTemplateId.Value);
+            if (!hasTemplateAccess)
+                return Result<ExchangeTokenDto>.NotFound($"User not found for email {email}");
 
             var httpCtx = httpCtxAcc.HttpContext!;
             var azureAuth = await httpCtx.AuthenticateAsync("AzureEntra");
@@ -122,6 +136,69 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 IdToken = internalToken.IdToken,
                 RefreshExpiresIn = internalToken.RefreshExpiresIn
             });
+        }
+
+        /// <summary>
+        /// Resolves the template ID for the current request from tenant-scoped ApplicationTemplates config.
+        /// Tries: DefaultTemplateKey, then tenant name as HostMappings key, then single HostMappings entry.
+        /// </summary>
+        private static Guid? ResolveRequestTemplateId(ITenantContextAccessor tenantContextAccessor, ILogger<ExchangeTokenQueryHandler> logger)
+        {
+            var tenant = tenantContextAccessor.CurrentTenant;
+            if (tenant is null)
+            {
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: No current tenant. Ensure X-Tenant-ID header or Origin is set so tenant resolution can run.");
+                return null;
+            }
+
+            var appTemplates = tenant.Settings.GetSection("ApplicationTemplates");
+            var hostMappings = appTemplates.GetSection("HostMappings").GetChildren()
+                .ToDictionary(c => c.Key, c => c.Value, StringComparer.OrdinalIgnoreCase);
+
+            if (hostMappings.Count == 0)
+            {
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: No HostMappings found for tenant {TenantName} (Id={TenantId}). " +
+                    "Check ApplicationTemplates:HostMappings in appsettings for this tenant.",
+                    tenant.Name,
+                    tenant.Id);
+                return null;
+            }
+
+            string? templateIdString = null;
+            var defaultKey = appTemplates["DefaultTemplateKey"];
+
+            if (!string.IsNullOrEmpty(defaultKey) && hostMappings.TryGetValue(defaultKey, out var fromDefault))
+                templateIdString = fromDefault;
+
+            if (templateIdString is null && hostMappings.TryGetValue(tenant.Name.Trim(), out var fromTenantName))
+                templateIdString = fromTenantName;
+
+            if (templateIdString is null && hostMappings.Count == 1)
+                templateIdString = hostMappings.Values.Single();
+
+            if (string.IsNullOrEmpty(templateIdString))
+            {
+                var mappingKeys = string.Join(", ", hostMappings.Keys);
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: Could not resolve template. TenantName={TenantName}, HostMappingsKeys=[{Keys}]. " +
+                    "Either set ApplicationTemplates:DefaultTemplateKey to one of the keys, or ensure tenant name matches a key (case-insensitive), or use a single HostMappings entry.",
+                    tenant.Name,
+                    mappingKeys);
+                return null;
+            }
+
+            if (!Guid.TryParse(templateIdString, out var templateId))
+            {
+                logger.LogWarning(
+                    "ResolveRequestTemplateId: Resolved template value is not a valid GUID. TenantName={TenantName}, RawValue={RawValue}",
+                    tenant.Name,
+                    templateIdString);
+                return null;
+            }
+
+            return templateId;
         }
     }
 }

@@ -42,6 +42,16 @@ public interface IUserFactory
         UserId grantedBy,
         DateTime? grantedOn = null);
 
+    /// <summary>
+    /// Ensures the user has Read and Write template permission for the given template (idempotent).
+    /// Call from registration or other flows when a user must have access to a template.
+    /// </summary>
+    void EnsureUserHasTemplatePermission(
+        User user,
+        TemplateId templateId,
+        UserId grantedBy,
+        DateTime? grantedOn = null);
+
     bool RemovePermissionFromUser(
         User user,
         Permission permission);
