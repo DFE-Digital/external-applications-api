@@ -152,14 +152,8 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 return null;
             }
 
-            logger.LogDebug(
-                "ResolveRequestTemplateId: Tenant resolved. TenantId={TenantId}, TenantName={TenantName}",
-                tenant.Id,
-                tenant.Name);
-
             var appTemplates = tenant.Settings.GetSection("ApplicationTemplates");
-            var hostMappingsSection = appTemplates.GetSection("HostMappings");
-            var hostMappings = hostMappingsSection.GetChildren()
+            var hostMappings = appTemplates.GetSection("HostMappings").GetChildren()
                 .ToDictionary(c => c.Key, c => c.Value, StringComparer.OrdinalIgnoreCase);
 
             if (hostMappings.Count == 0)
@@ -172,44 +166,21 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 return null;
             }
 
-            var mappingKeys = string.Join(", ", hostMappings.Keys);
-            var mappingPreview = string.Join(", ", hostMappings.Select(kv => $"{kv.Key}={kv.Value ?? "(null)"}"));
-            logger.LogDebug(
-                "ResolveRequestTemplateId: HostMappings keys=[{Keys}], values=[{Values}]",
-                mappingKeys,
-                mappingPreview);
-
             string? templateIdString = null;
             var defaultKey = appTemplates["DefaultTemplateKey"];
 
             if (!string.IsNullOrEmpty(defaultKey) && hostMappings.TryGetValue(defaultKey, out var fromDefault))
-            {
                 templateIdString = fromDefault;
-                logger.LogDebug(
-                    "ResolveRequestTemplateId: Using DefaultTemplateKey. Key={DefaultTemplateKey}, TemplateId={TemplateId}",
-                    defaultKey,
-                    templateIdString);
-            }
 
             if (templateIdString is null && hostMappings.TryGetValue(tenant.Name.Trim(), out var fromTenantName))
-            {
                 templateIdString = fromTenantName;
-                logger.LogDebug(
-                    "ResolveRequestTemplateId: Using tenant name as HostMappings key. TenantName={TenantName}, TemplateId={TemplateId}",
-                    tenant.Name,
-                    templateIdString);
-            }
 
             if (templateIdString is null && hostMappings.Count == 1)
-            {
                 templateIdString = hostMappings.Values.Single();
-                logger.LogDebug(
-                    "ResolveRequestTemplateId: Using single HostMappings entry. TemplateId={TemplateId}",
-                    templateIdString);
-            }
 
             if (string.IsNullOrEmpty(templateIdString))
             {
+                var mappingKeys = string.Join(", ", hostMappings.Keys);
                 logger.LogWarning(
                     "ResolveRequestTemplateId: Could not resolve template. TenantName={TenantName}, HostMappingsKeys=[{Keys}]. " +
                     "Either set ApplicationTemplates:DefaultTemplateKey to one of the keys, or ensure tenant name matches a key (case-insensitive), or use a single HostMappings entry.",
@@ -227,10 +198,6 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 return null;
             }
 
-            logger.LogDebug(
-                "ResolveRequestTemplateId: Resolved TemplateId={TemplateId} for tenant {TenantName}",
-                templateId,
-                tenant.Name);
             return templateId;
         }
     }
