@@ -1,4 +1,4 @@
-﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Infrastructure.Database;
@@ -91,7 +91,7 @@ public class TokensControllerTests
     {
         var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
 
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => tokensClient.ExchangeAsync(new ExchangeTokenRequest(externalToken)));
 
         Assert.Equal(403, ex.StatusCode);
@@ -115,7 +115,7 @@ public class TokensControllerTests
 
         var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
 
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => tokensClient.ExchangeAsync(new ExchangeTokenRequest(externalToken)));
 
         Assert.Equal(403, ex.StatusCode);

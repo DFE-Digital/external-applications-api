@@ -422,14 +422,14 @@ public class GenerateApplicationPreviewHtmlQueryHandlerTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(configData)
             .Build();
-        
-        var mockTenantConfiguration = Substitute.For<TenantConfiguration>(
+
+        var tenant = new TenantConfiguration(
             Guid.NewGuid(),
             "TestTenant",
-            configuration);
-        mockTenantConfiguration.Settings.Returns(configuration);
-        
-        _tenantContextAccessor.CurrentTenant.Returns(mockTenantConfiguration);
+            configuration,
+            Array.Empty<string>());
+
+        _tenantContextAccessor.CurrentTenant.Returns(tenant);
     }
 }
 

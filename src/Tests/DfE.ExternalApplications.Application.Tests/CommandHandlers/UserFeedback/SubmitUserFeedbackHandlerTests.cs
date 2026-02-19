@@ -12,6 +12,7 @@ using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using System.Collections.Generic;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.UserFeedback;
 
@@ -219,15 +220,20 @@ public class SubmitUserFeedbackHandlerTests
 
     private void SetupTenantContextWithSupportEmail(string? supportEmailAddress)
     {
-        var mockConfiguration = Substitute.For<IConfiguration>();
-        mockConfiguration.GetValue<string?>("Email:ServiceSupportEmailAddress", Arg.Any<string?>()).Returns(supportEmailAddress);
-        
-        var mockTenantConfiguration = Substitute.For<TenantConfiguration>(
+        var configData = new Dictionary<string, string?>();
+        if (supportEmailAddress != null)
+            configData["Email:ServiceSupportEmailAddress"] = supportEmailAddress;
+
+        var configRoot = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData!)
+            .Build();
+
+        var tenant = new TenantConfiguration(
             Guid.NewGuid(),
             "TestTenant",
-            mockConfiguration);
-        mockTenantConfiguration.Settings.Returns(mockConfiguration);
-        
-        _tenantContextAccessor.CurrentTenant.Returns(mockTenantConfiguration);
+            configRoot,
+            Array.Empty<string>());
+
+        _tenantContextAccessor.CurrentTenant.Returns(tenant);
     }
 }

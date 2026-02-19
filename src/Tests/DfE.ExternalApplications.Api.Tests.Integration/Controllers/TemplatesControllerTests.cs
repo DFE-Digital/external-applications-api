@@ -46,7 +46,7 @@ public class TemplatesControllerTests
         ITemplatesClient templatesClient)
     {
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => templatesClient.GetLatestTemplateSchemaAsync(Guid.Parse(EaContextSeeder.TemplateId)));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -69,7 +69,7 @@ public class TemplatesControllerTests
             new AuthenticationHeaderValue("Bearer", "test-token");
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => templatesClient.GetLatestTemplateSchemaAsync(Guid.Parse(EaContextSeeder.TemplateId)));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -131,7 +131,7 @@ public class TemplatesControllerTests
         var request = new CreateTemplateVersionRequest("1.0.1", base64JsonSchema);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => templatesClient.CreateTemplateVersionAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -144,7 +144,7 @@ public class TemplatesControllerTests
         CreateTemplateVersionRequest request)
     {
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => templatesClient.CreateTemplateVersionAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -167,7 +167,7 @@ public class TemplatesControllerTests
             new AuthenticationHeaderValue("Bearer", "test-token");
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => templatesClient.CreateTemplateVersionAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
         Assert.Equal(403, ex.StatusCode);
     }

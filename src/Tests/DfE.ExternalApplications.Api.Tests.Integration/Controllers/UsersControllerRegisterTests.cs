@@ -183,7 +183,7 @@ public class UsersControllerRegisterTests
         };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             async () => await usersClient.RegisterUserAsync(request));
         
         Assert.Equal(403, ex.StatusCode);

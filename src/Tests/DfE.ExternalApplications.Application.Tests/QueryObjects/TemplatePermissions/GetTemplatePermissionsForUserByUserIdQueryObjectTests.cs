@@ -25,7 +25,9 @@ public class GetTemplatePermissionsForUserByUserIdQueryObjectTests
         TemplatePermissionCustomization tpCustom)
     {
         // Arrange
+        var sharedRoleId = new RoleId(Guid.NewGuid());
         userCustom.OverrideId = userId;
+        userCustom.OverrideRoleId = sharedRoleId;
         userCustom.OverridePermissions = Array.Empty<Permission>();
         var fixtureUserA = new Fixture().Customize(userCustom);
         var userA = fixtureUserA.Create<User>();
@@ -37,12 +39,13 @@ public class GetTemplatePermissionsForUserByUserIdQueryObjectTests
         var tp = new Fixture().Customize(tpCustom).Create<TemplatePermission>();
         ((List<TemplatePermission>)backingField.GetValue(userA)!).Add(tp);
 
-        var userCustomB = new UserCustomization();
+        var userCustomB = new UserCustomization { OverrideRoleId = sharedRoleId };
         var userB = new Fixture().Customize(userCustomB).Create<User>();
         backingField.SetValue(userB, new List<TemplatePermission>());
 
         using var context = CreateAndSeedSqliteContext(ctx =>
         {
+            ctx.Roles.Add(new Role(sharedRoleId, "TestRole"));
             ctx.Users.Add(userA);
             ctx.Users.Add(userB);
             ctx.SaveChanges();
@@ -75,6 +78,7 @@ public class GetTemplatePermissionsForUserByUserIdQueryObjectTests
 
         using var context = CreateAndSeedSqliteContext(ctx =>
         {
+            ctx.Roles.Add(new Role(user.RoleId, "TestRole"));
             ctx.Users.Add(user);
             ctx.SaveChanges();
         });
@@ -107,7 +111,7 @@ public class GetTemplatePermissionsForUserByUserIdQueryObjectTests
         DbContextHelper.CreateDbContext<ExternalApplicationsContext>(services, connection, seed);
         var provider = services.BuildServiceProvider();
         var scope = provider.CreateScope();
-        return scope.ServiceProvider.GetRequiredService<ExternalApplicationsContext>(); ;
+        return scope.ServiceProvider.GetRequiredService<ExternalApplicationsContext>();
 
     }
 } 

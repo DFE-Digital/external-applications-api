@@ -80,7 +80,7 @@ public class NotificationsControllerTests
         };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.CreateNotificationAsync(request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -403,43 +403,43 @@ public class NotificationsControllerTests
         INotificationsClient notificationsClient)
     {
         // Test all endpoints without authorization
-        var ex1 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex1 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.GetAllNotificationsAsync());
         Assert.Equal(403, ex1.StatusCode);
 
-        var ex2 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex2 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.GetUnreadNotificationsAsync());
         Assert.Equal(403, ex2.StatusCode);
 
-        var ex3 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex3 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.GetUnreadNotificationCountAsync());
         Assert.Equal(403, ex3.StatusCode);
 
-        var ex4 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex4 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.GetNotificationsByCategoryAsync("test"));
         Assert.Equal(403, ex4.StatusCode);
 
-        var ex5 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex5 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.MarkNotificationAsReadAsync("test-id"));
         Assert.Equal(403, ex5.StatusCode);
 
-        var ex6 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex6 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.MarkAllNotificationsAsReadAsync());
         Assert.Equal(403, ex6.StatusCode);
 
-        var ex7 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex7 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.RemoveNotificationAsync("test-id"));
         Assert.Equal(403, ex7.StatusCode);
 
-        var ex8 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex8 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.ClearAllNotificationsAsync());
         Assert.Equal(403, ex8.StatusCode);
 
-        var ex9 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex9 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.ClearNotificationsByCategoryAsync("test"));
         Assert.Equal(403, ex9.StatusCode);
 
-        var ex10 = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex10 = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => notificationsClient.ClearNotificationsByContextAsync("test"));
         Assert.Equal(403, ex10.StatusCode);
     }

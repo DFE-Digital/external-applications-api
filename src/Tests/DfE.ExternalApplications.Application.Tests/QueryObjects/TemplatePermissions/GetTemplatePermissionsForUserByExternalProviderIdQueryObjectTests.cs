@@ -1,7 +1,8 @@
-﻿using AutoFixture;
+using AutoFixture;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
@@ -21,7 +22,9 @@ public class GetTemplatePermissionsForUserByExternalProviderIdQueryObjectTests
         UserCustomization userCustom,
         TemplatePermissionCustomization tpCustom)
     {
+        var sharedRoleId = new RoleId(Guid.NewGuid());
         userCustom.OverrideExternalProviderId = externalId;
+        userCustom.OverrideRoleId = sharedRoleId;
         userCustom.OverridePermissions = Array.Empty<Permission>();
         var fixtureUserA = new Fixture().Customize(userCustom);
         var userA = fixtureUserA.Create<User>();
@@ -33,12 +36,13 @@ public class GetTemplatePermissionsForUserByExternalProviderIdQueryObjectTests
         var tp = new Fixture().Customize(tpCustom).Create<TemplatePermission>();
         ((List<TemplatePermission>)backingField.GetValue(userA)!).Add(tp);
 
-        var userCustomB = new UserCustomization { OverrideExternalProviderId = "other-id" };
+        var userCustomB = new UserCustomization { OverrideExternalProviderId = "other-id", OverrideRoleId = sharedRoleId };
         var userB = new Fixture().Customize(userCustomB).Create<User>();
         backingField.SetValue(userB, new List<TemplatePermission>());
 
         using var context = CreateAndSeedSqliteContext(ctx =>
         {
+            ctx.Roles.Add(new Role(sharedRoleId, "TestRole"));
             ctx.Users.Add(userA);
             ctx.Users.Add(userB);
             ctx.SaveChanges();
@@ -68,6 +72,7 @@ public class GetTemplatePermissionsForUserByExternalProviderIdQueryObjectTests
 
         using var context = CreateAndSeedSqliteContext(ctx =>
         {
+            ctx.Roles.Add(new Role(user.RoleId, "TestRole"));
             ctx.Users.Add(user);
             ctx.SaveChanges();
         });

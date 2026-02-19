@@ -6,6 +6,7 @@ using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using Microsoft.AspNetCore.Http;
@@ -117,16 +118,28 @@ public class RegisterUserCommandHandlerTests
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
-        // Existing user
+        var templateId = Guid.NewGuid();
+        var userId = new UserId(Guid.NewGuid());
+        var templatePermission = new TemplatePermission(
+            new TemplatePermissionId(Guid.NewGuid()),
+            userId,
+            new TemplateId(templateId),
+            AccessType.Read,
+            DateTime.UtcNow,
+            userId);
+
+        // Existing user who already has permission for the template (so handler returns without committing)
         var existingUser = new User(
-            new UserId(Guid.NewGuid()),
+            userId,
             new RoleId(RoleConstants.UserRoleId),
             name,
             email,
             DateTime.UtcNow,
             null,
             null,
-            null);
+            null,
+            initialPermissions: null,
+            initialTemplatePermissions: new[] { templatePermission });
 
         var users = new[] { existingUser }.AsQueryable().BuildMockDbSet();
         userRepo.Query().Returns(users);
@@ -138,7 +151,6 @@ public class RegisterUserCommandHandlerTests
             userFactory,
             unitOfWork);
 
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act

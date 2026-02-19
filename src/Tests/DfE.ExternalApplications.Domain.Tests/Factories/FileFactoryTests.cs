@@ -6,6 +6,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using System;
 using File = DfE.ExternalApplications.Domain.Entities.File;
+using ApplicationEntity = DfE.ExternalApplications.Domain.Entities.Application;
 
 namespace DfE.ExternalApplications.Domain.Tests.Factories;
 
@@ -17,7 +18,7 @@ public class FileFactoryTests
     [CustomAutoData(typeof(FileCustomization), typeof(ApplicationCustomization))]
     public void CreateUpload_Should_Create_File_With_Valid_Parameters(
         FileId id,
-        Application application,
+        ApplicationEntity application,
         string name,
         string description,
         string originalFileName,
@@ -49,7 +50,7 @@ public class FileFactoryTests
     [CustomAutoData(typeof(FileCustomization))]
     public void DeleteFile_Should_Call_Delete_On_File_And_Add_Domain_Event(
         FileId id,
-        ApplicationId applicationId,
+        DfE.ExternalApplications.Domain.ValueObjects.ApplicationId applicationId,
         string name,
         string description,
         string originalFileName,
@@ -74,7 +75,7 @@ public class FileFactoryTests
     [Theory]
     [CustomAutoData(typeof(FileCustomization), typeof(ApplicationCustomization))]
     public void CreateUpload_Should_Throw_ArgumentNullException_When_Id_Is_Null(
-        Application application,
+        ApplicationEntity application,
         string name,
         string description,
         string originalFileName,
@@ -115,7 +116,7 @@ public class FileFactoryTests
     [CustomAutoData(typeof(FileCustomization), typeof(ApplicationCustomization))]
     public void CreateUpload_Should_Throw_ArgumentNullException_When_Name_Is_Null(
         FileId id,
-        Application application,
+        ApplicationEntity application,
         string description,
         string originalFileName,
         string fileName,
@@ -135,7 +136,7 @@ public class FileFactoryTests
     [CustomAutoData(typeof(FileCustomization), typeof(ApplicationCustomization))]
     public void CreateUpload_Should_Throw_ArgumentNullException_When_OriginalFileName_Is_Null(
         FileId id,
-        Application application,
+        ApplicationEntity application,
         string name,
         string description,
         string fileName,
@@ -155,7 +156,7 @@ public class FileFactoryTests
     [CustomAutoData(typeof(FileCustomization), typeof(ApplicationCustomization))]
     public void CreateUpload_Should_Throw_ArgumentNullException_When_FileName_Is_Null(
         FileId id,
-        Application application,
+        ApplicationEntity application,
         string name,
         string description,
         string originalFileName,
@@ -175,7 +176,7 @@ public class FileFactoryTests
     [CustomAutoData(typeof(FileCustomization), typeof(ApplicationCustomization))]
     public void CreateUpload_Should_Throw_ArgumentNullException_When_UploadedBy_Is_Null(
         FileId id,
-        Application application,
+        ApplicationEntity application,
         string name,
         string description,
         string originalFileName,

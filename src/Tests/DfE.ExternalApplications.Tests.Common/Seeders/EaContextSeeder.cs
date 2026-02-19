@@ -1,4 +1,4 @@
-﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
@@ -32,9 +32,9 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
             var roleAdmin = new Role(new RoleId(RoleConstants.AdminRoleId), "Administrator");
             var roleSubmitter = new Role(new RoleId(new Guid(SubmitterRoleId)), "Submitter");
             var roleUser = new Role(new RoleId(RoleConstants.UserRoleId), "User");
-            ctx.Roles.AddRange(roleAdmin, roleSubmitter, roleUser);
-
             var now = DateTime.UtcNow;
+
+            ctx.Roles.AddRange(roleAdmin, roleSubmitter, roleUser);
 
             var aliceId = new UserId(new Guid(AliceId));
             var alice = new User(
