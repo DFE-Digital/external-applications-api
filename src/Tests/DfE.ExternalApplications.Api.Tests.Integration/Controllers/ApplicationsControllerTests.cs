@@ -129,9 +129,8 @@ public class ApplicationsControllerTests
         {
             ResponseBody = responseBody
         };
-        // Act - When permission is missing, API returns 403; body may be empty (auth middleware) or JSON (handler).
-        // Client throws ExternalApplicationsException<ExceptionResponse> when body is JSON, or ExternalApplicationsException when body is empty.
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        // Act - Auth middleware returns 403 with ExceptionResponse JSON so client gets typed exception.
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(403, ex.StatusCode);
     }

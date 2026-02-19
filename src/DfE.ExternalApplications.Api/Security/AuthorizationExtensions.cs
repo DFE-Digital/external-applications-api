@@ -328,6 +328,7 @@ namespace DfE.ExternalApplications.Api.Security
                 apiAuthenticationScheme: AuthConstants.CompositeScheme,
                 configureResourcePolicies: null);
 
+            services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationFailureResponseHandler>();
             services.AddSingleton<IAuthorizationHandler, TemplatePermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, UserPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationPermissionHandler>();
