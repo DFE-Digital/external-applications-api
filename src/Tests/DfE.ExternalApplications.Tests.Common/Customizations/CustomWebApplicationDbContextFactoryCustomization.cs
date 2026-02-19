@@ -13,6 +13,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
 using DfE.ExternalApplications.Api.Middleware;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -80,6 +81,9 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                     },
                     ExternalServicesConfiguration = services =>
                     {
+                        // Use tenant config from customization (FileStorage:Local with AllowedExtensions) so tests don't depend on appsettings
+                        services.RemoveAll<ITenantConfigurationProvider>();
+                        services.AddSingleton<ITenantConfigurationProvider>(new TestTenantConfigurationProvider(TestTenantId));
 
                         services.RemoveAll(typeof(IConfigureOptions<AuthenticationOptions>));
                         services.RemoveAll(typeof(IConfigureOptions<JwtBearerOptions>));

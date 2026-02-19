@@ -1155,14 +1155,14 @@ public class ApplicationsControllerTests
     }
 
     [Theory]
-    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryWithExistingFileCustomization))]
     public async Task UploadFileAsync_ShouldReturnBadRequest_WhenFileAlreadyExists(
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
         HttpClient httpClient,
         string description)
     {
-        // Arrange
+        // Arrange - customization seeds an existing file "large-file.jpg" and a latest response body referencing it
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
@@ -1177,24 +1177,13 @@ public class ApplicationsControllerTests
         var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
-        // Upload the same file twice
-        await applicationsClient.UploadFileAsync(
-            new Guid(EaContextSeeder.ApplicationId),
-            fileName,
-            description,
-            fileParameter);
-
-        // Create a new stream for the second upload
-        var stream2 = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
-        var fileParameter2 = new FileParameter(stream2, fileName, "text/plain");
-
-        // Act - Try to upload the same file again
+        // Act - upload same name as seeded file that is already referenced in the latest response → 409 Conflict
         var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
                 description,
-                fileParameter2));
+                fileParameter));
 
         // Assert
         Assert.Equal(409, exception.StatusCode);

@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Application.Services;
+using System.IO;
 using GovUK.Dfe.CoreLibs.FileStorage.Interfaces;
 using GovUK.Dfe.CoreLibs.FileStorage.Settings;
 
@@ -8,6 +9,8 @@ namespace DfE.ExternalApplications.Tests.Common.Helpers;
 /// Mock file storage service that simulates file operations without actual storage.
 /// Implements both IFileStorageService (for CoreLibs compatibility) and 
 /// ITenantAwareFileStorageService (for application handlers).
+/// When options include AllowedExtensions, validates the file extension so integration tests
+/// (e.g. UploadFileAsync_ShouldReturnBadRequest_WhenFileExtensionNotAllowed) pass.
 /// </summary>
 public class MockFileStorageService : ITenantAwareFileStorageService
 {
@@ -17,6 +20,8 @@ public class MockFileStorageService : ITenantAwareFileStorageService
 
     public Task UploadAsync(string path, Stream content, string? originalFileName = null, CancellationToken cancellationToken = default)
     {
+        ValidateExtension(originalFileName, optionsOverride: null);
+        ValidateFileSize(content, optionsOverride: null);
         return UploadInternalAsync(path, content, baseDirectory: null);
     }
 
@@ -41,6 +46,8 @@ public class MockFileStorageService : ITenantAwareFileStorageService
 
     public Task UploadAsync(string path, Stream content, string? originalFileName, LocalFileStorageOptions? optionsOverride, CancellationToken cancellationToken = default)
     {
+        ValidateExtension(originalFileName, optionsOverride);
+        ValidateFileSize(content, optionsOverride);
         return UploadInternalAsync(path, content, optionsOverride?.BaseDirectory);
     }
 
@@ -62,6 +69,39 @@ public class MockFileStorageService : ITenantAwareFileStorageService
     #endregion
 
     #region Internal Implementation
+
+    /// <summary>
+    /// Default allow list when no tenant options are passed (e.g. test host still using app config).
+    /// Matches typical API config so UploadFileAsync_ShouldReturnBadRequest_WhenFileExtensionNotAllowed passes.
+    /// </summary>
+    private static readonly string[] DefaultAllowedExtensions = { "jpg", "png", "pdf", "docx", "xlsx" };
+
+    /// <summary>
+    /// Default max file size (25MB) when no tenant options are passed.
+    /// Matches test UploadFileAsync_ShouldReturnBadRequest_WhenFileSizeExceedsLimit (26MB exceeds limit).
+    /// </summary>
+    private const long DefaultMaxFileSizeBytes = 25 * 1024 * 1024;
+
+    private static void ValidateExtension(string? originalFileName, LocalFileStorageOptions? optionsOverride)
+    {
+        var allowed = optionsOverride?.AllowedExtensions is { Length: > 0 }
+            ? optionsOverride.AllowedExtensions
+            : DefaultAllowedExtensions;
+        var extension = Path.GetExtension(originalFileName ?? "")?.TrimStart('.').ToLowerInvariant();
+        if (string.IsNullOrEmpty(extension) || !allowed.Any(e => string.Equals(e.TrimStart('.').ToLowerInvariant(), extension, StringComparison.Ordinal)))
+            throw new InvalidOperationException($"File extension is not allowed. Allowed: {string.Join(", ", allowed)}");
+    }
+
+    private static void ValidateFileSize(Stream content, LocalFileStorageOptions? optionsOverride)
+    {
+        if (!content.CanSeek)
+            return;
+        var maxBytes = optionsOverride?.MaxFileSizeBytes ?? DefaultMaxFileSizeBytes;
+        if (maxBytes <= 0)
+            return;
+        if (content.Length > maxBytes)
+            throw new InvalidOperationException($"File size exceeds the maximum allowed size of {maxBytes} bytes.");
+    }
 
     private Task UploadInternalAsync(string path, Stream content, string? baseDirectory)
     {
