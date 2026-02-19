@@ -91,7 +91,7 @@ public class TokensControllerTests
     {
         var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
 
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => tokensClient.ExchangeAsync(new ExchangeTokenRequest(externalToken)));
 
         Assert.Equal(403, ex.StatusCode);
@@ -115,7 +115,7 @@ public class TokensControllerTests
 
         var externalToken = TestExternalIdentityValidator.CreateToken("bob@example.com");
 
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
             () => tokensClient.ExchangeAsync(new ExchangeTokenRequest(externalToken)));
 
         Assert.Equal(403, ex.StatusCode);

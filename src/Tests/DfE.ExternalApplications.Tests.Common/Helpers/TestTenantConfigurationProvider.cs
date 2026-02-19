@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Tests.Common.Seeders;
 using Microsoft.Extensions.Configuration;
 
 namespace DfE.ExternalApplications.Tests.Common.Helpers;
@@ -17,12 +18,18 @@ public sealed class TestTenantConfigurationProvider : ITenantConfigurationProvid
         var settings = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
+                { "ApplicationReference:Prefix", "TRF" },
+                { "ApplicationTemplates:HostMappings:Transfers", EaContextSeeder.TemplateId },
                 { "FileStorage:Local:BaseDirectory", "/uploads" },
                 { "FileStorage:Local:AllowedExtensions:0", "jpg" },
                 { "FileStorage:Local:AllowedExtensions:1", "png" },
                 { "FileStorage:Local:AllowedExtensions:2", "pdf" },
                 { "FileStorage:Local:AllowedExtensions:3", "docx" },
                 { "FileStorage:Local:AllowedExtensions:4", "xlsx" },
+                { "FrontendSettings:BaseUrl", "https://test.apply.example.gov.uk" },
+                { "FrontendSettings:PreviewContentSelector", ".govuk-grid-column-full" },
+                { "InternalServiceAuth:Services:0:Email", "test-service@service.com" },
+                { "InternalServiceAuth:Services:0:ApiKey", "secret" },
             })
             .Build();
         var tenant = new TenantConfiguration(
