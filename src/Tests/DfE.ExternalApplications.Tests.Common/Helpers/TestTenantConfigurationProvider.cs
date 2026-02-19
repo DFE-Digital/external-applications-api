@@ -30,6 +30,7 @@ public sealed class TestTenantConfigurationProvider : ITenantConfigurationProvid
                 { "FrontendSettings:PreviewContentSelector", ".govuk-grid-column-full" },
                 { "InternalServiceAuth:Services:0:Email", "test-service@service.com" },
                 { "InternalServiceAuth:Services:0:ApiKey", "secret" },
+                { "Email:ServiceSupportEmailAddress", "some.email@education.gov.uk" },
             })
             .Build();
         var tenant = new TenantConfiguration(
