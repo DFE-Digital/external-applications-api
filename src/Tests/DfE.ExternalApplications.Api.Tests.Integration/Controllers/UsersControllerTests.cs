@@ -1,4 +1,5 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Infrastructure.Database;
@@ -24,28 +25,29 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
 
             factory.TestClaims = new List<Claim>
             {
-                new Claim(ClaimTypes.Role,  "API.Read"),
-                new Claim("iss",  "windows.net"),
-                new Claim("appid",  externalId.ToString()),
+                new Claim(ClaimTypes.Role, "API.Read"),
+                new Claim("iss", "windows.net"),
+                new Claim("appid", externalId.ToString()),
+                new Claim("permission", $"User:{externalId}:Read"),
             };
 
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "azure-token");
 
-            // Arrange
+            // Arrange - use Bob to avoid clashing with WhenUserEmailExists which updates Alice to alice1@example.com
             var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
 
             await dbContext.Users
-                .Where(x => x.Email == "alice@example.com")
+                .Where(x => x.Email == EaContextSeeder.BobEmail)
                 .ExecuteUpdateAsync(x => x.SetProperty(p => p.ExternalProviderId, externalId.ToString()));
 
-            var aliceId = dbContext.Users
+            var bobId = dbContext.Users
                 .Where(u => u.ExternalProviderId == externalId.ToString())
                 .Select(u => u.Id)
                 .Single();
 
             await dbContext.Permissions
-                .Where(p => p.UserId == aliceId)
+                .Where(p => p.UserId == bobId)
                 .ExecuteUpdateAsync(p => p
                     .SetProperty(p => p.ResourceKey, externalId.ToString())
                     .SetProperty(p => p.ResourceType, ResourceType.User)
@@ -175,7 +177,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
      CustomWebApplicationDbContextFactory<Program> factory,
      IUsersClient usersClient)
         {
-            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
                 () => usersClient.GetMyPermissionsAsync());
 
             Assert.Equal(403, ex.StatusCode);
@@ -191,7 +193,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "user-token");
 
-            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
                 () => usersClient.GetMyPermissionsAsync());
 
             Assert.Equal(403, ex.StatusCode);
@@ -248,7 +250,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             IApplicationsClient appsClient
             )
         {
-            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
                 () => appsClient.GetMyApplicationsAsync(includeSchema: null));
             Assert.Equal(403, ex.StatusCode);
         }
@@ -268,7 +270,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "azure-token");
 
-            var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+            var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
                 () => appsClient.GetApplicationsForUserAsync("bob@example.com", includeSchema: null));
 
             Assert.Equal(403, ex.StatusCode);
