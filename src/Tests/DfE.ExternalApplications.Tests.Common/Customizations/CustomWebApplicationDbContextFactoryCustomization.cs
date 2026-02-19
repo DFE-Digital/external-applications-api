@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
+using DfE.ExternalApplications.Api.Middleware;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -27,6 +28,12 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 {
     public class CustomWebApplicationDbContextFactoryCustomization : ICustomization
     {
+        /// <summary>
+        /// Tenant ID used for integration test requests. Must match a tenant in appsettings (e.g. Tenants:Transfers:Id).
+        /// Required so TenantResolutionMiddleware does not return 400 "Missing or invalid tenant id header".
+        /// </summary>
+        private const string TestTenantId = "11111111-1111-4111-8111-111111111111";
+
         public void Customize(IFixture fixture)
         {
             fixture.Customize<CustomWebApplicationDbContextFactory<Program>>(composer => composer.FromFactory(() =>
@@ -153,6 +160,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                     ExternalHttpClientConfiguration = client =>
                     {
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "external-mock-token");
+                        // Multitenancy: API returns 400 when X-Tenant-ID is missing (TenantResolutionMiddleware)
+                        client.DefaultRequestHeaders.Add(TenantResolutionMiddleware.TenantIdHeader, TestTenantId);
                     }
                 };
 
@@ -162,7 +171,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
                         { "ExternalApplicationsApiClient:BaseUrl", client.BaseAddress!.ToString() },
-                        { "ExternalApplicationsApiClient:RequestTokenExchange", "false" }
+                        { "ExternalApplicationsApiClient:RequestTokenExchange", "false" },
+                        { "ExternalApplicationsApiClient:TenantId", TestTenantId }
                     })
                     .Build();
 
