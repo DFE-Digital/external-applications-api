@@ -22,6 +22,11 @@ public sealed class AuthorizationFailureResponseHandler : IAuthorizationMiddlewa
     {
         if (authorizeResult.Challenged)
         {
+            if (IsSignalRRequest(context))
+            {
+                return _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
+            }
+
             throw new UnauthorizedException();
         }
 
@@ -31,5 +36,11 @@ public sealed class AuthorizationFailureResponseHandler : IAuthorizationMiddlewa
         }
 
         return _defaultHandler.HandleAsync(next, context, policy, authorizeResult);
+    }
+
+    private static bool IsSignalRRequest(HttpContext context)
+    {
+        var path = context.Request.Path;
+        return path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase);
     }
 }
