@@ -101,40 +101,53 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
          IUsersClient usersClient,
          HttpClient httpClient)
         {
-
+            // Use a new user so GetAllUserPermissionsQueryHandler cache is cold (no other test requests this user's permissions)
+            var testEmail = $"email-test-{Guid.NewGuid()}@example.com";
             factory.TestClaims = new List<Claim>
             {
-                new Claim("permission",  "User:alice1@example.com:Read"),
-                new Claim(ClaimTypes.Email, "alice1@example.com"),
+                new Claim("permission", $"User:{testEmail}:Read"),
+                new Claim(ClaimTypes.Email, testEmail),
             };
 
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "user-token");
 
-            // Arrange
+            // Arrange - create a dedicated user and permission so cache returns fresh data
             var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
+            var submitterRoleId = dbContext.Roles.Where(r => r.Name == "Submitter").Select(r => r.Id).Single();
+            var aliceUserId = new DfE.ExternalApplications.Domain.ValueObjects.UserId(new Guid(EaContextSeeder.AliceId));
 
-            await dbContext.Users
-                .Where(x => x.Email == "alice@example.com")
-                .ExecuteUpdateAsync(x => x.SetProperty(p => p.Email, "alice1@example.com"));
+            var newUserId = new DfE.ExternalApplications.Domain.ValueObjects.UserId(Guid.NewGuid());
+            var newUser = new DfE.ExternalApplications.Domain.Entities.User(
+                newUserId,
+                submitterRoleId,
+                name: "Email Test User",
+                email: testEmail,
+                createdOn: DateTime.UtcNow,
+                createdBy: null,
+                lastModifiedOn: null,
+                lastModifiedBy: null,
+                externalProviderId: null,
+                initialPermissions: null);
+            dbContext.Users.Add(newUser);
 
-            var aliceId = dbContext.Users
-                .Where(u => u.Email == "alice1@example.com")
-                .Select(u => u.Id)
-                .Single();
-
-            await dbContext.Permissions
-                .Where(p => p.UserId == aliceId)
-                .ExecuteUpdateAsync(p => p
-                    .SetProperty(p => p.ResourceKey, "alice1@example.com")
-                    .SetProperty(p => p.ResourceType, ResourceType.User)
-                    .SetProperty(p => p.AccessType, AccessType.Read)
-                );
+            var permId = new DfE.ExternalApplications.Domain.ValueObjects.PermissionId(Guid.NewGuid());
+            var perm = new DfE.ExternalApplications.Domain.Entities.Permission(
+                permId,
+                newUserId,
+                applicationId: null,
+                resourceKey: testEmail,
+                resourceType: ResourceType.User,
+                accessType: AccessType.Read,
+                grantedOn: DateTime.UtcNow,
+                grantedBy: aliceUserId);
+            dbContext.Permissions.Add(perm);
+            await dbContext.SaveChangesAsync();
 
             var expectedUser = dbContext.Users
                 .Include(u => u.Permissions)
                 .Include(u => u.Role)
-                .FirstOrDefault(u => u.Email == "alice1@example.com")!;
+                .First(u => u.Email == testEmail);
 
             var expectedPermissions = expectedUser.Permissions.ToList();
 
