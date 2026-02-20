@@ -34,3 +34,7 @@ All notable changes to this service will be documented in this file.
 ## [1.1.3] – Public Beta
 ### Notes
 - Enabled Test Auth in LSRP Test Environment. 
+
+## [1.1.4] – Public Beta
+### Notes
+- Updated CoreLibs Security package to support ExtIdentityValidator for multi-tenancy.

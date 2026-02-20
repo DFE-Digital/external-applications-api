@@ -4,9 +4,11 @@ using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using Microsoft.AspNetCore.Http;
@@ -42,8 +44,10 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
+
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
 
         // No existing user
         var users = new List<User>().AsQueryable().BuildMockDbSet();
@@ -74,7 +78,8 @@ public class RegisterUserCommandHandlerTests
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -115,9 +120,10 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
         var templateId = Guid.NewGuid();
         var userId = new UserId(Guid.NewGuid());
         var templatePermission = new TemplatePermission(
@@ -149,7 +155,8 @@ public class RegisterUserCommandHandlerTests
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var command = new RegisterUserCommand(subjectToken, templateId);
 
@@ -187,8 +194,10 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
+
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
 
         // No existing user
         var users = new List<User>().AsQueryable().BuildMockDbSet();
@@ -219,7 +228,8 @@ public class RegisterUserCommandHandlerTests
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -262,8 +272,10 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
+
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
 
         // No existing user
         var users = new List<User>().AsQueryable().BuildMockDbSet();
@@ -294,7 +306,8 @@ public class RegisterUserCommandHandlerTests
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -319,7 +332,8 @@ public class RegisterUserCommandHandlerTests
         IUnitOfWork unitOfWork)
     {
         // Arrange
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Throws(new SecurityTokenException("Invalid token"));
 
         var handler = new RegisterUserCommandHandler(
@@ -327,7 +341,8 @@ public class RegisterUserCommandHandlerTests
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -362,15 +377,18 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
+
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
 
         var handler = new RegisterUserCommandHandler(
             userRepo,
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -407,8 +425,10 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
+
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
 
         // Mock to throw exception
         userRepo.Query().Throws(new InvalidOperationException("Database error"));
@@ -418,7 +438,8 @@ public class RegisterUserCommandHandlerTests
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -454,8 +475,10 @@ public class RegisterUserCommandHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
+
+        var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
 
         // No existing user
         var users = new List<User>().AsQueryable().BuildMockDbSet();
@@ -498,7 +521,8 @@ public class RegisterUserCommandHandlerTests
             externalValidator,
             httpContextAccessor,
             userFactory,
-            unitOfWork);
+            unitOfWork,
+            tenantContextAccessor);
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);

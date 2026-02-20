@@ -9,12 +9,15 @@ using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace DfE.ExternalApplications.Application.Users.Commands;
@@ -27,7 +30,8 @@ public sealed class RegisterUserCommandHandler(
     IExternalIdentityValidator externalValidator,
     IHttpContextAccessor httpContextAccessor,
     IUserFactory userFactory,
-    IUnitOfWork unitOfWork) : IRequestHandler<RegisterUserCommand, Result<UserDto>>
+    IUnitOfWork unitOfWork,
+    ITenantContextAccessor tenantContextAccessor) : IRequestHandler<RegisterUserCommand, Result<UserDto>>
 {
     public async Task<Result<UserDto>> Handle(
         RegisterUserCommand request,
@@ -35,9 +39,19 @@ public sealed class RegisterUserCommandHandler(
     {
         try
         {
+            // Get tenant-specific test auth options so only the correct tenant uses test authentication
+            TestAuthenticationOptions? tenantTestAuthOptions = null;
+            if (tenantContextAccessor.CurrentTenant != null)
+            {
+                tenantTestAuthOptions = new TestAuthenticationOptions();
+                tenantContextAccessor.CurrentTenant.Settings
+                    .GetSection(TestAuthenticationOptions.SectionName)
+                    .Bind(tenantTestAuthOptions);
+            }
+
             // Validate external token and extract claims
             var externalUser = await externalValidator
-                .ValidateIdTokenAsync(request.SubjectToken, false, validInternalRequest:false, cancellationToken);
+                .ValidateIdTokenAsync(request.SubjectToken, false, false, internalAuthOptions: null, tenantTestAuthOptions, cancellationToken);
 
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value
                         ?? throw new SecurityTokenException("RegisterUserCommandHandler > Missing email");

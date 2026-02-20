@@ -17,10 +17,15 @@ namespace DfE.ExternalApplications.Tests.Common.Helpers
 
         public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, bool validCypressRequest, bool validInternalRequest = false, CancellationToken cancellationToken = default)
         {
-            return ValidateIdTokenAsync(token, validCypressRequest, validInternalRequest, null, cancellationToken);
+            return ValidateIdTokenAsync(token, validCypressRequest, validInternalRequest, null, null, cancellationToken);
         }
 
-        public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, bool validCypressRequest, bool validInternalRequest = false, InternalServiceAuthOptions? internalServiceAuthOptions = null, CancellationToken cancellationToken = default)
+        public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, bool validCypressRequest, bool validInternalRequest, InternalServiceAuthOptions? internalAuthOptions, CancellationToken cancellationToken = default)
+        {
+            return ValidateIdTokenAsync(token, validCypressRequest, validInternalRequest, internalAuthOptions, null, cancellationToken);
+        }
+
+        public Task<ClaimsPrincipal> ValidateIdTokenAsync(string token, bool validCypressRequest, bool validInternalRequest, InternalServiceAuthOptions? internalAuthOptions, TestAuthenticationOptions? testAuthOptions, CancellationToken cancellationToken = default)
         {
             var handler = new JwtSecurityTokenHandler();
             var parameters = new TokenValidationParameters

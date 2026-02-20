@@ -9,9 +9,9 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DfE.ExternalApplications.Application.Users.Queries
@@ -42,8 +42,18 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                     .Bind(tenantInternalAuthOptions);
             }
 
+            // Get tenant-specific test auth options so only the correct tenant uses test authentication
+            TestAuthenticationOptions? tenantTestAuthOptions = null;
+            if (tenantContextAccessor.CurrentTenant != null)
+            {
+                tenantTestAuthOptions = new TestAuthenticationOptions();
+                tenantContextAccessor.CurrentTenant.Settings
+                    .GetSection(TestAuthenticationOptions.SectionName)
+                    .Bind(tenantTestAuthOptions);
+            }
+
             var externalUser = await externalValidator
-                .ValidateIdTokenAsync(req.SubjectToken, false, validInternalAuthReq, tenantInternalAuthOptions, ct);
+                .ValidateIdTokenAsync(req.SubjectToken, false, validInternalAuthReq, tenantInternalAuthOptions, tenantTestAuthOptions, ct);
 
             var email = externalUser.FindFirst(ClaimTypes.Email)?.Value;
                         
