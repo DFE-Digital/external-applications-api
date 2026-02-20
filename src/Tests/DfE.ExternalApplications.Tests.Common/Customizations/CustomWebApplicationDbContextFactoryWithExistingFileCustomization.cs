@@ -19,6 +19,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using GovUK.Dfe.ExternalApplications.Api.Client;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
@@ -120,6 +123,16 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         services.AddSingleton<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, MockEventPublisher>();
                         services.RemoveAll<DfE.ExternalApplications.Domain.Services.IStaticHtmlGeneratorService>();
                         services.AddSingleton<DfE.ExternalApplications.Domain.Services.IStaticHtmlGeneratorService, MockStaticHtmlGeneratorService>();
+                        
+                        // Replace Redis with in-memory alternatives so tests don't require a running Redis server
+                        services.RemoveAll<IConnectionMultiplexer>();
+                        services.RemoveAll<IDistributedCache>();
+                        services.RemoveAll<ICacheService<IRedisCacheType>>();
+                        services.RemoveAll<IAdvancedRedisCacheService>();
+                        services.AddDistributedMemoryCache();
+                        var mockRedisCache = new MockRedisCacheService();
+                        services.AddSingleton<ICacheService<IRedisCacheType>>(mockRedisCache);
+                        services.AddSingleton<IAdvancedRedisCacheService>(mockRedisCache);
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
