@@ -56,28 +56,35 @@ public class ExternalApplicationsContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Role>(ConfigureRole);
-        modelBuilder.Entity<User>(ConfigureUser);
-        modelBuilder.Entity<Template>(ConfigureTemplate);
+        // Azure SQL: full temporal tables (system-versioned). SQLite (tests): no temporal, nullable period columns so inserts work.
+        var useTemporal = Database.IsSqlServer();
+
+        modelBuilder.Entity<Role>(b => ConfigureRole(b, useTemporal));
+        modelBuilder.Entity<User>(b => ConfigureUser(b, useTemporal));
+        modelBuilder.Entity<Template>(b => ConfigureTemplate(b, useTemporal));
         modelBuilder.Entity<TemplateVersion>(ConfigureTemplateVersion);
-        modelBuilder.Entity<Domain.Entities.Application>(ConfigureApplication);
+        modelBuilder.Entity<Domain.Entities.Application>(b => ConfigureApplication(b, useTemporal));
         modelBuilder.Entity<ApplicationResponse>(ConfigureApplicationResponse);
         modelBuilder.Entity<Permission>(ConfigurePermission);
-        modelBuilder.Entity<TemplatePermission>(ConfigureTemplatePermission);
+        modelBuilder.Entity<TemplatePermission>(b => ConfigureTemplatePermission(b, useTemporal));
         modelBuilder.Entity<TaskAssignmentLabel>(ConfigureTaskAssignmentLabel);
         modelBuilder.Entity<File>(ConfigureFile);
 
         base.OnModelCreating(modelBuilder);
     }
 
-    private static void ConfigureRole(EntityTypeBuilder<Role> b)
+    private static void ConfigureRole(EntityTypeBuilder<Role> b, bool useTemporal)
     {
-        b.ToTable("Roles", DefaultSchema, tb => tb.IsTemporal(ttb =>
-        {
-            ttb.HasPeriodStart("PeriodStart");
-            ttb.HasPeriodEnd("PeriodEnd");
-            ttb.UseHistoryTable("History_Roles", DefaultSchema);
-        }));
+        if (useTemporal)
+            b.ToTable("Roles", DefaultSchema, tb => tb.IsTemporal(ttb =>
+            {
+                ttb.HasPeriodStart("PeriodStart");
+                ttb.HasPeriodEnd("PeriodEnd");
+                ttb.UseHistoryTable("History_Roles", DefaultSchema);
+            }));
+        else
+            b.ToTable("Roles", DefaultSchema);
+
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("RoleId")
@@ -90,23 +97,34 @@ public class ExternalApplicationsContext : DbContext
             .IsRequired();
         b.HasIndex(e => e.Name).IsUnique();
 
-        b.Property<DateTime>("PeriodStart")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-
-        b.Property<DateTime>("PeriodEnd")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        if (useTemporal)
+        {
+            b.Property<DateTime>("PeriodStart")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            b.Property<DateTime>("PeriodEnd")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        }
+        else
+        {
+            b.Property<DateTime?>("PeriodStart").HasColumnName("PeriodStart").IsRequired(false);
+            b.Property<DateTime?>("PeriodEnd").HasColumnName("PeriodEnd").IsRequired(false);
+        }
     }
 
-    private static void ConfigureUser(EntityTypeBuilder<User> b)
+    private static void ConfigureUser(EntityTypeBuilder<User> b, bool useTemporal)
     {
-        b.ToTable("Users", DefaultSchema, tb => tb.IsTemporal(ttb =>
-        {
-            ttb.HasPeriodStart("PeriodStart");
-            ttb.HasPeriodEnd("PeriodEnd");
-            ttb.UseHistoryTable("History_Users", DefaultSchema);
-        }));
+        if (useTemporal)
+            b.ToTable("Users", DefaultSchema, tb => tb.IsTemporal(ttb =>
+            {
+                ttb.HasPeriodStart("PeriodStart");
+                ttb.HasPeriodEnd("PeriodEnd");
+                ttb.UseHistoryTable("History_Users", DefaultSchema);
+            }));
+        else
+            b.ToTable("Users", DefaultSchema);
+
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("UserId")
@@ -165,23 +183,34 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(p => p.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        b.Property<DateTime>("PeriodStart")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-
-        b.Property<DateTime>("PeriodEnd")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        if (useTemporal)
+        {
+            b.Property<DateTime>("PeriodStart")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            b.Property<DateTime>("PeriodEnd")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        }
+        else
+        {
+            b.Property<DateTime?>("PeriodStart").HasColumnName("PeriodStart").IsRequired(false);
+            b.Property<DateTime?>("PeriodEnd").HasColumnName("PeriodEnd").IsRequired(false);
+        }
     }
 
-    private static void ConfigureTemplate(EntityTypeBuilder<Template> b)
+    private static void ConfigureTemplate(EntityTypeBuilder<Template> b, bool useTemporal)
     {
-        b.ToTable("Templates", DefaultSchema, tb => tb.IsTemporal(ttb =>
-        {
-            ttb.HasPeriodStart("PeriodStart");
-            ttb.HasPeriodEnd("PeriodEnd");
-            ttb.UseHistoryTable("History_Templates", DefaultSchema);
-        }));
+        if (useTemporal)
+            b.ToTable("Templates", DefaultSchema, tb => tb.IsTemporal(ttb =>
+            {
+                ttb.HasPeriodStart("PeriodStart");
+                ttb.HasPeriodEnd("PeriodEnd");
+                ttb.UseHistoryTable("History_Templates", DefaultSchema);
+            }));
+        else
+            b.ToTable("Templates", DefaultSchema);
+
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("TemplateId")
@@ -206,13 +235,20 @@ public class ExternalApplicationsContext : DbContext
             .HasForeignKey(e => e.CreatedBy)
             .OnDelete(DeleteBehavior.Restrict);
 
-        b.Property<DateTime>("PeriodStart")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-
-        b.Property<DateTime>("PeriodEnd")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        if (useTemporal)
+        {
+            b.Property<DateTime>("PeriodStart")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            b.Property<DateTime>("PeriodEnd")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        }
+        else
+        {
+            b.Property<DateTime?>("PeriodStart").HasColumnName("PeriodStart").IsRequired(false);
+            b.Property<DateTime?>("PeriodEnd").HasColumnName("PeriodEnd").IsRequired(false);
+        }
     }
 
     private static void ConfigureTemplateVersion(EntityTypeBuilder<TemplateVersion> b)
@@ -270,14 +306,18 @@ public class ExternalApplicationsContext : DbContext
             .HasDatabaseName("IX_TemplateVersions_TemplateId_CreatedOn");
     }
 
-    private static void ConfigureApplication(EntityTypeBuilder<Domain.Entities.Application> b)
+    private static void ConfigureApplication(EntityTypeBuilder<Domain.Entities.Application> b, bool useTemporal)
     {
-        b.ToTable("Applications", DefaultSchema, tb => tb.IsTemporal(ttb =>
-        {
-            ttb.HasPeriodStart("PeriodStart");
-            ttb.HasPeriodEnd("PeriodEnd");
-            ttb.UseHistoryTable("History_Applications", DefaultSchema);
-        }));
+        if (useTemporal)
+            b.ToTable("Applications", DefaultSchema, tb => tb.IsTemporal(ttb =>
+            {
+                ttb.HasPeriodStart("PeriodStart");
+                ttb.HasPeriodEnd("PeriodEnd");
+                ttb.UseHistoryTable("History_Applications", DefaultSchema);
+            }));
+        else
+            b.ToTable("Applications", DefaultSchema);
+
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("ApplicationId")
@@ -332,13 +372,20 @@ public class ExternalApplicationsContext : DbContext
         b.HasIndex(e => e.TemplateVersionId)
             .HasDatabaseName("IX_Applications_TemplateVersionId");
 
-        b.Property<DateTime>("PeriodStart")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-
-        b.Property<DateTime>("PeriodEnd")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        if (useTemporal)
+        {
+            b.Property<DateTime>("PeriodStart")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            b.Property<DateTime>("PeriodEnd")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        }
+        else
+        {
+            b.Property<DateTime?>("PeriodStart").HasColumnName("PeriodStart").IsRequired(false);
+            b.Property<DateTime?>("PeriodEnd").HasColumnName("PeriodEnd").IsRequired(false);
+        }
     }
 
     private static void ConfigureApplicationResponse(EntityTypeBuilder<ApplicationResponse> b)
@@ -493,14 +540,18 @@ public class ExternalApplicationsContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
     }
 
-    private static void ConfigureTemplatePermission(EntityTypeBuilder<TemplatePermission> b)
+    private static void ConfigureTemplatePermission(EntityTypeBuilder<TemplatePermission> b, bool useTemporal)
     {
-        b.ToTable("TemplatePermissions", DefaultSchema, tb => tb.IsTemporal(ttb =>
-        {
-            ttb.HasPeriodStart("PeriodStart");
-            ttb.HasPeriodEnd("PeriodEnd");
-            ttb.UseHistoryTable("History_TemplatePermissions", DefaultSchema);
-        }));
+        if (useTemporal)
+            b.ToTable("TemplatePermissions", DefaultSchema, tb => tb.IsTemporal(ttb =>
+            {
+                ttb.HasPeriodStart("PeriodStart");
+                ttb.HasPeriodEnd("PeriodEnd");
+                ttb.UseHistoryTable("History_TemplatePermissions", DefaultSchema);
+            }));
+        else
+            b.ToTable("TemplatePermissions", DefaultSchema);
+
         b.HasKey(e => e.Id);
         b.Property(e => e.Id)
             .HasColumnName("TemplatePermissionId")
@@ -541,13 +592,20 @@ public class ExternalApplicationsContext : DbContext
         b.HasIndex(e => new { e.UserId, e.TemplateId })
             .HasDatabaseName("IX_TemplatePermissions_UserId_TemplateId");
 
-        b.Property<DateTime>("PeriodStart")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
-
-        b.Property<DateTime>("PeriodEnd")
-            .ValueGeneratedOnAddOrUpdate()
-            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        if (useTemporal)
+        {
+            b.Property<DateTime>("PeriodStart")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            b.Property<DateTime>("PeriodEnd")
+                .ValueGeneratedOnAddOrUpdate()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+        }
+        else
+        {
+            b.Property<DateTime?>("PeriodStart").HasColumnName("PeriodStart").IsRequired(false);
+            b.Property<DateTime?>("PeriodEnd").HasColumnName("PeriodEnd").IsRequired(false);
+        }
     }
 
     private static void ConfigureFile(EntityTypeBuilder<File> b)

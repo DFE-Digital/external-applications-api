@@ -101,7 +101,7 @@ public class ApplicationsControllerTests
         var content = new StringContent(requestJson, System.Text.Encoding.UTF8, "application/json");
 
         // Act
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -129,8 +129,8 @@ public class ApplicationsControllerTests
         {
             ResponseBody = responseBody
         };
-        // Act
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        // Act - Auth middleware returns 403 with ExceptionResponse JSON so client gets typed exception.
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddApplicationResponseAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -199,7 +199,7 @@ public class ApplicationsControllerTests
         CreateApplicationRequest request)
     {
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.CreateApplicationAsync(request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -222,7 +222,7 @@ public class ApplicationsControllerTests
             new AuthenticationHeaderValue("Bearer", "test-token");
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.CreateApplicationAsync(request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -265,7 +265,7 @@ public class ApplicationsControllerTests
         IApplicationsClient applicationsClient)
     {
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.GetMyApplicationsAsync(includeSchema: null));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -287,7 +287,7 @@ public class ApplicationsControllerTests
             new AuthenticationHeaderValue("Bearer", "test-token");
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.GetMyApplicationsAsync(includeSchema: null));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -330,7 +330,7 @@ public class ApplicationsControllerTests
         HttpClient httpClient)
     {
         // Act
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.GetApplicationByReferenceAsync(EaContextSeeder.ApplicationReference));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -353,7 +353,7 @@ public class ApplicationsControllerTests
             new AuthenticationHeaderValue("Bearer", "user-token");
 
         // Act
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.GetApplicationByReferenceAsync(EaContextSeeder.ApplicationReference));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -421,7 +421,7 @@ public class ApplicationsControllerTests
          var applicationId = Guid.Parse(EaContextSeeder.ApplicationId);
 
          // Act
-         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+         var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
              () => applicationsClient.SubmitApplicationAsync(applicationId));
          Assert.Equal(403, ex.StatusCode);
      }
@@ -446,7 +446,7 @@ public class ApplicationsControllerTests
          var applicationId = Guid.Parse(EaContextSeeder.ApplicationId);
 
          // Act
-         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+         var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
              () => applicationsClient.SubmitApplicationAsync(applicationId));
          Assert.Equal(403, ex.StatusCode);
      }
@@ -715,7 +715,7 @@ public class ApplicationsControllerTests
         IApplicationsClient applicationsClient)
     {
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.GetContributorsAsync(new Guid(EaContextSeeder.ApplicationId)));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -738,7 +738,7 @@ public class ApplicationsControllerTests
             new AuthenticationHeaderValue("Bearer", "user-token");
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.GetContributorsAsync(new Guid(EaContextSeeder.ApplicationId)));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -798,7 +798,7 @@ public class ApplicationsControllerTests
         };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -827,7 +827,7 @@ public class ApplicationsControllerTests
         };
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.AddContributorAsync(new Guid(EaContextSeeder.ApplicationId), request));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -917,7 +917,7 @@ public class ApplicationsControllerTests
         var userId = Guid.NewGuid();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), userId));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -942,7 +942,7 @@ public class ApplicationsControllerTests
         var userId = Guid.NewGuid();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.RemoveContributorAsync(new Guid(EaContextSeeder.ApplicationId), userId));
         Assert.Equal(403, ex.StatusCode);
     }
@@ -1006,7 +1006,7 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
         // Act
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
@@ -1041,7 +1041,7 @@ public class ApplicationsControllerTests
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
         // Act
-        var exception = await Assert.ThrowsAsync<ExternalApplicationsException>(() =>
+        var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
@@ -1155,14 +1155,14 @@ public class ApplicationsControllerTests
     }
 
     [Theory]
-    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryWithExistingFileCustomization))]
     public async Task UploadFileAsync_ShouldReturnBadRequest_WhenFileAlreadyExists(
         CustomWebApplicationDbContextFactory<Program> factory,
         IApplicationsClient applicationsClient,
         HttpClient httpClient,
         string description)
     {
-        // Arrange
+        // Arrange - customization seeds an existing file "large-file.jpg" and a latest response body referencing it
         factory.TestClaims = new List<Claim>
         {
             new(ClaimTypes.Email, EaContextSeeder.BobEmail),
@@ -1177,24 +1177,13 @@ public class ApplicationsControllerTests
         var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
         var fileParameter = new FileParameter(stream, fileName, "text/plain");
 
-        // Upload the same file twice
-        await applicationsClient.UploadFileAsync(
-            new Guid(EaContextSeeder.ApplicationId),
-            fileName,
-            description,
-            fileParameter);
-
-        // Create a new stream for the second upload
-        var stream2 = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fileContent));
-        var fileParameter2 = new FileParameter(stream2, fileName, "text/plain");
-
-        // Act - Try to upload the same file again
+        // Act - upload same name as seeded file that is already referenced in the latest response → 409 Conflict
         var exception = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(() =>
             applicationsClient.UploadFileAsync(
                 new Guid(EaContextSeeder.ApplicationId),
                 fileName,
                 description,
-                fileParameter2));
+                fileParameter));
 
         // Assert
         Assert.Equal(409, exception.StatusCode);

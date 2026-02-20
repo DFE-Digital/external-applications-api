@@ -12,12 +12,17 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
+using DfE.ExternalApplications.Api.Middleware;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using GovUK.Dfe.ExternalApplications.Api.Client;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
@@ -27,6 +32,12 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 {
     public class CustomWebApplicationDbContextFactoryCustomization : ICustomization
     {
+        /// <summary>
+        /// Tenant ID used for integration test requests. Must match a tenant in appsettings (e.g. Tenants:Transfers:Id).
+        /// Required so TenantResolutionMiddleware does not return 400 "Missing or invalid tenant id header".
+        /// </summary>
+        private const string TestTenantId = "11111111-1111-4111-8111-111111111111";
+
         public void Customize(IFixture fixture)
         {
             fixture.Customize<CustomWebApplicationDbContextFactory<Program>>(composer => composer.FromFactory(() =>
@@ -73,6 +84,9 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                     },
                     ExternalServicesConfiguration = services =>
                     {
+                        // Use tenant config from customization (FileStorage:Local with AllowedExtensions) so tests don't depend on appsettings
+                        services.RemoveAll<ITenantConfigurationProvider>();
+                        services.AddSingleton<ITenantConfigurationProvider>(new TestTenantConfigurationProvider(TestTenantId));
 
                         services.RemoveAll(typeof(IConfigureOptions<AuthenticationOptions>));
                         services.RemoveAll(typeof(IConfigureOptions<JwtBearerOptions>));
@@ -149,10 +163,22 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         // Replace IStaticHtmlGeneratorService with our mock to avoid requiring Playwright in tests
                         services.RemoveAll<DfE.ExternalApplications.Domain.Services.IStaticHtmlGeneratorService>();
                         services.AddSingleton<DfE.ExternalApplications.Domain.Services.IStaticHtmlGeneratorService, MockStaticHtmlGeneratorService>();
+                        
+                        // Replace Redis with in-memory alternatives so tests don't require a running Redis server
+                        services.RemoveAll<IConnectionMultiplexer>();
+                        services.RemoveAll<IDistributedCache>();
+                        services.RemoveAll<ICacheService<IRedisCacheType>>();
+                        services.RemoveAll<IAdvancedRedisCacheService>();
+                        services.AddDistributedMemoryCache();
+                        var mockRedisCache = new MockRedisCacheService();
+                        services.AddSingleton<ICacheService<IRedisCacheType>>(mockRedisCache);
+                        services.AddSingleton<IAdvancedRedisCacheService>(mockRedisCache);
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "external-mock-token");
+                        // Multitenancy: API returns 400 when X-Tenant-ID is missing (TenantResolutionMiddleware)
+                        client.DefaultRequestHeaders.Add(TenantResolutionMiddleware.TenantIdHeader, TestTenantId);
                     }
                 };
 
@@ -162,7 +188,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
                         { "ExternalApplicationsApiClient:BaseUrl", client.BaseAddress!.ToString() },
-                        { "ExternalApplicationsApiClient:RequestTokenExchange", "false" }
+                        { "ExternalApplicationsApiClient:RequestTokenExchange", "false" },
+                        { "ExternalApplicationsApiClient:TenantId", TestTenantId }
                     })
                     .Build();
 

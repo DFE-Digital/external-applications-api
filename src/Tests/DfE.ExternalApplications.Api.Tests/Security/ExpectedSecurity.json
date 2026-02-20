@@ -91,6 +91,11 @@
       "ExpectedSecurity": "Authorize: Policy=CanDeleteApplicationFiles"
     },
     {
+      "Controller": "ApplicationsController",
+      "Action": "DownloadApplicationPreviewHtmlAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
+    },
+    {
       "Controller": "NotificationsController",
       "Action": "CreateNotificationAsync",
       "ExpectedSecurity": "Authorize: Policy=CanWriteNotifications"
@@ -159,6 +164,11 @@
       "Controller": "UserFeedbackController",
       "Action": "PostAsync",
       "ExpectedSecurity": "AllowAnonymous"
+    },
+    {
+      "Controller": "DiagnosticsController",
+      "Action": "Get",
+      "ExpectedSecurity": "Authorize"
     }
   ]
 }

@@ -1,9 +1,11 @@
-﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Infrastructure.Database;
+using DfE.ExternalApplications.Utils.File;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Tests.Common.Seeders
 {
@@ -26,15 +28,20 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
         public const string TemplatePermissionId2 = "08a25ca0-5890-4bd5-a441-552ec9c13ee2";
         public const string SubmitterRoleId = "a5d3d871-ce57-47b9-807d-de5c1551f9f2";
 
+        /// <summary>
+        /// File ID used when seeding "existing file" for UploadFileAsync_ShouldReturnBadRequest_WhenFileAlreadyExists.
+        /// A response body referencing this ID is also seeded so the handler returns 409 Conflict.
+        /// </summary>
+        public const string ExistingFileIdForConflictTest = "a1b2c3d4-e5f6-4780-9123-456789abcdef";
 
         public static void SeedTestData(ExternalApplicationsContext ctx)
         {
             var roleAdmin = new Role(new RoleId(RoleConstants.AdminRoleId), "Administrator");
             var roleSubmitter = new Role(new RoleId(new Guid(SubmitterRoleId)), "Submitter");
             var roleUser = new Role(new RoleId(RoleConstants.UserRoleId), "User");
-            ctx.Roles.AddRange(roleAdmin, roleSubmitter, roleUser);
-
             var now = DateTime.UtcNow;
+
+            ctx.Roles.AddRange(roleAdmin, roleSubmitter, roleUser);
 
             var aliceId = new UserId(new Guid(AliceId));
             var alice = new User(
@@ -325,8 +332,43 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
             );
             ctx.ApplicationResponses.Add(response2);
 
+            ctx.SaveChanges();
+        }
 
-
+        /// <summary>
+        /// Seeds standard test data plus a File and a latest ApplicationResponse that references it.
+        /// Used by UploadFileAsync_ShouldReturnBadRequest_WhenFileAlreadyExists so a single upload
+        /// of "large-file.jpg" hits the "file already exists and is in use" path and returns 409.
+        /// </summary>
+        public static void SeedTestDataWithExistingFile(ExternalApplicationsContext ctx)
+        {
+            SeedTestData(ctx);
+            var applicationId = new ApplicationId(new Guid(ApplicationId));
+            var bobId = new UserId(new Guid(BobId));
+            var now = DateTime.UtcNow;
+            var existingFileId = new FileId(new Guid(ExistingFileIdForConflictTest));
+            var hashedFileName = FileNameHasher.HashFileName("large-file.jpg");
+            var existingFile = new File(
+                existingFileId,
+                applicationId,
+                name: "large-file.jpg",
+                description: null,
+                originalFileName: "large-file.jpg",
+                fileName: hashedFileName,
+                path: ApplicationReference,
+                uploadedOn: now,
+                uploadedBy: bobId,
+                fileSize: 0);
+            ctx.Files.Add(existingFile);
+            var responseWithFileRef = new ApplicationResponse(
+                new ResponseId(Guid.NewGuid()),
+                applicationId,
+                responseBody: $"{{\"fileId\": \"{ExistingFileIdForConflictTest}\"}}",
+                createdOn: now.AddMinutes(10),
+                createdBy: bobId,
+                lastModifiedOn: null,
+                lastModifiedBy: null);
+            ctx.ApplicationResponses.Add(responseWithFileRef);
             ctx.SaveChanges();
         }
     }

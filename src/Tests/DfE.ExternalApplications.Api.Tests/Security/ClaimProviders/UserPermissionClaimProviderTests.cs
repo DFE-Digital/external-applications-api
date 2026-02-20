@@ -50,8 +50,8 @@ public class UserPermissionClaimProviderTests
 
         // Assert
         Assert.Empty(result);
-        await _cacheService.DidNotReceive().GetOrAddAsync<IEnumerable<Claim>>(
-            Arg.Any<string>(), Arg.Any<Func<Task<IEnumerable<Claim>>>>(), Arg.Any<string>());
+        await _cacheService.DidNotReceive().GetOrAddAsync<List<string>>(
+            Arg.Any<string>(), Arg.Any<Func<Task<List<string>>>>(), Arg.Any<string>());
     }
 
     [Fact]
@@ -69,8 +69,8 @@ public class UserPermissionClaimProviderTests
 
         // Assert
         Assert.Empty(result);
-        await _cacheService.DidNotReceive().GetOrAddAsync<IEnumerable<Claim>>(
-            Arg.Any<string>(), Arg.Any<Func<Task<IEnumerable<Claim>>>>(), Arg.Any<string>());
+        await _cacheService.DidNotReceive().GetOrAddAsync<List<string>>(
+            Arg.Any<string>(), Arg.Any<Func<Task<List<string>>>>(), Arg.Any<string>());
     }
 
     [Fact]
@@ -87,8 +87,8 @@ public class UserPermissionClaimProviderTests
 
         // Assert
         Assert.Empty(result);
-        await _cacheService.DidNotReceive().GetOrAddAsync<IEnumerable<Claim>>(
-            Arg.Any<string>(), Arg.Any<Func<Task<IEnumerable<Claim>>>>(), Arg.Any<string>());
+        await _cacheService.DidNotReceive().GetOrAddAsync<List<string>>(
+            Arg.Any<string>(), Arg.Any<Func<Task<List<string>>>>(), Arg.Any<string>());
     }
 
     [Fact]
@@ -106,8 +106,8 @@ public class UserPermissionClaimProviderTests
         // Assert
         Assert.Empty(result);
         _logger.Received(1).LogWarning("UserPermissionsClaimProvider() > User Email Address not found.");
-        await _cacheService.DidNotReceive().GetOrAddAsync<IEnumerable<Claim>>(
-            Arg.Any<string>(), Arg.Any<Func<Task<IEnumerable<Claim>>>>(), Arg.Any<string>());
+        await _cacheService.DidNotReceive().GetOrAddAsync<List<string>>(
+            Arg.Any<string>(), Arg.Any<Func<Task<List<string>>>>(), Arg.Any<string>());
     }
 
     [Fact]
@@ -126,8 +126,8 @@ public class UserPermissionClaimProviderTests
         // Assert
         Assert.Empty(result);
         _logger.Received(1).LogWarning("UserPermissionsClaimProvider() > User Email Address not found.");
-        await _cacheService.DidNotReceive().GetOrAddAsync<IEnumerable<Claim>>(
-            Arg.Any<string>(), Arg.Any<Func<Task<IEnumerable<Claim>>>>(), Arg.Any<string>());
+        await _cacheService.DidNotReceive().GetOrAddAsync<List<string>>(
+            Arg.Any<string>(), Arg.Any<Func<Task<List<string>>>>(), Arg.Any<string>());
     }
 
     [Fact]
@@ -141,26 +141,24 @@ public class UserPermissionClaimProviderTests
             new Claim(ClaimTypes.Email, email)
         }));
 
-        var cachedClaims = new List<Claim>
-        {
-            new("permission", "Application:123:Read"),
-            new("permission", "Template:456:Write")
-        };
+        var cachedValues = new List<string> { "Application:123:Read", "Template:456:Write" };
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(cachedClaims);
+            .Returns(cachedValues);
 
         // Act
-        var result = await _provider.GetClaimsAsync(principal);
+        var result = (await _provider.GetClaimsAsync(principal)).ToList();
 
         // Assert
-        Assert.Equal(cachedClaims, result);
-        await _cacheService.Received(1).GetOrAddAsync<IEnumerable<Claim>>(
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, c => c.Type == "permission" && c.Value == "Application:123:Read");
+        Assert.Contains(result, c => c.Type == "permission" && c.Value == "Template:456:Write");
+        await _cacheService.Received(1).GetOrAddAsync<List<string>>(
             Arg.Is<string>(key => key.StartsWith("UserClaims_")),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             nameof(UserPermissionClaimProvider));
     }
 
@@ -178,11 +176,11 @@ public class UserPermissionClaimProviderTests
         var emptyUsers = new User[0].AsQueryable().BuildMockDbSet();
         _userRepo.Query().Returns(emptyUsers);
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(callInfo => callInfo.Arg<Func<Task<IEnumerable<Claim>>>>()());
+            .Returns(callInfo => callInfo.Arg<Func<Task<List<string>>>>()());
 
         // Act
         var result = await _provider.GetClaimsAsync(principal);
@@ -220,11 +218,11 @@ public class UserPermissionClaimProviderTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         _userRepo.Query().Returns(users);
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(callInfo => callInfo.Arg<Func<Task<IEnumerable<Claim>>>>()());
+            .Returns(callInfo => callInfo.Arg<Func<Task<List<string>>>>()());
 
         // Act
         var result = await _provider.GetClaimsAsync(principal);
@@ -281,11 +279,11 @@ public class UserPermissionClaimProviderTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         _userRepo.Query().Returns(users);
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(callInfo => callInfo.Arg<Func<Task<IEnumerable<Claim>>>>()());
+            .Returns(callInfo => callInfo.Arg<Func<Task<List<string>>>>()());
 
         // Act
         var result = (await _provider.GetClaimsAsync(principal)).ToList();
@@ -342,11 +340,11 @@ public class UserPermissionClaimProviderTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         _userRepo.Query().Returns(users);
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(callInfo => callInfo.Arg<Func<Task<IEnumerable<Claim>>>>()());
+            .Returns(callInfo => callInfo.Arg<Func<Task<List<string>>>>()());
 
         // Act
         var result = (await _provider.GetClaimsAsync(principal)).ToList();
@@ -418,11 +416,11 @@ public class UserPermissionClaimProviderTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         _userRepo.Query().Returns(users);
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(callInfo => callInfo.Arg<Func<Task<IEnumerable<Claim>>>>()());
+            .Returns(callInfo => callInfo.Arg<Func<Task<List<string>>>>()());
 
         // Act
         var result = (await _provider.GetClaimsAsync(principal)).ToList();
@@ -490,11 +488,11 @@ public class UserPermissionClaimProviderTests
         var users = new[] { user }.AsQueryable().BuildMockDbSet();
         _userRepo.Query().Returns(users);
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(callInfo => callInfo.Arg<Func<Task<IEnumerable<Claim>>>>()());
+            .Returns(callInfo => callInfo.Arg<Func<Task<List<string>>>>()());
 
         // Act
         var result = (await _provider.GetClaimsAsync(principal)).ToList();
@@ -519,19 +517,19 @@ public class UserPermissionClaimProviderTests
         var emptyUsers = new User[0].AsQueryable().BuildMockDbSet();
         _userRepo.Query().Returns(emptyUsers);
 
-        _cacheService.GetOrAddAsync<IEnumerable<Claim>>(
+        _cacheService.GetOrAddAsync<List<string>>(
             Arg.Any<string>(),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             Arg.Any<string>())
-            .Returns(callInfo => callInfo.Arg<Func<Task<IEnumerable<Claim>>>>()());
+            .Returns(callInfo => callInfo.Arg<Func<Task<List<string>>>>()());
 
         // Act
         await _provider.GetClaimsAsync(principal);
 
         // Assert
-        await _cacheService.Received(1).GetOrAddAsync<IEnumerable<Claim>>(
+        await _cacheService.Received(1).GetOrAddAsync<List<string>>(
             Arg.Is<string>(key => key.StartsWith("UserClaims_") && key.Length > "UserClaims_".Length),
-            Arg.Any<Func<Task<IEnumerable<Claim>>>>(),
+            Arg.Any<Func<Task<List<string>>>>(),
             nameof(UserPermissionClaimProvider));
     }
 }

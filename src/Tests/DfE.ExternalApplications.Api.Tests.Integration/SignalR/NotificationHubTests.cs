@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Tests.Common.Customizations;
 using DfE.ExternalApplications.Tests.Common.Seeders;
+using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -13,6 +14,19 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.SignalR;
 
 public class NotificationHubTests
 {
+    /// <summary>Tenant ID used by CustomWebApplicationDbContextFactoryCustomization; required for SignalR negotiate (TenantResolutionMiddleware).</summary>
+    private const string TestTenantId = "11111111-1111-4111-8111-111111111111";
+
+    private const string TenantIdHeader = "X-Tenant-ID";
+
+    private static void AddTenantAndCookiesToHubOptions(HttpConnectionOptions options, CustomWebApplicationDbContextFactory<Program> factory, IList<string>? cookies = null)
+    {
+        options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
+        options.Headers.Add(TenantIdHeader, TestTenantId);
+        if (cookies is { Count: > 0 })
+            options.Headers.Add("Cookie", string.Join("; ", cookies));
+    }
+
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task Hub_ShouldConnectSuccessfully_WhenValidTokenProvided(
@@ -43,14 +57,7 @@ public class NotificationHubTests
             .ToList();
 
         var connection = new HubConnectionBuilder()
-            .WithUrl("http://localhost/hubs/notifications", options =>
-            {
-                options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                if (authCookies.Any())
-                {
-                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
-                }
-            })
+            .WithUrl("http://localhost/hubs/notifications", options => AddTenantAndCookiesToHubOptions(options, factory, authCookies))
             .Build();
 
         // Act
@@ -93,14 +100,7 @@ public class NotificationHubTests
             .ToList();
 
         var connection = new HubConnectionBuilder()
-            .WithUrl("http://localhost/hubs/notifications", options =>
-            {
-                options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                if (cookiePairs2.Any())
-                {
-                    options.Headers.Add("Cookie", string.Join("; ", cookiePairs2));
-                }
-            })
+            .WithUrl("http://localhost/hubs/notifications", options => AddTenantAndCookiesToHubOptions(options, factory, cookiePairs2))
             .Build();
 
         // Act
@@ -119,12 +119,9 @@ public class NotificationHubTests
     public async Task Hub_ShouldReturnUnauthorized_WhenNoCookieProvided(
         CustomWebApplicationDbContextFactory<Program> factory)
     {
-        // Arrange
+        // Arrange - X-Tenant-ID required so we get past tenant resolution and fail on auth
         var connection = new HubConnectionBuilder()
-            .WithUrl("http://localhost/hubs/notifications", options =>
-            {
-                options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-            })
+            .WithUrl("http://localhost/hubs/notifications", options => AddTenantAndCookiesToHubOptions(options, factory))
             .Build();
 
         // Act & Assert - should fail due to missing hub auth cookie
@@ -179,14 +176,7 @@ public class NotificationHubTests
             .ToList();
 
         var connection = new HubConnectionBuilder()
-            .WithUrl("http://localhost/hubs/notifications", options =>
-            {
-                options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                if (authCookies.Any())
-                {
-                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
-                }
-            })
+            .WithUrl("http://localhost/hubs/notifications", options => AddTenantAndCookiesToHubOptions(options, factory, authCookies))
             .Build();
 
         // Act
@@ -214,6 +204,9 @@ public class NotificationHubTests
             new(ClaimTypes.Email, user1Email)
         };
 
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
         // Obtain hub auth cookie via HubAuthController flow
         var ticketReq = await httpClient.PostAsync("/auth/hub-ticket", content: null);
         ticketReq.EnsureSuccessStatusCode();
@@ -229,29 +222,11 @@ public class NotificationHubTests
             .ToList();
 
         var connection1 = new HubConnectionBuilder()
-            .WithUrl("http://localhost/hubs/notifications", options =>
-            {
-                options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                
-                // Add the authentication cookie to the SignalR connection
-                if (authCookies.Any())
-                {
-                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
-                }
-            })
+            .WithUrl("http://localhost/hubs/notifications", options => AddTenantAndCookiesToHubOptions(options, factory, authCookies))
             .Build();
 
         var connection2 = new HubConnectionBuilder()
-            .WithUrl("http://localhost/hubs/notifications", options =>
-            {
-                options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
-                
-                // Add the authentication cookie to the SignalR connection
-                if (authCookies.Any())
-                {
-                    options.Headers.Add("Cookie", string.Join("; ", authCookies));
-                }
-            })
+            .WithUrl("http://localhost/hubs/notifications", options => AddTenantAndCookiesToHubOptions(options, factory, authCookies))
             .Build();
 
         // Act

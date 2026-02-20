@@ -9,6 +9,7 @@ using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using Microsoft.AspNetCore.Http;
 using MockQueryable.NSubstitute;
 using NSubstitute;
+using System.Reflection;
 using System.Security.Claims;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
@@ -16,6 +17,22 @@ namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Applications;
 
 public class GetApplicationByReferenceQueryHandlerTests
 {
+    private const BindingFlags PublicInstance = BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy;
+
+    /// <summary>
+    /// Sets navigation properties so GetApplicationByReferenceDtoQueryObject's projection can run in-memory (MockQueryable).
+    /// </summary>
+    private static void SetNavigationProperties(
+        Domain.Entities.Application application,
+        TemplateVersion templateVersion,
+        Template template,
+        User? createdByUser = null)
+    {
+        application.GetType().GetProperty("TemplateVersion", PublicInstance)!.SetValue(application, templateVersion);
+        templateVersion.GetType().GetProperty("Template", PublicInstance)!.SetValue(templateVersion, template);
+        if (createdByUser != null)
+            application.GetType().GetProperty("CreatedByUser", PublicInstance)!.SetValue(application, createdByUser);
+    }
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization), typeof(ApplicationResponseCustomization), typeof(UserCustomization))]
     public async Task Handle_ShouldReturnApplicationDetails_WhenValidRequestWithAppId(
@@ -54,8 +71,6 @@ public class GetApplicationByReferenceQueryHandlerTests
             "{}",
             DateTime.UtcNow,
             user.Id!);
-        templateVersion.GetType().GetProperty("Template")?.SetValue(templateVersion, template);
-
         var application = new Domain.Entities.Application(
             applicationId,
             query.ApplicationReference,
@@ -63,7 +78,7 @@ public class GetApplicationByReferenceQueryHandlerTests
             DateTime.UtcNow,
             user.Id!);
 
-        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
+        SetNavigationProperties(application, templateVersion, template, createdByUser: user);
 
         var response = new ApplicationResponse(
             responseId,
@@ -71,8 +86,6 @@ public class GetApplicationByReferenceQueryHandlerTests
             "Test response body",
             DateTime.UtcNow,
             user.Id!);
-
-        application.GetType().GetProperty("CreatedByUser")?.SetValue(application, user);
 
         application.AddResponse(response);
 
@@ -90,8 +103,8 @@ public class GetApplicationByReferenceQueryHandlerTests
             httpContextAccessor,
             permissionCheckerService);
 
-        // Act
-        var result = await handler.Handle(query, CancellationToken.None);
+        // Act - use IncludeSchema: true so projection populates TemplateSchema (required for assertions)
+        var result = await handler.Handle(new GetApplicationByReferenceQuery(query.ApplicationReference, IncludeSchema: true), CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -150,7 +163,6 @@ public class GetApplicationByReferenceQueryHandlerTests
             "{}",
             DateTime.UtcNow,
             user.Id!);
-        templateVersion.GetType().GetProperty("Template")?.SetValue(templateVersion, template);
 
         var application = new Domain.Entities.Application(
             applicationId,
@@ -159,7 +171,7 @@ public class GetApplicationByReferenceQueryHandlerTests
             DateTime.UtcNow,
             user.Id!);
 
-        application.GetType().GetProperty("TemplateVersion")?.SetValue(application, templateVersion);
+        SetNavigationProperties(application, templateVersion, template, createdByUser: user);
 
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
@@ -175,8 +187,8 @@ public class GetApplicationByReferenceQueryHandlerTests
             httpContextAccessor,
             permissionCheckerService);
 
-        // Act
-        var result = await handler.Handle(query, CancellationToken.None);
+        // Act - use IncludeSchema: true so projection populates TemplateSchema
+        var result = await handler.Handle(new GetApplicationByReferenceQuery(query.ApplicationReference, IncludeSchema: true), CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -270,12 +282,26 @@ public class GetApplicationByReferenceQueryHandlerTests
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         var applicationId = new ApplicationId(Guid.NewGuid());
+        var templateVersionId = new TemplateVersionId(Guid.NewGuid());
+        var template = new Template(
+            new TemplateId(Guid.NewGuid()),
+            "Test Template",
+            DateTime.UtcNow,
+            user.Id!);
+        var templateVersion = new TemplateVersion(
+            templateVersionId,
+            template.Id!,
+            "1.0",
+            "{}",
+            DateTime.UtcNow,
+            user.Id!);
         var application = new Domain.Entities.Application(
             applicationId,
             query.ApplicationReference,
-            new TemplateVersionId(Guid.NewGuid()),
+            templateVersionId,
             DateTime.UtcNow,
             user.Id!);
+        SetNavigationProperties(application, templateVersion, template);
 
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);

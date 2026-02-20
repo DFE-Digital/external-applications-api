@@ -55,7 +55,7 @@ public class ClearNotificationsByContextCommandHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        await _notificationService.Received(1).ClearNotificationsByContextAsync(email, command.Context, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).ClearNotificationsByContextAsync(command.Context, email, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -146,7 +146,7 @@ public class ClearNotificationsByContextCommandHandlerTests
         // Assert
         Assert.True(result.IsSuccess);
         _permissionCheckerService.Received(1).HasPermission(ResourceType.Notifications, appId, AccessType.Write);
-        await _notificationService.Received(1).ClearNotificationsByContextAsync(appId, command.Context, Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).ClearNotificationsByContextAsync(command.Context, appId, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -167,7 +167,7 @@ public class ClearNotificationsByContextCommandHandlerTests
         _permissionCheckerService.HasPermission(ResourceType.Notifications, email, AccessType.Write).Returns(true);
 
         var exceptionMessage = "Test exception";
-        _notificationService.ClearNotificationsByContextAsync(email, command.Context, Arg.Any<CancellationToken>())
+        _notificationService.ClearNotificationsByContextAsync(command.Context, email, Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception(exceptionMessage));
 
         // Act

@@ -2,6 +2,7 @@ using AutoFixture;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.Authentication;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
 using DfE.ExternalApplications.Api;
+using DfE.ExternalApplications.Api.Middleware;
 using GovUK.Dfe.ExternalApplications.Api.Client.Extensions;
 using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Tests.Common.Seeders;
@@ -17,6 +18,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 using DfE.ExternalApplications.Tests.Common.Helpers;
 using GovUK.Dfe.ExternalApplications.Api.Client;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
@@ -25,10 +29,13 @@ using GovUK.Dfe.CoreLibs.Notifications.Interfaces;
 namespace DfE.ExternalApplications.Tests.Common.Customizations
 {
     /// <summary>
-    /// Test customization that keeps the real rate limiter for testing rate limiting behavior
+    /// Test customization that keeps the real rate limiter for testing rate limiting behavior.
+    /// Sends X-Tenant-ID so requests pass TenantResolutionMiddleware and reach the handler (otherwise 400).
     /// </summary>
     public class CustomWebApplicationDbContextFactoryWithRateLimitingCustomization : ICustomization
     {
+        private const string TestTenantId = "11111111-1111-4111-8111-111111111111";
+
         public void Customize(IFixture fixture)
         {
             fixture.Customize<CustomWebApplicationDbContextFactory<Program>>(composer => composer.FromFactory(() =>
@@ -133,10 +140,21 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         // Replace IEventPublisher with our mock to avoid hanging on MassTransit publish in tests
                         services.RemoveAll<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher>();
                         services.AddSingleton<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, MockEventPublisher>();
+                        
+                        // Replace Redis with in-memory alternatives so tests don't require a running Redis server
+                        services.RemoveAll<IConnectionMultiplexer>();
+                        services.RemoveAll<IDistributedCache>();
+                        services.RemoveAll<ICacheService<IRedisCacheType>>();
+                        services.RemoveAll<IAdvancedRedisCacheService>();
+                        services.AddDistributedMemoryCache();
+                        var mockRedisCache = new MockRedisCacheService();
+                        services.AddSingleton<ICacheService<IRedisCacheType>>(mockRedisCache);
+                        services.AddSingleton<IAdvancedRedisCacheService>(mockRedisCache);
                     },
                     ExternalHttpClientConfiguration = client =>
                     {
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "external-mock-token");
+                        client.DefaultRequestHeaders.Add(TenantResolutionMiddleware.TenantIdHeader, TestTenantId);
                     }
                 };
 
@@ -146,7 +164,8 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
                         { "ExternalApplicationsApiClient:BaseUrl", client.BaseAddress!.ToString() },
-                        { "ExternalApplicationsApiClient:RequestTokenExchange", "false" }
+                        { "ExternalApplicationsApiClient:RequestTokenExchange", "false" },
+                        { "ExternalApplicationsApiClient:TenantId", TestTenantId }
                     })
                     .Build();
 

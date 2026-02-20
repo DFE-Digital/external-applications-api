@@ -7,6 +7,7 @@ using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security.Models;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
@@ -69,7 +70,7 @@ public class ExchangeTokenQueryHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false,Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, null, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         userCustom.OverrideEmail = email;
@@ -127,7 +128,7 @@ public class ExchangeTokenQueryHandlerTests
 
         // Assert
         Assert.NotNull(result);
-        await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>());
+        await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, false, false, null, Arg.Any<CancellationToken>());
         await tokenService.Received(1).GetUserTokenModelAsync(Arg.Is<ClaimsPrincipal>(p => p.HasClaim(ClaimTypes.Role, user.Role.Name)));
     }
 
@@ -155,7 +156,7 @@ public class ExchangeTokenQueryHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, null, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         var user = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "test user", email, DateTime.UtcNow,
@@ -195,7 +196,7 @@ public class ExchangeTokenQueryHandlerTests
     {
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>()));
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, null, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         var handler = new ExchangeTokenQueryHandler(
@@ -239,7 +240,8 @@ public class ExchangeTokenQueryHandlerTests
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        // Handler calls 5-arg overload (validInternalAuthReq, tenantInternalAuthOptions)
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, null, Arg.Any<CancellationToken>())
             .Returns(claimsPrincipal);
 
         var emptyQueryable = new List<User>().AsQueryable().BuildMock();
@@ -274,10 +276,14 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
         [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
-        // Arrange
+        // Arrange - when validation throws, handler should let SecurityTokenException propagate
         var exception = new SecurityTokenException("Invalid token");
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
-            .Throws(exception);
+        var faultedTask = Task.FromException<ClaimsPrincipal>(exception);
+        // Handler calls 5-arg overload; set up both overloads so the mock is used regardless of which is bound
+        externalValidator.ValidateIdTokenAsync(Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(faultedTask);
+        externalValidator.ValidateIdTokenAsync(Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(faultedTask);
 
         var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, tenantContextAccessor, internalRequestChecker, logger);
 
@@ -306,7 +312,7 @@ public class ExchangeTokenQueryHandlerTests
         tenantContextAccessor.CurrentTenant.Returns(tenant);
 
         var claims = new List<Claim> { new(ClaimTypes.Email, email) };
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, null, Arg.Any<CancellationToken>())
             .Returns(new ClaimsPrincipal(new ClaimsIdentity(claims)));
 
         userCustom.OverrideEmail = email;
@@ -365,7 +371,7 @@ public class ExchangeTokenQueryHandlerTests
         tenantContextAccessor.CurrentTenant.Returns(tenant);
 
         var claims = new List<Claim> { new(ClaimTypes.Email, email) };
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<CancellationToken>())
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, null, Arg.Any<CancellationToken>())
             .Returns(new ClaimsPrincipal(new ClaimsIdentity(claims)));
 
         var handler = new ExchangeTokenQueryHandler(

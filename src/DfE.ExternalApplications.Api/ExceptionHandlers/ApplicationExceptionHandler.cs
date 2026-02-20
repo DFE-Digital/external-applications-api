@@ -1,4 +1,4 @@
-﻿using GovUK.Dfe.CoreLibs.Http.Interfaces;
+using GovUK.Dfe.CoreLibs.Http.Interfaces;
 using GovUK.Dfe.CoreLibs.Http.Models;
 using DfE.ExternalApplications.Application.Common.Exceptions;
 
@@ -16,6 +16,8 @@ namespace DfE.ExternalApplications.Api.ExceptionHandlers
             return exceptionType.Name switch
             {
                 nameof(ForbiddenException) => true,
+                nameof(UnauthorizedException) => true,
+                nameof(AuthorizationForbiddenException) => true,
                 nameof(ConflictException) => true,
                 nameof(NotFoundException) => true,
                 nameof(BadRequestException) => true,
@@ -32,6 +34,8 @@ namespace DfE.ExternalApplications.Api.ExceptionHandlers
             {
                 nameof(BadRequestException) => (400, "Invalid request: " + exception.Message),
                 nameof(ForbiddenException) => (401, "Unauthorized access, " + exception.Message),
+                nameof(UnauthorizedException) => (401, "Unauthorized - no valid user token"),
+                nameof(AuthorizationForbiddenException) => (403, "Forbidden - user does not have required permissions"),
                 nameof(ConflictException) => (409, "Conflict error, " + exception.Message),
                 nameof(RateLimitExceededException) => (429, "TooManyRequests: "+ exception.Message),
                 nameof(NotFoundException) => (404, "Resource not found, " + exception.Message),

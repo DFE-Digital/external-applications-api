@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
   </PropertyGroup>
@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\DfE.ExternalApplications.Api\DfE.ExternalApplications.Api.csproj" />
     <ProjectReference Include="..\..\DfE.ExternalApplications.Application\DfE.ExternalApplications.Application.csproj" />
     <ProjectReference Include="..\..\DfE.ExternalApplications.Infrastructure\DfE.ExternalApplications.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\DfE.ExternalApplications.Utils\DfE.ExternalApplications.Utils.csproj" />
   </ItemGroup>
 
   <ItemGroup>
