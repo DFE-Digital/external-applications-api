@@ -1,7 +1,7 @@
 using Asp.Versioning.ApiExplorer;
 using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.Extensions.Options;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace DfE.ExternalApplications.Api.Swagger
@@ -52,12 +52,7 @@ namespace DfE.ExternalApplications.Api.Swagger
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
-                BearerFormat = "JWT",
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                BearerFormat = "JWT"
             });
             options.OperationFilter<AuthenticationHeaderOperationFilter>();
             options.OperationFilter<TenantHeaderOperationFilter>(_tenantConfigurationProvider);

@@ -1,4 +1,4 @@
-﻿ARG DOTNET_VERSION=8.0
+ARG DOTNET_VERSION=10.0
 
 # ============================================================
 # Stage 1 - Build + Install Playwright (Ubuntu SDK)
@@ -37,7 +37,7 @@ WORKDIR /build
 ENV PATH=$PATH:/root/.dotnet/tools
 ENV DOTNET_ROOT=/usr/share/dotnet
 
-RUN dotnet tool install --global dotnet-ef --version 8.*
+RUN dotnet tool install --global dotnet-ef --version 10.*
 
 RUN mkdir /sql
 

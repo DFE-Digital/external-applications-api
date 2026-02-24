@@ -1,21 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="GovUK.Dfe.CoreLibs.Security" Version="1.1.24-prerelease-3" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.18" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.18">
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.18" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.18" />
-		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Identity.Web" Version="3.9.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Identity.Web" Version="4.3.0" />
 		<PackageReference Include="Microsoft.Playwright" Version="1.49.0" />
 	</ItemGroup>
 
