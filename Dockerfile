@@ -71,23 +71,23 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y \
         libnss3 \
-        libatk1.0-0 \
-        libatk-bridge2.0-0 \
-        libcups2 \
+        libatk1.0-0t64 \
+        libatk-bridge2.0-0t64 \
+        libcups2t64 \
         libdbus-1-3 \
         libdrm2 \
         libxcomposite1 \
         libxdamage1 \
         libxrandr2 \
         libgbm1 \
-        libasound2 \
+        libasound2t64 \
         libxshmfence1 \
         libxkbcommon0 \
         libxext6 \
         libxfixes3 \
         libx11-6 \
         libx11-xcb1 \
-        libglib2.0-0 \
+        libglib2.0-0t64 \
         libgl1 \
         libpango-1.0-0 \
         libpangocairo-1.0-0 \
