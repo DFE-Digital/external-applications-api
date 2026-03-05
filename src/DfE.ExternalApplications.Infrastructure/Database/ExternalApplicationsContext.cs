@@ -50,8 +50,11 @@ public class ExternalApplicationsContext : DbContext
             optionsBuilder.UseSqlServer(connectionString);
         }
 
-        var mediator = _serviceProvider.GetRequiredService<IMediator>();
-        optionsBuilder.AddInterceptors(new DomainEventDispatcherInterceptor(mediator));
+        var mediator = _serviceProvider?.GetService<IMediator>();
+        if (mediator != null)
+        {
+            optionsBuilder.AddInterceptors(new DomainEventDispatcherInterceptor(mediator));
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
