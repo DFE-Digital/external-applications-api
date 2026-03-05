@@ -3,7 +3,7 @@ ARG DOTNET_VERSION=10.0
 # ============================================================
 # Stage 1 - Build + Install Playwright (Ubuntu SDK)
 # ============================================================
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-jammy AS build
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-noble AS build
 WORKDIR /build
 ARG CI
 ENV CI=${CI}
@@ -64,7 +64,7 @@ COPY --from=build /app/appsettings* /DfE.ExternalApplications.Api/
 # Stage 4 - Final Runtime (Ubuntu) + Playwright Runtime Support
 # ============================================================
 
-FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-jammy AS final
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble AS final
 WORKDIR /app
 
 # Install Playwright required system dependencies
