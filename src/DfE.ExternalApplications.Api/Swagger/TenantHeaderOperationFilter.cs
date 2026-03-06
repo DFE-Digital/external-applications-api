@@ -1,7 +1,7 @@
+using System.Text.Json.Nodes;
 using DfE.ExternalApplications.Api.Middleware;
 using DfE.ExternalApplications.Domain.Tenancy;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace DfE.ExternalApplications.Api.Swagger;
@@ -20,17 +20,14 @@ public class TenantHeaderOperationFilter : IOperationFilter
 
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        operation.Parameters ??= new List<OpenApiParameter>();
+        operation.Parameters ??= new List<IOpenApiParameter>();
 
         var tenants = _tenantConfigurationProvider.GetAllTenants();
         
-        // Create enum values for the dropdown
         var tenantOptions = tenants
-            .Select(t => new OpenApiString(t.Id.ToString()))
-            .Cast<IOpenApiAny>()
+            .Select(t => (JsonNode)JsonValue.Create(t.Id.ToString())!)
             .ToList();
 
-        // Build description with tenant names for reference
         var tenantDescriptions = string.Join("\n", 
             tenants.Select(t => $"- `{t.Id}` = {t.Name}"));
 
@@ -42,7 +39,7 @@ public class TenantHeaderOperationFilter : IOperationFilter
             Description = $"Tenant identifier (GUID). Available tenants:\n{tenantDescriptions}",
             Schema = new OpenApiSchema
             {
-                Type = "string",
+                Type = JsonSchemaType.String,
                 Format = "uuid",
                 Enum = tenantOptions.Any() ? tenantOptions : null,
                 Default = tenantOptions.FirstOrDefault()
@@ -52,4 +49,3 @@ public class TenantHeaderOperationFilter : IOperationFilter
         operation.Parameters.Insert(0, parameter);
     }
 }
-

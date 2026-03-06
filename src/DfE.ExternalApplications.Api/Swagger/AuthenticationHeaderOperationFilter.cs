@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace DfE.ExternalApplications.Api.Swagger
@@ -9,17 +9,10 @@ namespace DfE.ExternalApplications.Api.Swagger
         {
             operation.Security ??= new List<OpenApiSecurityRequirement>();
 
-            var userScheme = new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            };
+            var userScheme = new OpenApiSecuritySchemeReference("Bearer");
             operation.Security.Add(new OpenApiSecurityRequirement
             {
-                [userScheme] = Array.Empty<string>()
+                [userScheme] = new List<string>()
             });
         }
     }

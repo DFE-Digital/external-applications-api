@@ -1,9 +1,9 @@
-﻿ARG DOTNET_VERSION=8.0
+ARG DOTNET_VERSION=10.0
 
 # ============================================================
 # Stage 1 - Build + Install Playwright (Ubuntu SDK)
 # ============================================================
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-jammy AS build
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}-noble AS build
 WORKDIR /build
 ARG CI
 ENV CI=${CI}
@@ -37,7 +37,7 @@ WORKDIR /build
 ENV PATH=$PATH:/root/.dotnet/tools
 ENV DOTNET_ROOT=/usr/share/dotnet
 
-RUN dotnet tool install --global dotnet-ef --version 8.*
+RUN dotnet tool install --global dotnet-ef --version 10.*
 
 RUN mkdir /sql
 
@@ -64,30 +64,30 @@ COPY --from=build /app/appsettings* /DfE.ExternalApplications.Api/
 # Stage 4 - Final Runtime (Ubuntu) + Playwright Runtime Support
 # ============================================================
 
-FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-jammy AS final
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble AS final
 WORKDIR /app
 
 # Install Playwright required system dependencies
 RUN apt-get update && \
     apt-get install -y \
         libnss3 \
-        libatk1.0-0 \
-        libatk-bridge2.0-0 \
-        libcups2 \
+        libatk1.0-0t64 \
+        libatk-bridge2.0-0t64 \
+        libcups2t64 \
         libdbus-1-3 \
         libdrm2 \
         libxcomposite1 \
         libxdamage1 \
         libxrandr2 \
         libgbm1 \
-        libasound2 \
+        libasound2t64 \
         libxshmfence1 \
         libxkbcommon0 \
         libxext6 \
         libxfixes3 \
         libx11-6 \
         libx11-xcb1 \
-        libglib2.0-0 \
+        libglib2.0-0t64 \
         libgl1 \
         libpango-1.0-0 \
         libpangocairo-1.0-0 \
