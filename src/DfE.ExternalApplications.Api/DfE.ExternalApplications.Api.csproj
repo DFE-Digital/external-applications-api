@@ -5,8 +5,8 @@
 		<NoWarn>$(NoWarn);1591</NoWarn>
 		<TargetFramework>net10.0</TargetFramework>
     <UserSecretsId>f714ca7a-fc08-46ff-b0cc-373d6f04cf4c</UserSecretsId>
-	  <Version>1.1.4</Version>
-	  <InformationalVersion>1.1.4</InformationalVersion>
+	  <Version>1.1.5</Version>
+	  <InformationalVersion>1.1.5</InformationalVersion>
   </PropertyGroup>
 
 	<ItemGroup>
@@ -20,10 +20,6 @@
 		<PackageReference Include="Microsoft.Azure.SignalR" Version="1.32.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
 		<PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.0" />
 		<PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="4.4.0" />
