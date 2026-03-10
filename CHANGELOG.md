@@ -39,10 +39,6 @@ All notable changes to this service will be documented in this file.
 ### Notes
 - Updated CoreLibs Security package to support ExtIdentityValidator for multi-tenancy.
 
-## [1.1.5] – Public Beta
+## [1.2.0] – Public Beta
 ### Notes
 - Upgraded to .NET10
-
-## [1.1.6] – Public Beta
-### Notes
-- Updated domain names fort LSRP Dev and Test.
