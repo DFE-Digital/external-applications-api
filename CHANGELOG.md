@@ -42,3 +42,7 @@ All notable changes to this service will be documented in this file.
 ## [1.1.5] – Public Beta
 ### Notes
 - Upgraded to .NET10
+
+## [1.1.6] – Public Beta
+### Notes
+- Updated domain names fort LSRP Dev and Test.
