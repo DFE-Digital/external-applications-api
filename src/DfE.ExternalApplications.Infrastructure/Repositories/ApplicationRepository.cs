@@ -36,7 +36,7 @@ public sealed class ApplicationRepository(ExternalApplicationsContext dbContext)
         await DbContext.Applications
             .Where(a => a.Id == applicationId)
             .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(a => a.Status, ApplicationStatus.InProgress)
+                    .SetProperty(a => a.Status, a => a.Status == ApplicationStatus.Submitted ? a.Status : ApplicationStatus.InProgress)
                     .SetProperty(a => a.LastModifiedOn, lastModifiedOn)
                     .SetProperty(a => a.LastModifiedBy, lastModifiedBy),
                 cancellationToken);
