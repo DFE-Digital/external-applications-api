@@ -42,3 +42,7 @@ All notable changes to this service will be documented in this file.
 ## [1.2.0] – Public Beta
 ### Notes
 - Upgraded to .NET10
+
+## [1.2.1] – Public Beta
+### Notes
+- Updated LSRP appsettings for Production environment.
