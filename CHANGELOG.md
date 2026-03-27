@@ -50,3 +50,8 @@ All notable changes to this service will be documented in this file.
 ## [1.2.2] – Public Beta
 ### Notes
 - Updated LSRP appsettings for Production environment.
+
+## [1.2.3] – Public Beta
+### Notes
+- Disabled Test Auth in LSRP Test Environment.
+
