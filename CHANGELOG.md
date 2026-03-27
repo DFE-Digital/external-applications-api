@@ -45,4 +45,8 @@ All notable changes to this service will be documented in this file.
 
 ## [1.2.1] – Public Beta
 ### Notes
+- Updated application status update logic to not update the status if the application is already submitted.
+
+## [1.2.2] – Public Beta
+### Notes
 - Updated LSRP appsettings for Production environment.
