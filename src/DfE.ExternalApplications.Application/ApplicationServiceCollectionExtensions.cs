@@ -1,5 +1,4 @@
 using DfE.ExternalApplications.Application.Common.Behaviours;
-using DfE.ExternalApplications.Application.Common.Models;
 using DfE.ExternalApplications.Application.Consumers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
@@ -69,9 +68,6 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<ITemplateFactory, TemplateFactory>();
             services.AddTransient<IFileFactory, FileFactory>();
 
-            // Configure email template resolution from first tenant's config
-            services.Configure<ApplicationTemplatesConfiguration>(tenantConfig.GetSection("ApplicationTemplates"));
-            services.Configure<EmailTemplatesConfiguration>(tenantConfig.GetSection("EmailTemplates"));
             services.AddTransient<IEmailTemplateResolver, EmailTemplateResolver>();
 
             services.AddBackgroundService();
