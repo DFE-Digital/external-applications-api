@@ -55,3 +55,6 @@ All notable changes to this service will be documented in this file.
 ### Notes
 - Disabled Test Auth in LSRP Test Environment.
 
+## [1.2.4] – Public Beta
+### Notes
+- Fixed EmailTemplateResolver logic to support Multi-Tenancy.
