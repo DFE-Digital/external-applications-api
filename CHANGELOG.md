@@ -58,3 +58,7 @@ All notable changes to this service will be documented in this file.
 ## [1.2.4] – Public Beta
 ### Notes
 - Fixed EmailTemplateResolver logic to support Multi-Tenancy.
+
+## [1.2.5] – Public Beta
+### Notes
+- Updated LSRP template IDs for govuk notify
