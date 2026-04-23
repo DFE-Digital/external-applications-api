@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Security;
 using GovUK.Dfe.CoreLibs.Security.Authorization;
 using GovUK.Dfe.CoreLibs.Security.Configurations;
+using GovUK.Dfe.CoreLibs.Security.EntraSso;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
@@ -87,7 +88,27 @@ namespace DfE.ExternalApplications.Api.Security
 
             services.AddUserTokenService(baseConfig);
 
-            services.AddAuthentication(options =>
+            // Configure Entra SSO options from the first tenant that has it enabled
+            var entraSsoConfig = allTenants
+                .Select(t => t.Settings.GetSection(EntraSsoOptions.SectionName).Get<EntraSsoOptions>())
+                .FirstOrDefault(e => e is { Enabled: true });
+
+            services.ConfigureEntraSso(baseConfig);
+
+            // Collect Entra SSO issuers from all tenants for composite scheme routing
+            var entraSsoIssuers = allTenants
+                .Select(t => t.Settings.GetSection(EntraSsoOptions.SectionName).Get<EntraSsoOptions>())
+                .Where(e => e is { Enabled: true } && !string.IsNullOrEmpty(e.TenantId))
+                .SelectMany(e => new[]
+                {
+                    $"{e!.Instance.TrimEnd('/')}/{e.TenantId}/v2.0",
+                    $"https://sts.windows.net/{e.TenantId}/",
+                    $"https://login.microsoftonline.com/{e.TenantId}/v2.0"
+                })
+                .Distinct()
+                .ToHashSet();
+
+            var authBuilder = services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = AuthConstants.CompositeScheme;
                     options.DefaultChallengeScheme = AuthConstants.CompositeScheme;
@@ -102,9 +123,14 @@ namespace DfE.ExternalApplications.Api.Security
                             var token = header.Substring(7);
                             var handler = new JwtSecurityTokenHandler();
                             var jwt = handler.ReadJwtToken(token);
-                            return jwt.Issuer == tokenSettings.Issuer
-                                ? AuthConstants.UserScheme
-                                : AuthConstants.AzureAdScheme;
+
+                            if (jwt.Issuer == tokenSettings.Issuer)
+                                return AuthConstants.UserScheme;
+
+                            if (entraSsoIssuers.Contains(jwt.Issuer))
+                                return AuthConstants.EntraSsoScheme;
+
+                            return AuthConstants.AzureAdScheme;
                         }
                         return AuthConstants.AzureAdScheme;
                     };
@@ -218,6 +244,49 @@ namespace DfE.ExternalApplications.Api.Security
                         }
                     };
                 });
+
+            // Register Entra SSO JWT bearer validation when any tenant has it enabled
+            if (entraSsoConfig != null)
+            {
+                authBuilder.AddEntraSsoTokenValidation(
+                    baseConfig,
+                    schemeName: AuthConstants.EntraSsoScheme,
+                    sectionName: EntraSsoOptions.SectionName,
+                    jwtBearerEvents: new JwtBearerEvents
+                    {
+                        OnTokenValidated = context =>
+                        {
+                            var tenantAccessor = context.HttpContext.RequestServices.GetService<ITenantContextAccessor>();
+                            var tenant = tenantAccessor?.CurrentTenant;
+
+                            if (tenant != null)
+                            {
+                                var entraSsoSection = tenant.Settings.GetSection(EntraSsoOptions.SectionName);
+                                var expectedClientId = entraSsoSection["ClientId"];
+                                var expectedAudience = entraSsoSection["Audience"];
+
+                                var tokenAudience = context.Principal?.Claims
+                                    .FirstOrDefault(c => c.Type == "aud")?.Value;
+
+                                var validAudiences = new[] { expectedAudience, expectedClientId, $"api://{expectedClientId}" }
+                                    .Where(a => !string.IsNullOrEmpty(a));
+
+                                if (!string.IsNullOrEmpty(tokenAudience) && !validAudiences.Contains(tokenAudience))
+                                {
+                                    context.Fail($"Entra SSO token audience '{tokenAudience}' does not match tenant '{tenant.Name}'");
+                                }
+                            }
+
+                            return Task.CompletedTask;
+                        },
+                        OnAuthenticationFailed = context =>
+                        {
+                            var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
+                            logger?.LogWarning(context.Exception, "Entra SSO JWT authentication failed");
+                            return Task.CompletedTask;
+                        }
+                    });
+            }
 
             // set-up and define User and Template Permission policies
             var policyCustomizations = new Dictionary<string, Action<AuthorizationPolicyBuilder>>

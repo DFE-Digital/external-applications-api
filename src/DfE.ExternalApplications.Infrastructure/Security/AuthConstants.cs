@@ -2,10 +2,11 @@
 {
     public static class AuthConstants
     {
-        // Scheme names#
+        // Scheme names
         public const string CompositeScheme = "CompositeScheme";
         public const string UserScheme = "UserScheme";
         public const string AzureAdScheme = "AzureEntra";
+        public const string EntraSsoScheme = "EntraSso";
 
         // Header names & prefixes
         public const string AuthorizationHeader = "Authorization";
@@ -14,5 +15,6 @@
         // Configuration sections
         public const string ExternalIdpSection = "DfESignIn";
         public const string AzureAdSection = "AzureAd";
+        public const string EntraSsoSection = "EntraSso";
     }
 }

@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -54,33 +53,35 @@ public class TokenManagementMiddleware(RequestDelegate next, ILogger<TokenManage
                 {
                     // For web requests, force immediate logout and redirect
                     
-                    // Get authentication scheme to determine which schemes to sign out from
                     var authScheme = context.User?.Identity?.AuthenticationType;
                     
-                    // Sign out from appropriate schemes based on current authentication
                     if (authScheme == "AuthenticationTypes.Federation")
                     {
-                        // For OIDC, sign out from both cookie and OIDC schemes
                         await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                        await context.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+
+                        // Resolve the correct OIDC sign-out scheme dynamically.
+                        // DynamicAuthenticationSchemeProvider returns the active IdP
+                        // (DfE Sign-In or Entra SSO) based on configuration.
+                        var schemeProvider = context.RequestServices.GetService<IAuthenticationSchemeProvider>();
+                        var signOutScheme = await schemeProvider!.GetDefaultSignOutSchemeAsync();
+                        if (signOutScheme != null)
+                        {
+                            await context.SignOutAsync(signOutScheme.Name);
+                        }
                     }
                     else
                     {
-                        // For other schemes (like TestAuthentication), only sign out from default scheme
                         await context.SignOutAsync();
                     }
                     
-                    // Clear authentication-specific session data to prevent re-authentication
                     if (authScheme == "TestAuthentication")
                     {
-                        // Clear TestAuth session data to prevent infinite logout loop
                         context.Session.Remove("TestAuth:Email");
                         context.Session.Remove("TestAuth:Token");
                     }
                     else if (authScheme == "AuthenticationTypes.Federation")
                     {
-                        // Clear OIDC-related data to prevent re-authentication
-                        context.Session.Clear(); // Clear entire session for OIDC
+                        context.Session.Clear();
                     }
                     
                     // Redirect to home page or login page
