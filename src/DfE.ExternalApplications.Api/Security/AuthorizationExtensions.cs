@@ -33,33 +33,30 @@ namespace DfE.ExternalApplications.Api.Security
             var baseConfig = firstTenantForConfig?.Settings ?? configuration;
             
             // Register external identity validation with multi-provider support
-            // Each tenant's DfESignIn config is added as an isolated provider
+            // Each tenant's DfESignIn and Entra SSO configs are added as isolated providers
             // The validator will try each provider until one fully validates (issuer + audience must match same provider)
             services.AddExternalIdentityValidation(baseConfig, multiOpts =>
             {
                 foreach (var tenant in allTenants)
                 {
+                    // Add DfE Sign-In provider
                     var dfeSignInSection = tenant.Settings.GetSection("DfESignIn");
                     var discoveryEndpoint = dfeSignInSection["DiscoveryEndpoint"];
                     
-                    // Only add providers with valid discovery endpoints
                     if (!string.IsNullOrEmpty(discoveryEndpoint))
                     {
                         var providerOpts = new OpenIdConnectOptions
                         {
-                            // Identity
                             Issuer = dfeSignInSection["Issuer"],
                             Authority = dfeSignInSection["Authority"],
                             ClientId = dfeSignInSection["ClientId"],
                             ClientSecret = dfeSignInSection["ClientSecret"],
                             DiscoveryEndpoint = discoveryEndpoint,
                             
-                            // Validation settings
                             ValidateIssuer = bool.TryParse(dfeSignInSection["ValidateIssuer"], out var vi) ? vi : true,
                             ValidateAudience = bool.TryParse(dfeSignInSection["ValidateAudience"], out var va) ? va : true,
                             ValidateLifetime = bool.TryParse(dfeSignInSection["ValidateLifetime"], out var vl) ? vl : true,
                             
-                            // Other settings that may be configured
                             RedirectUri = dfeSignInSection["RedirectUri"],
                             Prompt = dfeSignInSection["Prompt"],
                             ResponseType = dfeSignInSection["ResponseType"] ?? "code",
@@ -70,7 +67,6 @@ namespace DfE.ExternalApplications.Api.Security
                             NameClaimType = dfeSignInSection["NameClaimType"] ?? "email"
                         };
                         
-                        // Add scopes if configured
                         var scopesSection = dfeSignInSection.GetSection("Scopes");
                         if (scopesSection.Exists())
                         {
@@ -78,6 +74,37 @@ namespace DfE.ExternalApplications.Api.Security
                         }
                         
                         multiOpts.Providers.Add(providerOpts);
+                    }
+
+                    // Add Entra SSO provider (token validation for ID tokens passed during exchange)
+                    var entraSsoSection = tenant.Settings.GetSection(EntraSsoOptions.SectionName);
+                    var entraSso = entraSsoSection.Get<EntraSsoOptions>();
+                    if (entraSso is { Enabled: true } && !string.IsNullOrEmpty(entraSso.TenantId))
+                    {
+                        var instance = entraSso.Instance.TrimEnd('/');
+                        var entraProvider = new OpenIdConnectOptions
+                        {
+                            Issuer = $"{instance}/{entraSso.TenantId}/v2.0",
+                            Authority = entraSso.Authority,
+                            ClientId = entraSso.ClientId,
+                            DiscoveryEndpoint = $"{instance}/{entraSso.TenantId}/v2.0/.well-known/openid-configuration",
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidIssuers = new List<string>
+                            {
+                                $"{instance}/{entraSso.TenantId}/v2.0",
+                                $"https://sts.windows.net/{entraSso.TenantId}/",
+                                $"https://login.microsoftonline.com/{entraSso.TenantId}/v2.0"
+                            },
+                            ValidAudiences = new List<string>
+                            {
+                                entraSso.ClientId,
+                                $"api://{entraSso.ClientId}"
+                            }
+                        };
+
+                        multiOpts.Providers.Add(entraProvider);
                     }
                 }
             });
@@ -87,7 +114,7 @@ namespace DfE.ExternalApplications.Api.Security
 
             services.AddUserTokenService(baseConfig);
 
-            services.AddAuthentication(options =>
+            var authBuilder = services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = AuthConstants.CompositeScheme;
                     options.DefaultChallengeScheme = AuthConstants.CompositeScheme;
@@ -102,9 +129,11 @@ namespace DfE.ExternalApplications.Api.Security
                             var token = header.Substring(7);
                             var handler = new JwtSecurityTokenHandler();
                             var jwt = handler.ReadJwtToken(token);
-                            return jwt.Issuer == tokenSettings.Issuer
-                                ? AuthConstants.UserScheme
-                                : AuthConstants.AzureAdScheme;
+
+                            if (jwt.Issuer == tokenSettings.Issuer)
+                                return AuthConstants.UserScheme;
+
+                            return AuthConstants.AzureAdScheme;
                         }
                         return AuthConstants.AzureAdScheme;
                     };

@@ -340,6 +340,16 @@ public class TokenStateManager(
             }
         }
 
+        if (schemeName.Contains("Entra", StringComparison.OrdinalIgnoreCase))
+        {
+            strategy = authStrategies.FirstOrDefault(s =>
+                s.SchemeName.Contains("Entra", StringComparison.OrdinalIgnoreCase));
+            if (strategy != null)
+            {
+                return strategy;
+            }
+        }
+
         // Log available strategies for debugging
         var availableStrategies = string.Join(", ", authStrategies.Select(s => s.SchemeName));
         
@@ -373,19 +383,23 @@ public class TokenStateManager(
 
     private string? GetActualAuthenticationScheme(HttpContext httpContext)
     {
-        // For OIDC flows, the AuthenticationType is often "AuthenticationTypes.Federation"
-        // but we need the actual authentication scheme used ("OpenIdConnect")
         var authType = httpContext.User?.Identity?.AuthenticationType;
         
         if (string.IsNullOrEmpty(authType))
             return null;
-            
-        // Map common identity authentication types to actual scheme names
+
+        // "AuthenticationTypes.Federation" is produced by any OIDC handler (DfE Sign-In or Entra SSO).
+        // Delegate to the composite strategy to resolve which OIDC provider is currently active.
+        if (authType == "AuthenticationTypes.Federation")
+        {
+            var activeScheme = authStrategies.FirstOrDefault()?.SchemeName;
+            return activeScheme ?? "OpenIdConnect";
+        }
+
         return authType switch
         {
-            "AuthenticationTypes.Federation" => "OpenIdConnect",
-            "TestAuthentication" => "TestAuthentication", 
-            _ => authType // Fallback to original value
+            "TestAuthentication" => "TestAuthentication",
+            _ => authType
         };
     }
 }
