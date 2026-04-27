@@ -62,3 +62,7 @@ All notable changes to this service will be documented in this file.
 ## [1.2.5] – Public Beta
 ### Notes
 - Updated LSRP template IDs for govuk notify
+
+## [1.2.6] – Public Beta
+### Notes
+- Added support for EntraSSO validation and authentication
