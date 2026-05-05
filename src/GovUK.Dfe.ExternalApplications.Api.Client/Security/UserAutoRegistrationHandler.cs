@@ -273,7 +273,7 @@ public class UserAutoRegistrationHandler : DelegatingHandler
             }
 
             // Check if issuer contains "education" (case-insensitive)
-            var isEducationIssuer = issuer.Contains("education", StringComparison.OrdinalIgnoreCase);
+            var isEducationIssuer = issuer.Contains("education", StringComparison.OrdinalIgnoreCase) || issuer.Contains("login.microsoftonline.com", StringComparison.OrdinalIgnoreCase);
 
             _logger.LogInformation("Token issuer validation: {Issuer} - IsEducation: {IsEducation}", 
                 issuer, isEducationIssuer);
