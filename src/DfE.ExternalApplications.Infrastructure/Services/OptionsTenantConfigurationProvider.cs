@@ -5,15 +5,39 @@ using Microsoft.Extensions.Configuration;
 
 namespace DfE.ExternalApplications.Infrastructure.Services;
 
-public class OptionsTenantConfigurationProvider(IConfiguration configuration) : ITenantConfigurationProvider
+public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
 {
-    private readonly IReadOnlyDictionary<Guid, TenantConfiguration> _tenants = BuildAllTenants(configuration);
+    private readonly IReadOnlyDictionary<Guid, TenantConfiguration> _tenants;
+    private readonly IReadOnlyDictionary<string, TenantConfiguration> _tenantsByOrigin;
+
+    public OptionsTenantConfigurationProvider(IConfiguration configuration)
+    {
+        _tenants = BuildAllTenants(configuration);
+        _tenantsByOrigin = BuildOriginIndex(_tenants.Values);
+    }
 
     public TenantConfiguration? GetTenant(Guid id)
         => _tenants.TryGetValue(id, out var tenant) ? tenant : null;
 
+    public TenantConfiguration? GetTenantByOrigin(string origin)
+        => _tenantsByOrigin.TryGetValue(origin, out var tenant) ? tenant : null;
+
     public IReadOnlyCollection<TenantConfiguration> GetAllTenants()
         => _tenants.Values.ToArray();
+
+    private static IReadOnlyDictionary<string, TenantConfiguration> BuildOriginIndex(
+        IEnumerable<TenantConfiguration> tenants)
+    {
+        var result = new Dictionary<string, TenantConfiguration>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tenant in tenants)
+        {
+            foreach (var origin in tenant.FrontendOrigins)
+            {
+                result[origin] = tenant;
+            }
+        }
+        return result;
+    }
 
     private static IReadOnlyDictionary<Guid, TenantConfiguration> BuildAllTenants(IConfiguration configuration)
     {

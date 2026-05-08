@@ -28,7 +28,9 @@ namespace DfE.ExternalApplications.Api.Security
             // Collect all DfESignIn configurations from all tenants for multi-provider support
             var allTenants = tenantConfigurationProvider.GetAllTenants();
             
-            // Get first tenant's config for services that need root-level configuration
+            // TODO: Move shared auth settings (TokenSettings, UserTokenService) to GlobalConfiguration
+            // so they don't depend on first tenant. Kept as-is for now because CoreLibs extensions
+            // expect root-level IConfiguration with specific key paths.
             var firstTenantForConfig = allTenants.FirstOrDefault();
             var baseConfig = firstTenantForConfig?.Settings ?? configuration;
             

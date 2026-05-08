@@ -31,8 +31,10 @@ namespace Microsoft.Extensions.DependencyInjection
             IConfiguration config,
             ITenantConfigurationProvider tenantConfigurationProvider)
         {
-            // Get the first tenant's configuration for services that need root-level config
-            // (CoreLibs extensions like FileStorage, Email, Notifications read from root config)
+            // TODO: Move FileStorage, Email, Notifications config to GlobalConfiguration
+            // so they don't depend on first tenant. Kept as-is for now because CoreLibs extensions
+            // expect root-level IConfiguration. Runtime tenant-specific behaviour is handled by
+            // TenantAwareFileStorageService and other tenant-aware wrappers.
             var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()
                 ?? throw new InvalidOperationException("At least one tenant must be configured.");
             var tenantConfig = firstTenant.Settings;

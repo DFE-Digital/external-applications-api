@@ -25,7 +25,10 @@ using DfE.ExternalApplications.Api.Tenancy;
 using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.Caching;
 using DfE.ExternalApplications.Infrastructure.Caching;
+using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Infrastructure.Services;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
@@ -97,17 +100,49 @@ namespace DfE.ExternalApplications.Api
             builder.Services.ConfigureOptions<SwaggerOptions>();
             builder.Services.AddFeatureManagement();
             builder.Services.AddHttpContextAccessor();
-            var tenantConfigurationProvider = new OptionsTenantConfigurationProvider(builder.Configuration);
+
+            // Always register TenantConfigDbContext and encryptor (needed for seeding even in AppSettings mode)
+            builder.Services.AddDbContext<TenantConfigDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("TenantConfigDatabase")));
+
+            var encryptor = BuildTenantSettingsEncryptor(builder.Services, builder.Configuration);
+            builder.Services.AddSingleton<ITenantSettingsEncryptor>(encryptor);
+
+            // Tenant configuration provider: Database or AppSettings based on config toggle
+            var tenantConfigSource = builder.Configuration["TenantConfigSource"] ?? "AppSettings";
+            ITenantConfigurationProvider tenantConfigurationProvider;
+
+            if (string.Equals(tenantConfigSource, "Database", StringComparison.OrdinalIgnoreCase))
+            {
+                var tempScopeFactory = BuildServiceScopeFactory(builder.Services, builder.Configuration);
+
+                var dbProvider = new DatabaseTenantConfigurationProvider(
+                    tempScopeFactory,
+                    LoggerFactory.Create(lb => lb.AddConsole())
+                        .CreateLogger<DatabaseTenantConfigurationProvider>(),
+                    encryptor: encryptor,
+                    targetApplication: "Api");
+
+                dbProvider.RefreshAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+                tenantConfigurationProvider = dbProvider;
+                builder.Services.AddSingleton<ITenantConfigurationProvider>(dbProvider);
+                builder.Services.AddSingleton<IHostedService>(dbProvider);
+            }
+            else
+            {
+                var optionsProvider = new OptionsTenantConfigurationProvider(builder.Configuration);
+                tenantConfigurationProvider = optionsProvider;
+                builder.Services.AddSingleton<ITenantConfigurationProvider>(optionsProvider);
+            }
+
             var allTenants = tenantConfigurationProvider.GetAllTenants();
-            
-            // Startup validation: at least one tenant must be configured
+
             if (!allTenants.Any())
             {
                 throw new InvalidOperationException(
-                    "At least one tenant must be configured in the 'Tenants' section of appsettings.");
+                    "At least one tenant must be configured.");
             }
-
-            builder.Services.AddSingleton<ITenantConfigurationProvider>(tenantConfigurationProvider);
             builder.Services.AddScoped<ITenantContextAccessor, TenantContextAccessor>();
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
@@ -155,9 +190,8 @@ namespace DfE.ExternalApplications.Api
                     };
                 });
 
-            // Application Insights is configured from first tenant's config
-            var firstTenantConfig = allTenants.FirstOrDefault()?.Settings;
-            var appInsightsCnnStr = firstTenantConfig?.GetSection("ApplicationInsights")?["ConnectionString"];
+            // Application Insights uses global configuration (not per-tenant)
+            var appInsightsCnnStr = builder.Configuration["GlobalConfiguration:ApplicationInsights:ConnectionString"];
             
             if (!string.IsNullOrWhiteSpace(appInsightsCnnStr))
             {
@@ -336,6 +370,37 @@ namespace DfE.ExternalApplications.Api
 
             // Register the hub context abstraction
             services.AddScoped<DfE.ExternalApplications.Domain.Services.INotificationHubContext, DfE.ExternalApplications.Api.Services.NotificationHubContext>();
+        }
+
+        /// <summary>
+        /// Builds a temporary IServiceScopeFactory so the DatabaseTenantConfigurationProvider
+        /// can load tenants before the full application DI container is built.
+        /// </summary>
+        private static IServiceScopeFactory BuildServiceScopeFactory(
+            IServiceCollection services,
+            IConfiguration configuration)
+        {
+            var tempServices = new ServiceCollection();
+            tempServices.AddDbContext<TenantConfigDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("TenantConfigDatabase")));
+            tempServices.AddLogging(lb => lb.AddConsole());
+            return tempServices.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+        }
+
+        /// <summary>
+        /// Builds a DataProtection-backed ITenantSettingsEncryptor for encrypting/decrypting
+        /// secret tenant settings. Uses the application's Data Protection key ring.
+        /// </summary>
+        private static ITenantSettingsEncryptor BuildTenantSettingsEncryptor(
+            IServiceCollection services,
+            IConfiguration configuration)
+        {
+            var tempServices = new ServiceCollection();
+            tempServices.AddDataProtection();
+            tempServices.AddLogging(lb => lb.AddConsole());
+            var tempProvider = tempServices.BuildServiceProvider();
+            return new DataProtectionTenantSettingsEncryptor(
+                tempProvider.GetRequiredService<IDataProtectionProvider>());
         }
     }
 }

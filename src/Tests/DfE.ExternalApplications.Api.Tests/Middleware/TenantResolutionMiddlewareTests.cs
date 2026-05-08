@@ -66,7 +66,7 @@ public class TenantResolutionMiddlewareTests
         // Arrange
         var tenantId = Guid.NewGuid();
         var tenant = CreateTenant(tenantId, "TestTenant", "https://app.example.com");
-        _tenantConfigProvider.GetAllTenants().Returns(new[] { tenant });
+        _tenantConfigProvider.GetTenantByOrigin("https://app.example.com").Returns(tenant);
 
         var nextCalled = false;
         var middleware = new TenantResolutionMiddleware(
@@ -111,9 +111,7 @@ public class TenantResolutionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ShouldReturn400_WhenNoTenantHeader_AndNoOriginMatch()
     {
-        // Arrange
-        _tenantConfigProvider.GetAllTenants().Returns(Array.Empty<TenantConfiguration>());
-
+        // Arrange (no mocks needed -- GetTenantByOrigin returns null by default)
         var nextCalled = false;
         var middleware = new TenantResolutionMiddleware(
             _ => { nextCalled = true; return Task.CompletedTask; },

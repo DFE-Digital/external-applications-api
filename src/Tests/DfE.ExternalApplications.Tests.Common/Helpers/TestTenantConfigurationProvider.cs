@@ -44,6 +44,10 @@ public sealed class TestTenantConfigurationProvider : ITenantConfigurationProvid
     public TenantConfiguration? GetTenant(Guid id)
         => _tenants.FirstOrDefault(t => t.Id == id);
 
+    public TenantConfiguration? GetTenantByOrigin(string origin)
+        => _tenants.FirstOrDefault(t => t.FrontendOrigins.Any(
+            o => string.Equals(o, origin, StringComparison.OrdinalIgnoreCase)));
+
     public IReadOnlyCollection<TenantConfiguration> GetAllTenants()
         => _tenants;
 }

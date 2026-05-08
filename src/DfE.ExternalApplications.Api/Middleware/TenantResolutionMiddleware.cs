@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Text.Json;
 using DfE.ExternalApplications.Domain.Tenancy;
@@ -80,9 +77,7 @@ public class TenantResolutionMiddleware
         if (context.Request.Headers.TryGetValue("Origin", out var originHeader))
         {
             var origin = originHeader.ToString();
-            var matchingTenant = _tenantConfigurationProvider
-                .GetAllTenants()
-                .FirstOrDefault(t => t.FrontendOrigins.Any(o => string.Equals(o, origin, StringComparison.OrdinalIgnoreCase)));
+            var matchingTenant = _tenantConfigurationProvider.GetTenantByOrigin(origin);
 
             if (matchingTenant is not null)
             {

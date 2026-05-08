@@ -2445,6 +2445,71 @@
         }
       }
     },
+    "/v1/admin/tenants/refresh": {
+      "post": {
+        "tags": [
+          "TenantAdmin"
+        ],
+        "summary": "Triggers an immediate refresh of the in-memory tenant configuration cache.\nOnly applicable when using database-backed tenant configuration.",
+        "operationId": "TenantAdmin_RefreshTenantConfiguration",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/tenants": {
+      "get": {
+        "tags": [
+          "TenantAdmin"
+        ],
+        "summary": "Returns a summary of all loaded tenant configurations.",
+        "operationId": "TenantAdmin_GetTenants",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/tenants/seed": {
+      "post": {
+        "tags": [
+          "TenantAdmin"
+        ],
+        "operationId": "TenantAdmin_SeedFromAppSettings",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/Tokens/exchange": {
       "post": {
         "tags": [
