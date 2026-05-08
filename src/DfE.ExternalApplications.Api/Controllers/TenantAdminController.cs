@@ -1,10 +1,12 @@
-using System.Diagnostics.CodeAnalysis;
 using Asp.Versioning;
-using DfE.ExternalApplications.Domain.Tenancy;
-using DfE.ExternalApplications.Infrastructure.Database;
-using DfE.ExternalApplications.Infrastructure.Services;
+using DfE.ExternalApplications.Application.TenantAdmin.Commands;
+using DfE.ExternalApplications.Application.TenantAdmin.Queries;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Http.Models;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -15,68 +17,95 @@ namespace DfE.ExternalApplications.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("v{version:apiVersion}/admin/tenants")]
 //[Authorize(Policy = "IsAdmin")]
-[ExcludeFromCodeCoverage]
-public class TenantAdminController(
-    DfE.ExternalApplications.Domain.Tenancy.ITenantConfigurationProvider tenantConfigProvider,
-    ILogger<TenantAdminController> logger) : ControllerBase
+public class TenantAdminController(ISender sender) : ControllerBase
 {
     /// <summary>
     /// Triggers an immediate refresh of the in-memory tenant configuration cache.
-    /// Only applicable when using database-backed tenant configuration.
     /// </summary>
     [HttpPost("refresh")]
+    [SwaggerResponse(200, "Tenant configuration refreshed.", typeof(RefreshTenantConfigurationResponse))]
+    [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     public async Task<IActionResult> RefreshTenantConfiguration(CancellationToken cancellationToken)
     {
-        if (tenantConfigProvider is DatabaseTenantConfigurationProvider dbProvider)
-        {
-            logger.LogInformation("Admin-triggered tenant configuration refresh requested");
-            await dbProvider.RefreshAsync(cancellationToken);
+        var result = await sender.Send(new RefreshTenantConfigurationCommand(), cancellationToken);
 
-            var tenants = dbProvider.GetAllTenants();
-            return Ok(new
-            {
-                message = "Tenant configuration refreshed successfully",
-                tenantCount = tenants.Count,
-                tenants = tenants.Select(t => new { t.Id, t.Name })
-            });
-        }
-
-        return Ok(new
+        return new ObjectResult(result)
         {
-            message = "Tenant configuration is loaded from appsettings (not database). No refresh needed.",
-            tenantCount = tenantConfigProvider.GetAllTenants().Count
-        });
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
     /// <summary>
     /// Returns a summary of all loaded tenant configurations.
     /// </summary>
     [HttpGet]
-    public IActionResult GetTenants()
+    [SwaggerResponse(200, "List of tenants.", typeof(GetTenantsResponse))]
+    [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> GetTenants(CancellationToken cancellationToken)
     {
-        var tenants = tenantConfigProvider.GetAllTenants();
-        return Ok(new
+        var result = await sender.Send(new GetTenantsQuery(), cancellationToken);
+
+        return new ObjectResult(result)
         {
-            source = tenantConfigProvider is DatabaseTenantConfigurationProvider ? "Database" : "AppSettings",
-            tenantCount = tenants.Count,
-            tenants = tenants.Select(t => new
-            {
-                t.Id,
-                t.Name,
-                frontendOrigins = t.FrontendOrigins
-            })
-        });
+            StatusCode = StatusCodes.Status200OK
+        };
     }
 
+    /// <summary>
+    /// Seeds tenant configuration from appsettings into the tenant config database.
+    /// </summary>
     [HttpPost("seed")]
-    public async Task<IActionResult> SeedFromAppSettings(
-        [FromServices] TenantConfigDbContext dbContext,
-        [FromServices] IConfiguration configuration,
-        [FromServices] ITenantSettingsEncryptor encryptor)
+    [SwaggerResponse(200, "Seeding complete.", typeof(SeedTenantsResponse))]
+    [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> SeedFromAppSettings(CancellationToken cancellationToken)
     {
-        await TenantConfigSeeder.SeedFromAppSettingsAsync(
-            dbContext, configuration, encryptor, logger);
+        var result = await sender.Send(new SeedTenantsFromAppSettingsCommand(), cancellationToken);
 
-        return Ok(new { message = "Seeding complete" });
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Adds or updates a configuration section for a specific tenant.
+    /// Secret sections are encrypted before storage.
+    /// </summary>
+    [HttpPut("{tenantId:guid}/settings")]
+    [SwaggerResponse(200, "Setting updated.", typeof(UpsertTenantSettingResponse))]
+    [SwaggerResponse(201, "Setting created.", typeof(UpsertTenantSettingResponse))]
+    [SwaggerResponse(400, "Validation error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Tenant not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> UpsertTenantSetting(
+        Guid tenantId,
+        [FromBody] UpsertTenantSettingRequest body,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpsertTenantSettingCommand(
+            tenantId,
+            body.Category,
+            body.Target,
+            body.SettingsJson,
+            body.IsSecret);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (!result.IsSuccess)
+            return new ObjectResult(result) { StatusCode = StatusCodes.Status404NotFound };
+
+        var statusCode = result.Value!.WasCreated
+            ? StatusCodes.Status201Created
+            : StatusCodes.Status200OK;
+
+        return new ObjectResult(result) { StatusCode = statusCode };
     }
 }

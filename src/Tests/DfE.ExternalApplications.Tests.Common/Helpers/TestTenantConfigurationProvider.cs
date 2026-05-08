@@ -41,6 +41,8 @@ public sealed class TestTenantConfigurationProvider : ITenantConfigurationProvid
         _tenants = new[] { tenant };
     }
 
+    public string Source => "Test";
+
     public TenantConfiguration? GetTenant(Guid id)
         => _tenants.FirstOrDefault(t => t.Id == id);
 

@@ -19,4 +19,15 @@ public interface ITenantConfigurationProvider
     /// Gets all configured tenants.
     /// </summary>
     IReadOnlyCollection<TenantConfiguration> GetAllTenants();
+
+    /// <summary>
+    /// Refreshes the tenant configuration cache from the underlying store.
+    /// No-op for providers that do not support refresh (e.g. appsettings-based).
+    /// </summary>
+    Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    /// <summary>
+    /// The source of the tenant configuration (e.g. "Database", "AppSettings").
+    /// </summary>
+    string Source => "Unknown";
 }

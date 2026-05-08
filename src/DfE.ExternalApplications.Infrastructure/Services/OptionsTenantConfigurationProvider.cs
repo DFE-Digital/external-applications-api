@@ -16,6 +16,8 @@ public class OptionsTenantConfigurationProvider : ITenantConfigurationProvider
         _tenantsByOrigin = BuildOriginIndex(_tenants.Values);
     }
 
+    public string Source => "AppSettings";
+
     public TenantConfiguration? GetTenant(Guid id)
         => _tenants.TryGetValue(id, out var tenant) ? tenant : null;
 

@@ -30,6 +30,8 @@ public class DatabaseTenantConfigurationProvider(
     private Timer? _refreshTimer;
     private bool _disposed;
 
+    public string Source => "Database";
+
     /// <inheritdoc />
     public TenantConfiguration? GetTenant(Guid id)
         => _tenantsById.TryGetValue(id, out var tenant) ? tenant : null;

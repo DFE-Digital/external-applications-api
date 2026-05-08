@@ -107,6 +107,8 @@ namespace DfE.ExternalApplications.Api
 
             var encryptor = BuildTenantSettingsEncryptor(builder.Services, builder.Configuration);
             builder.Services.AddSingleton<ITenantSettingsEncryptor>(encryptor);
+            builder.Services.AddScoped<ITenantConfigSeeder, DfE.ExternalApplications.Infrastructure.Services.TenantConfigSeederService>();
+            builder.Services.AddScoped<ITenantSettingsWriter, DfE.ExternalApplications.Infrastructure.Services.TenantSettingsWriterService>();
 
             // Tenant configuration provider: Database or AppSettings based on config toggle
             var tenantConfigSource = builder.Configuration["TenantConfigSource"] ?? "AppSettings";
