@@ -6,13 +6,6 @@ namespace DfE.ExternalApplications.Application.TenantAdmin.Commands;
 
 public sealed record RefreshTenantConfigurationCommand : IRequest<Result<RefreshTenantConfigurationResponse>>;
 
-public sealed record RefreshTenantConfigurationResponse(
-    string Message,
-    int TenantCount,
-    IReadOnlyCollection<TenantSummaryDto> Tenants);
-
-public sealed record TenantSummaryDto(Guid Id, string Name);
-
 public sealed class RefreshTenantConfigurationCommandHandler(
     ITenantConfigurationProvider tenantConfigProvider)
     : IRequestHandler<RefreshTenantConfigurationCommand, Result<RefreshTenantConfigurationResponse>>

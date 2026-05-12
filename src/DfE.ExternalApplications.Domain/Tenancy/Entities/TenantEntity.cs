@@ -20,4 +20,6 @@ public class TenantEntity
     public ICollection<TenantHostnameEntity> Hostnames { get; set; } = new List<TenantHostnameEntity>();
 
     public ICollection<TenantFrontendOriginEntity> FrontendOrigins { get; set; } = new List<TenantFrontendOriginEntity>();
+
+    public ICollection<TenantPrincipalEntity> Principals { get; set; } = new List<TenantPrincipalEntity>();
 }

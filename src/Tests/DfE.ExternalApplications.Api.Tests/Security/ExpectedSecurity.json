@@ -169,6 +169,31 @@
       "Controller": "DiagnosticsController",
       "Action": "Get",
       "ExpectedSecurity": "Authorize"
+    },
+    {
+      "Controller": "TenantAdminController",
+      "Action": "RefreshTenantConfiguration",
+      "ExpectedSecurity": "Authorize"
+    },
+    {
+      "Controller": "TenantAdminController",
+      "Action": "GetTenants",
+      "ExpectedSecurity": "Authorize"
+    },
+    {
+      "Controller": "TenantAdminController",
+      "Action": "SeedFromAppSettings",
+      "ExpectedSecurity": "Authorize"
+    },
+    {
+      "Controller": "TenantAdminController",
+      "Action": "UpsertTenantSetting",
+      "ExpectedSecurity": "Authorize"
+    },
+    {
+      "Controller": "TenantConfigController",
+      "Action": "GetTenantConfiguration",
+      "ExpectedSecurity": "Authorize"
     }
   ]
 }

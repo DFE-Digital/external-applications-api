@@ -16,6 +16,7 @@ public class TenantConfigDbContext(DbContextOptions<TenantConfigDbContext> optio
     public DbSet<TenantSettingEntity> TenantSettings { get; set; } = null!;
     public DbSet<TenantHostnameEntity> TenantHostnames { get; set; } = null!;
     public DbSet<TenantFrontendOriginEntity> TenantFrontendOrigins { get; set; } = null!;
+    public DbSet<TenantPrincipalEntity> TenantPrincipals { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,7 @@ public class TenantConfigDbContext(DbContextOptions<TenantConfigDbContext> optio
         ConfigureTenantSettingEntity(modelBuilder);
         ConfigureTenantHostnameEntity(modelBuilder);
         ConfigureTenantFrontendOriginEntity(modelBuilder);
+        ConfigureTenantPrincipalEntity(modelBuilder);
     }
 
     private static void ConfigureTenantEntity(ModelBuilder modelBuilder)
@@ -62,6 +64,11 @@ public class TenantConfigDbContext(DbContextOptions<TenantConfigDbContext> optio
             entity.HasMany(e => e.FrontendOrigins)
                 .WithOne(o => o.Tenant)
                 .HasForeignKey(o => o.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Principals)
+                .WithOne(p => p.Tenant)
+                .HasForeignKey(p => p.TenantId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
@@ -125,6 +132,37 @@ public class TenantConfigDbContext(DbContextOptions<TenantConfigDbContext> optio
                 .HasMaxLength(500);
 
             entity.HasIndex(e => e.Origin).IsUnique();
+        });
+    }
+
+    private static void ConfigureTenantPrincipalEntity(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TenantPrincipalEntity>(entity =>
+        {
+            entity.ToTable("TenantPrincipals");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.Property(e => e.PrincipalObjectId)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.PrincipalType)
+                .IsRequired()
+                .HasMaxLength(40);
+
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedAtUtc).IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).IsRequired();
+
+            entity.HasIndex(e => e.PrincipalObjectId).IsUnique();
+            entity.HasIndex(e => e.TenantId);
         });
     }
 }

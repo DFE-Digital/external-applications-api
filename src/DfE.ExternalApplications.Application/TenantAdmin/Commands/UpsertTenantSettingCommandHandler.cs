@@ -11,13 +11,6 @@ public sealed record UpsertTenantSettingCommand(
     string SettingsJson,
     bool IsSecret) : IRequest<Result<UpsertTenantSettingResponse>>;
 
-public sealed record UpsertTenantSettingResponse(
-    Guid SettingId,
-    bool WasCreated,
-    string Category,
-    string Target,
-    string Message);
-
 public sealed class UpsertTenantSettingCommandHandler(
     ITenantSettingsWriter settingsWriter)
     : IRequestHandler<UpsertTenantSettingCommand, Result<UpsertTenantSettingResponse>>

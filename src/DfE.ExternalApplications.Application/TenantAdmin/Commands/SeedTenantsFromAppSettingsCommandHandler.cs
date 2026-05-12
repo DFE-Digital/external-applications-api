@@ -6,8 +6,6 @@ namespace DfE.ExternalApplications.Application.TenantAdmin.Commands;
 
 public sealed record SeedTenantsFromAppSettingsCommand : IRequest<Result<SeedTenantsResponse>>;
 
-public sealed record SeedTenantsResponse(string Message);
-
 public sealed class SeedTenantsFromAppSettingsCommandHandler(
     ITenantConfigSeeder tenantConfigSeeder)
     : IRequestHandler<SeedTenantsFromAppSettingsCommand, Result<SeedTenantsResponse>>

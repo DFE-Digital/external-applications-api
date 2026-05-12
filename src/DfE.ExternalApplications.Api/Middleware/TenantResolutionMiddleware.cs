@@ -8,7 +8,14 @@ public class TenantResolutionMiddleware
 {
     public const string TenantIdHeader = "X-Tenant-ID";
 
-    private static readonly string[] BypassPaths = { "/swagger", "/health", "/_", "/favicon.ico" };
+    private static readonly string[] BypassPaths =
+    {
+        "/swagger",
+        "/health",
+        "/_",
+        "/favicon.ico",
+        "/v1/tenant-config"
+    };
 
     private readonly RequestDelegate _next;
     private readonly ITenantConfigurationProvider _tenantConfigurationProvider;

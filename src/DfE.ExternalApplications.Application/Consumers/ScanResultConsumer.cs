@@ -10,65 +10,26 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using DfE.ExternalApplications.Domain.Tenancy;
-using System;
 using File = DfE.ExternalApplications.Domain.Entities.File;
 
 namespace DfE.ExternalApplications.Application.Consumers;
 
 /// <summary>
 /// Consumer for file scan results from the virus scanner service.
-/// Listens to the file-scanner-results topic with subscription extapi.
+/// Listens to the shared <c>file-scanner-results</c> subscription. Tenant context is set by
+/// <c>TenantContextConsumeFilter</c> from the inbound message headers before this consumer runs,
+/// so this body assumes <see cref="ITenantContextAccessor.CurrentTenant"/> is already populated.
 /// </summary>
 public sealed class ScanResultConsumer(
     ILogger<ScanResultConsumer> logger,
     IEaRepository<File> fileRepository,
     ITenantContextAccessor tenantContextAccessor,
-    ITenantConfigurationProvider tenantConfigurationProvider,
     ISender sender) : IConsumer<ScanResultEvent>
 {
     public async Task Consume(ConsumeContext<ScanResultEvent> context)
     {
         var scanResult = context.Message;
-        
-        // Resolve tenant from message headers (set by TenantAwareEventPublisher)
-        var tenantIdHeader = context.Headers.Get<string>("TenantId");
-        if (!string.IsNullOrEmpty(tenantIdHeader) && Guid.TryParse(tenantIdHeader, out var tenantId))
-        {
-            var tenant = tenantConfigurationProvider.GetTenant(tenantId);
-            if (tenant != null)
-            {
-                tenantContextAccessor.CurrentTenant = tenant;
-                logger.LogDebug(
-                    "Resolved tenant from message headers: {TenantId} ({TenantName})",
-                    tenantId, tenant.Name);
-            }
-            else
-            {
-                logger.LogWarning(
-                    "Tenant {TenantId} from message headers not found in configuration",
-                    tenantId);
-            }
-        }
-        else
-        {
-            // Fallback: Try to resolve from message metadata (legacy format)
-            var metadataTenantId = scanResult.Metadata?.ContainsKey("TenantId") == true
-                ? scanResult.Metadata["TenantId"]?.ToString()
-                : null;
-            
-            if (!string.IsNullOrEmpty(metadataTenantId) && Guid.TryParse(metadataTenantId, out var legacyTenantId))
-            {
-                var tenant = tenantConfigurationProvider.GetTenant(legacyTenantId);
-                if (tenant != null)
-                {
-                    tenantContextAccessor.CurrentTenant = tenant;
-                    logger.LogDebug(
-                        "Resolved tenant from message metadata: {TenantId} ({TenantName})",
-                        legacyTenantId, tenant.Name);
-                }
-            }
-        }
-        
+
         logger.LogInformation(
             "Received scan result - FileName: {FileName}, Status: {Status}, Outcome: {Outcome}",
             scanResult.FileName,

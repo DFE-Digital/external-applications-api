@@ -11,7 +11,6 @@ using GovUK.Dfe.CoreLibs.Messaging.Contracts.Messages.Events;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using MassTransit;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MockQueryable;
 using NSubstitute;
@@ -24,7 +23,6 @@ public class ScanResultConsumerTests
     private readonly ILogger<ScanResultConsumer> _logger;
     private readonly IEaRepository<File> _fileRepository;
     private readonly ITenantContextAccessor _tenantContextAccessor;
-    private readonly ITenantConfigurationProvider _tenantConfigProvider;
     private readonly ISender _sender;
     private readonly ScanResultConsumer _consumer;
 
@@ -33,12 +31,10 @@ public class ScanResultConsumerTests
         _logger = Substitute.For<ILogger<ScanResultConsumer>>();
         _fileRepository = Substitute.For<IEaRepository<File>>();
         _tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
-        _tenantConfigProvider = Substitute.For<ITenantConfigurationProvider>();
         _sender = Substitute.For<ISender>();
 
         _consumer = new ScanResultConsumer(
-            _logger, _fileRepository, _tenantContextAccessor,
-            _tenantConfigProvider, _sender);
+            _logger, _fileRepository, _tenantContextAccessor, _sender);
     }
 
     private ConsumeContext<ScanResultEvent> CreateConsumeContext(ScanResultEvent message, Guid? tenantId = null)
@@ -195,28 +191,4 @@ public class ScanResultConsumerTests
             Arg.Any<DeleteInfectedFileCommand>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Consume_ShouldResolveTenant_FromMessageHeaders()
-    {
-        var tenantId = Guid.NewGuid();
-        var tenant = new TenantConfiguration(
-            tenantId, "TestTenant",
-            new ConfigurationBuilder().Build(),
-            Array.Empty<string>());
-        _tenantConfigProvider.GetTenant(tenantId).Returns(tenant);
-
-        var scanResult = new ScanResultEvent(
-            ServiceName: "test-service",
-            FileUri: "",
-            FileName: "",
-            Path: "",
-            Status: ScanStatus.Completed,
-            Outcome: VirusScanOutcome.Clean);
-
-        var context = CreateConsumeContext(scanResult, tenantId);
-
-        await _consumer.Consume(context);
-
-        _tenantContextAccessor.Received(1).CurrentTenant = tenant;
-    }
 }

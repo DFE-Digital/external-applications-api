@@ -2703,6 +2703,89 @@
         }
       }
     },
+    "/v1/tenant-config": {
+      "get": {
+        "tags": [
+          "TenantConfig"
+        ],
+        "summary": "Returns the merged 'Shared' + target-specific configuration for the calling principal's tenant.",
+        "operationId": "TenantConfig_GetTenantConfiguration",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "description": "The consuming application's target. One of: Web, Api, Shared. Defaults to Web.",
+            "schema": {
+              "type": "string",
+              "default": "Web"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfigurationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Principal is not registered to any tenant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tenant inactive or no longer exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/Tokens/exchange": {
       "post": {
         "tags": [
@@ -3762,6 +3845,33 @@
           },
           "isSecret": {
             "type": "boolean"
+          }
+        }
+      },
+      "TenantConfigurationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "tenantName": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "loadedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "configuration": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "nullable": true
+            }
           }
         }
       },

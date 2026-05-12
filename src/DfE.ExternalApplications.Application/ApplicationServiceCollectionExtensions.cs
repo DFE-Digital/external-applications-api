@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Common.Pipeline;
 using DfE.ExternalApplications.Application.Consumers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
@@ -87,61 +88,64 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddEmailServicesWithGovUkNotify(tenantConfig);
 
             // Skip MassTransit during NSwag/CodeGeneration to prevent assembly loading issues
-            // Note: This reads from root config for backward compatibility with CodeGeneration environment
             var skipMassTransit = config.GetValue<bool>("SkipMassTransit", false);
             if (!skipMassTransit)
             {
-                // Register TenantBusFactory for publishing (creates per-tenant Azure Service Bus connections)
-                services.AddSingleton<ITenantBusFactory, TenantBusFactory>();
-                
-                // Register TenantAwareEventPublisher as the IEventPublisher implementation
-                // This replaces the CoreLibs default publisher with our multi-tenant aware version
-                services.AddScoped<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, TenantAwareEventPublisher>();
-                
-                // Get all tenants upfront for configuring subscription endpoints
-                var allTenants = tenantConfigurationProvider.GetAllTenants().ToList();
-                
-                // Use CoreLibs AddDfEMassTransit - same pattern as the working service
+                // SaaS model: ONE shared Azure Service Bus namespace for all tenants.
+                // The bus host is driven by root host configuration (ConnectionStrings:ServiceBus
+                // or MassTransit:AzureServiceBus:ConnectionString) - NOT per-tenant config.
+                // Tenant context for inbound messages is set by TenantContextConsumeFilter<T>
+                // from the 'TenantId' header on each message.
+                //
+                // Subscription naming convention: "{SubscriptionPrefix}-{topic-purpose}".
+                // Prefix comes from config (e.g. "extapi", "extapi-staging") so it can be
+                // varied per environment. The suffix is hardcoded next to each
+                // SubscriptionEndpoint registration because it identifies what the
+                // subscription is for - that's a code concern, not a config concern.
+                //
+                // To add a new topic in the future:
+                //   1. Add the consumer to configureConsumers below
+                //   2. Map the message type to its topic in configureBus below
+                //   3. Add a new cfg.SubscriptionEndpoint<TEvent>($"{subscriptionPrefix}-foo", ...)
+                //      block in configureAzureServiceBus below
+                var subscriptionPrefix = config["MassTransit:SubscriptionPrefix"] ?? "extapi";
+
                 services.AddDfEMassTransit(
-                    tenantConfig,
+                    config,
                     configureConsumers: x =>
                     {
                         x.AddConsumer<ScanResultConsumer>();
                     },
                     configureBus: (context, cfg) =>
                     {
-                        // Configure topic names for message types
                         cfg.Message<ScanRequestedEvent>(m => m.SetEntityName(TopicNames.ScanRequests));
                         cfg.Message<ScanResultEvent>(m => m.SetEntityName(TopicNames.ScanResult));
                     },
                     configureAzureServiceBus: (context, cfg) =>
                     {
                         cfg.UseJsonSerializer();
-                        
-                        // Register subscription endpoints for ALL tenants
-                        // Using typed SubscriptionEndpoint<ScanResultEvent> like the working service
-                        foreach (var tenant in allTenants)
+
+                        cfg.SubscriptionEndpoint<ScanResultEvent>($"{subscriptionPrefix}-scan-result", e =>
                         {
-                            var subscriptionName = $"extapi-{tenant.Name}";
-                            
-                            Console.WriteLine($"[MassTransit] Registering subscription: '{subscriptionName}'");
-                            
-                            cfg.SubscriptionEndpoint<ScanResultEvent>(subscriptionName, e =>
+                            e.UseMessageRetry(r =>
                             {
-                                e.UseMessageRetry(r =>
-                                {
-                                    r.Handle<MessageNotForThisInstanceException>();
-                                    r.Immediate(10);
-                                    r.Ignore<MessageNotForThisInstanceException>();
-                                    r.Interval(3, TimeSpan.FromSeconds(5));
-                                });
-                                
-                                e.ConfigureConsumeTopology = false;
-                                e.ConfigureConsumer<ScanResultConsumer>(context);
+                                r.Handle<MessageNotForThisInstanceException>();
+                                r.Immediate(10);
+                                r.Ignore<MessageNotForThisInstanceException>();
+                                r.Interval(3, TimeSpan.FromSeconds(5));
                             });
-                        }
+
+                            e.UseConsumeFilter(typeof(TenantContextConsumeFilter<>), context);
+
+                            e.ConfigureConsumeTopology = false;
+                            e.ConfigureConsumer<ScanResultConsumer>(context);
+                        });
                     }
                 );
+
+                // Register AFTER AddDfEMassTransit so this wins the IEventPublisher lookup
+                // (AddDfEMassTransit registers MassTransitEventPublisher last, which would otherwise override).
+                services.AddScoped<GovUK.Dfe.CoreLibs.Messaging.MassTransit.Interfaces.IEventPublisher, TenantAwareEventPublisher>();
             }
 
             return services;

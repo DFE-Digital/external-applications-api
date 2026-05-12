@@ -2,6 +2,7 @@ using Asp.Versioning;
 using DfE.ExternalApplications.Application.TenantAdmin.Commands;
 using DfE.ExternalApplications.Application.TenantAdmin.Queries;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,7 @@ namespace DfE.ExternalApplications.Api.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("v{version:apiVersion}/admin/tenants")]
-//[Authorize(Policy = "IsAdmin")]
+[Authorize] // TODO: tighten to [Authorize(Policy = "IsAdmin")] once the IsAdmin policy is registered.
 public class TenantAdminController(ISender sender) : ControllerBase
 {
     /// <summary>

@@ -7,13 +7,6 @@ namespace DfE.ExternalApplications.Application.TenantAdmin.Queries;
 
 public sealed record GetTenantsQuery : IRequest<Result<GetTenantsResponse>>;
 
-public sealed record GetTenantsResponse(
-    string Source,
-    int TenantCount,
-    IReadOnlyCollection<TenantDetailDto> Tenants);
-
-public sealed record TenantDetailDto(Guid Id, string Name, string[] FrontendOrigins);
-
 public sealed class GetTenantsQueryHandler(
     ITenantConfigurationProvider tenantConfigProvider)
     : IRequestHandler<GetTenantsQuery, Result<GetTenantsResponse>>
