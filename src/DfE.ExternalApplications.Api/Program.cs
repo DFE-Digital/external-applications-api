@@ -168,8 +168,8 @@ namespace DfE.ExternalApplications.Api
 
             builder.Services.AddSingleton<ICorsPolicyProvider, TenantCorsPolicyProvider>();
 
-            // Configure SignalR with all tenant endpoints
-            ConfigureSignalR(builder.Services, allTenants, builder.Environment);
+            // Configure SignalR using the shared host configuration (single Azure SignalR Service for all tenants)
+            ConfigureSignalR(builder.Services, builder.Configuration, builder.Environment);
 
             builder.Services.AddApplicationDependencyGroup(builder.Configuration, tenantConfigurationProvider);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration, tenantConfigurationProvider);
@@ -341,38 +341,46 @@ namespace DfE.ExternalApplications.Api
             }
         }
 
+        /// <summary>
+        /// Configures SignalR for the SaaS model: ONE shared Azure SignalR Service for ALL tenants.
+        /// Tenant isolation is logical, enforced by group-naming convention - NOT by separate
+        /// Azure SignalR resources. The connection string is sourced from root host configuration
+        /// (NOT from per-tenant config).
+        /// <para>
+        /// Group naming contract: <c>tenant:{tenantId}:user:{userEmail}</c>
+        /// (or <c>tenant:{tenantId}:...</c> for any future broadcast scopes).
+        /// </para>
+        /// <para>
+        /// NEW HUBS must:
+        /// </para>
+        /// <list type="number">
+        /// <item><description>Resolve <c>ITenantContextAccessor.CurrentTenant</c> at connect time.</description></item>
+        /// <item><description>Prefix every group name with <c>tenant:{currentTenantId}:</c>.</description></item>
+        /// <item><description>Always publish via <c>IHubContext</c> to a <c>tenant:{currentTenantId}:...</c> group.</description></item>
+        /// </list>
+        /// </summary>
         private static void ConfigureSignalR(
-            IServiceCollection services, 
-            IReadOnlyCollection<TenantConfiguration> tenants, 
+            IServiceCollection services,
+            IConfiguration config,
             IWebHostEnvironment environment)
         {
-            // Collect all Azure SignalR connection strings from all tenants
-            var signalREndpoints = tenants
-                .Select(t => new { Tenant = t, ConnectionString = t.GetConnectionString("AzureSignalR") })
-                .Where(x => !string.IsNullOrEmpty(x.ConnectionString))
-                .ToList();
+            // Connection string sources (root host config, in priority order):
+            //   1. Azure:SignalR:ConnectionString  (Microsoft.Azure.SignalR SDK convention)
+            //   2. ConnectionStrings:AzureSignalR  (.NET-standard fallback)
+            // Either populated wins. If neither is set, the API falls back to in-process SignalR
+            // which is fine for dev/local; production must provision a shared Azure SignalR Service.
+            var azureSignalRConn =
+                config["Azure:SignalR:ConnectionString"]
+                ?? config.GetConnectionString("AzureSignalR");
 
-            if (signalREndpoints.Any())
-            {
-                // Use Azure SignalR Service with multiple endpoints (one per tenant)
-                services.AddSignalR()
-                    .AddAzureSignalR(options =>
-                    {
-                        options.Endpoints = signalREndpoints
-                            .Select(x => new Microsoft.Azure.SignalR.ServiceEndpoint(
-                                x.ConnectionString!, 
-                                Microsoft.Azure.SignalR.EndpointType.Primary, 
-                                x.Tenant.Id.ToString()))
-                            .ToArray();
-                    });
-            }
-            else
-            {
-                // Use local ASP.NET Core SignalR (development)
-                services.AddSignalR();
-            }
+            var signalRBuilder = services.AddSignalR();
 
-            // Register the hub context abstraction
+            if (!string.IsNullOrWhiteSpace(azureSignalRConn))
+            {
+                signalRBuilder.AddAzureSignalR(azureSignalRConn);
+            }
+            // else: in-process SignalR (development/local). No additional registration required.
+
             services.AddScoped<DfE.ExternalApplications.Domain.Services.INotificationHubContext, DfE.ExternalApplications.Api.Services.NotificationHubContext>();
         }
 

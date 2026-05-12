@@ -1,3 +1,4 @@
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Infrastructure.Security;
 using GovUK.Dfe.CoreLibs.Http.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -11,14 +12,21 @@ namespace DfE.ExternalApplications.Api.Controllers
 {
     /// <summary>
     /// Controller for SignalR hub authentication.
-    /// 
-    /// IMPORTANT: Uses IDistributedCache directly (NOT tenant-aware) because:
-    /// - CreateHubTicket is called via AJAX with tenant headers
-    /// - RedeemHubCookie is called via browser redirect WITHOUT tenant headers
-    /// - The ticket must be accessible across these different request contexts
+    /// <para>
+    /// Both endpoints run AFTER <c>TenantResolutionMiddleware</c>, so the current tenant
+    /// is always available via <see cref="ITenantContextAccessor"/>. The ticket cache key
+    /// is tenant-scoped (defense-in-depth) so a ticket minted under tenant A cannot be
+    /// redeemed against tenant B even if the cache (Redis) is shared and the GUID were
+    /// ever leaked.
+    /// </para>
     /// </summary>
-    public class HubAuthController(IDistributedCache cache) : ControllerBase
+    public class HubAuthController(
+        IDistributedCache cache,
+        ITenantContextAccessor tenantContextAccessor) : ControllerBase
     {
+        /// <summary>Claim type used to stamp the resolved tenant id on the hub cookie.</summary>
+        public const string TenantIdClaimType = "tenant_id";
+
         //Create a single use ticket for the hub, which is valid for 1 minute
         [HttpPost("auth/hub-ticket")]
         [SwaggerResponse(200, "The created ticket.", typeof(Dictionary<string, string>))]
@@ -31,12 +39,15 @@ namespace DfE.ExternalApplications.Api.Controllers
         public async Task<IActionResult> CreateHubTicket(CancellationToken ct)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
-            
+
             if (string.IsNullOrWhiteSpace(email))
                 return Forbid();
 
+            var tenantId = tenantContextAccessor.CurrentTenant?.Id
+                ?? throw new InvalidOperationException("Tenant context is required to create a hub ticket.");
+
             var ticket = Guid.NewGuid().ToString("N");
-            await cache.SetStringAsync($"hub:ticket:{ticket}", email,
+            await cache.SetStringAsync(BuildTicketKey(tenantId, ticket), email,
                 new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
@@ -62,13 +73,18 @@ namespace DfE.ExternalApplications.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> RedeemHubCookie([FromQuery] string ticket, CancellationToken ct)
         {
-            var key = $"hub:ticket:{ticket}";
+            var tenantId = tenantContextAccessor.CurrentTenant?.Id;
+            if (tenantId is null)
+                return Unauthorized();
+
+            var key = BuildTicketKey(tenantId.Value, ticket);
             var email = await cache.GetStringAsync(key, ct);
             if (string.IsNullOrEmpty(email)) return Unauthorized();
             await cache.RemoveAsync(key, ct); // single use
 
             var claims = new[] {
                 new Claim(ClaimTypes.Email, email),
+                new Claim(TenantIdClaimType, tenantId.Value.ToString()),
             };
             var id = new ClaimsIdentity(claims, "HubCookie");
             await HttpContext.SignInAsync("HubCookie",
@@ -77,5 +93,8 @@ namespace DfE.ExternalApplications.Api.Controllers
 
             return NoContent();
         }
+
+        private static string BuildTicketKey(Guid tenantId, string ticket)
+            => $"hub:ticket:{tenantId}:{ticket}";
     }
 }
