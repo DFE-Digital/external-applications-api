@@ -100,29 +100,13 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                             })
                             .AddPolicyScheme("CompositeScheme", "CompositeAuth", schemeOptions =>
                             {
-                                schemeOptions.ForwardDefaultSelector = context =>
-                                {
-                                    var header = context.Request.Headers[AuthConstants.AuthorizationHeader]
-                                        .FirstOrDefault();
-                                    if (header?.StartsWith(AuthConstants.BearerPrefix) == true)
-                                    {
-                                        var token = header.Substring(AuthConstants.BearerPrefix.Length);
-                                        return token.StartsWith("user")
-                                            ? AuthConstants.UserScheme
-                                            : AuthConstants.AzureAdScheme;
-                                    }
-
-                                    return AuthConstants.AzureAdScheme;
-                                };
+                                // SaaS test dispatcher: all bearer traffic forwards to TenantBearer.
+                                schemeOptions.ForwardDefaultSelector = _ => AuthConstants.TenantBearer;
                             })
                             .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
-                                AuthConstants.UserScheme,
+                                AuthConstants.TenantBearer,
                                 _ => { /* picks up factory.TestClaims */ })
 
-                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(
-                                AuthConstants.AzureAdScheme,
-                                _ => { /* picks up the same factory.TestClaims */ })
-                            
                             // Add HubCookie scheme for SignalR authentication with proper cookie handler
                             .AddScheme<AuthenticationSchemeOptions, MockCookieAuthenticationHandler>(
                                 "HubCookie",
@@ -134,6 +118,17 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
 
                         services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                         services.AddUserTokenService(tokenConfig);
+
+                        // SaaS: register named TokenSettings for the test tenant so
+                        // IUserTokenServiceFactory.GetService(TestTenantId) returns a service
+                        // signing with the test key/issuer/audience.
+                        services.Configure<GovUK.Dfe.CoreLibs.Security.Configurations.TokenSettings>(TestTenantId, opts =>
+                        {
+                            opts.SecretKey = tokenConfig["Authorization:TokenSettings:SecretKey"]!;
+                            opts.Issuer = tokenConfig["Authorization:TokenSettings:Issuer"]!;
+                            opts.Audience = tokenConfig["Authorization:TokenSettings:Audience"]!;
+                            opts.TokenLifetimeMinutes = int.Parse(tokenConfig["Authorization:TokenSettings:TokenLifetimeMinutes"] ?? "60");
+                        });
                         services.AddSingleton<IRateLimiterFactory<string>, MockRateLimiterFactory>();
                         
                         // Replace the notification service with our mock

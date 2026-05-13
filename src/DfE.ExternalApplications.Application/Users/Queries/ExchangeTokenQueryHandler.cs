@@ -21,7 +21,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
     public class ExchangeTokenQueryHandler(
         IExternalIdentityValidator externalValidator,
         IEaRepository<User> userRepo,
-        IUserTokenService tokenSvc,
+        IUserTokenServiceFactory tokenServiceFactory,
         IHttpContextAccessor httpCtxAcc,
         ITenantContextAccessor tenantContextAccessor,
         [FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -90,6 +90,13 @@ namespace DfE.ExternalApplications.Application.Users.Queries
 
             // Create new identity with only specific claims from external user
             var identity = new ClaimsIdentity();
+
+            // SaaS: stamp tenant_id on the issued internal JWT so cross-tenant replay can be
+            // rejected by JwtBearer validation downstream.
+            var currentTenant = tenantContextAccessor.CurrentTenant
+                ?? throw new InvalidOperationException("Tenant context must be set before exchanging a token.");
+            identity.AddClaim(new Claim("tenant_id", currentTenant.Id.ToString()));
+
             var allowedClaimTypes = new[]
             {
                 ClaimTypes.NameIdentifier,
@@ -134,6 +141,9 @@ namespace DfE.ExternalApplications.Application.Users.Queries
 
             var mergedUser = new ClaimsPrincipal(identity);
 
+            // SaaS: resolve a per-tenant IUserTokenService so the issued JWT is signed with
+            // THIS tenant's signing key (not a global key shared by all tenants).
+            var tokenSvc = tokenServiceFactory.GetService(currentTenant.Id.ToString());
             var internalToken = await tokenSvc.GetUserTokenModelAsync(mergedUser);
 
             return Result<ExchangeTokenDto>.Success(new ExchangeTokenDto

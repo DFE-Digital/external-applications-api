@@ -26,7 +26,7 @@ namespace DfE.ExternalApplications.Api.Controllers
         [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
         [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
         [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-        [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanReadWrite")]
+        [Authorize(Policy = "ServiceCallers")]
         public async Task<ActionResult<ExchangeTokenDto>> Exchange(
             [FromBody] ExchangeTokenRequest request,
             CancellationToken cancellationToken)

@@ -31,6 +31,12 @@ public sealed class TestTenantConfigurationProvider : ITenantConfigurationProvid
                 { "InternalServiceAuth:Services:0:Email", "test-service@service.com" },
                 { "InternalServiceAuth:Services:0:ApiKey", "secret" },
                 { "Email:ServiceSupportEmailAddress", "some.email@education.gov.uk" },
+                // Authorization:TokenSettings here so the per-tenant named TokenSettings registered by
+                // AddCustomAuthorization matches the integration test signing config.
+                { "Authorization:TokenSettings:SecretKey", "iw5/ivfUWaCpj+n3TihlGUzRVna+KKu8IfLP52GdgNXlDcqt3+N2MM45rwQ=" },
+                { "Authorization:TokenSettings:Issuer", "21f3ed37-8443-4755-9ed2-c68ca86b4398" },
+                { "Authorization:TokenSettings:Audience", "20dafd6d-79e5-4caf-8b72-d070dcc9716f" },
+                { "Authorization:TokenSettings:TokenLifetimeMinutes", "60" },
             })
             .Build();
         var tenant = new TenantConfiguration(

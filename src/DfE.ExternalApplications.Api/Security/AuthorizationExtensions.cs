@@ -27,12 +27,11 @@ namespace DfE.ExternalApplications.Api.Security
         {
             // Collect all DfESignIn configurations from all tenants for multi-provider support
             var allTenants = tenantConfigurationProvider.GetAllTenants();
-            
-            // TODO: Move shared auth settings (TokenSettings, UserTokenService) to GlobalConfiguration
-            // so they don't depend on first tenant. Kept as-is for now because CoreLibs extensions
-            // expect root-level IConfiguration with specific key paths.
-            var firstTenantForConfig = allTenants.FirstOrDefault();
-            var baseConfig = firstTenantForConfig?.Settings ?? configuration;
+
+            // baseConfig is only used by CoreLibs APIs (ExternalIdentityValidator and the
+            // permissions handlers) that expect a root IConfiguration; they don't carry any
+            // per-tenant signing material. Per-tenant JWT settings live in the registry now.
+            var baseConfig = configuration;
             
             // Register external identity validation with multi-provider support
             // Each tenant's DfESignIn and Entra SSO configs are added as isolated providers
@@ -111,10 +110,25 @@ namespace DfE.ExternalApplications.Api.Security
                 }
             });
 
-            var tokenSettings = new TokenSettings();
-            baseConfig.GetSection("Authorization:TokenSettings").Bind(tokenSettings);
-
-            services.AddUserTokenService(baseConfig);
+            // SaaS: register one named TokenSettings per tenant so each tenant gets its own
+            // internal-JWT signing key. IUserTokenServiceFactory.GetService(tenantId.ToString())
+            // returns the per-tenant token service. The legacy single-tenant AddUserTokenService
+            // is intentionally NOT used here - all callers must resolve via the factory.
+            foreach (var tenant in allTenants)
+            {
+                var ts = new TokenSettings();
+                tenant.Settings.GetSection("Authorization:TokenSettings").Bind(ts);
+                services.Configure<TokenSettings>(tenant.Id.ToString(), opts =>
+                {
+                    opts.SecretKey = ts.SecretKey;
+                    opts.Issuer = ts.Issuer;
+                    opts.Audience = ts.Audience;
+                    opts.TokenLifetimeMinutes = ts.TokenLifetimeMinutes;
+                    opts.BufferInSeconds = ts.BufferInSeconds;
+                });
+            }
+            services.AddUserTokenServiceFactory();
+            services.AddHttpContextAccessor();
 
             var authBuilder = services.AddAuthentication(options =>
                 {
@@ -123,132 +137,75 @@ namespace DfE.ExternalApplications.Api.Security
                 })
                 .AddPolicyScheme(AuthConstants.CompositeScheme, "CompositeAuth", options =>
                 {
+                    // SaaS dispatcher: no more issuer sniffing. Bearer tokens (user JWTs and Entra
+                    // service tokens) all go through the single dynamic TenantBearer scheme which
+                    // looks the provider up in ITenantAuthProviderRegistry. API-key / mTLS dispatch
                     options.ForwardDefaultSelector = context =>
                     {
-                        var header = context.Request.Headers["Authorization"].FirstOrDefault();
-                        if (header?.StartsWith("Bearer ") == true)
-                        {
-                            var token = header.Substring(7);
-                            var handler = new JwtSecurityTokenHandler();
-                            var jwt = handler.ReadJwtToken(token);
-
-                            if (jwt.Issuer == tokenSettings.Issuer)
-                                return AuthConstants.UserScheme;
-
-                            return AuthConstants.AzureAdScheme;
-                        }
-                        return AuthConstants.AzureAdScheme;
+                        if (context.Request.Headers.ContainsKey(AuthConstants.ApiKeyHeader))
+                            return AuthConstants.ApiKey;
+                        if (context.Connection.ClientCertificate is not null)
+                            return AuthConstants.Mtls;
+                        return AuthConstants.TenantBearer;
                     };
                 })
-                .AddJwtBearer(AuthConstants.UserScheme, opts =>
+                .AddJwtBearer(AuthConstants.TenantBearer, _ =>
                 {
-                    opts.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidIssuer = tokenSettings.Issuer,
-                        ValidateAudience = true,
-                        ValidAudience = tokenSettings.Audience,
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(tokenSettings.SecretKey))
-                    };
+                    // Configured via AddOptions<JwtBearerOptions> below so we can DI-inject
+                    // ITenantAuthProviderRegistry without spinning a temporary service provider.
                 })
-                .AddJwtBearer(AuthConstants.AzureAdScheme, opts =>
+                .AddScheme<Schemes.ApiKeyAuthenticationOptions, Schemes.ApiKeyAuthenticationHandler>(
+                    AuthConstants.ApiKey, _ => { /* HeaderName defaults to X-Api-Key */ })
+                .AddCertificate(AuthConstants.Mtls, certOpts =>
                 {
-                    // Set default authority from first tenant for signing key resolution
-                    var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault();
-                    if (firstTenant != null)
+                    // SaaS mTLS: accept any chain-built client cert and resolve the matching
+                    // TenantAuthProvider by thumbprint. Issuer/CA pinning is delegated to the
+                    // platform (App Gateway / Front Door) - we only verify identity here.
+                    certOpts.AllowedCertificateTypes = Microsoft.AspNetCore.Authentication.Certificate.CertificateTypes.All;
+                    certOpts.Events = new Microsoft.AspNetCore.Authentication.Certificate.CertificateAuthenticationEvents
                     {
-                        var azureAdSection = firstTenant.Settings.GetSection("AzureAd");
-                        var instance = azureAdSection["Instance"] ?? "https://login.microsoftonline.com/";
-                        var tenantId = azureAdSection["TenantId"];
-                        if (!string.IsNullOrEmpty(tenantId))
+                        OnCertificateValidated = ctx =>
                         {
-                            opts.Authority = $"{instance.TrimEnd('/')}/{tenantId}/v2.0";
-                        }
-                        
-                        // Collect all valid audiences from ALL tenants at startup
-                        var allAudiences = tenantConfigurationProvider.GetAllTenants()
-                            .SelectMany(t =>
+                            var registry = ctx.HttpContext.RequestServices.GetRequiredService<ITenantAuthProviderRegistry>();
+                            var provider = registry.GetByCertificateThumbprint(ctx.ClientCertificate.Thumbprint);
+                            if (provider is null)
                             {
-                                var section = t.Settings.GetSection("AzureAd");
-                                var audience = section["Audience"];
-                                var clientId = section["ClientId"];
-                                return new[] { audience, clientId, $"api://{clientId}" };
-                            })
-                            .Where(a => !string.IsNullOrEmpty(a))
-                            .Distinct()
-                            .ToArray();
-                        
-                        // Collect all valid issuers from ALL tenants (both v1.0 and v2.0 formats)
-                        var allIssuers = tenantConfigurationProvider.GetAllTenants()
-                            .SelectMany(t =>
-                            {
-                                var section = t.Settings.GetSection("AzureAd");
-                                var inst = section["Instance"] ?? "https://login.microsoftonline.com/";
-                                var tid = section["TenantId"];
-                                if (string.IsNullOrEmpty(tid)) return Array.Empty<string>();
-                                
-                                // Azure AD tokens can have v1.0 or v2.0 issuer format
-                                return new[]
-                                {
-                                    $"{inst.TrimEnd('/')}/{tid}/v2.0",           // v2.0 format
-                                    $"https://sts.windows.net/{tid}/",            // v1.0 format
-                                    $"https://login.microsoftonline.com/{tid}/v2.0" // explicit v2.0
-                                };
-                            })
-                            .Where(i => !string.IsNullOrEmpty(i))
-                            .Distinct()
-                            .ToArray();
-                        
-                        opts.TokenValidationParameters = new TokenValidationParameters
-                        {
-                            ValidateIssuer = true,
-                            ValidIssuers = allIssuers,
-                            ValidateAudience = true,
-                            ValidAudiences = allAudiences,
-                            ValidateLifetime = true,
-                            ValidateIssuerSigningKey = true
-                        };
-                    }
-                    
-                    opts.Events = new JwtBearerEvents
-                    {
-                        OnTokenValidated = context =>
-                        {
-                            // After token is validated, verify it matches the resolved tenant
-                            var tenantAccessor = context.HttpContext.RequestServices.GetService<ITenantContextAccessor>();
-                            var tenant = tenantAccessor?.CurrentTenant;
-                            
-                            if (tenant != null)
-                            {
-                                var azureAdSection = tenant.Settings.GetSection("AzureAd");
-                                var expectedAudience = azureAdSection["Audience"];
-                                var expectedClientId = azureAdSection["ClientId"];
-                                
-                                var tokenAudience = context.Principal?.Claims
-                                    .FirstOrDefault(c => c.Type == "aud")?.Value;
-                                
-                                var validAudiences = new[] { expectedAudience, expectedClientId, $"api://{expectedClientId}" }
-                                    .Where(a => !string.IsNullOrEmpty(a));
-                                
-                                if (!string.IsNullOrEmpty(tokenAudience) && !validAudiences.Contains(tokenAudience))
-                                {
-                                    context.Fail($"Token audience '{tokenAudience}' does not match tenant '{tenant.Name}'");
-                                }
+                                ctx.Fail("Unknown client certificate.");
+                                return Task.CompletedTask;
                             }
-                            
-                            return Task.CompletedTask;
-                        },
-                        OnAuthenticationFailed = context =>
-                        {
-                            // Log authentication failures for debugging
-                            var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
-                            logger?.LogWarning(context.Exception, "JWT authentication failed");
+
+                            ctx.HttpContext.Items[MatchedAuthProviderKey] = provider;
+
+                            var claims = new List<System.Security.Claims.Claim>
+                            {
+                                new("tenant_id", provider.TenantId.ToString()),
+                                new("auth_provider", provider.Name),
+                                new("is_service", provider.IsServicePrincipal ? "true" : "false")
+                            };
+                            if (provider.Roles is not null)
+                            {
+                                claims.AddRange(provider.Roles.Select(r =>
+                                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, r)));
+                            }
+
+                            ctx.Principal = new System.Security.Claims.ClaimsPrincipal(
+                                new System.Security.Claims.ClaimsIdentity(
+                                    (ctx.Principal?.Claims ?? Enumerable.Empty<System.Security.Claims.Claim>()).Concat(claims),
+                                    AuthConstants.Mtls));
+                            ctx.Success();
                             return Task.CompletedTask;
                         }
                     };
                 });
+
+            services.AddOptions<JwtBearerOptions>(AuthConstants.TenantBearer)
+                .Configure<ITenantAuthProviderRegistry>(ConfigureTenantBearer);
+
+            // SaaS: normalise the principal across TenantBearer / ApiKey / Mtls so downstream
+            // policies and handlers can read tenant_id / is_service / email / roles uniformly
+            // without branching on the active scheme.
+            services.AddTransient<Microsoft.AspNetCore.Authentication.IClaimsTransformation, TenantClaimsTransformation>();
+
 
             // set-up and define User and Template Permission policies
             var policyCustomizations = new Dictionary<string, Action<AuthorizationPolicyBuilder>>
@@ -351,6 +308,14 @@ namespace DfE.ExternalApplications.Api.Security
                         p.AddAuthenticationSchemes("HubCookie")
                             .RequireAuthenticatedUser()
                 );
+
+                // SaaS: provider-agnostic service-callers policy. Replaces SvcCanReadWrite. Any
+                // TenantAuthProvider with IsServicePrincipal == true satisfies this policy, so
+                // Entra apps, API-key callers and mTLS callers all pass the same gate.
+                options.AddPolicy("ServiceCallers", p =>
+                        p.AddAuthenticationSchemes(AuthConstants.CompositeScheme)
+                            .RequireAuthenticatedUser()
+                            .AddRequirements(new Handlers.ServicePrincipalRequirement()));
             });
 
             services.AddApplicationAuthorization(
@@ -366,12 +331,125 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, ApplicationListPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, AnyTemplatePermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ApplicationFilesPermissionHandler>();
-            services.AddSingleton<IAuthorizationHandler, NotificationsPermissionHandler>(); 
+            services.AddSingleton<IAuthorizationHandler, NotificationsPermissionHandler>();
+            services.AddSingleton<IAuthorizationHandler, ServicePrincipalHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, UserPermissionClaimProvider>();
 
             return services;
         }
+
+        /// <summary>
+        /// Configures the single dynamic <c>TenantBearer</c> JwtBearer scheme. All issuer/audience/
+        /// signing-key validation is delegated to <paramref name="registry"/> at request time, so
+        /// adding a new tenant or rotating a key requires no service restart - the registry is
+        /// rebuilt by the configuration-change pub/sub.
+        /// <para>
+        /// Token-level <c>tenant_id</c> consistency is enforced in <see cref="EnforceTenantConsistencyAsync"/>:
+        /// a token issued for tenant A cannot be replayed against tenant B even if A's signing key
+        /// happens to be valid.
+        /// </para>
+        /// </summary>
+        private static void ConfigureTenantBearer(JwtBearerOptions opts, ITenantAuthProviderRegistry registry)
+        {
+            opts.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerValidator = (issuer, _, _) =>
+                    registry.GetByIssuer(issuer) is not null
+                        ? issuer
+                        : throw new SecurityTokenInvalidIssuerException(issuer),
+                IssuerSigningKeyResolver = (_, securityToken, _, _) =>
+                {
+                    var issuer = securityToken?.Issuer;
+                    if (string.IsNullOrEmpty(issuer)) return Array.Empty<SecurityKey>();
+                    return registry.GetSigningKeysAsync(issuer, CancellationToken.None).GetAwaiter().GetResult();
+                },
+                AudienceValidator = (audiences, securityToken, _) =>
+                {
+                    var issuer = securityToken?.Issuer;
+                    return !string.IsNullOrEmpty(issuer) && registry.IsValidAudience(issuer, audiences);
+                }
+            };
+
+            opts.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = EnforceTenantConsistencyAsync,
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
+                    logger?.LogWarning(context.Exception, "TenantBearer authentication failed");
+                    return Task.CompletedTask;
+                }
+            };
+        }
+
+        /// <summary>
+        /// Enforces that a successfully-validated bearer token's <c>tenant_id</c> claim matches
+        /// the request's resolved tenant (from <see cref="ITenantContextAccessor"/>). For Entra
+        /// service tokens that don't carry <c>tenant_id</c>, we fall back to matching the
+        /// principal's issuer against the registered provider for <c>CurrentTenant</c>.
+        /// </summary>
+        private static Task EnforceTenantConsistencyAsync(TokenValidatedContext context)
+        {
+            var tenantAccessor = context.HttpContext.RequestServices.GetService<ITenantContextAccessor>();
+            var currentTenant = tenantAccessor?.CurrentTenant;
+
+            // No tenant resolved (e.g. health/swagger endpoints) - allow.
+            if (currentTenant is null) return Task.CompletedTask;
+
+            var registry = context.HttpContext.RequestServices.GetService<ITenantAuthProviderRegistry>();
+            var issuer = context.SecurityToken?.Issuer;
+            var matchedProvider = !string.IsNullOrEmpty(issuer) ? registry?.GetByIssuer(issuer) : null;
+
+            // Stash the matched provider for the ServicePrincipalRequirement handler.
+            if (matchedProvider is not null)
+            {
+                context.HttpContext.Items[MatchedAuthProviderKey] = matchedProvider;
+            }
+
+            var tokenTenantClaim = context.Principal?.Claims
+                .FirstOrDefault(c => c.Type == "tenant_id")?.Value;
+
+            if (!string.IsNullOrEmpty(tokenTenantClaim))
+            {
+                if (!string.Equals(tokenTenantClaim, currentTenant.Id.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Fail($"Token tenant_id '{tokenTenantClaim}' does not match the resolved tenant '{currentTenant.Name}' ({currentTenant.Id}).");
+                }
+                return Task.CompletedTask;
+            }
+
+            // Entra service tokens won't carry tenant_id; fall back to issuer-to-tenant matching.
+            if (matchedProvider is not null && matchedProvider.TenantId != currentTenant.Id)
+            {
+                context.Fail($"Token issuer '{issuer}' is registered for tenant {matchedProvider.TenantId} but the resolved tenant is {currentTenant.Id}.");
+                return Task.CompletedTask;
+            }
+
+            if (matchedProvider is null)
+            {
+                // Legacy/unknown issuer - log warning. Hard-fail once we are confident no legacy
+                // tokens remain in circulation.
+                var logger = context.HttpContext.RequestServices.GetService<ILogger<Program>>();
+                logger?.LogWarning(
+                    "TenantBearer token issuer '{Issuer}' has no matching provider in the registry. " +
+                    "Tenant {TenantId} ({TenantName}). This grace path will be removed in a future release.",
+                    issuer, currentTenant.Id, currentTenant.Name);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// HttpContext.Items key used to share the matched <see cref="TenantAuthProvider"/> between
+        /// the JwtBearer/ApiKey/Mtls schemes and the <c>ServiceCallers</c> authorization policy
+        /// handler.
+        /// </summary>
+        public const string MatchedAuthProviderKey = "DfE.ExternalApplications.MatchedAuthProvider";
     }
 }

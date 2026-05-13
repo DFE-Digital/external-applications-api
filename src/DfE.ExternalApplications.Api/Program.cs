@@ -112,6 +112,15 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddScoped<ITenantPrincipalResolver, DfE.ExternalApplications.Infrastructure.Services.TenantPrincipalResolver>();
             builder.Services.AddScoped<ITenantSettingsReader, DfE.ExternalApplications.Infrastructure.Services.TenantSettingsReader>();
 
+            // SaaS hot-reload pub/sub: the configuration provider broadcasts refresh events; the
+            // auth-provider registry subscribes and rebuilds its indexes in-place.
+            // Instantiated directly here so the singleton instance can be wired into the
+            // DatabaseTenantConfigurationProvider (which is built before app.Build()).
+            var tenantConfigChangedNotifier = new DfE.ExternalApplications.Infrastructure.Services.TenantConfigurationChangedNotifier(
+                LoggerFactory.Create(lb => lb.AddConsole())
+                    .CreateLogger<DfE.ExternalApplications.Infrastructure.Services.TenantConfigurationChangedNotifier>());
+            builder.Services.AddSingleton<ITenantConfigurationChangedNotifier>(tenantConfigChangedNotifier);
+
             // Tenant configuration provider: Database or AppSettings based on config toggle
             var tenantConfigSource = builder.Configuration["TenantConfigSource"] ?? "AppSettings";
             ITenantConfigurationProvider tenantConfigurationProvider;
@@ -125,7 +134,8 @@ namespace DfE.ExternalApplications.Api
                     LoggerFactory.Create(lb => lb.AddConsole())
                         .CreateLogger<DatabaseTenantConfigurationProvider>(),
                     encryptor: encryptor,
-                    targetApplication: "Api");
+                    targetApplication: "Api",
+                    changeNotifier: tenantConfigChangedNotifier);
 
                 dbProvider.RefreshAsync(CancellationToken.None).GetAwaiter().GetResult();
 
@@ -173,6 +183,13 @@ namespace DfE.ExternalApplications.Api
 
             builder.Services.AddApplicationDependencyGroup(builder.Configuration, tenantConfigurationProvider);
             builder.Services.AddInfrastructureDependencyGroup(builder.Configuration, tenantConfigurationProvider);
+
+            // SaaS auth: hot-reloadable registry of per-tenant auth providers. Singleton; subscribes
+            // to ITenantConfigurationChangedNotifier and rebuilds its indexes when the tenant
+            // configuration is refreshed (no restart required).
+            builder.Services.AddHttpClient();
+            builder.Services.AddSingleton<ITenantAuthProviderRegistry, DfE.ExternalApplications.Infrastructure.Services.DatabaseTenantAuthProviderRegistry>();
+
             builder.Services.AddCustomAuthorization(builder.Configuration, tenantConfigurationProvider);
 
             builder.Services.AddOptions<SwaggerUIOptions>()

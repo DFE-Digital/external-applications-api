@@ -88,19 +88,9 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                             })
                             .AddPolicyScheme("CompositeScheme", "CompositeAuth", schemeOptions =>
                             {
-                                schemeOptions.ForwardDefaultSelector = context =>
-                                {
-                                    var header = context.Request.Headers[AuthConstants.AuthorizationHeader].FirstOrDefault();
-                                    if (header?.StartsWith(AuthConstants.BearerPrefix) == true)
-                                    {
-                                        var token = header.Substring(AuthConstants.BearerPrefix.Length);
-                                        return token.StartsWith("user") ? AuthConstants.UserScheme : AuthConstants.AzureAdScheme;
-                                    }
-                                    return AuthConstants.AzureAdScheme;
-                                };
+                                schemeOptions.ForwardDefaultSelector = _ => AuthConstants.TenantBearer;
                             })
-                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(AuthConstants.UserScheme, _ => { })
-                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(AuthConstants.AzureAdScheme, _ => { })
+                            .AddScheme<AuthenticationSchemeOptions, MockJwtBearerHandler>(AuthConstants.TenantBearer, _ => { })
                             .AddScheme<AuthenticationSchemeOptions, MockCookieAuthenticationHandler>("HubCookie", _ => { });
 
                         services.RemoveAll<IExternalIdentityValidator>();
@@ -108,6 +98,17 @@ namespace DfE.ExternalApplications.Tests.Common.Customizations
                         services.RemoveAll<IRateLimiterFactory<string>>();
                         services.AddTransient<IExternalIdentityValidator, TestExternalIdentityValidator>();
                         services.AddUserTokenService(tokenConfig);
+
+                        // SaaS: register named TokenSettings for the test tenant so
+                        // IUserTokenServiceFactory.GetService(TestTenantId) returns a service
+                        // signing with the test key/issuer/audience.
+                        services.Configure<GovUK.Dfe.CoreLibs.Security.Configurations.TokenSettings>(TestTenantId, opts =>
+                        {
+                            opts.SecretKey = tokenConfig["Authorization:TokenSettings:SecretKey"]!;
+                            opts.Issuer = tokenConfig["Authorization:TokenSettings:Issuer"]!;
+                            opts.Audience = tokenConfig["Authorization:TokenSettings:Audience"]!;
+                            opts.TokenLifetimeMinutes = int.Parse(tokenConfig["Authorization:TokenSettings:TokenLifetimeMinutes"] ?? "60");
+                        });
                         services.AddSingleton<IRateLimiterFactory<string>, MockRateLimiterFactory>();
                         services.RemoveAll<INotificationService>();
                         services.AddSingleton<INotificationService, MockNotificationService>();

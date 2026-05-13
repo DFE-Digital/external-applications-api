@@ -19,7 +19,8 @@ public class DatabaseTenantConfigurationProvider(
     ILogger<DatabaseTenantConfigurationProvider> logger,
     ITenantSettingsEncryptor? encryptor = null,
     string targetApplication = "Api",
-    int refreshIntervalSeconds = 60) : ITenantConfigurationProvider, IHostedService, IDisposable
+    int refreshIntervalSeconds = 60,
+    ITenantConfigurationChangedNotifier? changeNotifier = null) : ITenantConfigurationProvider, IHostedService, IDisposable
 {
     private volatile IReadOnlyDictionary<Guid, TenantConfiguration> _tenantsById =
         new Dictionary<Guid, TenantConfiguration>();
@@ -102,6 +103,11 @@ public class DatabaseTenantConfigurationProvider(
             logger.LogInformation(
                 "Tenant configuration refreshed. Loaded {TenantCount} active tenants for target '{Target}'",
                 newTenantsById.Count, targetApplication);
+
+            // SaaS hot-reload: notify in-process subscribers (e.g. ITenantAuthProviderRegistry) that
+            // the snapshot has been swapped. Must run AFTER the volatile assignments above so
+            // subscribers observing GetAllTenants() see the new data.
+            changeNotifier?.Notify();
         }
         catch (Exception ex)
         {

@@ -8,7 +8,7 @@
     {
       "Controller": "UsersController",
       "Action": "RegisterUserAsync",
-      "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"
+      "ExpectedSecurity": "Authorize: Policy=ServiceCallers"
     },
     {
       "Controller": "TemplatesController",
@@ -23,7 +23,7 @@
     {
       "Controller": "TokensController",
       "Action": "Exchange",
-      "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"
+      "ExpectedSecurity": "Authorize: Policy=ServiceCallers"
     },
     {
       "Controller": "ApplicationsController",

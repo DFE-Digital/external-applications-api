@@ -53,7 +53,7 @@ public class ExchangeTokenQueryHandlerTests
         UserCustomization userCustom,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenService tokenService,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -110,6 +110,8 @@ public class ExchangeTokenQueryHandlerTests
             TokenType = "Bearer",
             ExpiresIn = 3600
         };
+        var tokenService = Substitute.For<IUserTokenService>();
+        tokenServiceFactory.GetService(tenant.Id.ToString()).Returns(tokenService);
         tokenService
             .GetUserTokenModelAsync(Arg.Any<ClaimsPrincipal>())
             .Returns(Task.FromResult(expectedInternalToken));
@@ -117,7 +119,7 @@ public class ExchangeTokenQueryHandlerTests
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
-            tokenService,
+            tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,
@@ -129,7 +131,9 @@ public class ExchangeTokenQueryHandlerTests
         // Assert
         Assert.NotNull(result);
         await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>());
-        await tokenService.Received(1).GetUserTokenModelAsync(Arg.Is<ClaimsPrincipal>(p => p.HasClaim(ClaimTypes.Role, user.Role.Name)));
+        await tokenService.Received(1).GetUserTokenModelAsync(Arg.Is<ClaimsPrincipal>(p =>
+            p.HasClaim(ClaimTypes.Role, user.Role.Name) &&
+            p.HasClaim("tenant_id", tenant.Id.ToString())));
     }
 
     [Theory]
@@ -139,7 +143,7 @@ public class ExchangeTokenQueryHandlerTests
         string email,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenService tokenService,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -167,7 +171,7 @@ public class ExchangeTokenQueryHandlerTests
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
-            tokenService,
+            tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,
@@ -188,7 +192,7 @@ public class ExchangeTokenQueryHandlerTests
         string subjectToken,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenService tokenService,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -202,7 +206,7 @@ public class ExchangeTokenQueryHandlerTests
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
-            tokenService,
+            tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,
@@ -223,7 +227,7 @@ public class ExchangeTokenQueryHandlerTests
         string email,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenService tokenService,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -249,7 +253,7 @@ public class ExchangeTokenQueryHandlerTests
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
-            tokenService,
+            tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,
@@ -269,7 +273,7 @@ public class ExchangeTokenQueryHandlerTests
         string subjectToken,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenService tokenSvc,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
         [Frozen] IHttpContextAccessor httpCtxAcc,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -283,7 +287,7 @@ public class ExchangeTokenQueryHandlerTests
         externalValidator.ValidateIdTokenAsync(Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(faultedTask);
 
-        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenSvc, httpCtxAcc, tenantContextAccessor, internalRequestChecker, logger);
+        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenServiceFactory, httpCtxAcc, tenantContextAccessor, internalRequestChecker, logger);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<SecurityTokenException>(
@@ -299,7 +303,7 @@ public class ExchangeTokenQueryHandlerTests
         UserCustomization userCustom,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenService tokenService,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -335,7 +339,7 @@ public class ExchangeTokenQueryHandlerTests
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
-            tokenService,
+            tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,
@@ -356,7 +360,7 @@ public class ExchangeTokenQueryHandlerTests
         string email,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenService tokenService,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ITenantContextAccessor tenantContextAccessor,
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
@@ -375,7 +379,7 @@ public class ExchangeTokenQueryHandlerTests
         var handler = new ExchangeTokenQueryHandler(
             externalValidator,
             userRepo,
-            tokenService,
+            tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,

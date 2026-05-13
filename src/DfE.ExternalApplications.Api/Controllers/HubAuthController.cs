@@ -35,7 +35,7 @@ namespace DfE.ExternalApplications.Api.Controllers
         [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
         [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
         [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-        [Authorize(AuthenticationSchemes = AuthConstants.UserScheme)]
+        [Authorize(AuthenticationSchemes = AuthConstants.TenantBearer)]
         public async Task<IActionResult> CreateHubTicket(CancellationToken ct)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;

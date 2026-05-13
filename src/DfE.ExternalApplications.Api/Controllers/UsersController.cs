@@ -48,7 +48,7 @@ public class UsersController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
-    [Authorize(AuthenticationSchemes = AuthConstants.AzureAdScheme, Policy = "SvcCanReadWrite")]
+    [Authorize(Policy = "ServiceCallers")]
     public async Task<ActionResult<UserDto>> RegisterUserAsync(
         [FromBody] RegisterUserRequest request,
         CancellationToken ct)
