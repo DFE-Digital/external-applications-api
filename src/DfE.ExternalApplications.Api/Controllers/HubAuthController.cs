@@ -24,9 +24,6 @@ namespace DfE.ExternalApplications.Api.Controllers
         IDistributedCache cache,
         ITenantContextAccessor tenantContextAccessor) : ControllerBase
     {
-        /// <summary>Claim type used to stamp the resolved tenant id on the hub cookie.</summary>
-        public const string TenantIdClaimType = "tenant_id";
-
         //Create a single use ticket for the hub, which is valid for 1 minute
         [HttpPost("auth/hub-ticket")]
         [SwaggerResponse(200, "The created ticket.", typeof(Dictionary<string, string>))]
@@ -84,7 +81,7 @@ namespace DfE.ExternalApplications.Api.Controllers
 
             var claims = new[] {
                 new Claim(ClaimTypes.Email, email),
-                new Claim(TenantIdClaimType, tenantId.Value.ToString()),
+                new Claim(TenantAuthClaimTypes.TenantId, tenantId.Value.ToString()),
             };
             var id = new ClaimsIdentity(claims, "HubCookie");
             await HttpContext.SignInAsync("HubCookie",

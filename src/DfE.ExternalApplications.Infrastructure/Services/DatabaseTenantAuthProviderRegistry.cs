@@ -1,11 +1,6 @@
-using System.Collections.Concurrent;
-using System.Text;
 using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Protocols;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.IdentityModel.Tokens;
 
 namespace DfE.ExternalApplications.Infrastructure.Services;
 
@@ -15,15 +10,15 @@ namespace DfE.ExternalApplications.Infrastructure.Services;
 /// <see cref="ITenantConfigurationChangedNotifier.Changed"/> and rebuilds its indexes in-place,
 /// so adding a tenant or rotating a signing key requires no service restart.
 /// <para>
-/// One <see cref="ConfigurationManager{T}"/> is held per OIDC issuer for JWKS auto-refresh.
-/// Symmetric (HMAC) signing keys for the internal <c>JwtHmac</c> tokens are cached directly.
+/// Intentionally framework-agnostic: returns pure <see cref="TenantAuthProvider"/> data. Signing
+/// key resolution (which pulls in <c>Microsoft.IdentityModel.Tokens</c>) lives in
+/// <see cref="DfE.ExternalApplications.Infrastructure.Security.ITenantSigningKeyResolver"/>.
 /// </para>
 /// </summary>
 public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegistry, IDisposable
 {
     private readonly ITenantConfigurationProvider _tenantConfigurationProvider;
     private readonly ITenantConfigurationChangedNotifier _notifier;
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DatabaseTenantAuthProviderRegistry> _logger;
 
     private volatile IReadOnlyDictionary<string, TenantAuthProvider> _byIssuer
@@ -37,20 +32,13 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
 
     private volatile IReadOnlyCollection<TenantAuthProvider> _all = Array.Empty<TenantAuthProvider>();
 
-    // Per-issuer OIDC ConfigurationManagers for JWKS auto-refresh. Created lazily, kept across
-    // rebuilds so we don't tear down JWKS caches on every refresh.
-    private readonly ConcurrentDictionary<string, ConfigurationManager<OpenIdConnectConfiguration>> _oidcConfigManagers
-        = new(StringComparer.OrdinalIgnoreCase);
-
     public DatabaseTenantAuthProviderRegistry(
         ITenantConfigurationProvider tenantConfigurationProvider,
         ITenantConfigurationChangedNotifier notifier,
-        IHttpClientFactory httpClientFactory,
         ILogger<DatabaseTenantAuthProviderRegistry> logger)
     {
         _tenantConfigurationProvider = tenantConfigurationProvider;
         _notifier = notifier;
-        _httpClientFactory = httpClientFactory;
         _logger = logger;
 
         _notifier.Changed += Rebuild;
@@ -74,52 +62,6 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
 
     /// <inheritdoc />
     public IReadOnlyCollection<TenantAuthProvider> GetAll() => _all;
-
-    /// <inheritdoc />
-    public async Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(string issuer, CancellationToken cancellationToken)
-    {
-        var provider = GetByIssuer(issuer);
-        if (provider is null)
-        {
-            return Array.Empty<SecurityKey>();
-        }
-
-        switch (provider.Kind)
-        {
-            case TenantAuthProviderKind.JwtHmac:
-                if (string.IsNullOrEmpty(provider.SigningKey))
-                {
-                    return Array.Empty<SecurityKey>();
-                }
-                return new SecurityKey[]
-                {
-                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(provider.SigningKey))
-                };
-
-            case TenantAuthProviderKind.Oidc:
-            case TenantAuthProviderKind.EntraOidc:
-                var manager = GetOrCreateConfigManager(provider);
-                if (manager is null)
-                {
-                    return Array.Empty<SecurityKey>();
-                }
-                try
-                {
-                    var config = await manager.GetConfigurationAsync(cancellationToken);
-                    return config.SigningKeys.ToArray();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "Failed to fetch OIDC signing keys for issuer {Issuer} (tenant {TenantId}).",
-                        issuer, provider.TenantId);
-                    return Array.Empty<SecurityKey>();
-                }
-
-            default:
-                return Array.Empty<SecurityKey>();
-        }
-    }
 
     /// <inheritdoc />
     public bool IsValidAudience(string issuer, IEnumerable<string> audiences)
@@ -299,9 +241,9 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
     /// <summary>
     /// Projects a single entry from the explicit <c>AuthProviders:Providers:n</c> section into a
     /// <see cref="TenantAuthProvider"/>. Returns null for entries with an unknown or missing
-    /// <c>Kind</c> (logged at the call site via the registry's existing error path).
+    /// <c>Kind</c>.
     /// </summary>
-    private static TenantAuthProvider? TryProjectExplicit(Guid tenantId, Microsoft.Extensions.Configuration.IConfigurationSection section)
+    private static TenantAuthProvider? TryProjectExplicit(Guid tenantId, IConfigurationSection section)
     {
         var kindStr = section["Kind"];
         if (!Enum.TryParse<TenantAuthProviderKind>(kindStr, ignoreCase: true, out var kind))
@@ -362,23 +304,6 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
 
             _ => null
         };
-    }
-
-    private ConfigurationManager<OpenIdConnectConfiguration>? GetOrCreateConfigManager(TenantAuthProvider provider)
-    {
-        var endpoint = provider.DiscoveryEndpoint;
-        if (string.IsNullOrEmpty(endpoint))
-        {
-            return null;
-        }
-
-        return _oidcConfigManagers.GetOrAdd(endpoint, ep => new ConfigurationManager<OpenIdConnectConfiguration>(
-            metadataAddress: ep,
-            configRetriever: new OpenIdConnectConfigurationRetriever(),
-            docRetriever: new HttpDocumentRetriever(_httpClientFactory.CreateClient())
-            {
-                RequireHttps = ep.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-            }));
     }
 
     /// <summary>

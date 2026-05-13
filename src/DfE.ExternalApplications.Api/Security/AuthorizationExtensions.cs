@@ -5,6 +5,7 @@ using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Api.Security.Handlers;
 using DfE.ExternalApplications.Infrastructure.Security;
+using DfE.ExternalApplications.Infrastructure.Services;
 using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -164,42 +165,16 @@ namespace DfE.ExternalApplications.Api.Security
                     certOpts.AllowedCertificateTypes = Microsoft.AspNetCore.Authentication.Certificate.CertificateTypes.All;
                     certOpts.Events = new Microsoft.AspNetCore.Authentication.Certificate.CertificateAuthenticationEvents
                     {
-                        OnCertificateValidated = ctx =>
-                        {
-                            var registry = ctx.HttpContext.RequestServices.GetRequiredService<ITenantAuthProviderRegistry>();
-                            var provider = registry.GetByCertificateThumbprint(ctx.ClientCertificate.Thumbprint);
-                            if (provider is null)
-                            {
-                                ctx.Fail("Unknown client certificate.");
-                                return Task.CompletedTask;
-                            }
-
-                            ctx.HttpContext.Items[MatchedAuthProviderKey] = provider;
-
-                            var claims = new List<System.Security.Claims.Claim>
-                            {
-                                new("tenant_id", provider.TenantId.ToString()),
-                                new("auth_provider", provider.Name),
-                                new("is_service", provider.IsServicePrincipal ? "true" : "false")
-                            };
-                            if (provider.Roles is not null)
-                            {
-                                claims.AddRange(provider.Roles.Select(r =>
-                                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, r)));
-                            }
-
-                            ctx.Principal = new System.Security.Claims.ClaimsPrincipal(
-                                new System.Security.Claims.ClaimsIdentity(
-                                    (ctx.Principal?.Claims ?? Enumerable.Empty<System.Security.Claims.Claim>()).Concat(claims),
-                                    AuthConstants.Mtls));
-                            ctx.Success();
-                            return Task.CompletedTask;
-                        }
+                        OnCertificateValidated = OnCertificateValidated
                     };
                 });
 
             services.AddOptions<JwtBearerOptions>(AuthConstants.TenantBearer)
-                .Configure<ITenantAuthProviderRegistry>(ConfigureTenantBearer);
+                .Configure<ITenantAuthProviderRegistry, ITenantSigningKeyResolver>(ConfigureTenantBearer);
+
+            // Infrastructure-side signing-key resolver: keeps JwtBearer wiring decoupled from the
+            // pure-data Domain registry. Singleton because it owns long-lived OIDC ConfigurationManagers.
+            services.AddSingleton<ITenantSigningKeyResolver, TenantSigningKeyResolver>();
 
             // SaaS: normalise the principal across TenantBearer / ApiKey / Mtls so downstream
             // policies and handlers can read tenant_id / is_service / email / roles uniformly
@@ -351,7 +326,10 @@ namespace DfE.ExternalApplications.Api.Security
         /// happens to be valid.
         /// </para>
         /// </summary>
-        private static void ConfigureTenantBearer(JwtBearerOptions opts, ITenantAuthProviderRegistry registry)
+        private static void ConfigureTenantBearer(
+            JwtBearerOptions opts,
+            ITenantAuthProviderRegistry registry,
+            ITenantSigningKeyResolver signingKeyResolver)
         {
             opts.TokenValidationParameters = new TokenValidationParameters
             {
@@ -367,7 +345,7 @@ namespace DfE.ExternalApplications.Api.Security
                 {
                     var issuer = securityToken?.Issuer;
                     if (string.IsNullOrEmpty(issuer)) return Array.Empty<SecurityKey>();
-                    return registry.GetSigningKeysAsync(issuer, CancellationToken.None).GetAwaiter().GetResult();
+                    return signingKeyResolver.GetSigningKeysAsync(issuer, CancellationToken.None).GetAwaiter().GetResult();
                 },
                 AudienceValidator = (audiences, securityToken, _) =>
                 {
@@ -409,11 +387,11 @@ namespace DfE.ExternalApplications.Api.Security
             // Stash the matched provider for the ServicePrincipalRequirement handler.
             if (matchedProvider is not null)
             {
-                context.HttpContext.Items[MatchedAuthProviderKey] = matchedProvider;
+                TenantAuthPrincipalFactory.StashProvider(context.HttpContext, matchedProvider);
             }
 
             var tokenTenantClaim = context.Principal?.Claims
-                .FirstOrDefault(c => c.Type == "tenant_id")?.Value;
+                .FirstOrDefault(c => c.Type == TenantAuthClaimTypes.TenantId)?.Value;
 
             if (!string.IsNullOrEmpty(tokenTenantClaim))
             {
@@ -446,10 +424,26 @@ namespace DfE.ExternalApplications.Api.Security
         }
 
         /// <summary>
-        /// HttpContext.Items key used to share the matched <see cref="TenantAuthProvider"/> between
-        /// the JwtBearer/ApiKey/Mtls schemes and the <c>ServiceCallers</c> authorization policy
-        /// handler.
+        /// Handles a validated client certificate: looks up the matching <see cref="TenantAuthProvider"/>
+        /// by thumbprint, fails the context if there's no match, otherwise replaces the principal
+        /// with a uniform tenant principal built by <see cref="TenantAuthPrincipalFactory"/>.
         /// </summary>
-        public const string MatchedAuthProviderKey = "DfE.ExternalApplications.MatchedAuthProvider";
+        private static Task OnCertificateValidated(Microsoft.AspNetCore.Authentication.Certificate.CertificateValidatedContext ctx)
+        {
+            var registry = ctx.HttpContext.RequestServices.GetRequiredService<ITenantAuthProviderRegistry>();
+            var provider = registry.GetByCertificateThumbprint(ctx.ClientCertificate.Thumbprint);
+            if (provider is null)
+            {
+                ctx.Fail("Unknown client certificate.");
+                return Task.CompletedTask;
+            }
+
+            TenantAuthPrincipalFactory.StashProvider(ctx.HttpContext, provider);
+            // Preserve any claims the certificate handler already projected (subject, thumbprint, etc.)
+            var existingClaims = ctx.Principal?.Claims ?? Enumerable.Empty<System.Security.Claims.Claim>();
+            ctx.Principal = TenantAuthPrincipalFactory.BuildPrincipal(provider, AuthConstants.Mtls, existingClaims);
+            ctx.Success();
+            return Task.CompletedTask;
+        }
     }
 }

@@ -43,9 +43,8 @@ public class ApiKeyAuthenticationHandlerTests
 
         var (result, _) = await RunHandlerAsync(registry, _ => { });
 
+        Assert.True(result.None);
         Assert.False(result.Succeeded);
-        Assert.Null(result.Failure);
-        Assert.False(result.None == false); // sanity: result.None is true
     }
 
     [Fact]
@@ -71,32 +70,19 @@ public class ApiKeyAuthenticationHandlerTests
             Name: "tenantA-backend",
             Kind: TenantAuthProviderKind.ApiKey,
             IsServicePrincipal: true,
-            ApiKeyHash: "irrelevant",
+            ApiKeyHash: TenantApiKeyHasher.Hash("raw"),
             Roles: new[] { "ServiceCaller" });
 
         var registry = Substitute.For<ITenantAuthProviderRegistry>();
-        registry.GetByApiKeyHash(Arg.Any<string>()).Returns(provider);
+        registry.GetByApiKeyHash(TenantApiKeyHasher.Hash("raw")).Returns(provider);
 
         var (result, ctx) = await RunHandlerAsync(registry, c => c.Request.Headers["X-Api-Key"] = "raw");
 
         Assert.True(result.Succeeded);
-        Assert.Equal(tenantId.ToString(), result.Principal!.FindFirst("tenant_id")?.Value);
-        Assert.Equal("true", result.Principal!.FindFirst("is_service")?.Value);
-        Assert.Equal("tenantA-backend", result.Principal!.FindFirst("auth_provider")?.Value);
+        Assert.Equal(tenantId.ToString(), result.Principal!.FindFirst(TenantAuthClaimTypes.TenantId)?.Value);
+        Assert.Equal("true", result.Principal!.FindFirst(TenantAuthClaimTypes.IsService)?.Value);
+        Assert.Equal("tenantA-backend", result.Principal!.FindFirst(TenantAuthClaimTypes.AuthProvider)?.Value);
         Assert.True(result.Principal!.HasClaim(ClaimTypes.Role, "ServiceCaller"));
-        Assert.Same(provider, ctx.Items[DfE.ExternalApplications.Api.Security.AuthorizationExtensions.MatchedAuthProviderKey]);
-    }
-
-    [Fact]
-    public void HashKey_ProducesStableLowercaseHexDigest()
-    {
-        var a = ApiKeyAuthenticationHandler.HashKey("the-key");
-        var b = ApiKeyAuthenticationHandler.HashKey("the-key");
-        var c = ApiKeyAuthenticationHandler.HashKey("different-key");
-
-        Assert.Equal(a, b);
-        Assert.NotEqual(a, c);
-        Assert.Equal(64, a.Length); // SHA-256 hex = 64 chars
-        Assert.Equal(a.ToLowerInvariant(), a);
+        Assert.Same(provider, ctx.Items[AuthConstants.MatchedAuthProviderKey]);
     }
 }

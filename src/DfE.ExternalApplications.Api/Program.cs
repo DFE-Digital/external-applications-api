@@ -267,36 +267,42 @@ namespace DfE.ExternalApplications.Api
             // CORS must be early in the pipeline to ensure headers are added to all responses (including errors)
             app.UseCors("Frontend");
 
-            app.UseSecurityHeaders(options =>
-            {
-                options.AddFrameOptionsDeny()
-                    .AddXssProtectionDisabled()
-                    .AddContentTypeOptionsNoSniff()
-                    .RemoveServerHeader()
-                    .AddContentSecurityPolicy(builder =>
-                    {
-                        builder.AddDefaultSrc().Self();
-                        builder.AddStyleSrc().Self().WithNonce();
-                        builder.AddScriptSrc().Self().WithNonce();
-                    })
-                    .AddPermissionsPolicy(builder =>
-                    {
-                        builder.AddAccelerometer().None();
-                        builder.AddAutoplay().None();
-                        builder.AddCamera().None();
-                        builder.AddEncryptedMedia().None();
-                        builder.AddFullscreen().None();
-                        builder.AddGeolocation().None();
-                        builder.AddGyroscope().None();
-                        builder.AddMagnetometer().None();
-                        builder.AddMicrophone().None();
-                        builder.AddMidi().None();
-                        builder.AddPayment().None();
-                        builder.AddPictureInPicture().None();
-                        builder.AddSyncXHR().None();
-                        builder.AddUsb().None();
-                    });
-            });
+            // Swagger UI + aspnetcore hot-reload + VS Browser Link serve HTML/JS that does not always
+            // line up with CSP nonces generated for API responses. Applying the strict CSP below to
+            // those paths leaves the browser blocking inline bootstrapping scripts and Swagger appears
+            // stuck on "Loading..." even though /swagger/index.html returned 200.
+            app.UseWhen(
+                static ctx => !IsSwaggerOrDevToolingPath(ctx.Request.Path),
+                static branch => branch.UseSecurityHeaders(options =>
+                {
+                    options.AddFrameOptionsDeny()
+                        .AddXssProtectionDisabled()
+                        .AddContentTypeOptionsNoSniff()
+                        .RemoveServerHeader()
+                        .AddContentSecurityPolicy(builder =>
+                        {
+                            builder.AddDefaultSrc().Self();
+                            builder.AddStyleSrc().Self().WithNonce();
+                            builder.AddScriptSrc().Self().WithNonce();
+                        })
+                        .AddPermissionsPolicy(builder =>
+                        {
+                            builder.AddAccelerometer().None();
+                            builder.AddAutoplay().None();
+                            builder.AddCamera().None();
+                            builder.AddEncryptedMedia().None();
+                            builder.AddFullscreen().None();
+                            builder.AddGeolocation().None();
+                            builder.AddGyroscope().None();
+                            builder.AddMagnetometer().None();
+                            builder.AddMicrophone().None();
+                            builder.AddMidi().None();
+                            builder.AddPayment().None();
+                            builder.AddPictureInPicture().None();
+                            builder.AddSyncXHR().None();
+                            builder.AddUsb().None();
+                        });
+                }));
 
             app.UseHsts();
             app.UseHttpsRedirection();
@@ -356,6 +362,18 @@ namespace DfE.ExternalApplications.Api
             {
                 Log.CloseAndFlush();
             }
+        }
+
+        /// <summary>
+        /// Paths that must not receive the API's strict CSP-with-nonce headers. Swagger UI and several
+        /// IDE/browser dev tools inject or bootstrap scripts in ways that break when nonce generation
+        /// and HTML rewriting are even slightly out of sync.
+        /// </summary>
+        private static bool IsSwaggerOrDevToolingPath(PathString path)
+        {
+            return path.StartsWithSegments("/swagger")
+                || path.StartsWithSegments("/_framework")
+                || path.StartsWithSegments("/_vs");
         }
 
         /// <summary>

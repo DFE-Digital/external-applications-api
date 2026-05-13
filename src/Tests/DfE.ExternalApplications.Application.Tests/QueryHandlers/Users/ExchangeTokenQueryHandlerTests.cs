@@ -133,7 +133,7 @@ public class ExchangeTokenQueryHandlerTests
         await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>());
         await tokenService.Received(1).GetUserTokenModelAsync(Arg.Is<ClaimsPrincipal>(p =>
             p.HasClaim(ClaimTypes.Role, user.Role.Name) &&
-            p.HasClaim("tenant_id", tenant.Id.ToString())));
+            p.HasClaim(TenantAuthClaimTypes.TenantId, tenant.Id.ToString())));
     }
 
     [Theory]

@@ -26,5 +26,12 @@
         // Configuration sections
         public const string ExternalIdpSection = "DfESignIn";
         public const string AzureAdSection = "AzureAd";
+
+        /// <summary>
+        /// <see cref="Microsoft.AspNetCore.Http.HttpContext.Items"/> key used to share the matched
+        /// <c>TenantAuthProvider</c> between the JwtBearer / ApiKey / Mtls schemes and the
+        /// <c>ServiceCallers</c> authorization policy + <c>TenantClaimsTransformation</c>.
+        /// </summary>
+        public const string MatchedAuthProviderKey = "DfE.ExternalApplications.MatchedAuthProvider";
     }
 }

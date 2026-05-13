@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Infrastructure.Security;
 using DfE.ExternalApplications.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -26,13 +27,9 @@ public class DatabaseTenantAuthProviderRegistryTests
 
         notifier = Substitute.For<ITenantConfigurationChangedNotifier>();
 
-        var httpFactory = Substitute.For<IHttpClientFactory>();
-        httpFactory.CreateClient(Arg.Any<string>()).Returns(new HttpClient());
-
         return new DatabaseTenantAuthProviderRegistry(
             configurationProvider,
             notifier,
-            httpFactory,
             Substitute.For<ILogger<DatabaseTenantAuthProviderRegistry>>());
     }
 
@@ -95,13 +92,9 @@ public class DatabaseTenantAuthProviderRegistryTests
         var notifier = new TenantConfigurationChangedNotifier(
             Substitute.For<ILogger<TenantConfigurationChangedNotifier>>());
 
-        var httpFactory = Substitute.For<IHttpClientFactory>();
-        httpFactory.CreateClient(Arg.Any<string>()).Returns(new HttpClient());
-
         var registry = new DatabaseTenantAuthProviderRegistry(
             configProvider,
             notifier,
-            httpFactory,
             Substitute.For<ILogger<DatabaseTenantAuthProviderRegistry>>());
 
         Assert.NotNull(registry.GetByIssuer("issuer-A"));
@@ -122,7 +115,7 @@ public class DatabaseTenantAuthProviderRegistryTests
     }
 
     [Fact]
-    public async Task GetSigningKeysAsync_ReturnsSymmetricKey_ForJwtHmacProvider()
+    public async Task TenantSigningKeyResolver_ReturnsSymmetricKey_ForJwtHmacProvider()
     {
         var tenant = BuildTenant(Guid.NewGuid(), new Dictionary<string, string?>
         {
@@ -132,8 +125,15 @@ public class DatabaseTenantAuthProviderRegistryTests
         });
 
         var registry = CreateRegistry(new[] { tenant }, out _, out _);
+        var httpFactory = Substitute.For<IHttpClientFactory>();
+        httpFactory.CreateClient(Arg.Any<string>()).Returns(new HttpClient());
 
-        var keys = await registry.GetSigningKeysAsync("extapi", CancellationToken.None);
+        var resolver = new TenantSigningKeyResolver(
+            registry,
+            httpFactory,
+            Substitute.For<ILogger<TenantSigningKeyResolver>>());
+
+        var keys = await resolver.GetSigningKeysAsync("extapi", CancellationToken.None);
 
         Assert.Single(keys);
     }

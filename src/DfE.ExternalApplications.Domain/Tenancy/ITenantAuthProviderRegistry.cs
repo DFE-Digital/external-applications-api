@@ -1,5 +1,3 @@
-using Microsoft.IdentityModel.Tokens;
-
 namespace DfE.ExternalApplications.Domain.Tenancy;
 
 /// <summary>
@@ -12,6 +10,12 @@ namespace DfE.ExternalApplications.Domain.Tenancy;
 /// rebuild its indexes when notified, so adding a new tenant or rotating a signing key is a
 /// pure DB write picked up within the configured refresh interval - no service restart.
 /// </para>
+/// <para>
+/// This interface is intentionally framework-agnostic: it returns pure data records and does
+/// not reference any token / JWT library. Resolving signing keys (an Infrastructure concern)
+/// is split into a separate <c>ITenantSigningKeyResolver</c> living in the Infrastructure
+/// layer so the Domain stays free of <c>Microsoft.IdentityModel.*</c> dependencies.
+/// </para>
 /// </summary>
 public interface ITenantAuthProviderRegistry
 {
@@ -23,15 +27,6 @@ public interface ITenantAuthProviderRegistry
     TenantAuthProvider? GetByIssuer(string issuer);
 
     /// <summary>
-    /// Resolve the set of signing keys to validate tokens minted by <paramref name="issuer"/>.
-    /// For OIDC providers this returns the JWKS keys (cached via <c>ConfigurationManager</c>);
-    /// for <c>JwtHmac</c> providers this returns a single <see cref="SymmetricSecurityKey"/>.
-    /// </summary>
-    /// <param name="issuer">Value of the <c>iss</c> claim.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(string issuer, CancellationToken cancellationToken);
-
-    /// <summary>
     /// Validate that at least one of <paramref name="audiences"/> matches the audience(s)
     /// configured for the provider with the given <paramref name="issuer"/>.
     /// </summary>
@@ -39,6 +34,8 @@ public interface ITenantAuthProviderRegistry
 
     /// <summary>
     /// Find the provider matching the SHA-256 hash of a presented <c>X-Api-Key</c> header.
+    /// The raw key should be hashed via <see cref="TenantApiKeyHasher.Hash(string)"/> before
+    /// being passed in so callers cannot drift from the canonical hashing rule.
     /// </summary>
     /// <param name="hashedKey">Lower-case hex digest of the SHA-256 of the raw key.</param>
     TenantAuthProvider? GetByApiKeyHash(string hashedKey);

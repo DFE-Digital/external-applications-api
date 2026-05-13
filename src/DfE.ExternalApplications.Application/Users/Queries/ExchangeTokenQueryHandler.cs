@@ -95,7 +95,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             // rejected by JwtBearer validation downstream.
             var currentTenant = tenantContextAccessor.CurrentTenant
                 ?? throw new InvalidOperationException("Tenant context must be set before exchanging a token.");
-            identity.AddClaim(new Claim("tenant_id", currentTenant.Id.ToString()));
+            identity.AddClaim(new Claim(TenantAuthClaimTypes.TenantId, currentTenant.Id.ToString()));
 
             var allowedClaimTypes = new[]
             {

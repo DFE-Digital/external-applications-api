@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 
@@ -29,50 +30,10 @@ public sealed class TenantClaimsTransformation(IHttpContextAccessor httpContextA
         }
 
         var http = httpContextAccessor.HttpContext;
-        var matched = http?.Items[AuthorizationExtensions.MatchedAuthProviderKey] as TenantAuthProvider;
+        var matched = http?.Items[AuthConstants.MatchedAuthProviderKey] as TenantAuthProvider;
 
-        AddIfMissing(identity, "tenant_id",
-            matched?.TenantId.ToString()
-            ?? identity.FindFirst("tenant_id")?.Value
-            ?? identity.FindFirst("tid")?.Value);
-
-        AddIfMissing(identity, "is_service",
-            matched is not null
-                ? (matched.IsServicePrincipal ? "true" : "false")
-                : (identity.HasClaim(c => c.Type == "is_service")
-                    ? identity.FindFirst("is_service")!.Value
-                    : null));
-
-        // Project provider-declared roles when not already present.
-        if (matched?.Roles is { Count: > 0 })
-        {
-            foreach (var role in matched.Roles)
-            {
-                if (!identity.HasClaim(ClaimTypes.Role, role))
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, role));
-                }
-            }
-        }
-
-        // Some IdPs use "emails" instead of ClaimTypes.Email; normalize.
-        if (!identity.HasClaim(c => c.Type == ClaimTypes.Email))
-        {
-            var fallbackEmail = identity.FindFirst("email")?.Value
-                ?? identity.FindFirst("preferred_username")?.Value;
-            if (!string.IsNullOrEmpty(fallbackEmail))
-            {
-                identity.AddClaim(new Claim(ClaimTypes.Email, fallbackEmail));
-            }
-        }
+        TenantAuthenticatedIdentityNormalizer.Apply(identity, matched);
 
         return Task.FromResult(principal);
-    }
-
-    private static void AddIfMissing(ClaimsIdentity identity, string claimType, string? value)
-    {
-        if (string.IsNullOrEmpty(value)) return;
-        if (identity.HasClaim(c => c.Type == claimType)) return;
-        identity.AddClaim(new Claim(claimType, value));
     }
 }
