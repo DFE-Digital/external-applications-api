@@ -11,7 +11,6 @@ using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security.Models;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,17 +90,12 @@ public class ExchangeTokenQueryHandlerTests
         var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
         userRepo.Query().Returns(userQueryable);
 
-        // Set up mock HttpContext with authentication service
+        // Handler reads Entra/app roles from HttpContext.User (already authenticated by the API pipeline).
         var httpContext = Substitute.For<HttpContext>();
-        var authService = Substitute.For<IAuthenticationService>();
-        var serviceProvider = Substitute.For<IServiceProvider>();
-
-        var authResult = AuthenticateResult.Success(new AuthenticationTicket(
-            new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "TestRole") })),
-            "AzureEntra"));
-        authService.AuthenticateAsync(httpContext, "AzureEntra").Returns(authResult);
-        serviceProvider.GetService(typeof(IAuthenticationService)).Returns(authService);
-        httpContext.RequestServices.Returns(serviceProvider);
+        var entraIdentity = new ClaimsIdentity(
+            new[] { new Claim(ClaimTypes.Role, "TestRole") },
+            authenticationType: "Bearer");
+        httpContext.User.Returns(new ClaimsPrincipal(entraIdentity));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         var expectedInternalToken = new Token

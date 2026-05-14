@@ -6,7 +6,6 @@ using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
 using MediatR;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -82,10 +81,12 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             if (!hasTemplateAccess)
                 return Result<ExchangeTokenDto>.NotFound($"User not found for email {email}");
 
+            // Caller was already authenticated by the API pipeline (ServiceCallers → CompositeScheme →
+            // TenantBearer, etc.). There is no legacy "AzureEntra" scheme; Entra roles live on User.
             var httpCtx = httpCtxAcc.HttpContext!;
-            var azureAuth = await httpCtx.AuthenticateAsync("AzureEntra");
-            var svcRoles = azureAuth.Succeeded
-                ? azureAuth.Principal.Claims.Where(c => c.Type == ClaimTypes.Role || c.Type == "roles")
+            var requestPrincipal = httpCtx.User;
+            var svcRoles = requestPrincipal.Identity?.IsAuthenticated == true
+                ? requestPrincipal.Claims.Where(c => c.Type == ClaimTypes.Role || c.Type == "roles")
                 : Enumerable.Empty<Claim>();
 
             // Create new identity with only specific claims from external user
@@ -122,7 +123,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 identity.AddClaim(new Claim(ClaimTypes.Role, dbUser.Role.Name));
             }
 
-            // Merge Azure Entra service roles, avoiding duplicates
+            // Merge Entra / app roles from the authenticated request principal, avoiding duplicates
             foreach (var svcRole in svcRoles)
             {
                 var isExcludedRole =
