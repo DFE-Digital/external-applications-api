@@ -10,10 +10,12 @@ using DfE.ExternalApplications.Domain.Tenancy;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 namespace DfE.ExternalApplications.Api.Security
@@ -170,7 +172,11 @@ namespace DfE.ExternalApplications.Api.Security
                 });
 
             services.AddOptions<JwtBearerOptions>(AuthConstants.TenantBearer)
-                .Configure<ITenantAuthProviderRegistry, ITenantSigningKeyResolver>(ConfigureTenantBearer);
+                .Configure<IServiceProvider>(static (opts, sp) => ConfigureTenantBearer(
+                    opts,
+                    sp.GetRequiredService<ITenantAuthProviderRegistry>(),
+                    sp.GetRequiredService<ITenantSigningKeyResolver>(),
+                    sp.GetRequiredService<IHttpContextAccessor>()));
 
             // Infrastructure-side signing-key resolver: keeps JwtBearer wiring decoupled from the
             // pure-data Domain registry. Singleton because it owns long-lived OIDC ConfigurationManagers.
@@ -325,11 +331,17 @@ namespace DfE.ExternalApplications.Api.Security
         /// a token issued for tenant A cannot be replayed against tenant B even if A's signing key
         /// happens to be valid.
         /// </para>
+        /// <para>
+        /// <paramref name="httpContextAccessor"/> is used so audience validation can resolve scoped
+        /// <see cref="ITenantContextAccessor"/> from <see cref="HttpContext.RequestServices"/> per request.
+        /// JwtBearer options configuration runs against the root provider and cannot inject scoped services directly.
+        /// </para>
         /// </summary>
         private static void ConfigureTenantBearer(
             JwtBearerOptions opts,
             ITenantAuthProviderRegistry registry,
-            ITenantSigningKeyResolver signingKeyResolver)
+            ITenantSigningKeyResolver signingKeyResolver,
+            IHttpContextAccessor httpContextAccessor)
         {
             opts.TokenValidationParameters = new TokenValidationParameters
             {
@@ -338,7 +350,7 @@ namespace DfE.ExternalApplications.Api.Security
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 IssuerValidator = (issuer, _, _) =>
-                    registry.GetByIssuer(issuer) is not null
+                    registry.HasAnyProviderForIssuer(issuer)
                         ? issuer
                         : throw new SecurityTokenInvalidIssuerException(issuer),
                 IssuerSigningKeyResolver = (_, securityToken, _, _) =>
@@ -350,7 +362,21 @@ namespace DfE.ExternalApplications.Api.Security
                 AudienceValidator = (audiences, securityToken, _) =>
                 {
                     var issuer = securityToken?.Issuer;
-                    return !string.IsNullOrEmpty(issuer) && registry.IsValidAudience(issuer, audiences);
+                    if (string.IsNullOrEmpty(issuer))
+                    {
+                        return false;
+                    }
+
+                    var jwt = securityToken as JwtSecurityToken;
+                    var azpOrAppId = PickAzpOrAppId(jwt);
+                    var tenantAccessor = ResolveTenantContextAccessor(httpContextAccessor);
+                    var tenantId = tenantAccessor?.CurrentTenant?.Id;
+                    if (tenantId is null)
+                    {
+                        return registry.IsJwtAudienceValidForIssuerAnyTenant(issuer, audiences);
+                    }
+
+                    return registry.IsJwtAudienceValidForTenant(issuer, audiences, tenantId.Value, azpOrAppId);
                 }
             };
 
@@ -367,10 +393,17 @@ namespace DfE.ExternalApplications.Api.Security
         }
 
         /// <summary>
+        /// Resolves scoped <see cref="ITenantContextAccessor"/> for the current HTTP request.
+        /// </summary>
+        private static ITenantContextAccessor? ResolveTenantContextAccessor(IHttpContextAccessor httpContextAccessor)
+            => httpContextAccessor.HttpContext?.RequestServices.GetService<ITenantContextAccessor>();
+
+        /// <summary>
         /// Enforces that a successfully-validated bearer token's <c>tenant_id</c> claim matches
         /// the request's resolved tenant (from <see cref="ITenantContextAccessor"/>). For Entra
-        /// service tokens that don't carry <c>tenant_id</c>, we fall back to matching the
-        /// principal's issuer against the registered provider for <c>CurrentTenant</c>.
+        /// service tokens that don't carry <c>tenant_id</c>, the matched provider is resolved via
+        /// <see cref="ITenantAuthProviderRegistry.ResolveJwtBearerProvider"/> (issuer + aud +
+        /// <c>azp</c>/<c>appid</c> + current tenant) so many SaaS tenants can share one Entra directory.
         /// </summary>
         private static Task EnforceTenantConsistencyAsync(TokenValidatedContext context)
         {
@@ -382,7 +415,19 @@ namespace DfE.ExternalApplications.Api.Security
 
             var registry = context.HttpContext.RequestServices.GetService<ITenantAuthProviderRegistry>();
             var issuer = context.SecurityToken?.Issuer;
-            var matchedProvider = !string.IsNullOrEmpty(issuer) ? registry?.GetByIssuer(issuer) : null;
+            var jwt = context.SecurityToken as JwtSecurityToken;
+            var tokenAudiences = jwt?.Audiences ?? ExtractAudiencesFromPrincipal(context.Principal);
+            var azpOrAppId = PickAzpOrAppId(jwt) ?? PickAzpOrAppIdFromPrincipal(context.Principal);
+
+            TenantAuthProvider? matchedProvider = null;
+            if (!string.IsNullOrEmpty(issuer) && registry is not null)
+            {
+                matchedProvider = registry.ResolveJwtBearerProvider(
+                    issuer,
+                    tokenAudiences,
+                    currentTenant.Id,
+                    azpOrAppId);
+            }
 
             // Stash the matched provider for the ServicePrincipalRequirement handler.
             if (matchedProvider is not null)
@@ -402,10 +447,11 @@ namespace DfE.ExternalApplications.Api.Security
                 return Task.CompletedTask;
             }
 
-            // Entra service tokens won't carry tenant_id; fall back to issuer-to-tenant matching.
-            if (matchedProvider is not null && matchedProvider.TenantId != currentTenant.Id)
+            if (matchedProvider is null && !string.IsNullOrEmpty(issuer) && registry?.HasAnyProviderForIssuer(issuer) == true)
             {
-                context.Fail($"Token issuer '{issuer}' is registered for tenant {matchedProvider.TenantId} but the resolved tenant is {currentTenant.Id}.");
+                context.Fail(
+                    $"No unique auth provider for issuer '{issuer}' and tenant '{currentTenant.Name}' ({currentTenant.Id}). " +
+                    "Ensure token aud matches configured audiences and azp/appid matches AzureAd:ClientId (or AuthProviders ClientId) for this tenant.");
                 return Task.CompletedTask;
             }
 
@@ -421,6 +467,42 @@ namespace DfE.ExternalApplications.Api.Security
             }
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>Reads <c>aud</c> from the validated principal when the security token is not a <see cref="JwtSecurityToken"/>.</summary>
+        private static IEnumerable<string> ExtractAudiencesFromPrincipal(ClaimsPrincipal? principal)
+        {
+            if (principal is null) yield break;
+            foreach (var c in principal.FindAll(JwtRegisteredClaimNames.Aud))
+            {
+                if (!string.IsNullOrEmpty(c.Value))
+                {
+                    yield return c.Value;
+                }
+            }
+        }
+
+        /// <summary>Resolves Entra <c>azp</c> / <c>appid</c> from a JWT for per-app registration matching.</summary>
+        private static string? PickAzpOrAppId(JwtSecurityToken? jwt)
+        {
+            if (jwt is null) return null;
+            var azp = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Azp)?.Value;
+            if (!string.IsNullOrEmpty(azp)) return azp;
+            var appid = jwt.Claims.FirstOrDefault(c => c.Type == "appid")?.Value;
+            if (!string.IsNullOrEmpty(appid)) return appid;
+            return jwt.Claims.FirstOrDefault(c =>
+                    c.Type == "http://schemas.microsoft.com/identity/claims/appid")
+                ?.Value;
+        }
+
+        private static string? PickAzpOrAppIdFromPrincipal(ClaimsPrincipal? principal)
+        {
+            if (principal is null) return null;
+            var azp = principal.FindFirst(JwtRegisteredClaimNames.Azp)?.Value;
+            if (!string.IsNullOrEmpty(azp)) return azp;
+            var appid = principal.FindFirst("appid")?.Value;
+            if (!string.IsNullOrEmpty(appid)) return appid;
+            return principal.FindFirst("http://schemas.microsoft.com/identity/claims/appid")?.Value;
         }
 
         /// <summary>

@@ -8,11 +8,16 @@ namespace DfE.ExternalApplications.Infrastructure.Services;
 /// Singleton, hot-reloadable registry of <see cref="TenantAuthProvider"/> rows projected from
 /// every tenant's settings in <see cref="ITenantConfigurationProvider"/>. Subscribes to
 /// <see cref="ITenantConfigurationChangedNotifier.Changed"/> and rebuilds its indexes in-place,
-/// so adding a tenant or rotating a signing key requires no service restart.
+/// so adding a new tenant or rotating a signing key requires no service restart.
 /// <para>
 /// Intentionally framework-agnostic: returns pure <see cref="TenantAuthProvider"/> data. Signing
 /// key resolution (which pulls in <c>Microsoft.IdentityModel.Tokens</c>) lives in
 /// <see cref="DfE.ExternalApplications.Infrastructure.Security.ITenantSigningKeyResolver"/>.
+/// </para>
+/// <para>
+/// Multiple providers may share the same <c>iss</c> (e.g. one Entra directory, many app
+/// registrations). Bearer resolution uses <see cref="ResolveJwtBearerProvider"/> with the
+/// resolved SaaS tenant id plus <c>aud</c> and <c>azp</c>/<c>appid</c> to pick the correct row.
 /// </para>
 /// </summary>
 public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegistry, IDisposable
@@ -21,8 +26,8 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
     private readonly ITenantConfigurationChangedNotifier _notifier;
     private readonly ILogger<DatabaseTenantAuthProviderRegistry> _logger;
 
-    private volatile IReadOnlyDictionary<string, TenantAuthProvider> _byIssuer
-        = new Dictionary<string, TenantAuthProvider>(StringComparer.OrdinalIgnoreCase);
+    private volatile IReadOnlyDictionary<string, IReadOnlyList<TenantAuthProvider>> _providersByIssuer =
+        new Dictionary<string, IReadOnlyList<TenantAuthProvider>>(StringComparer.OrdinalIgnoreCase);
 
     private volatile IReadOnlyDictionary<string, TenantAuthProvider> _byApiKeyHash
         = new Dictionary<string, TenantAuthProvider>(StringComparer.OrdinalIgnoreCase);
@@ -50,7 +55,128 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
 
     /// <inheritdoc />
     public TenantAuthProvider? GetByIssuer(string issuer)
-        => _byIssuer.TryGetValue(issuer, out var provider) ? provider : null;
+        => GetProvidersByIssuer(issuer).FirstOrDefault();
+
+    /// <inheritdoc />
+    public IReadOnlyList<TenantAuthProvider> GetProvidersByIssuer(string issuer)
+    {
+        if (string.IsNullOrEmpty(issuer))
+        {
+            return Array.Empty<TenantAuthProvider>();
+        }
+
+        return _providersByIssuer.TryGetValue(issuer, out var list)
+            ? list
+            : Array.Empty<TenantAuthProvider>();
+    }
+
+    /// <inheritdoc />
+    public bool HasAnyProviderForIssuer(string issuer)
+        => GetProvidersByIssuer(issuer).Count > 0;
+
+    /// <inheritdoc />
+    public TenantAuthProvider? ResolveJwtBearerProvider(
+        string issuer,
+        IEnumerable<string> tokenAudiences,
+        Guid resolvedTenantId,
+        string? azpOrAppId)
+    {
+        if (string.IsNullOrEmpty(issuer))
+        {
+            return null;
+        }
+
+        var tokenAudList = tokenAudiences as IReadOnlyList<string> ?? tokenAudiences.ToList();
+        var candidates = _all
+            .Where(p =>
+                !string.IsNullOrEmpty(p.Issuer) &&
+                p.TenantId == resolvedTenantId &&
+                issuer.Equals(p.Issuer, StringComparison.OrdinalIgnoreCase) &&
+                AudienceMatches(p, tokenAudList))
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        if (candidates.Count == 1)
+        {
+            return candidates[0];
+        }
+
+        if (!string.IsNullOrEmpty(azpOrAppId))
+        {
+            var byClient = candidates
+                .Where(p =>
+                    !string.IsNullOrEmpty(p.ClientId) &&
+                    p.ClientId.Equals(azpOrAppId, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (byClient.Count == 1)
+            {
+                return byClient[0];
+            }
+        }
+
+        return null;
+    }
+
+    /// <inheritdoc />
+    public TenantAuthProvider? GetFirstSigningProviderForIssuer(string issuer)
+    {
+        if (string.IsNullOrEmpty(issuer))
+        {
+            return null;
+        }
+
+        foreach (var p in _all)
+        {
+            if (string.IsNullOrEmpty(p.Issuer) || !issuer.Equals(p.Issuer, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (p.Kind == TenantAuthProviderKind.JwtHmac && !string.IsNullOrEmpty(p.SigningKey))
+            {
+                return p;
+            }
+
+            if (p.Kind is TenantAuthProviderKind.Oidc or TenantAuthProviderKind.EntraOidc
+                && !string.IsNullOrEmpty(p.DiscoveryEndpoint))
+            {
+                return p;
+            }
+        }
+
+        return null;
+    }
+
+    /// <inheritdoc />
+    public bool IsValidAudience(string issuer, IEnumerable<string> audiences)
+        => IsJwtAudienceValidForIssuerAnyTenant(issuer, audiences);
+
+    /// <inheritdoc />
+    public bool IsJwtAudienceValidForTenant(
+        string issuer,
+        IEnumerable<string> tokenAudiences,
+        Guid resolvedTenantId,
+        string? azpOrAppId)
+        => ResolveJwtBearerProvider(issuer, tokenAudiences, resolvedTenantId, azpOrAppId) is not null;
+
+    /// <inheritdoc />
+    public bool IsJwtAudienceValidForIssuerAnyTenant(string issuer, IEnumerable<string> tokenAudiences)
+    {
+        if (string.IsNullOrEmpty(issuer))
+        {
+            return false;
+        }
+
+        var tokenAudList = tokenAudiences as IReadOnlyList<string> ?? tokenAudiences.ToList();
+        return _all.Any(p =>
+            !string.IsNullOrEmpty(p.Issuer) &&
+            issuer.Equals(p.Issuer, StringComparison.OrdinalIgnoreCase) &&
+            AudienceMatches(p, tokenAudList));
+    }
 
     /// <inheritdoc />
     public TenantAuthProvider? GetByApiKeyHash(string hashedKey)
@@ -63,22 +189,29 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
     /// <inheritdoc />
     public IReadOnlyCollection<TenantAuthProvider> GetAll() => _all;
 
-    /// <inheritdoc />
-    public bool IsValidAudience(string issuer, IEnumerable<string> audiences)
+    private static bool AudienceMatches(TenantAuthProvider provider, IReadOnlyList<string> tokenAudiences)
     {
-        var provider = GetByIssuer(issuer);
-        if (provider?.Audiences is null || provider.Audiences.Count == 0)
+        if (provider.Audiences is null || provider.Audiences.Count == 0)
         {
             return false;
         }
 
-        foreach (var aud in audiences)
+        foreach (var ta in tokenAudiences)
         {
-            if (provider.Audiences.Contains(aud))
+            if (string.IsNullOrEmpty(ta))
             {
-                return true;
+                continue;
+            }
+
+            foreach (var configured in provider.Audiences)
+            {
+                if (string.Equals(ta, configured, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
         }
+
         return false;
     }
 
@@ -88,7 +221,7 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
         {
             var tenants = _tenantConfigurationProvider.GetAllTenants();
 
-            var byIssuer = new Dictionary<string, TenantAuthProvider>(StringComparer.OrdinalIgnoreCase);
+            var byIssuer = new Dictionary<string, List<TenantAuthProvider>>(StringComparer.OrdinalIgnoreCase);
             var byApiKey = new Dictionary<string, TenantAuthProvider>(StringComparer.OrdinalIgnoreCase);
             var byThumb = new Dictionary<string, TenantAuthProvider>(StringComparer.OrdinalIgnoreCase);
             var all = new List<TenantAuthProvider>();
@@ -101,7 +234,13 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
 
                     if (!string.IsNullOrEmpty(provider.Issuer))
                     {
-                        byIssuer[provider.Issuer] = provider;
+                        if (!byIssuer.TryGetValue(provider.Issuer, out var issuerList))
+                        {
+                            issuerList = new List<TenantAuthProvider>();
+                            byIssuer[provider.Issuer] = issuerList;
+                        }
+
+                        issuerList.Add(provider);
                     }
 
                     if (!string.IsNullOrEmpty(provider.ApiKeyHash))
@@ -116,15 +255,26 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
                 }
             }
 
-            _byIssuer = byIssuer;
+            var frozenByIssuer = byIssuer.ToDictionary(
+                static kv => kv.Key,
+                static kv => (IReadOnlyList<TenantAuthProvider>)kv.Value.ToArray(),
+                StringComparer.OrdinalIgnoreCase);
+
+            _providersByIssuer = frozenByIssuer;
             _byApiKeyHash = byApiKey;
             _byThumbprint = byThumb;
             _all = all;
 
+            var issuerSlotCount = frozenByIssuer.Values.Sum(static list => list.Count);
             _logger.LogInformation(
                 "TenantAuthProviderRegistry rebuilt: {ProviderCount} providers across {TenantCount} tenants " +
-                "({ByIssuer} by issuer, {ByApiKey} by api-key, {ByThumbprint} by cert)",
-                all.Count, tenants.Count, byIssuer.Count, byApiKey.Count, byThumb.Count);
+                "({IssuerSlotCount} issuer slots across {DistinctIssuers} distinct issuers, {ByApiKey} by api-key, {ByThumbprint} by cert)",
+                all.Count,
+                tenants.Count,
+                issuerSlotCount,
+                frozenByIssuer.Count,
+                byApiKey.Count,
+                byThumb.Count);
         }
         catch (Exception ex)
         {
@@ -153,6 +303,7 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
                     yield return projected;
                 }
             }
+
             yield break;
         }
 
@@ -226,7 +377,7 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
             ?? (string.IsNullOrEmpty(azureAdTenant) ? null : $"https://login.microsoftonline.com/{azureAdTenant}/v2.0/.well-known/openid-configuration");
         if (!string.IsNullOrEmpty(azureAdIssuer))
         {
-            yield return new TenantAuthProvider(
+            var azureAdProvider = new TenantAuthProvider(
                 TenantId: tenant.Id,
                 Name: "azure-ad-svc",
                 Kind: TenantAuthProviderKind.EntraOidc,
@@ -235,6 +386,17 @@ public sealed class DatabaseTenantAuthProviderRegistry : ITenantAuthProviderRegi
                 DiscoveryEndpoint: azureAdDiscovery,
                 ClientId: tenant.Settings["AzureAd:ClientId"],
                 Audiences: string.IsNullOrEmpty(azureAdAudience) ? Array.Empty<string>() : new[] { azureAdAudience });
+            yield return azureAdProvider;
+
+            // v2 access tokens often use login.microsoftonline.com/{tid}/v2.0 while legacy config defaults to sts.windows.net.
+            if (!string.IsNullOrEmpty(azureAdTenant))
+            {
+                var v2Issuer = $"https://login.microsoftonline.com/{azureAdTenant}/v2.0";
+                if (!v2Issuer.Equals(azureAdIssuer, StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return azureAdProvider with { Issuer = v2Issuer };
+                }
+            }
         }
     }
 

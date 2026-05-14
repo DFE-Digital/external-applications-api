@@ -41,7 +41,7 @@ public sealed class TenantSigningKeyResolver : ITenantSigningKeyResolver
     /// <inheritdoc />
     public async Task<IReadOnlyCollection<SecurityKey>> GetSigningKeysAsync(string issuer, CancellationToken cancellationToken)
     {
-        var provider = _registry.GetByIssuer(issuer);
+        var provider = _registry.GetFirstSigningProviderForIssuer(issuer);
         if (provider is null)
         {
             return Array.Empty<SecurityKey>();

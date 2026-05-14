@@ -167,4 +167,97 @@ public class DatabaseTenantAuthProviderRegistryTests
         Assert.Null(registry.GetByCertificateThumbprint("AB:CD:12"));
         Assert.Null(registry.GetByCertificateThumbprint("ab cd 12"));
     }
+
+    [Fact]
+    public void GetProvidersByIssuer_ReturnsMultiple_WhenSameStsIssuerSharedAcrossTenants()
+    {
+        var azureDir = Guid.NewGuid().ToString();
+        var issuer = $"https://sts.windows.net/{azureDir}/";
+        var t1 = BuildTenant(Guid.NewGuid(), new Dictionary<string, string?>
+        {
+            ["AzureAd:TenantId"] = azureDir,
+            ["AzureAd:ClientId"] = "client-a",
+            ["AzureAd:Audience"] = "api://shared"
+        });
+        var t2 = BuildTenant(Guid.NewGuid(), new Dictionary<string, string?>
+        {
+            ["AzureAd:TenantId"] = azureDir,
+            ["AzureAd:ClientId"] = "client-b",
+            ["AzureAd:Audience"] = "api://shared"
+        });
+        var registry = CreateRegistry(new[] { t1, t2 }, out _, out _);
+
+        var list = registry.GetProvidersByIssuer(issuer);
+        Assert.True(list.Count >= 2);
+    }
+
+    [Fact]
+    public void ResolveJwtBearerProvider_DisambiguatesByClientId_WhenSameIssuerAndTenant()
+    {
+        var azureDir = Guid.NewGuid().ToString();
+        var tenantId = Guid.NewGuid();
+        var issuer = $"https://sts.windows.net/{azureDir}/";
+        var t1 = BuildTenant(tenantId, new Dictionary<string, string?>
+        {
+            ["AzureAd:TenantId"] = azureDir,
+            ["AzureAd:ClientId"] = "app-a-111",
+            ["AzureAd:Audience"] = "api://shared"
+        });
+        var registry = CreateRegistry(new[] { t1 }, out _, out _);
+
+        var match = registry.ResolveJwtBearerProvider(
+            issuer,
+            new[] { "api://shared" },
+            tenantId,
+            "app-a-111");
+
+        Assert.NotNull(match);
+        Assert.Equal(tenantId, match!.TenantId);
+        Assert.Equal("app-a-111", match.ClientId);
+    }
+
+    [Fact]
+    public void ResolveJwtBearerProvider_ReturnsCorrectRow_WhenTwoTenantsShareDirectory()
+    {
+        var azureDir = Guid.NewGuid().ToString();
+        var tenantA = Guid.NewGuid();
+        var tenantB = Guid.NewGuid();
+        var issuer = $"https://sts.windows.net/{azureDir}/";
+        var t1 = BuildTenant(tenantA, new Dictionary<string, string?>
+        {
+            ["AzureAd:TenantId"] = azureDir,
+            ["AzureAd:ClientId"] = "app-a-111",
+            ["AzureAd:Audience"] = "api://shared"
+        });
+        var t2 = BuildTenant(tenantB, new Dictionary<string, string?>
+        {
+            ["AzureAd:TenantId"] = azureDir,
+            ["AzureAd:ClientId"] = "app-b-222",
+            ["AzureAd:Audience"] = "api://shared"
+        });
+        var registry = CreateRegistry(new[] { t1, t2 }, out _, out _);
+
+        var forA = registry.ResolveJwtBearerProvider(issuer, new[] { "api://shared" }, tenantA, "app-a-111");
+        var forB = registry.ResolveJwtBearerProvider(issuer, new[] { "api://shared" }, tenantB, "app-b-222");
+
+        Assert.NotNull(forA);
+        Assert.Equal(tenantA, forA!.TenantId);
+        Assert.NotNull(forB);
+        Assert.Equal(tenantB, forB!.TenantId);
+    }
+
+    [Fact]
+    public void HasAnyProviderForIssuer_ReturnsTrue_ForV2IssuerAlias_WhenAzureAdUsesStsDefault()
+    {
+        var azureDir = Guid.NewGuid().ToString();
+        var tenant = BuildTenant(Guid.NewGuid(), new Dictionary<string, string?>
+        {
+            ["AzureAd:TenantId"] = azureDir,
+            ["AzureAd:ClientId"] = "c1",
+            ["AzureAd:Audience"] = "api://c1"
+        });
+        var registry = CreateRegistry(new[] { tenant }, out _, out _);
+
+        Assert.True(registry.HasAnyProviderForIssuer($"https://login.microsoftonline.com/{azureDir}/v2.0"));
+    }
 }
