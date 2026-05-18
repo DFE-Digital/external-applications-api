@@ -1313,6 +1313,80 @@
         }
       }
     },
+    "/v1/applications": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "summary": "Returns all applications the current user can access.",
+        "operationId": "Applications_GetApplications",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationStatus"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of applications accessible to the user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized no valid user token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - user does not have required permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/diagnostics": {
       "get": {
         "tags": [

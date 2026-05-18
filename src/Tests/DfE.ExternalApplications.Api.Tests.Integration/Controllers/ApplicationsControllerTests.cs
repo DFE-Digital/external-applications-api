@@ -1707,4 +1707,28 @@ public class ApplicationsControllerTests
     }
 
     #endregion
-}  
+
+    // TODO get submitted applications
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetSubmittedApplications(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims =
+        [
+            new("permission", "Application:Read")
+        ];
+
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-token");
+
+        // Act
+        var result = await applicationsClient.GetApplicationsAsync(status: ApplicationStatus.Submitted);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result);
+    }
+}

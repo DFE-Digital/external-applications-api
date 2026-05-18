@@ -395,4 +395,26 @@ public class ApplicationsController(ISender sender) : ControllerBase
         var file = result.Value!;
         return File(file.FileStream, file.ContentType, file.FileName);
     }
+
+    /// <summary>
+    /// Returns all applications the current user can access.
+    /// </summary>
+    [HttpGet]
+    [Route("/v{version:apiVersion}/applications")]
+    [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    //[Authorize(Policy = "CanReadAnyApplication")]
+    public async Task<IActionResult> GetApplicationsAsync([FromQuery] ApplicationStatus status, CancellationToken cancellationToken)
+    {
+        // TODO implement CQRS
+        IEnumerable<ApplicationDto> applications = Array.Empty<ApplicationDto>();
+
+        return new ObjectResult(applications)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
 }
