@@ -2,6 +2,7 @@ using AutoFixture.Xunit2;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Queries;
+using DfE.ExternalApplications.Application.Common.Models;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
@@ -28,8 +29,17 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
         mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false && q.TemplateId == null), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
 
@@ -38,7 +48,7 @@ public class GetMyApplicationsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(applications.Count, result.Value!.Count);
+        Assert.Equal(applications.Count, result.Value!.TotalCount);
         await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false && q.TemplateId == null), Arg.Any<CancellationToken>());
     }
 
@@ -57,8 +67,17 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
         mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == false && q.TemplateId == null), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
 
@@ -67,7 +86,7 @@ public class GetMyApplicationsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(applications.Count, result.Value!.Count);
+        Assert.Equal(applications.Count, result.Value!.TotalCount);
         await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == false && q.TemplateId == null), Arg.Any<CancellationToken>());
     }
 
@@ -89,8 +108,17 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
         mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false && q.TemplateId == templateId), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
 
@@ -99,7 +127,7 @@ public class GetMyApplicationsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(applications.Count, result.Value!.Count);
+        Assert.Equal(applications.Count, result.Value!.TotalCount);
         await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false && q.TemplateId == templateId), Arg.Any<CancellationToken>());
     }
 
@@ -119,8 +147,17 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
         mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == false && q.TemplateId == templateId), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
 
@@ -129,7 +166,7 @@ public class GetMyApplicationsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(applications.Count, result.Value!.Count);
+        Assert.Equal(applications.Count, result.Value!.TotalCount);
         await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == false && q.TemplateId == templateId), Arg.Any<CancellationToken>());
     }
 
@@ -150,8 +187,17 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
         mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false && q.TemplateId == null), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
 
@@ -160,7 +206,7 @@ public class GetMyApplicationsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(applications.Count, result.Value!.Count);
+        Assert.Equal(applications.Count, result.Value!.TotalCount);
         await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == false && q.TemplateId == null), Arg.Any<CancellationToken>());
     }
 
@@ -181,8 +227,17 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
         mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == true && q.TemplateId == null), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
 
@@ -191,7 +246,7 @@ public class GetMyApplicationsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(applications.Count, result.Value!.Count);
+        Assert.Equal(applications.Count, result.Value!.TotalCount);
         await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.IncludeSchema == true && q.TemplateId == null), Arg.Any<CancellationToken>());
     }
 
@@ -210,8 +265,17 @@ public class GetMyApplicationsQueryHandlerTests
         context.User.Returns(principal);
         httpContextAccessor.HttpContext.Returns(context);
 
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
         mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == true && q.TemplateId == null), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyCollection<ApplicationDto>>.Success(applications.AsReadOnly()));
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
 
@@ -220,8 +284,86 @@ public class GetMyApplicationsQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(applications.Count, result.Value!.Count);
+        Assert.Equal(applications.Count, result.Value!.TotalCount);
         await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.IncludeSchema == true && q.TemplateId == null), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldPassPageParams_WhenUserHasEmailAndPageParamsProvided(
+        string emailName,
+        int pageNumber,
+        int pageSize,
+        List<ApplicationDto> applications,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var email = $"{emailName}@example.com";
+        var context = Substitute.For<HttpContext>();
+        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }, "TestAuth");
+        identity.AddClaim(new Claim("authenticated", "true"));
+        context.User.Returns(new ClaimsPrincipal(identity));
+        httpContextAccessor.HttpContext.Returns(context);
+
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = 1
+        };
+
+        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.PageNumber == pageNumber && q.PageSize == pageSize), Arg.Any<CancellationToken>())
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
+
+        var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetMyApplicationsQuery(PageNumber: pageNumber, PageSize: pageSize), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.PageNumber == pageNumber && q.PageSize == pageSize), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldPassPageParams_WhenUserHasExternalIdAndPageParamsProvided(
+        string externalId,
+        int pageNumber,
+        int pageSize,
+        List<ApplicationDto> applications,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ISender mediator)
+    {
+        // Arrange
+        var identity = new ClaimsIdentity(new[] { new Claim("appid", externalId) }, "TestAuth", ClaimTypes.Email, ClaimTypes.Role);
+        var context = Substitute.For<HttpContext>();
+        context.User.Returns(new ClaimsPrincipal(identity));
+        httpContextAccessor.HttpContext.Returns(context);
+
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = 1
+        };
+
+        mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.PageNumber == pageNumber && q.PageSize == pageSize), Arg.Any<CancellationToken>())
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
+
+        var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
+
+        // Act
+        var result = await handler.Handle(new GetMyApplicationsQuery(PageNumber: pageNumber, PageSize: pageSize), CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.PageNumber == pageNumber && q.PageSize == pageSize), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -242,7 +384,7 @@ public class GetMyApplicationsQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Not authenticated", result.Error);
-        await mediator.DidNotReceive().Send(Arg.Any<IRequest<Result<IReadOnlyCollection<ApplicationDto>>>>(), Arg.Any<CancellationToken>());
+        await mediator.DidNotReceive().Send(Arg.Any<IRequest<Result<PagedResult<ApplicationDto>>>>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -266,6 +408,6 @@ public class GetMyApplicationsQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("No user identifier", result.Error);
-        await mediator.DidNotReceive().Send(Arg.Any<IRequest<Result<IReadOnlyCollection<ApplicationDto>>>>(), Arg.Any<CancellationToken>());
+        await mediator.DidNotReceive().Send(Arg.Any<IRequest<Result<PagedResult<ApplicationDto>>>>(), Arg.Any<CancellationToken>());
     }
-} 
+}
