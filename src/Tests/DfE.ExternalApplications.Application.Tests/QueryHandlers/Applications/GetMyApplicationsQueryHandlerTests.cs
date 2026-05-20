@@ -2,7 +2,6 @@ using AutoFixture.Xunit2;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Queries;
-using DfE.ExternalApplications.Application.Common.Models;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
