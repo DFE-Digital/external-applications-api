@@ -51,10 +51,10 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
-                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                var f = call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>();
                 return f();
             });
 
@@ -63,8 +63,8 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Single(result.Value!);
-        Assert.Equal(app.Id!.Value, result.Value!.First().ApplicationId);
+        Assert.Single(result.Value!.Items);
+        Assert.Equal(app.Id!.Value, result.Value!.Items.First().ApplicationId);
     }
 
     [Theory]
@@ -84,10 +84,10 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         userRepo.Query().Returns(userQ);
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
-                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                var f = call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>();
                 return f();
             });
 
@@ -96,7 +96,99 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Empty(result.Value!);
+        Assert.Empty(result.Value!.Items);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization), typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnAllResults_WithDefaultPageMetadata_WhenNoPaginationParamsProvided(
+        string externalProviderId,
+        UserCustomization userCustom,
+        PermissionCustomization permCustom,
+        ApplicationCustomization appCustom,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
+    {
+        userCustom.OverrideExternalProviderId = externalProviderId;
+        userCustom.OverridePermissions = Array.Empty<Permission>();
+        var fixture = new Fixture().Customize(userCustom);
+        var user = fixture.Create<User>();
+
+        var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        backing.SetValue(user, new List<Permission>());
+
+        var appFixture = new Fixture().Customize(appCustom);
+        var app1 = appFixture.Create<Domain.Entities.Application>();
+        var app2 = appFixture.Create<Domain.Entities.Application>();
+
+        var perm1 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app1.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        var perm2 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app2.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm1);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm2);
+
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
+        appRepo.Query().Returns(new List<Domain.Entities.Application> { app1, app2 }.AsQueryable().BuildMock());
+
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+            .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
+
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.Items.Count);
+        Assert.Equal(2, result.Value!.TotalCount);
+        Assert.Equal(1, result.Value!.PageNumber);
+        Assert.Equal(2, result.Value!.PageSize);
+        Assert.Equal(1, result.Value!.TotalPages);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization), typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnPagedResults_WhenPageNumberAndPageSizeProvided(
+        string externalProviderId,
+        UserCustomization userCustom,
+        PermissionCustomization permCustom,
+        ApplicationCustomization appCustom,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
+    {
+        userCustom.OverrideExternalProviderId = externalProviderId;
+        userCustom.OverridePermissions = Array.Empty<Permission>();
+        var fixture = new Fixture().Customize(userCustom);
+        var user = fixture.Create<User>();
+
+        var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        backing.SetValue(user, new List<Permission>());
+
+        var appFixture = new Fixture().Customize(appCustom);
+        var app1 = appFixture.Create<Domain.Entities.Application>();
+        var app2 = appFixture.Create<Domain.Entities.Application>();
+
+        var perm1 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app1.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        var perm2 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app2.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm1);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm2);
+
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
+        appRepo.Query().Returns(new List<Domain.Entities.Application> { app1, app2 }.AsQueryable().BuildMock());
+
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+            .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
+
+        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId, false, null, PageNumber: 1, PageSize: 1), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value!.Items);
+        Assert.Equal(2, result.Value!.TotalCount);
+        Assert.Equal(1, result.Value!.PageNumber);
+        Assert.Equal(1, result.Value!.PageSize);
+        Assert.Equal(2, result.Value!.TotalPages);
     }
 
     [Theory]
@@ -110,16 +202,23 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
-        var readOnly = cached.AsReadOnly();
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
-            .Returns(Task.FromResult(Result<IReadOnlyCollection<ApplicationDto>>.Success(readOnly)));
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = cached.AsReadOnly(),
+            TotalCount = cached.Count,
+            PageNumber = 1,
+            PageSize = cached.Count,
+            TotalPages = 1
+        };
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+            .Returns(Task.FromResult(Result<PagedResult<ApplicationDto>>.Success(pagedResult)));
 
         var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(readOnly.Count, result.Value!.Count);
+        Assert.Equal(cached.Count, result.Value!.TotalCount);
         userRepo.DidNotReceive().Query();
     }
 
@@ -133,7 +232,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         [Frozen] ITenantContextAccessor tenantContextAccessor)
     {
         // Arrange
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), Arg.Any<string>())
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), Arg.Any<string>())
             .Throws(new Exception("Boom"));
 
         var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
@@ -173,13 +272,12 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var userList = new List<User> { user };
         userRepo.Query().Returns(userList.AsQueryable().BuildMock());
 
-        // Setup application repository to throw an exception
         appRepo.Query().Throws(new InvalidOperationException("Database connection failed"));
 
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
-                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                var f = call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>();
                 return f();
             });
 
@@ -212,10 +310,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         backing.SetValue(user, new List<Permission>());
 
-        // Create application with null template version (edge case)
         var app = new Fixture().Customize(appCustom).Create<Domain.Entities.Application>();
-        
-        // Use reflection to set TemplateVersion to null to test the null template name scenario
         var templateVersionField = typeof(Domain.Entities.Application).GetProperty("TemplateVersion");
         templateVersionField?.SetValue(app, null);
 
@@ -228,10 +323,10 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
-                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                var f = call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>();
                 return f();
             });
 
@@ -240,8 +335,8 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Single(result.Value!);
-        Assert.Equal(string.Empty, result.Value!.First().TemplateName); // Should handle null template gracefully
+        Assert.Single(result.Value!.Items);
+        Assert.Equal(string.Empty, result.Value!.Items.First().TemplateName);
     }
 
     [Theory]
@@ -263,15 +358,14 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         backing.SetValue(user, new List<Permission>());
 
-        // Add permission that doesn't have ApplicationId (template permission)
         var templatePerm = new Permission(
-            new PermissionId(Guid.NewGuid()), 
-            user.Id!, 
-            null, // No ApplicationId
-            "Template:Read", 
-            ResourceType.Template, 
-            AccessType.Read, 
-            DateTime.UtcNow, 
+            new PermissionId(Guid.NewGuid()),
+            user.Id!,
+            null,
+            "Template:Read",
+            ResourceType.Template,
+            AccessType.Read,
+            DateTime.UtcNow,
             user.Id!);
         ((List<Permission>)backing.GetValue(user)!).Add(templatePerm);
 
@@ -280,10 +374,10 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserByExternalProviderIdQueryHandler))
             .Returns(call =>
             {
-                var f = call.Arg<Func<Task<Result<IReadOnlyCollection<ApplicationDto>>>>>();
+                var f = call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>();
                 return f();
             });
 
@@ -292,6 +386,6 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Empty(result.Value!); // Should return empty since no application permissions
+        Assert.Empty(result.Value!.Items);
     }
-} 
+}

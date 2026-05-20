@@ -551,8 +551,8 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
-        Assert.All(result, app => 
+        Assert.NotEmpty(result.Items);
+        Assert.All(result.Items, app =>
         {
             Assert.Null(app.TemplateSchema);
         });
@@ -580,8 +580,8 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
-        Assert.All(result, app => 
+        Assert.NotEmpty(result.Items);
+        Assert.All(result.Items, app =>
         {
             Assert.NotNull(app.TemplateSchema);
             Assert.NotEqual(Guid.Empty, app.TemplateSchema.TemplateId);
@@ -613,8 +613,8 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
-        Assert.All(result, app => 
+        Assert.NotEmpty(result.Items);
+        Assert.All(result.Items, app =>
         {
             Assert.Null(app.TemplateSchema);
         });
@@ -1707,4 +1707,91 @@ public class ApplicationsControllerTests
     }
 
     #endregion
-}  
+
+    #region GetMyApplications
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnPagedApplications_WhenUserHasPermissions(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var result = await applicationsClient.GetMyApplicationsAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.TotalCount);
+        Assert.Equal(1, result.PageNumber);
+        Assert.Equal(1, result.TotalPages);
+        Assert.Single(result.Items);
+        Assert.Equal(EaContextSeeder.ApplicationReference, result.Items.First().ApplicationReference);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnPagedResults_WhenPaginationParamsProvided(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var result = await applicationsClient.GetMyApplicationsAsync(pageNumber: 1, pageSize: 1);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.TotalCount);
+        Assert.Equal(1, result.PageNumber);
+        Assert.Equal(1, result.PageSize);
+        Assert.Equal(1, result.TotalPages);
+        Assert.Single(result.Items);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task GetMyApplicationsAsync_ShouldReturnEmptyPage_WhenPageNumberExceedsTotal(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        // Act
+        var result = await applicationsClient.GetMyApplicationsAsync(pageNumber: 99, pageSize: 10);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.TotalCount);
+        Assert.Equal(99, result.PageNumber);
+        Assert.Equal(10, result.PageSize);
+        Assert.Empty(result.Items);
+    }
+
+    #endregion
+}

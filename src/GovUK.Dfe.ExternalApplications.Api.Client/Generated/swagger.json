@@ -199,7 +199,7 @@
         "tags": [
           "Applications"
         ],
-        "summary": "Returns all applications the current user can access.",
+        "summary": "Returns a paged list of applications the current user can access.",
         "operationId": "Applications_GetMyApplications",
         "parameters": [
           {
@@ -220,18 +220,35 @@
               "nullable": true
             },
             "x-position": 2
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 4
           }
         ],
         "responses": {
           "200": {
-            "description": "A list of applications accessible to the user.",
+            "description": "A paged list of applications accessible to the user.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ApplicationDto"
-                  }
+                  "$ref": "#/components/schemas/PagedResultOfApplicationDto"
                 }
               }
             }
@@ -3165,6 +3182,34 @@
         "properties": {
           "responseBody": {
             "type": "string"
+          }
+        }
+      },
+      "PagedResultOfApplicationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationDto"
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
