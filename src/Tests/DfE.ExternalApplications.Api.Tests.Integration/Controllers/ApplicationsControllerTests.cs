@@ -1725,7 +1725,7 @@ public class ApplicationsControllerTests
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-token");
 
         // Act
-        var result = await applicationsClient.GetApplicationsAsync(status: ApplicationStatus.Submitted);
+        var result = await applicationsClient.GetApplicationsByStatusAsync(status: ApplicationStatus.Submitted);
 
         // Assert
         Assert.NotNull(result);

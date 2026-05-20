@@ -1318,8 +1318,8 @@
         "tags": [
           "Applications"
         ],
-        "summary": "Returns all applications the current user can access.",
-        "operationId": "Applications_GetApplications",
+        "summary": "Returns all applications in the given state that the current user can access.",
+        "operationId": "Applications_GetApplicationsByStatus",
         "parameters": [
           {
             "name": "status",

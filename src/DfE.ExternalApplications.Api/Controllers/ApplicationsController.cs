@@ -397,7 +397,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Returns all applications the current user can access.
+    /// Returns all applications in the given state that the current user can access.
     /// </summary>
     [HttpGet]
     [Route("/v{version:apiVersion}/applications")]
@@ -407,7 +407,9 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     //[Authorize(Policy = "CanReadAnyApplication")]
-    public async Task<IActionResult> GetApplicationsAsync([FromQuery] ApplicationStatus status, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetApplicationsByStatusAsync(
+        [FromQuery] ApplicationStatus status, 
+        CancellationToken cancellationToken)
     {
         // TODO implement CQRS
         IEnumerable<ApplicationDto> applications = Array.Empty<ApplicationDto>();
