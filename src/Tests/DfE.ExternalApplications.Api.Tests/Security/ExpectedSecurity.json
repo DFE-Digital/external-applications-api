@@ -194,6 +194,21 @@
       "Controller": "TenantConfigController",
       "Action": "GetTenantConfiguration",
       "ExpectedSecurity": "Authorize"
+    },
+    {
+      "Controller": "HostConfigController",
+      "Action": "GetHostConfiguration",
+      "ExpectedSecurity": "Authorize: Policy=PlatformHost"
+    },
+    {
+      "Controller": "TenantConfigController",
+      "Action": "GetTenantConfigurationByTenantId",
+      "ExpectedSecurity": "Authorize: Policy=PlatformTenantConfig"
+    },
+    {
+      "Controller": "TenantConfigController",
+      "Action": "ResolveTenantByHostname",
+      "ExpectedSecurity": "Authorize: Policy=PlatformTenantConfig"
     }
   ]
 }

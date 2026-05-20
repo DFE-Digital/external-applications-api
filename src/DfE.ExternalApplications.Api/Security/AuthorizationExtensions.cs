@@ -171,6 +171,14 @@ namespace DfE.ExternalApplications.Api.Security
                     };
                 });
 
+            var platformAzureAdSection = configuration.GetSection(PlatformConstants.AzureAdSection);
+            if (!string.IsNullOrWhiteSpace(platformAzureAdSection["ClientId"]))
+            {
+                authBuilder.AddMicrosoftIdentityWebApi(
+                    platformAzureAdSection,
+                    jwtBearerScheme: AuthConstants.PlatformBearer);
+            }
+
             services.AddOptions<JwtBearerOptions>(AuthConstants.TenantBearer)
                 .Configure<IServiceProvider>(static (opts, sp) => ConfigureTenantBearer(
                     opts,
@@ -297,6 +305,16 @@ namespace DfE.ExternalApplications.Api.Security
                         p.AddAuthenticationSchemes(AuthConstants.CompositeScheme)
                             .RequireAuthenticatedUser()
                             .AddRequirements(new Handlers.ServicePrincipalRequirement()));
+
+                options.AddPolicy(PlatformConstants.PlatformHostPolicy, p =>
+                    p.AddAuthenticationSchemes(AuthConstants.PlatformBearer)
+                        .RequireAuthenticatedUser()
+                        .AddRequirements(new Handlers.PlatformHostRoleRequirement()));
+
+                options.AddPolicy(PlatformConstants.PlatformTenantConfigPolicy, p =>
+                    p.AddAuthenticationSchemes(AuthConstants.PlatformBearer)
+                        .RequireAuthenticatedUser()
+                        .AddRequirements(new Handlers.PlatformTenantConfigRoleRequirement()));
             });
 
             services.AddApplicationAuthorization(
@@ -314,6 +332,8 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, ApplicationFilesPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, NotificationsPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ServicePrincipalHandler>();
+            services.AddSingleton<IAuthorizationHandler, Handlers.PlatformHostRoleAuthorizationHandler>();
+            services.AddSingleton<IAuthorizationHandler, Handlers.PlatformTenantConfigRoleAuthorizationHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, TemplatePermissionsClaimProvider>();
             services.AddTransient<ICustomClaimProvider, UserPermissionClaimProvider>();

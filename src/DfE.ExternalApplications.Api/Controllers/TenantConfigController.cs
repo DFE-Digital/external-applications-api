@@ -1,5 +1,7 @@
 using Asp.Versioning;
 using DfE.ExternalApplications.Application.TenantConfig.Queries;
+using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Infrastructure.Security;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
@@ -44,6 +46,77 @@ public class TenantConfigController(ISender sender) : ControllerBase
             var statusCode = result.ErrorCode switch
             {
                 DomainErrorCode.Forbidden => StatusCodes.Status403Forbidden,
+                DomainErrorCode.NotFound => StatusCodes.Status404NotFound,
+                DomainErrorCode.Validation => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status400BadRequest
+            };
+
+            return new ObjectResult(result) { StatusCode = statusCode };
+        }
+
+        return MapTenantConfigurationResult(result);
+    }
+
+    /// <summary>
+    /// Returns merged configuration for the specified tenant. For platform callers (shared Web container)
+    /// that resolve the tenant from the request hostname or <c>X-Tenant-ID</c>.
+    /// </summary>
+    [HttpGet("tenants/{tenantId:guid}")]
+    [Authorize(Policy = PlatformConstants.PlatformTenantConfigPolicy)]
+    [SwaggerResponse(200, "Tenant configuration.", typeof(TenantConfigurationDto))]
+    [SwaggerResponse(400, "Invalid target.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Missing Platform.TenantConfig.Read app role.", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Tenant inactive or no longer exists.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> GetTenantConfigurationByTenantId(
+        Guid tenantId,
+        [FromQuery] string target = "Web",
+        CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(
+            new GetPlatformTenantConfigurationQuery(tenantId, target),
+            cancellationToken);
+
+        return MapTenantConfigurationResult(result);
+    }
+
+    /// <summary>
+    /// Resolves a tenant id from an HTTP hostname using <c>TenantHostnames</c>.
+    /// </summary>
+    [HttpGet("resolve")]
+    [Authorize(Policy = PlatformConstants.PlatformTenantConfigPolicy)]
+    [SwaggerResponse(200, "Tenant resolved.", typeof(TenantResolutionDto))]
+    [SwaggerResponse(400, "Invalid hostname.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Missing Platform.TenantConfig.Read app role.", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Hostname not mapped to any tenant.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> ResolveTenantByHostname(
+        [FromQuery] string hostname,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new ResolveTenantByHostnameQuery(hostname), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var statusCode = result.ErrorCode switch
+            {
+                DomainErrorCode.NotFound => StatusCodes.Status404NotFound,
+                DomainErrorCode.Validation => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status400BadRequest
+            };
+
+            return new ObjectResult(result) { StatusCode = statusCode };
+        }
+
+        return new ObjectResult(result) { StatusCode = StatusCodes.Status200OK };
+    }
+
+    private static IActionResult MapTenantConfigurationResult(Result<TenantConfigurationDto> result)
+    {
+        if (!result.IsSuccess)
+        {
+            var statusCode = result.ErrorCode switch
+            {
                 DomainErrorCode.NotFound => StatusCodes.Status404NotFound,
                 DomainErrorCode.Validation => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status400BadRequest

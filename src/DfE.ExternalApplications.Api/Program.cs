@@ -111,6 +111,8 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddScoped<ITenantSettingsWriter, DfE.ExternalApplications.Infrastructure.Services.TenantSettingsWriterService>();
             builder.Services.AddScoped<ITenantPrincipalResolver, DfE.ExternalApplications.Infrastructure.Services.TenantPrincipalResolver>();
             builder.Services.AddScoped<ITenantSettingsReader, DfE.ExternalApplications.Infrastructure.Services.TenantSettingsReader>();
+            builder.Services.AddScoped<ITenantHostnameResolver, DfE.ExternalApplications.Infrastructure.Services.TenantHostnameResolver>();
+            builder.Services.AddSingleton<IHostConfigurationReader, DfE.ExternalApplications.Infrastructure.Services.HostConfigurationReader>();
 
             // SaaS hot-reload pub/sub: the configuration provider broadcasts refresh events; the
             // auth-provider registry subscribes and rebuilds its indexes in-place.

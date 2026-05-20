@@ -14,8 +14,13 @@ public class TenantResolutionMiddleware
         "/health",
         "/_",
         "/favicon.ico",
-        "/v1/tenant-config"
+        "/v1/tenant-config",
+        "/v1/host-config"
     };
+
+    private static bool IsPlatformTenantConfigPath(string path) =>
+        path.StartsWith("/v1/tenant-config/tenants/", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("/v1/tenant-config/resolve", StringComparison.OrdinalIgnoreCase);
 
     private readonly RequestDelegate _next;
     private readonly ITenantConfigurationProvider _tenantConfigurationProvider;
@@ -37,7 +42,8 @@ public class TenantResolutionMiddleware
 
         // Bypass for infrastructure endpoints and CORS preflight
         if (context.Request.Method == "OPTIONS" ||
-            BypassPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+            BypassPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)) ||
+            IsPlatformTenantConfigPath(path))
         {
             await _next(context);
             return;

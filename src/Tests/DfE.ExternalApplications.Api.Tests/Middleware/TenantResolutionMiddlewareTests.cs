@@ -127,6 +127,38 @@ public class TenantResolutionMiddlewareTests
         Assert.Equal(400, context.Response.StatusCode);
     }
 
+    [Fact]
+    public async Task InvokeAsync_ShouldBypassTenantResolution_ForPlatformTenantConfigByIdPath()
+    {
+        var nextCalled = false;
+        var middleware = new TenantResolutionMiddleware(
+            _ => { nextCalled = true; return Task.CompletedTask; },
+            _tenantConfigProvider, _logger);
+
+        var context = CreateHttpContext();
+        context.Request.Path = "/v1/tenant-config/tenants/11111111-1111-4111-8111-111111111111";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.True(nextCalled);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ShouldBypassTenantResolution_ForHostConfigPath()
+    {
+        var nextCalled = false;
+        var middleware = new TenantResolutionMiddleware(
+            _ => { nextCalled = true; return Task.CompletedTask; },
+            _tenantConfigProvider, _logger);
+
+        var context = CreateHttpContext();
+        context.Request.Path = "/v1/host-config";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.True(nextCalled);
+    }
+
     [Theory]
     [InlineData("/swagger")]
     [InlineData("/swagger/index.html")]

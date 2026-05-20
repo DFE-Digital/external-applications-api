@@ -18,6 +18,11 @@
         /// <summary>Mutual-TLS / client certificate scheme.</summary>
         public const string Mtls = "Mtls";
 
+        /// <summary>
+        /// JWT bearer scheme for platform callers (Entra app-only tokens with platform app roles).
+        /// </summary>
+        public const string PlatformBearer = "PlatformBearer";
+
         // Header names & prefixes
         public const string AuthorizationHeader = "Authorization";
         public const string BearerPrefix = "Bearer ";

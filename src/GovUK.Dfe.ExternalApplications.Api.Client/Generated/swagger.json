@@ -1334,6 +1334,79 @@
         }
       }
     },
+    "/v1/host-config": {
+      "get": {
+        "tags": [
+          "HostConfig"
+        ],
+        "summary": "Returns global host configuration safe for the consuming target (e.g. logging, App Insights, Redis).",
+        "operationId": "HostConfig_GetHostConfiguration",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "description": "The consuming application's target. One of: Web, Api. Defaults to Web.",
+            "schema": {
+              "type": "string",
+              "default": "Web"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Host configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostConfigurationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing Platform.Host.Read app role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/Notifications": {
       "post": {
         "tags": [
@@ -3565,6 +3638,26 @@
           "uploadedOn": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "HostConfigurationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "loadedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "configuration": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "nullable": true
+            }
           }
         }
       },
