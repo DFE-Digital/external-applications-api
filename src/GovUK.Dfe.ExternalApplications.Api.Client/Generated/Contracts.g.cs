@@ -149,7 +149,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <summary>
         /// Returns all applications in the given state that the current user can access.
         /// </summary>
-        /// <returns>A list of applications accessible to the user.</returns>
+        /// <returns>A list of applications optionally filtered by status.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsByStatusAsync(ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 

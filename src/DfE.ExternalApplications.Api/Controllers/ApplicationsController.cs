@@ -1,11 +1,12 @@
 ﻿using Asp.Versioning;
+using DfE.ExternalApplications.Application.Applications.Commands;
+using DfE.ExternalApplications.Application.Applications.Queries;
+using DfE.ExternalApplications.Application.Common.Exceptions;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
-using DfE.ExternalApplications.Application.Applications.Commands;
-using DfE.ExternalApplications.Application.Applications.Queries;
-using DfE.ExternalApplications.Application.Common.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -401,20 +402,19 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet]
     [Route("/v{version:apiVersion}/applications")]
-    [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
+    [SwaggerResponse(200, "A list of applications optionally filtered by status.", typeof(IReadOnlyCollection<ApplicationDto>))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-    //[Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetApplicationsByStatusAsync(
-        [FromQuery] ApplicationStatus status, 
+        [FromQuery] ApplicationStatus? status, 
         CancellationToken cancellationToken)
     {
-        // TODO implement CQRS
-        IEnumerable<ApplicationDto> applications = Array.Empty<ApplicationDto>();
+        var query = new GetApplicationsByStatusQuery(status);
+        var result = await sender.Send(query, cancellationToken);
 
-        return new ObjectResult(applications)
+        return new ObjectResult(result)
         {
             StatusCode = StatusCodes.Status200OK
         };

@@ -1325,14 +1325,19 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/ApplicationStatus"
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ApplicationStatus"
+                }
+              ]
             },
             "x-position": 1
           }
         ],
         "responses": {
           "200": {
-            "description": "A list of applications accessible to the user.",
+            "description": "A list of applications optionally filtered by status.",
             "content": {
               "application/json": {
                 "schema": {

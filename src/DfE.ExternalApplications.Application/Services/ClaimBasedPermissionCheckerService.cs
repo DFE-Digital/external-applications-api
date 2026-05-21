@@ -133,4 +133,13 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
 
         return user.IsInRole("Admin");
     }
+
+    /// <inheritdoc />
+    public bool IsGlobalApplicationReader()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        if (user == null) return false;
+
+        return user.IsInRole("SubmittedApplicationViewer"); // TODO SP new constant in RoleConstants
+    }
 } 

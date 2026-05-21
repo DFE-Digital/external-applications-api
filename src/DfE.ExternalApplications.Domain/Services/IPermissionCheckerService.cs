@@ -68,4 +68,10 @@ public interface IPermissionCheckerService
     /// </summary>
     /// <returns>True if the user is an Admin, false otherwise</returns>
     bool IsAdmin();
+
+    /// <summary>
+    /// Checks if the current user has the Global Application Reader role.
+    /// </summary>
+    /// <returns>True if the user has the role, false otherwise</returns>
+    bool IsGlobalApplicationReader();
 }
