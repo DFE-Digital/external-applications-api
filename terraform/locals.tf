@@ -64,6 +64,7 @@ locals {
   mssql_azuread_admin_object_id                = var.mssql_azuread_admin_object_id
   mssql_sku_name                               = var.mssql_sku_name
   mssql_database_name                          = var.mssql_database_name
+  mssql_extra_databases                        = var.mssql_extra_databases
   mssql_firewall_ipv4_allow_list               = var.mssql_firewall_ipv4_allow_list
   enable_mssql_vulnerability_assessment        = var.enable_mssql_vulnerability_assessment
   mssql_managed_identity_assign_role           = var.mssql_managed_identity_assign_role
