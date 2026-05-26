@@ -231,7 +231,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             var list = await appsClient.GetMyApplicationsAsync();
 
             Assert.NotNull(list);
-            Assert.NotEmpty(list!);
+            Assert.NotEmpty(list!.Items);
         }
 
         [Theory]

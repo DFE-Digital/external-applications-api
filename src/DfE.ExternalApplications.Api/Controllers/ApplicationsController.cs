@@ -71,11 +71,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Returns all applications the current user can access.
+    /// Returns a paged list of applications the current user can access.
     /// </summary>
     [HttpGet]
     [Route("/v{version:apiVersion}/me/applications")]
-    [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
+    [SwaggerResponse(200, "A paged list of applications accessible to the user.", typeof(PagedResult<ApplicationDto>))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
@@ -84,9 +84,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetMyApplicationsAsync(
         CancellationToken cancellationToken,
         [FromQuery] bool? includeSchema = null,
-        [FromQuery] Guid? templateId = null)
+        [FromQuery] Guid? templateId = null,
+        [FromQuery] int? pageNumber = null,
+        [FromQuery] int? pageSize = null)
     {
-        var query = new GetMyApplicationsQuery(includeSchema ?? false, templateId);
+        var query = new GetMyApplicationsQuery(includeSchema ?? false, templateId, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
 
         return new ObjectResult(result)
