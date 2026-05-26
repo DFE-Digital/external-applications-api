@@ -41,7 +41,11 @@ jobs:
           echo "environment=${ENVIRONMENT,,}" >> $GITHUB_OUTPUT
           echo "branch=$GIT_BRANCH" >> $GITHUB_OUTPUT
           echo "checked-out-sha=${CHECKED_OUT_SHA}" >> $GITHUB_OUTPUT
-          echo "image-name=${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
+          if [[ "$ENVIRONMENT" == fe-sass-api* ]]
+            echo "image-name=fe-sass-api" >> $GITHUB_OUTPUT
+          else
+            echo "image-name=${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
+          fi
 
   build-import:
     name: Deploy to ${{ needs.set-env.outputs.environment }}
