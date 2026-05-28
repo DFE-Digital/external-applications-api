@@ -15,7 +15,7 @@ namespace DfE.ExternalApplications.Api.Swagger
         private const string ContactName = "Support";
         private const string ContactEmail = "update_to_contact_email_here";
         private const string DepreciatedMessage = "- API version has been depreciated.";
-        
+
         public SwaggerOptions(
             IApiVersionDescriptionProvider provider,
             ITenantConfigurationProvider tenantConfigurationProvider)
@@ -23,9 +23,9 @@ namespace DfE.ExternalApplications.Api.Swagger
             _provider = provider;
             _tenantConfigurationProvider = tenantConfigurationProvider;
         }
-        
+
         public void Configure(string? name, SwaggerGenOptions options) => Configure(options);
-        
+
         public void Configure(SwaggerGenOptions options)
         {
             foreach (var desc in _provider.ApiVersionDescriptions)
@@ -36,30 +36,31 @@ namespace DfE.ExternalApplications.Api.Swagger
                     Contact = new OpenApiContact
                     {
                         Name = ContactName,
-                        Email = ContactEmail 
+                        Email = ContactEmail
                     },
                     Version = desc.ApiVersion.ToString()
                 };
                 if (desc.IsDeprecated) openApiInfo.Description += DepreciatedMessage;
-                
+
                 options.SwaggerDoc(desc.GroupName, openApiInfo);
             }
 
-            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            options.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
             {
                 Description = "User JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-                Name = "Authorization",
-                In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT"
             });
-            options.OperationFilter<AuthenticationHeaderOperationFilter>();
+            options.AddSecurityRequirement(openApiDocument => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("bearer", openApiDocument)] = new List<string>()
+            });
             options.OperationFilter<TenantHeaderOperationFilter>(_tenantConfigurationProvider);
-            
+
             options.UseAllOfForInheritance();
             options.UseOneOfForPolymorphism();
-            
+
             options.SelectDiscriminatorNameUsing(_ => "$type");
             options.SelectDiscriminatorValueUsing(subType => subType.Name);
         }
