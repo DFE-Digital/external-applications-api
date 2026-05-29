@@ -13,8 +13,18 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             ApplicationFilesPermissionRequirement requirement)
         {
+            UserRole userRole = new(context.User);
+
             // Admin bypass - Admin users have full access
-            if (context.User.IsInRole("Admin"))
+            if (userRole.IsAdmin)
+            {
+                context.Succeed(requirement);
+                return Task.CompletedTask;
+            }
+
+            // Case worker bypass - Case workers have read access
+            // TODO check if read requirement?
+            if (userRole.IsCaseworker)
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
