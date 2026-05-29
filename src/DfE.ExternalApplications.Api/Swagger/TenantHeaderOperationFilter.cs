@@ -23,12 +23,12 @@ public class TenantHeaderOperationFilter : IOperationFilter
         operation.Parameters ??= new List<IOpenApiParameter>();
 
         var tenants = _tenantConfigurationProvider.GetAllTenants();
-        
+
         var tenantOptions = tenants
             .Select(t => (JsonNode)JsonValue.Create(t.Id.ToString())!)
             .ToList();
 
-        var tenantDescriptions = string.Join("\n", 
+        var tenantDescriptions = string.Join("\n",
             tenants.Select(t => $"- `{t.Id}` = {t.Name}"));
 
         var parameter = new OpenApiParameter
