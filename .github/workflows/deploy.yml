@@ -42,6 +42,7 @@ jobs:
           echo "branch=$GIT_BRANCH" >> $GITHUB_OUTPUT
           echo "checked-out-sha=${CHECKED_OUT_SHA}" >> $GITHUB_OUTPUT
           if [[ "$ENVIRONMENT" == fe-saas-api* ]]
+          then
             echo "image-name=fe-saas-api" >> $GITHUB_OUTPUT
           else
             echo "image-name=${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
