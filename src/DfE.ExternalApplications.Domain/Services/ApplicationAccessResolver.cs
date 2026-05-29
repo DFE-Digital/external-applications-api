@@ -67,6 +67,24 @@ public static class ApplicationAccessResolver
         return new AccessScope(AccessMode.SpecificApplicationIds, applicationIds, Array.Empty<TemplateId>());
     }
 
+    /// <summary>
+    /// Returns true when the user may list all applications for the specified template
+    /// (admin, tenant-wide scope, or template-scoped read access).
+    /// </summary>
+    public static bool CanListAllApplicationsForTemplate(User user, TemplateId templateId)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(templateId);
+
+        var scope = Resolve(user);
+        return scope.Mode switch
+        {
+            AccessMode.AllApplicationsInTenant => true,
+            AccessMode.TemplateScoped => scope.TemplateIds.Any(id => id.Value == templateId.Value),
+            _ => false
+        };
+    }
+
     private static AccessScope ResolveCaseworkerScope(User user)
     {
         var templateIds = GetReadableTemplateIds(user);

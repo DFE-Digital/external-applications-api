@@ -47,6 +47,12 @@ internal static class ApplicationListingQueryBuilder
         return query;
     }
 
+    internal static IQueryable<Domain.Entities.Application> BuildTemplateQuery(
+        IEaRepository<Domain.Entities.Application> appRepo,
+        TemplateId templateId) =>
+        new GetApplicationsByTemplateIdQueryObject(templateId)
+            .Apply(appRepo.Query().AsNoTracking());
+
     internal static async Task<PagedResult<ApplicationDto>> MapPagedResultAsync(
         IQueryable<Domain.Entities.Application> query,
         bool includeSchema,

@@ -3,6 +3,7 @@ using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Tests.Services;
@@ -85,6 +86,117 @@ public class PermissionClaimEvaluatorTests
         Assert.Equal(ApplicationAccessResolver.AccessMode.TemplateScoped, scope.Mode);
         Assert.Single(scope.TemplateIds);
         Assert.Equal(templateId, scope.TemplateIds.First());
+    }
+
+    [Fact]
+    public void CanListAllApplicationsForTemplate_ReturnsTrue_ForAdmin()
+    {
+        var templateId = new TemplateId(Guid.NewGuid());
+        var user = CreateAdminUser();
+        Assert.True(ApplicationAccessResolver.CanListAllApplicationsForTemplate(user, templateId));
+    }
+
+    [Fact]
+    public void CanListAllApplicationsForTemplate_ReturnsTrue_WhenTemplateIsInScopedAccess()
+    {
+        var templateId = new TemplateId(Guid.NewGuid());
+        var user = CreateCaseworkerWithTemplateRead(templateId);
+        Assert.True(ApplicationAccessResolver.CanListAllApplicationsForTemplate(user, templateId));
+    }
+
+    [Fact]
+    public void CanListAllApplicationsForTemplate_ReturnsFalse_ForCaseworkerWithoutTemplateAccess()
+    {
+        var allowedTemplateId = new TemplateId(Guid.NewGuid());
+        var requestedTemplateId = new TemplateId(Guid.NewGuid());
+        var user = CreateCaseworkerWithTemplateRead(allowedTemplateId);
+        Assert.False(ApplicationAccessResolver.CanListAllApplicationsForTemplate(user, requestedTemplateId));
+    }
+
+    [Fact]
+    public void CanListAllApplicationsForTemplate_ReturnsFalse_ForStandardUserWithApplicationOnlyAccess()
+    {
+        var userId = new UserId(Guid.NewGuid());
+        var applicationId = new ApplicationId(Guid.NewGuid());
+        var user = new User(
+            userId,
+            new RoleId(RoleConstants.UserRoleId),
+            "Standard User",
+            "user@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        user.GetType().GetProperty(nameof(User.Role))!.SetValue(user,
+            new Role(new RoleId(RoleConstants.UserRoleId), RoleNames.User));
+
+        var permissions = user.GetType()
+            .GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        permissions.SetValue(user, new List<Permission>
+        {
+            new(
+                new PermissionId(Guid.NewGuid()),
+                userId,
+                applicationId,
+                "Application:Read",
+                ResourceType.Application,
+                AccessType.Read,
+                DateTime.UtcNow,
+                userId)
+        });
+
+        Assert.False(ApplicationAccessResolver.CanListAllApplicationsForTemplate(user, new TemplateId(Guid.NewGuid())));
+    }
+
+    private static User CreateAdminUser()
+    {
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.AdminRoleId),
+            "Admin User",
+            "admin@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        user.GetType().GetProperty(nameof(User.Role))!.SetValue(user,
+            new Role(new RoleId(RoleConstants.AdminRoleId), RoleNames.Admin));
+
+        return user;
+    }
+
+    private static User CreateCaseworkerWithTemplateRead(TemplateId templateId)
+    {
+        var userId = new UserId(Guid.NewGuid());
+        var user = new User(
+            userId,
+            new RoleId(RoleConstants.CaseworkerRoleId),
+            "Case Worker",
+            "case@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        user.GetType().GetProperty(nameof(User.Role))!.SetValue(user,
+            new Role(new RoleId(RoleConstants.CaseworkerRoleId), RoleNames.Caseworker));
+
+        var templatePermissions = user.GetType()
+            .GetField("_templatePermissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        templatePermissions.SetValue(user, new List<TemplatePermission>
+        {
+            new(
+                new TemplatePermissionId(Guid.NewGuid()),
+                userId,
+                templateId,
+                AccessType.Read,
+                DateTime.UtcNow,
+                userId)
+        });
+
+        return user;
     }
 
     private static ClaimsPrincipal CreateUserWithRole(string role) =>

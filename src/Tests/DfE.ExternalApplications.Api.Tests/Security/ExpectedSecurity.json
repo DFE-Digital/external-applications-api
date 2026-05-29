@@ -37,6 +37,11 @@
     },
     {
       "Controller": "ApplicationsController",
+      "Action": "GetApplicationsByTemplateAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
       "Action": "GetApplicationsForUserAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
     },

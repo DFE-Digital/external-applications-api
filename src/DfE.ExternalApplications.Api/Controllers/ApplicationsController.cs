@@ -97,6 +97,32 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
+    /// Returns a paged list of all applications for the specified template.
+    /// </summary>
+    [HttpGet("templates/{templateId:guid}")]
+    [SwaggerResponse(200, "A paged list of applications for the template.", typeof(PagedResult<ApplicationDto>))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [Authorize(Policy = "CanReadAnyApplication")]
+    public async Task<IActionResult> GetApplicationsByTemplateAsync(
+        [FromRoute] Guid templateId,
+        CancellationToken cancellationToken,
+        [FromQuery] bool? includeSchema = null,
+        [FromQuery] int? pageNumber = null,
+        [FromQuery] int? pageSize = null)
+    {
+        var query = new GetApplicationsByTemplateQuery(templateId, includeSchema ?? false, pageNumber, pageSize);
+        var result = await sender.Send(query, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
     /// Returns all applications for the user by {email}.
     /// </summary>
     [HttpGet]

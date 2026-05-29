@@ -333,15 +333,7 @@ public class UserFactory : IUserFactory
 
         var when = createdOn ?? DateTime.UtcNow;
 
-        var user = new User(
-            id,
-            new RoleId(RoleConstants.CaseworkerRoleId),
-            name,
-            email,
-            when,
-            grantedBy,
-            null,
-            null);
+        var user = CreateUser(id, new RoleId(RoleConstants.CaseworkerRoleId), name, email, templateIds.FirstOrDefault(), when);
 
         GrantCaseworkerPermissions(user, templateIdList, grantedBy, when);
         return user;
