@@ -3,6 +3,7 @@ using DfE.ExternalApplications.Application.Consumers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Services.RoleProvisioners;
 using DfE.ExternalApplications.Domain.Tenancy;
 using FluentValidation;
 using MediatR;
@@ -60,6 +61,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             });
             services.AddScoped<IPermissionCheckerService, ClaimBasedPermissionCheckerService>();
+
+            services.AddSingleton<IUserRoleProvisionerRegistry, UserRoleProvisionerRegistry>();
+            services.AddTransient<IUserRoleProvisioner, CaseworkerRoleProvisioner>();
+            services.AddTransient<IUserRoleProvisioner, StandardUserRoleProvisioner>();
+            services.AddTransient<IUserRoleProvisioner, AdminRoleProvisioner>();
 
             services.AddKeyedScoped<ICustomRequestChecker, InternalAuthRequestChecker>("internal");
 

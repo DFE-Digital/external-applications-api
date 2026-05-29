@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers
 {
@@ -13,8 +15,7 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             ApplicationPermissionRequirement requirement)
         {
-            // Admin bypass - Admin users have full access
-            if (context.User.IsInRole("Admin"))
+            if (PermissionClaimEvaluator.HasFullAdminAccess(context.User))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
@@ -24,17 +25,11 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             if (string.IsNullOrWhiteSpace(applicationId))
                 return Task.CompletedTask;
 
-            var expected = $"Application:{applicationId}:{requirement.Action}";
-            var hasClaim = context.User.Claims.Any(c =>
-                c.Type == "permission" &&
-                string.Equals(c.Value, expected, StringComparison.OrdinalIgnoreCase));
+            var hasAccess = requirement.Action.Equals(AccessType.Read.ToString(), StringComparison.OrdinalIgnoreCase)
+                ? PermissionClaimEvaluator.CanReadApplication(context.User, applicationId)
+                : PermissionClaimEvaluator.CanWriteApplication(context.User, applicationId);
 
-            var claimStrings = context.User.Claims
-                .OrderBy(c => c.Type)
-                .Select(c => $"{c.Type}:{c.Value}")
-                .ToList();
-
-            if (hasClaim)
+            if (hasAccess)
                 context.Succeed(requirement);
 
             return Task.CompletedTask;

@@ -32,6 +32,14 @@ public sealed class User : BaseAggregateRoot, IEntity<UserId>
 
     public IReadOnlyCollection<File> Files => _files.AsReadOnly();
 
+    /// <summary>
+    /// Assigns a new role to the user.
+    /// </summary>
+    public void AssignRole(RoleId roleId)
+    {
+        RoleId = roleId ?? throw new ArgumentNullException(nameof(roleId));
+    }
+
     private User()
     {
         // Required by EF Core to materialise the entity.

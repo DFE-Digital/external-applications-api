@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DfE.ExternalApplications.Domain.Services;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers
@@ -13,8 +14,7 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             UserPermissionRequirement requirement)
         {
-            // Admin bypass - Admin users have full access
-            if (context.User.IsInRole("Admin"))
+            if (PermissionClaimEvaluator.HasFullAdminAccess(context.User))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;

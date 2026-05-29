@@ -1,15 +1,11 @@
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Common;
-using DfE.ExternalApplications.Application.Common.QueriesObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
-using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -44,74 +40,27 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                 cacheKey,
                 async () =>
                 {
-                    var userWithPerms = await new GetUserWithAllPermissionsByExternalIdQueryObject(request.ExternalProviderId)
+                    var userWithAuthorization = await new GetUserWithAllPermissionsByExternalIdQueryObject(request.ExternalProviderId)
                         .Apply(userRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
 
-                    if (userWithPerms is null)
-                        return Result<PagedResult<ApplicationDto>>.Success(EmptyPagedResult(request));
+                    if (userWithAuthorization is null)
+                        return Result<PagedResult<ApplicationDto>>.Success(
+                            ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
 
-                    var ids = userWithPerms.Permissions
-                        .Where(p => p.ApplicationId != null)
-                        .Select(p => p.ApplicationId!)
-                        .Distinct()
-                        .ToList();
+                    var query = ApplicationListingQueryBuilder.BuildQuery(
+                        appRepo,
+                        userWithAuthorization,
+                        request.TemplateId);
 
-                    if (!ids.Any())
-                        return Result<PagedResult<ApplicationDto>>.Success(EmptyPagedResult(request));
+                    var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
+                        query,
+                        request.IncludeSchema,
+                        request.PageNumber,
+                        request.PageSize,
+                        cancellationToken);
 
-                    var query = new GetApplicationsByIdsQueryObject(ids)
-                        .Apply(appRepo.Query().AsNoTracking());
-
-                    // Apply template filter if specified
-                    if (request.TemplateId.HasValue)
-                        query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(request.TemplateId.Value))
-                            .Apply(query);
-
-                    int? totalCount = null;
-                    if (request.PageNumber.HasValue && request.PageSize.HasValue)
-                    {
-                        totalCount = await query.CountAsync(cancellationToken);
-                        var pageIndex = Math.Max(0, request.PageNumber.Value - 1);
-                        query = new PagingQuery<Domain.Entities.Application>(pageIndex, request.PageSize.Value)
-                            .Apply(query);
-                    }
-
-                    var apps = await query.ToListAsync(cancellationToken);
-                    var count = totalCount ?? apps.Count;
-
-                    var dtoList = apps.Select(a => new ApplicationDto
-                    {
-                        ApplicationId = a.Id!.Value,
-                        ApplicationReference = a.ApplicationReference,
-                        TemplateVersionId = a.TemplateVersionId.Value,
-                        DateCreated = a.CreatedOn,
-                        DateSubmitted = a.Status == ApplicationStatus.Submitted ? a.LastModifiedOn : null,
-                        TemplateName = a.TemplateVersion?.Template?.Name ?? string.Empty,
-                        Status = a.Status,
-                        TemplateSchema = request.IncludeSchema && a.TemplateVersion != null ? new TemplateSchemaDto
-                        {
-                            TemplateId = a.TemplateVersion.Template?.Id?.Value ?? Guid.Empty,
-                            TemplateVersionId = a.TemplateVersion.Id!.Value,
-                            VersionNumber = a.TemplateVersion.VersionNumber,
-                            JsonSchema = a.TemplateVersion.JsonSchema
-                        } : null
-                    }).ToList().AsReadOnly();
-
-                    var effectivePageSize = request.PageSize ?? count;
-                    var effectivePage = request.PageNumber ?? 1;
-                    var totalPages = effectivePageSize > 0
-                        ? (int)Math.Ceiling((double)count / effectivePageSize)
-                        : 1;
-
-                    return Result<PagedResult<ApplicationDto>>.Success(new PagedResult<ApplicationDto>
-                    {
-                        Items = dtoList,
-                        TotalCount = count,
-                        PageNumber = effectivePage,
-                        PageSize = effectivePageSize,
-                        TotalPages = totalPages
-                    });
+                    return Result<PagedResult<ApplicationDto>>.Success(pagedResult);
                 },
                 methodName);
         }
@@ -120,14 +69,4 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
             return Result<PagedResult<ApplicationDto>>.Failure(e.ToString());
         }
     }
-
-    private static PagedResult<ApplicationDto> EmptyPagedResult(GetApplicationsForUserByExternalProviderIdQuery request) =>
-        new()
-        {
-            Items = Array.Empty<ApplicationDto>(),
-            TotalCount = 0,
-            PageNumber = request.PageNumber ?? 1,
-            PageSize = request.PageSize ?? 0,
-            TotalPages = 0
-        };
 }

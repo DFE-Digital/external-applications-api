@@ -11,6 +11,11 @@
       "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"
     },
     {
+      "Controller": "UsersController",
+      "Action": "AssignUserRoleAsync",
+      "ExpectedSecurity": "Authorize: Roles=Admin"
+    },
+    {
       "Controller": "TemplatesController",
       "Action": "GetLatestTemplateSchemaAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadTemplate"

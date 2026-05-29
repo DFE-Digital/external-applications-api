@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DfE.ExternalApplications.Domain.Services;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 
@@ -14,8 +15,7 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             NotificationsPermissionRequirement requirement)
         {
-            // Admin bypass - Admin users have full access
-            if (context.User.IsInRole("Admin"))
+            if (PermissionClaimEvaluator.HasFullAdminAccess(context.User))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
