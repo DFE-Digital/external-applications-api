@@ -304,6 +304,49 @@ public class GetApplicationsForUserQueryHandlerTests
         Assert.Equal(2, result.Value!.TotalPages);
     }
 
+    [Theory, CustomAutoData(typeof(UserCustomization), typeof(PermissionCustomization), typeof(ApplicationCustomization))]
+    public async Task Handle_ShouldReturnFilteredResults_WhenSearchReferenceProvided(
+        string rawEmail,
+        UserCustomization userCustom,
+        PermissionCustomization permCustom,
+        ApplicationCustomization appCustom,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IEaRepository<Domain.Entities.Application> appRepo,
+        [Frozen] ICacheService<IRedisCacheType> cache,
+        [Frozen] ITenantContextAccessor tenantContextAccessor)
+    {
+        userCustom.OverrideEmail = rawEmail;
+        userCustom.OverridePermissions = Array.Empty<Permission>();
+        var fixture = new Fixture().Customize(userCustom);
+        var user = fixture.Create<User>();
+
+        var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        backing.SetValue(user, new List<Permission>());
+
+        var matchCustom = new ApplicationCustomization { OverrideReference = "APP-2024-001" };
+        var noMatchCustom = new ApplicationCustomization { OverrideReference = "XYZ-9999-999" };
+        var matchApp = new Fixture().Customize(matchCustom).Create<Domain.Entities.Application>();
+        var noMatchApp = new Fixture().Customize(noMatchCustom).Create<Domain.Entities.Application>();
+
+        var perm1 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, matchApp.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        var perm2 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, noMatchApp.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm1);
+        ((List<Permission>)backing.GetValue(user)!).Add(perm2);
+
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
+        appRepo.Query().Returns(new List<Domain.Entities.Application> { matchApp, noMatchApp }.AsQueryable().BuildMock());
+
+        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
+            .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
+
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, SearchReference: "APP-2024"), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value!.Items);
+        Assert.Equal("APP-2024-001", result.Value!.Items.First().ApplicationReference);
+    }
+
     [Theory, CustomAutoData]
     public async Task Handle_ShouldReturnFromCache(
         string rawEmail,

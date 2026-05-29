@@ -20,7 +20,8 @@ public sealed record GetApplicationsForUserQuery(
     bool IncludeSchema = false,
     Guid? TemplateId = null,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    string? SearchReference = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserQueryHandler(
@@ -36,7 +37,7 @@ public sealed class GetApplicationsForUserQueryHandler(
     {
         try
         {
-            var baseCacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}_p{request.PageNumber}_ps{request.PageSize}";
+            var baseCacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}_sr{request.SearchReference ?? ""}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserQueryHandler);
 
@@ -73,6 +74,11 @@ public sealed class GetApplicationsForUserQueryHandler(
                     // Apply template filter if specified
                     if (request.TemplateId.HasValue)
                         query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(request.TemplateId.Value))
+                            .Apply(query);
+
+                    // Apply reference search filter if specified
+                    if (!string.IsNullOrWhiteSpace(request.SearchReference))
+                        query = new GetApplicationsByReferenceSearchQueryObject(request.SearchReference)
                             .Apply(query);
 
                     int? totalCount = null;

@@ -74,3 +74,7 @@ All notable changes to this service will be documented in this file.
 ## [1.2.8] - Public Beta
 ### Notes
 - Added RG Visits Test env appsettings
+
+## [1.2.9] - Public Beta
+### Notes
+- Added the ability to search for applications by reference on the dashboard

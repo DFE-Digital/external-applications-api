@@ -20,7 +20,8 @@ public sealed record GetApplicationsForUserByExternalProviderIdQuery(
     bool IncludeSchema = false,
     Guid? TemplateId = null,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    string? SearchReference = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
@@ -36,7 +37,7 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     {
         try
         {
-            var baseCacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_p{request.PageNumber}_ps{request.PageSize}";
+            var baseCacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_sr{request.SearchReference ?? ""}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserByExternalProviderIdQueryHandler);
 
@@ -66,6 +67,11 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                     // Apply template filter if specified
                     if (request.TemplateId.HasValue)
                         query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(request.TemplateId.Value))
+                            .Apply(query);
+
+                    // Apply reference search filter if specified
+                    if (!string.IsNullOrWhiteSpace(request.SearchReference))
+                        query = new GetApplicationsByReferenceSearchQueryObject(request.SearchReference)
                             .Apply(query);
 
                     int? totalCount = null;

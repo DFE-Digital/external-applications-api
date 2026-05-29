@@ -9,7 +9,8 @@ public sealed record GetMyApplicationsQuery(
     bool IncludeSchema = false,
     Guid? TemplateId = null,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    string? SearchReference = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetMyApplicationsQueryHandler(
@@ -36,13 +37,13 @@ public sealed class GetMyApplicationsQueryHandler(
         if (principalId.Contains('@'))
         {
             return await mediator.Send(
-                new GetApplicationsForUserQuery(principalId, request.IncludeSchema, request.TemplateId, request.PageNumber, request.PageSize),
+                new GetApplicationsForUserQuery(principalId, request.IncludeSchema, request.TemplateId, request.PageNumber, request.PageSize, request.SearchReference),
                 cancellationToken);
         }
         else
         {
             return await mediator.Send(
-                new GetApplicationsForUserByExternalProviderIdQuery(principalId, request.IncludeSchema, request.TemplateId, request.PageNumber, request.PageSize),
+                new GetApplicationsForUserByExternalProviderIdQuery(principalId, request.IncludeSchema, request.TemplateId, request.PageNumber, request.PageSize, request.SearchReference),
                 cancellationToken);
         }
     }
