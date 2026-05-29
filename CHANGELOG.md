@@ -70,3 +70,7 @@ All notable changes to this service will be documented in this file.
 ## [1.2.7] - Public Beta
 ### Notes
 - Added server-side pagination to GET /v1/me/applications (optional pageNumber and pageSize query parameters)
+
+## [1.2.8] - Public Beta
+### Notes
+- Added RG Visits Test env appsettings
