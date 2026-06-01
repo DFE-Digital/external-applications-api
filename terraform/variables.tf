@@ -29,6 +29,16 @@ variable "key_vault_access_ipv4" {
   type        = list(string)
 }
 
+variable "virtual_network_address_space" {
+  description = "Virtual network address space CIDR"
+  type        = string
+}
+
+variable "enable_keyvault_private_endpoint" {
+  description = "Set to true to create a private endpoint for key vault."
+  type        = bool
+}
+
 variable "tfvars_filename" {
   description = "tfvars filename. This file is uploaded and stored encrupted within Key Vault, to ensure that the latest tfvars are stored in a shared place."
   type        = string
@@ -429,6 +439,16 @@ variable "mssql_database_name" {
   description = "The name of the MSSQL database to create. Must be set if `enable_mssql_database` is true"
   type        = string
   default     = ""
+}
+
+variable "mssql_extra_databases" {
+  description = "A map of extra database configurations (key is used as database name)"
+  type = map(object({
+    sku_name : optional(string, "Basic"),
+    max_size_gb : optional(number, 2),
+    enable_extended_auditing_policy : optional(bool, true)
+  }))
+  default = {}
 }
 
 variable "mssql_firewall_ipv4_allow_list" {

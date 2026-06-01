@@ -50,6 +50,10 @@ locals {
   enable_monitoring_traces                     = var.enable_monitoring_traces
   existing_container_app_environment           = var.existing_container_app_environment
   existing_virtual_network                     = var.existing_virtual_network
+  virtual_network_address_space                = var.virtual_network_address_space
+  virtual_network_address_space_mask           = element(split("/", local.virtual_network_address_space), 1)
+  key_vault_subnet_cidr                        = cidrsubnet(local.virtual_network_address_space, 21 - local.virtual_network_address_space_mask, 2)
+  enable_keyvault_private_endpoint             = var.enable_keyvault_private_endpoint
   storage_subnet_cidr                          = var.storage_subnet_cidr
   mssql_private_endpoint_subnet_cidr           = var.mssql_private_endpoint_subnet_cidr
   existing_resource_group                      = var.existing_resource_group
@@ -60,6 +64,7 @@ locals {
   mssql_azuread_admin_object_id                = var.mssql_azuread_admin_object_id
   mssql_sku_name                               = var.mssql_sku_name
   mssql_database_name                          = var.mssql_database_name
+  mssql_extra_databases                        = var.mssql_extra_databases
   mssql_firewall_ipv4_allow_list               = var.mssql_firewall_ipv4_allow_list
   enable_mssql_vulnerability_assessment        = var.enable_mssql_vulnerability_assessment
   mssql_managed_identity_assign_role           = var.mssql_managed_identity_assign_role
