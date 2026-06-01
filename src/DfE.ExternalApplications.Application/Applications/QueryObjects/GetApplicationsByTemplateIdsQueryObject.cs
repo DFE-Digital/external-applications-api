@@ -11,10 +11,16 @@ namespace DfE.ExternalApplications.Application.Applications.QueryObjects;
 public sealed class GetApplicationsByTemplateIdsQueryObject(IEnumerable<TemplateId> templateIds)
     : IQueryObject<Domain.Entities.Application>
 {
-    private readonly HashSet<Guid> _templateIdValues = templateIds.Select(t => t.Value).ToHashSet();
+    private readonly HashSet<TemplateId> _templateIds = templateIds.ToHashSet();
 
-    public IQueryable<Domain.Entities.Application> Apply(IQueryable<Domain.Entities.Application> query) =>
-        query.Where(a => a.TemplateVersion != null && _templateIdValues.Contains(a.TemplateVersion.TemplateId.Value))
+    public IQueryable<Domain.Entities.Application> Apply(IQueryable<Domain.Entities.Application> query)
+    {
+        if (_templateIds.Count == 0)
+            return query.Where(_ => false);
+
+        return query
+            .Where(a => a.TemplateVersion != null && _templateIds.Contains(a.TemplateVersion.TemplateId))
             .Include(a => a.TemplateVersion)
             .ThenInclude(tv => tv!.Template);
+    }
 }
