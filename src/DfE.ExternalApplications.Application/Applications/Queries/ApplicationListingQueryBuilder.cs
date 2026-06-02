@@ -23,7 +23,7 @@ internal static class ApplicationListingQueryBuilder
     internal static IQueryable<Domain.Entities.Application> BuildMyApplicationsQuery(
         IEaRepository<Domain.Entities.Application> appRepo,
         User userWithAuthorization,
-        Guid? templateIdFilter)
+        IReadOnlyCollection<TemplateId> templateIdsFilter)
     {
         var applicationIds = userWithAuthorization.Permissions
             .Where(p => p is { ApplicationId: not null, ResourceType: ResourceType.Application })
@@ -36,11 +36,11 @@ internal static class ApplicationListingQueryBuilder
             : new GetApplicationsByIdsQueryObject(applicationIds)
                 .Apply(appRepo.Query().AsNoTracking());
 
-        if (templateIdFilter.HasValue)
-            query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(templateIdFilter.Value))
-                .Apply(query);
+        if (templateIdsFilter.Count == 0)
+            return query.Where(_ => false);
 
-        return query;
+        return new GetApplicationsByTemplateIdsQueryObject(templateIdsFilter)
+            .Apply(query);
     }
 
     internal static IQueryable<Domain.Entities.Application> BuildTemplateQuery(

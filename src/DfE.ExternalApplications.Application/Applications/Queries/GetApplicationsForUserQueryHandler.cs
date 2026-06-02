@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -27,6 +28,7 @@ public sealed class GetApplicationsForUserQueryHandler(
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
     ITenantContextAccessor tenantContextAccessor,
+    ITenantTemplateResolver tenantTemplateResolver,
     ILogger<GetApplicationsForUserQueryHandler> logger)
     : IRequestHandler<GetApplicationsForUserQuery, Result<PagedResult<ApplicationDto>>>
 {
@@ -74,19 +76,22 @@ public sealed class GetApplicationsForUserQueryHandler(
                             ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
                     }
 
+                    var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
+
                     logger.LogInformation(
-                        "My applications listing (own applications only). Tenant={Tenant}, Email={Email}, Role={Role}, ExplicitApplicationCount={ApplicationCount}, TemplateFilter={TemplateFilter}",
+                        "My applications listing (own applications only). Tenant={Tenant}, Email={Email}, Role={Role}, ExplicitApplicationCount={ApplicationCount}, RequestedTemplateId={RequestedTemplateId}, EffectiveTemplateCount={EffectiveTemplateCount}",
                         tenantName,
                         request.Email,
                         userWithAuthorization.Role?.Name ?? "(unknown)",
                         userWithAuthorization.Permissions.Count(p =>
                             p is { ApplicationId: not null, ResourceType: ResourceType.Application }),
-                        request.TemplateId);
+                        request.TemplateId,
+                        templateIdsFilter.Count);
 
                     var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
                         appRepo,
                         userWithAuthorization,
-                        request.TemplateId);
+                        templateIdsFilter);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,

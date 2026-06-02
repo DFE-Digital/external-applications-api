@@ -6,6 +6,8 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Queries;
+using DfE.ExternalApplications.Application.Services;
+using DfE.ExternalApplications.Application.Tests.Helpers;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
@@ -73,7 +75,13 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, true), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -128,7 +136,13 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -179,7 +193,13 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -208,7 +228,13 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            ApplicationListingTestHelper.CreateTemplateResolver(new TemplateId(Guid.NewGuid())),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
@@ -234,9 +260,12 @@ public class GetApplicationsForUserQueryHandlerTests
         var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         backing.SetValue(user, new List<Permission>());
 
+        var templateId = new TemplateId(Guid.NewGuid());
         var appFixture = new Fixture().Customize(appCustom);
         var app1 = appFixture.Create<Domain.Entities.Application>();
         var app2 = appFixture.Create<Domain.Entities.Application>();
+        ApplicationListingTestHelper.AttachTemplateVersion(app1, templateId, user.Id!);
+        ApplicationListingTestHelper.AttachTemplateVersion(app2, templateId, user.Id!);
 
         var perm1 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app1.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
         var perm2 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app2.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
@@ -249,7 +278,13 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            ApplicationListingTestHelper.CreateTemplateResolver(templateId),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -279,9 +314,12 @@ public class GetApplicationsForUserQueryHandlerTests
         var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         backing.SetValue(user, new List<Permission>());
 
+        var templateId = new TemplateId(Guid.NewGuid());
         var appFixture = new Fixture().Customize(appCustom);
         var app1 = appFixture.Create<Domain.Entities.Application>();
         var app2 = appFixture.Create<Domain.Entities.Application>();
+        ApplicationListingTestHelper.AttachTemplateVersion(app1, templateId, user.Id!);
+        ApplicationListingTestHelper.AttachTemplateVersion(app2, templateId, user.Id!);
 
         var perm1 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app1.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
         var perm2 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, app2.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
@@ -294,7 +332,13 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            ApplicationListingTestHelper.CreateTemplateResolver(templateId),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false, null, PageNumber: 1, PageSize: 1), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -325,7 +369,13 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(Task.FromResult(Result<PagedResult<ApplicationDto>>.Success(pagedResult)));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            Substitute.For<ITenantTemplateResolver>(),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -344,7 +394,13 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), Arg.Any<string>())
             .Throws(new Exception("Boom"));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            Substitute.For<ITenantTemplateResolver>(),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);

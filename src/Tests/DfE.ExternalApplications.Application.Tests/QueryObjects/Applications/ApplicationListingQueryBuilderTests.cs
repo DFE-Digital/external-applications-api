@@ -38,7 +38,7 @@ public class ApplicationListingQueryBuilderTests
         var appRepo = Substitute.For<IEaRepository<Domain.Entities.Application>>();
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable());
 
-        var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(appRepo, admin, null);
+        var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(appRepo, admin, Array.Empty<TemplateId>());
 
         Assert.NotNull(query);
     }

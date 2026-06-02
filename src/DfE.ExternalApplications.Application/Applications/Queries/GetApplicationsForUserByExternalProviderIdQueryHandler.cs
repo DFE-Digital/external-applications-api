@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -23,7 +24,8 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
-    ITenantContextAccessor tenantContextAccessor)
+    ITenantContextAccessor tenantContextAccessor,
+    ITenantTemplateResolver tenantTemplateResolver)
     : IRequestHandler<GetApplicationsForUserByExternalProviderIdQuery, Result<PagedResult<ApplicationDto>>>
 {
     public async Task<Result<PagedResult<ApplicationDto>>> Handle(
@@ -49,10 +51,12 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                         return Result<PagedResult<ApplicationDto>>.Success(
                             ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
 
+                    var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
+
                     var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
                         appRepo,
                         userWithAuthorization,
-                        request.TemplateId);
+                        templateIdsFilter);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,

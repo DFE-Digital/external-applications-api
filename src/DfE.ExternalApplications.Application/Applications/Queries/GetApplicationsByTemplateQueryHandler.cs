@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -33,7 +34,8 @@ public sealed class GetApplicationsByTemplateQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
-    ITenantContextAccessor tenantContextAccessor)
+    ITenantContextAccessor tenantContextAccessor,
+    ITenantTemplateResolver tenantTemplateResolver)
     : IRequestHandler<GetApplicationsByTemplateQuery, Result<PagedResult<ApplicationDto>>>
 {
     public async Task<Result<PagedResult<ApplicationDto>>> Handle(
@@ -69,6 +71,10 @@ public sealed class GetApplicationsByTemplateQueryHandler(
 
                     if (userWithAuthorization is null)
                         return Result<PagedResult<ApplicationDto>>.Forbid("User not found");
+
+                    if (!tenantTemplateResolver.IsTemplateInCurrentTenant(templateId))
+                        return Result<PagedResult<ApplicationDto>>.Forbid(
+                            "Template does not belong to the current tenant");
 
                     if (!ApplicationAccessResolver.CanListAllApplicationsForTemplate(userWithAuthorization, templateId))
                         return Result<PagedResult<ApplicationDto>>.Forbid(

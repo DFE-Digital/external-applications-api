@@ -75,6 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<IFileFactory, FileFactory>();
 
             services.AddTransient<IEmailTemplateResolver, EmailTemplateResolver>();
+            services.AddScoped<ITenantTemplateResolver, TenantTemplateResolver>();
 
             services.AddBackgroundService();
             
