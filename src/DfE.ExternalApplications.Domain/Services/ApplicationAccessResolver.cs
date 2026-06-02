@@ -41,7 +41,9 @@ public static class ApplicationAccessResolver
     }
 
     /// <summary>
-    /// Resolves the application listing scope for the given user based on role and permissions.
+    /// Resolves the application listing scope for the given user based on role.
+    /// Standard users only see applications they have explicit permission rows for.
+    /// The <c>Application:Any</c> read grant is used for authorization checks, not listing scope.
     /// </summary>
     public static AccessScope Resolve(User user)
     {
@@ -55,9 +57,6 @@ public static class ApplicationAccessResolver
         if (string.Equals(roleName, RoleNames.Caseworker, StringComparison.OrdinalIgnoreCase))
             return ResolveCaseworkerScope(user);
 
-        if (HasTenantWideReadGrant(user))
-            return ResolveTemplateOrAllScope(user);
-
         var applicationIds = user.Permissions
             .Where(p => p is { ApplicationId: not null, ResourceType: ResourceType.Application })
             .Select(p => p.ApplicationId!)
@@ -69,7 +68,7 @@ public static class ApplicationAccessResolver
 
     /// <summary>
     /// Returns true when the user may list all applications for the specified template
-    /// (admin, tenant-wide scope, or template-scoped read access).
+    /// (admin, or caseworker with template-scoped read access).
     /// </summary>
     public static bool CanListAllApplicationsForTemplate(User user, TemplateId templateId)
     {
@@ -91,23 +90,8 @@ public static class ApplicationAccessResolver
         if (templateIds.Count > 0)
             return new AccessScope(AccessMode.TemplateScoped, Array.Empty<ApplicationId>(), templateIds);
 
-        return new AccessScope(AccessMode.AllApplicationsInTenant, Array.Empty<ApplicationId>(), Array.Empty<TemplateId>());
+        return AccessScope.Empty;
     }
-
-    private static AccessScope ResolveTemplateOrAllScope(User user)
-    {
-        var templateIds = GetReadableTemplateIds(user);
-        if (templateIds.Count > 0)
-            return new AccessScope(AccessMode.TemplateScoped, Array.Empty<ApplicationId>(), templateIds);
-
-        return new AccessScope(AccessMode.AllApplicationsInTenant, Array.Empty<ApplicationId>(), Array.Empty<TemplateId>());
-    }
-
-    private static bool HasTenantWideReadGrant(User user) =>
-        user.Permissions.Any(p =>
-            p.ResourceType == ResourceType.Application
-            && p.ResourceKey == PermissionConstants.AnyResourceKey
-            && p.AccessType == AccessType.Read);
 
     private static List<TemplateId> GetReadableTemplateIds(User user) =>
         user.TemplatePermissions

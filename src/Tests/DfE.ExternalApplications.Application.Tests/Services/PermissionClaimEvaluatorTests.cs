@@ -89,6 +89,93 @@ public class PermissionClaimEvaluatorTests
     }
 
     [Fact]
+    public void ApplicationAccessResolver_ReturnsSpecificApplications_ForStandardUserWithTenantWideReadGrant()
+    {
+        var userId = new UserId(Guid.NewGuid());
+        var ownedApplicationId = new ApplicationId(Guid.NewGuid());
+        var templateId = new TemplateId(Guid.NewGuid());
+        var user = new User(
+            userId,
+            new RoleId(RoleConstants.UserRoleId),
+            "Applicant",
+            "user@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        user.GetType().GetProperty(nameof(User.Role))!.SetValue(user,
+            new Role(new RoleId(RoleConstants.UserRoleId), RoleNames.User));
+
+        var permissions = user.GetType()
+            .GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        permissions.SetValue(user, new List<Permission>
+        {
+            new(
+                new PermissionId(Guid.NewGuid()),
+                userId,
+                ownedApplicationId,
+                ownedApplicationId.Value.ToString(),
+                ResourceType.Application,
+                AccessType.Read,
+                DateTime.UtcNow,
+                userId),
+            new(
+                new PermissionId(Guid.NewGuid()),
+                userId,
+                null,
+                PermissionConstants.AnyResourceKey,
+                ResourceType.Application,
+                AccessType.Read,
+                DateTime.UtcNow,
+                userId)
+        });
+
+        var templatePermissions = user.GetType()
+            .GetField("_templatePermissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        templatePermissions.SetValue(user, new List<TemplatePermission>
+        {
+            new(
+                new TemplatePermissionId(Guid.NewGuid()),
+                userId,
+                templateId,
+                AccessType.Read,
+                DateTime.UtcNow,
+                userId)
+        });
+
+        var scope = ApplicationAccessResolver.Resolve(user);
+
+        Assert.Equal(ApplicationAccessResolver.AccessMode.SpecificApplicationIds, scope.Mode);
+        Assert.Single(scope.ApplicationIds);
+        Assert.Equal(ownedApplicationId, scope.ApplicationIds.First());
+        Assert.Empty(scope.TemplateIds);
+    }
+
+    [Fact]
+    public void ApplicationAccessResolver_ReturnsEmpty_ForCaseworkerWithoutTemplateRead()
+    {
+        var user = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.CaseworkerRoleId),
+            "Case Worker",
+            "case@example.com",
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        user.GetType().GetProperty(nameof(User.Role))!.SetValue(user,
+            new Role(new RoleId(RoleConstants.CaseworkerRoleId), RoleNames.Caseworker));
+
+        var scope = ApplicationAccessResolver.Resolve(user);
+
+        Assert.Equal(ApplicationAccessResolver.AccessMode.SpecificApplicationIds, scope.Mode);
+        Assert.Empty(scope.ApplicationIds);
+        Assert.Empty(scope.TemplateIds);
+    }
+
+    [Fact]
     public void CanListAllApplicationsForTemplate_ReturnsTrue_ForAdmin()
     {
         var templateId = new TemplateId(Guid.NewGuid());

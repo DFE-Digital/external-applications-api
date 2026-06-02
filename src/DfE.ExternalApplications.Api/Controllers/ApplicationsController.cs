@@ -70,7 +70,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Returns a paged list of applications the current user can access.
+    /// Returns a paged list of the current user's own applications in the current tenant.
     /// </summary>
     [HttpGet]
     [Route("/v{version:apiVersion}/me/applications")]
@@ -97,7 +97,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Returns a paged list of all applications for the specified template.
+    /// Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).
     /// </summary>
     [HttpGet("templates/{templateId:guid}")]
     [SwaggerResponse(200, "A paged list of applications for the template.", typeof(PagedResult<ApplicationDto>))]

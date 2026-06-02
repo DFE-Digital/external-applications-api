@@ -199,7 +199,7 @@
         "tags": [
           "Applications"
         ],
-        "summary": "Returns a paged list of applications the current user can access.",
+        "summary": "Returns a paged list of the current user's own applications in the current tenant.",
         "operationId": "Applications_GetMyApplications",
         "parameters": [
           {
@@ -301,7 +301,7 @@
         "tags": [
           "Applications"
         ],
-        "summary": "Returns a paged list of all applications for the specified template.",
+        "summary": "Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).",
         "operationId": "Applications_GetApplicationsByTemplate",
         "parameters": [
           {

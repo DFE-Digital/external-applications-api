@@ -32,7 +32,8 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     {
         try
         {
-            var baseCacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_p{request.PageNumber}_ps{request.PageSize}";
+            var baseCacheKey =
+                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_t{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserByExternalProviderIdQueryHandler);
 
@@ -48,7 +49,7 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                         return Result<PagedResult<ApplicationDto>>.Success(
                             ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
 
-                    var query = ApplicationListingQueryBuilder.BuildQuery(
+                    var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
                         appRepo,
                         userWithAuthorization,
                         request.TemplateId);

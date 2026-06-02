@@ -13,6 +13,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
 using NSubstitute;
+using Microsoft.Extensions.Logging;
 using NSubstitute.ExceptionExtensions;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Applications;
@@ -72,7 +73,7 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, true), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -127,7 +128,7 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -178,7 +179,7 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -207,7 +208,7 @@ public class GetApplicationsForUserQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
@@ -248,7 +249,7 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -293,7 +294,7 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false, null, PageNumber: 1, PageSize: 1), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -324,7 +325,7 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(Task.FromResult(Result<PagedResult<ApplicationDto>>.Success(pagedResult)));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -343,7 +344,7 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), Arg.Any<string>())
             .Throws(new Exception("Boom"));
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor, Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);

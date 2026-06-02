@@ -16,29 +16,25 @@ namespace DfE.ExternalApplications.Application.Applications.Queries;
 /// </summary>
 internal static class ApplicationListingQueryBuilder
 {
-    internal static IQueryable<Domain.Entities.Application> BuildQuery(
+    /// <summary>
+    /// Lists only applications the user has explicit application permission rows for (dashboard / me/applications).
+    /// Role is ignored so admins and caseworkers see only their own applications here.
+    /// </summary>
+    internal static IQueryable<Domain.Entities.Application> BuildMyApplicationsQuery(
         IEaRepository<Domain.Entities.Application> appRepo,
         User userWithAuthorization,
         Guid? templateIdFilter)
     {
-        var scope = ApplicationAccessResolver.Resolve(userWithAuthorization);
+        var applicationIds = userWithAuthorization.Permissions
+            .Where(p => p is { ApplicationId: not null, ResourceType: ResourceType.Application })
+            .Select(p => p.ApplicationId!)
+            .Distinct()
+            .ToList();
 
-        IQueryable<Domain.Entities.Application> query = scope.Mode switch
-        {
-            ApplicationAccessResolver.AccessMode.AllApplicationsInTenant =>
-                new GetAllApplicationsQueryObject().Apply(appRepo.Query().AsNoTracking()),
-
-            ApplicationAccessResolver.AccessMode.TemplateScoped =>
-                new GetApplicationsByTemplateIdsQueryObject(scope.TemplateIds)
-                    .Apply(appRepo.Query().AsNoTracking()),
-
-            _ when scope.ApplicationIds.Count == 0 =>
-                appRepo.Query().AsNoTracking().Where(_ => false),
-
-            _ =>
-                new GetApplicationsByIdsQueryObject(scope.ApplicationIds)
-                    .Apply(appRepo.Query().AsNoTracking())
-        };
+        IQueryable<Domain.Entities.Application> query = applicationIds.Count == 0
+            ? appRepo.Query().AsNoTracking().Where(_ => false)
+            : new GetApplicationsByIdsQueryObject(applicationIds)
+                .Apply(appRepo.Query().AsNoTracking());
 
         if (templateIdFilter.HasValue)
             query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(templateIdFilter.Value))

@@ -51,7 +51,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Returns a paged list of applications the current user can access.
+        /// Returns a paged list of the current user's own applications in the current tenant.
         /// </summary>
         /// <returns>A paged list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -59,7 +59,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Returns a paged list of all applications for the specified template.
+        /// Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).
         /// </summary>
         /// <returns>A paged list of applications for the template.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>

@@ -5,9 +5,12 @@ using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.Tenancy;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -23,7 +26,8 @@ public sealed class GetApplicationsForUserQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
-    ITenantContextAccessor tenantContextAccessor)
+    ITenantContextAccessor tenantContextAccessor,
+    ILogger<GetApplicationsForUserQueryHandler> logger)
     : IRequestHandler<GetApplicationsForUserQuery, Result<PagedResult<ApplicationDto>>>
 {
     public async Task<Result<PagedResult<ApplicationDto>>> Handle(
@@ -32,7 +36,9 @@ public sealed class GetApplicationsForUserQueryHandler(
     {
         try
         {
-            var baseCacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}_p{request.PageNumber}_ps{request.PageSize}";
+            var tenantName = tenantContextAccessor.CurrentTenant?.Name ?? "(none)";
+            var baseCacheKey =
+                $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}_t{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserQueryHandler);
 
@@ -45,17 +51,39 @@ public sealed class GetApplicationsForUserQueryHandler(
                             .FirstOrDefaultAsync(cancellationToken);
 
                     if (dbUser is null)
+                    {
+                        logger.LogWarning(
+                            "Application listing: user not found. Tenant={Tenant}, Email={Email}",
+                            tenantName,
+                            request.Email);
                         return Result<PagedResult<ApplicationDto>>.Failure("GetApplicationsForUserQueryHandler > User not found.");
+                    }
 
                     var userWithAuthorization = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
                         .Apply(userRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
 
                     if (userWithAuthorization is null)
+                    {
+                        logger.LogWarning(
+                            "Application listing: authorization profile missing. Tenant={Tenant}, Email={Email}, UserId={UserId}",
+                            tenantName,
+                            request.Email,
+                            dbUser.Id!.Value);
                         return Result<PagedResult<ApplicationDto>>.Success(
                             ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
+                    }
 
-                    var query = ApplicationListingQueryBuilder.BuildQuery(
+                    logger.LogInformation(
+                        "My applications listing (own applications only). Tenant={Tenant}, Email={Email}, Role={Role}, ExplicitApplicationCount={ApplicationCount}, TemplateFilter={TemplateFilter}",
+                        tenantName,
+                        request.Email,
+                        userWithAuthorization.Role?.Name ?? "(unknown)",
+                        userWithAuthorization.Permissions.Count(p =>
+                            p is { ApplicationId: not null, ResourceType: ResourceType.Application }),
+                        request.TemplateId);
+
+                    var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
                         appRepo,
                         userWithAuthorization,
                         request.TemplateId);
@@ -67,12 +95,20 @@ public sealed class GetApplicationsForUserQueryHandler(
                         request.PageSize,
                         cancellationToken);
 
+                    logger.LogInformation(
+                        "Application listing completed. Tenant={Tenant}, Email={Email}, ReturnedCount={ReturnedCount}, TotalCount={TotalCount}",
+                        tenantName,
+                        request.Email,
+                        pagedResult.Items.Count,
+                        pagedResult.TotalCount);
+
                     return Result<PagedResult<ApplicationDto>>.Success(pagedResult);
                 },
                 methodName);
         }
         catch (Exception e)
         {
+            logger.LogError(e, "Application listing failed for {Email}", request.Email);
             return Result<PagedResult<ApplicationDto>>.Failure(e.ToString());
         }
     }
