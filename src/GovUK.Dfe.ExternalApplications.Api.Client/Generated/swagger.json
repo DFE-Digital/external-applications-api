@@ -342,6 +342,23 @@
               "nullable": true
             },
             "x-position": 4
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "nullable": true,
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ApplicationStatus"
+                    }
+                  ]
+                }
+              ]
+            },
+            "x-position": 5
           }
         ],
         "responses": {

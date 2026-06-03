@@ -13,6 +13,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -23,7 +24,8 @@ public sealed record GetApplicationsByTemplateQuery(
     Guid TemplateId,
     bool IncludeSchema = false,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    ApplicationStatus? Status = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 /// <summary>
@@ -57,7 +59,7 @@ public sealed class GetApplicationsByTemplateQueryHandler(
 
             var templateId = new TemplateId(request.TemplateId);
             var baseCacheKey =
-                $"Applications_ByTemplate_{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
+                $"Applications_ByTemplate_{request.TemplateId}_s{request.Status}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsByTemplateQueryHandler);
 
@@ -81,6 +83,12 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                             "User does not have permission to list all applications for this template");
 
                     var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId);
+
+                    // optional status filter
+                    if (request.Status.HasValue)
+                    {
+                        query = query.Where(x => x.Status == request.Status);
+                    }
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,
