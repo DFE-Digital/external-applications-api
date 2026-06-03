@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers;
 
@@ -11,17 +13,20 @@ public sealed class ApplicationListPermissionHandler : AuthorizationHandler<Appl
         AuthorizationHandlerContext context,
         ApplicationListPermissionRequirement requirement)
     {
-        // Admin bypass - Admin users have full access
-        if (context.User.IsInRole("Admin"))
+        if (requirement.Action.Equals(AccessType.Read.ToString(), StringComparison.OrdinalIgnoreCase)
+            && PermissionClaimEvaluator.CanReadAllApplications(context.User))
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
 
-        var hasClaim = context.User.Claims.Any(c =>
-            c.Type == "permission" &&
-            c.Value.StartsWith("Application:", StringComparison.OrdinalIgnoreCase) &&
-            c.Value.EndsWith($":{requirement.Action}", StringComparison.OrdinalIgnoreCase));
+        if (!Enum.TryParse<AccessType>(requirement.Action, ignoreCase: true, out var accessType))
+            return Task.CompletedTask;
+
+        var hasClaim = PermissionClaimEvaluator.HasAnyPermissionClaim(
+            context.User,
+            ResourceType.Application,
+            accessType);
 
         if (hasClaim)
             context.Succeed(requirement);
