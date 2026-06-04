@@ -18,6 +18,7 @@ using DfE.ExternalApplications.Domain.Factories;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Services;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
@@ -34,6 +35,7 @@ public sealed class AddContributorCommandHandler(
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IUserFactory userFactory,
+    IUserPermissionCacheInvalidator userPermissionCacheInvalidator,
     IUnitOfWork unitOfWork) : IRequestHandler<AddContributorCommand, Result<UserDto>>
 {
     public async Task<Result<UserDto>> Handle(
@@ -115,6 +117,8 @@ public sealed class AddContributorCommandHandler(
             await userRepo.AddAsync(contributor, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
 
+            userPermissionCacheInvalidator.InvalidateForUser(contributor.Email, contributor.Id!);
+
             // Create authorization data directly from the contributor instead of querying
             var authorization = CreateAuthorizationFromUser(contributor);
 
@@ -190,6 +194,8 @@ public sealed class AddContributorCommandHandler(
             DateTime.UtcNow));
 
         await unitOfWork.CommitAsync(cancellationToken);
+
+        userPermissionCacheInvalidator.InvalidateForUser(existingContributor.Email, existingContributor.Id!);
 
         // Create authorization data directly from the updated contributor
         var updatedAuthorization = CreateAuthorizationFromUser(existingContributor);
