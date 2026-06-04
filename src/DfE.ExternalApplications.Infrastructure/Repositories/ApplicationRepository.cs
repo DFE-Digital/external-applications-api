@@ -11,6 +11,15 @@ namespace DfE.ExternalApplications.Infrastructure.Repositories;
 public sealed class ApplicationRepository(ExternalApplicationsContext dbContext)
     : EaRepository<Application>(dbContext), IApplicationRepository
 {
+    public async Task<ApplicationResponse?> GetLatestResponseAsync(
+        ApplicationId applicationId,
+        CancellationToken cancellationToken) =>
+        await DbContext.ApplicationResponses
+            .AsNoTracking()
+            .Where(r => r.ApplicationId == applicationId)
+            .OrderByDescending(r => r.CreatedOn)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<(string ApplicationReference, ApplicationResponse Response)?> AppendResponseVersionAsync(
         ApplicationId applicationId,
         ApplicationResponse response,

@@ -38,7 +38,7 @@ public class GetApplicationByReferenceQueryHandlerTests
     public async Task Handle_ShouldReturnApplicationDetails_WhenValidRequestWithAppId(
         GetApplicationByReferenceQuery query,
         User user,
-        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IApplicationRepository applicationRepo,
         IPermissionCheckerService permissionCheckerService)
     {
         // Arrange
@@ -91,6 +91,8 @@ public class GetApplicationByReferenceQueryHandlerTests
 
         var applications = new[] { application }.AsQueryable().BuildMockDbSet();
         applicationRepo.Query().Returns(applications);
+        applicationRepo.GetLatestResponseAsync(applicationId, Arg.Any<CancellationToken>())
+            .Returns(response);
 
         permissionCheckerService.HasPermission(
             ResourceType.Application,
@@ -133,7 +135,7 @@ public class GetApplicationByReferenceQueryHandlerTests
     public async Task Handle_ShouldReturnApplicationDetails_WhenValidRequestWithEmail(
         GetApplicationByReferenceQuery query,
         User user,
-        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IApplicationRepository applicationRepo,
         IPermissionCheckerService permissionCheckerService)
     {
         // Arrange
@@ -206,7 +208,7 @@ public class GetApplicationByReferenceQueryHandlerTests
     [CustomAutoData(typeof(ApplicationCustomization))]
     public async Task Handle_ShouldReturnUnauthorized_WhenUserNotAuthenticated(
         GetApplicationByReferenceQuery query,
-        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IApplicationRepository applicationRepo,
         IPermissionCheckerService permissionCheckerService)
     {
         // Arrange
@@ -232,7 +234,7 @@ public class GetApplicationByReferenceQueryHandlerTests
     [CustomAutoData(typeof(ApplicationCustomization))]
     public async Task Handle_ShouldReturnApplicationNotFound_WhenApplicationDoesNotExist(
         GetApplicationByReferenceQuery query,
-        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IApplicationRepository applicationRepo,
         IPermissionCheckerService permissionCheckerService)
     {
         // Arrange
@@ -266,7 +268,7 @@ public class GetApplicationByReferenceQueryHandlerTests
     [CustomAutoData(typeof(ApplicationCustomization), typeof(UserCustomization))]
     public async Task Handle_ShouldReturnForbidden_WhenUserHasNoPermission(
         GetApplicationByReferenceQuery query,
-        IEaRepository<Domain.Entities.Application> applicationRepo,
+        IApplicationRepository applicationRepo,
         User user,
         IPermissionCheckerService permissionCheckerService)
     {
