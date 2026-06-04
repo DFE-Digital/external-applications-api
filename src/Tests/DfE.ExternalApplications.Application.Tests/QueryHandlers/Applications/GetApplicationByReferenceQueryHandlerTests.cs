@@ -151,7 +151,7 @@ public class GetApplicationByReferenceQueryHandlerTests
 
         var applicationId = new ApplicationId(Guid.NewGuid());
         var templateVersionId = new TemplateVersionId(Guid.NewGuid());
-        
+
         var template = new Template(
             new TemplateId(Guid.NewGuid()),
             "Test Template",

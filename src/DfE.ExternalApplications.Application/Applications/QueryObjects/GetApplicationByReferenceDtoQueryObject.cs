@@ -1,5 +1,4 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Applications.QueryObjects;
@@ -11,7 +10,7 @@ namespace DfE.ExternalApplications.Application.Applications.QueryObjects;
 /// - Latest response is loaded separately via <see cref="GetLatestApplicationResponseByApplicationIdQueryObject"/>
 ///   to avoid EF generating a full-table ROW_NUMBER() scan over ApplicationResponses.
 /// </summary>
-public sealed class GetApplicationByReferenceDtoQueryObject(string applicationReference, bool includeSchema = true)
+public sealed partial class GetApplicationByReferenceDtoQueryObject(string applicationReference, bool includeSchema = true)
 {
     public IQueryable<ApplicationDto> Apply(IQueryable<Domain.Entities.Application> query)
     {
@@ -51,5 +50,3 @@ public sealed class GetApplicationByReferenceDtoQueryObject(string applicationRe
             });
     }
 }
-
-

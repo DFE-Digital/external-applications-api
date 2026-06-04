@@ -39,7 +39,7 @@ public sealed class GetApplicationByReferenceQueryHandler(
                 return Result<ApplicationDto>.NotFound("Application not found");
 
             var canAccess = permissionCheckerService.HasPermission(
-                ResourceType.Application, 
+                ResourceType.Application,
                 dto.ApplicationId.ToString(),
                 AccessType.Read);
 

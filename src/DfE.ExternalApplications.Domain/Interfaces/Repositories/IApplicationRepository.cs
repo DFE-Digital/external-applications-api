@@ -29,5 +29,3 @@ public interface IApplicationRepository : IEaRepository<Application>
         UserId lastModifiedBy,
         CancellationToken cancellationToken);
 }
-
-
