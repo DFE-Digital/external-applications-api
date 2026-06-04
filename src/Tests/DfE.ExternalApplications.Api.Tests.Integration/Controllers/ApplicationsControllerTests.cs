@@ -526,7 +526,7 @@ public class ApplicationsControllerTests
          // Act
          var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
              () => applicationsClient.SubmitApplicationAsync(applicationId));
-         Assert.Equal(401, ex.StatusCode); 
+         Assert.Equal(403, ex.StatusCode);
      }
 
     [Theory]

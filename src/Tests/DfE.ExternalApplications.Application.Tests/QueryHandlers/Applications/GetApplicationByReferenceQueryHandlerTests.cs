@@ -261,6 +261,7 @@ public class GetApplicationByReferenceQueryHandlerTests
 
         // Assert
         Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.NotFound, result.ErrorCode);
         Assert.Equal("Application not found", result.Error);
     }
 
@@ -325,6 +326,7 @@ public class GetApplicationByReferenceQueryHandlerTests
 
         // Assert
         Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.Forbidden, result.ErrorCode);
         Assert.Equal("User does not have permission to read this application", result.Error);
     }
 }
