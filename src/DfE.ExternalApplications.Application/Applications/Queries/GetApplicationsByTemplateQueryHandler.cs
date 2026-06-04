@@ -1,0 +1,117 @@
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Common;
+using DfE.ExternalApplications.Application.Services;
+using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Entities;
+using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Domain.ValueObjects;
+using MediatR;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+
+namespace DfE.ExternalApplications.Application.Applications.Queries;
+
+/// <summary>
+/// Returns a paged list of all applications for the specified template.
+/// </summary>
+public sealed record GetApplicationsByTemplateQuery(
+    Guid TemplateId,
+    bool IncludeSchema = false,
+    int? PageNumber = null,
+    int? PageSize = null)
+    : IRequest<Result<PagedResult<ApplicationDto>>>;
+
+/// <summary>
+/// Handles listing all applications for a template when the caller has tenant-wide or template-scoped read access.
+/// </summary>
+public sealed class GetApplicationsByTemplateQueryHandler(
+    IHttpContextAccessor httpContextAccessor,
+    IEaRepository<User> userRepo,
+    IEaRepository<Domain.Entities.Application> appRepo,
+    ICacheService<IRedisCacheType> cacheService,
+    ITenantContextAccessor tenantContextAccessor,
+    ITenantTemplateResolver tenantTemplateResolver)
+    : IRequestHandler<GetApplicationsByTemplateQuery, Result<PagedResult<ApplicationDto>>>
+{
+    public async Task<Result<PagedResult<ApplicationDto>>> Handle(
+        GetApplicationsByTemplateQuery request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var principal = httpContextAccessor.HttpContext?.User;
+            if (principal is null || principal.Identity?.IsAuthenticated != true)
+                return Result<PagedResult<ApplicationDto>>.Forbid("Not authenticated");
+
+            var principalId = principal.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(principalId))
+                principalId = principal.FindFirstValue("appid") ?? principal.FindFirstValue("azp");
+
+            if (string.IsNullOrEmpty(principalId))
+                return Result<PagedResult<ApplicationDto>>.Forbid("No user identifier");
+
+            var templateId = new TemplateId(request.TemplateId);
+            var baseCacheKey =
+                $"Applications_ByTemplate_{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
+            var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
+            var methodName = nameof(GetApplicationsByTemplateQueryHandler);
+
+            return await cacheService.GetOrAddAsync(
+                cacheKey,
+                async () =>
+                {
+                    var userWithAuthorization = await ResolveUserWithAuthorizationAsync(
+                        principalId,
+                        cancellationToken);
+
+                    if (userWithAuthorization is null)
+                        return Result<PagedResult<ApplicationDto>>.Forbid("User not found");
+
+                    if (!tenantTemplateResolver.IsTemplateInCurrentTenant(templateId))
+                        return Result<PagedResult<ApplicationDto>>.Forbid(
+                            "Template does not belong to the current tenant");
+
+                    if (!ApplicationAccessResolver.CanListAllApplicationsForTemplate(userWithAuthorization, templateId))
+                        return Result<PagedResult<ApplicationDto>>.Forbid(
+                            "User does not have permission to list all applications for this template");
+
+                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId);
+
+                    var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
+                        query,
+                        request.IncludeSchema,
+                        request.PageNumber,
+                        request.PageSize,
+                        cancellationToken);
+
+                    return Result<PagedResult<ApplicationDto>>.Success(pagedResult);
+                },
+                methodName);
+        }
+        catch (Exception e)
+        {
+            return Result<PagedResult<ApplicationDto>>.Failure(e.ToString());
+        }
+    }
+
+    private async Task<User?> ResolveUserWithAuthorizationAsync(
+        string principalId,
+        CancellationToken cancellationToken)
+    {
+        if (principalId.Contains('@'))
+        {
+            return await new GetUserWithAllPermissionsByEmailQueryObject(principalId)
+                .Apply(userRepo.Query().AsNoTracking())
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        return await new GetUserWithAllPermissionsByExternalIdQueryObject(principalId)
+            .Apply(userRepo.Query().AsNoTracking())
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+}

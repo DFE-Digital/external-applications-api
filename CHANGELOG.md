@@ -74,3 +74,8 @@ All notable changes to this service will be documented in this file.
 ## [1.2.8] - Public Beta
 ### Notes
 - Added RG Visits Test env appsettings
+
+## [1.3.0] - Public Beta
+### Notes
+- Added new Role assignment endpoint
+- New endpoint for retrieving tenant-wide applications

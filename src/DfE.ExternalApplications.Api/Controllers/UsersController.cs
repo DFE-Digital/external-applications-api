@@ -1,14 +1,15 @@
 using Asp.Versioning;
 using DfE.ExternalApplications.Application.Users.Commands;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Users.Queries;
+using DfE.ExternalApplications.Infrastructure.Security;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using GovUK.Dfe.CoreLibs.Http.Models;
-using DfE.ExternalApplications.Infrastructure.Security;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -59,6 +60,35 @@ public class UsersController(ISender sender) : ControllerBase
         if (!result.IsSuccess)
             return BadRequest(new ExceptionResponse { Message = result.Error });
         
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Assigns a predefined role to a user, creating the user when they do not already exist.
+    /// </summary>
+    [HttpPost("roles")]
+    [SwaggerResponse(200, "Role assigned successfully.", typeof(UserDto))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - only administrators can assign roles", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<UserDto>> AssignUserRoleAsync(
+        [FromBody] AssignUserRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(
+            new AssignUserRoleCommand(request.Email, request.Name, request.Role, request.TemplateIds),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorCode == DomainErrorCode.Forbidden)
+                return StatusCode(StatusCodes.Status403Forbidden, new ExceptionResponse { Message = result.Error });
+
+            return BadRequest(new ExceptionResponse { Message = result.Error });
+        }
+
         return Ok(result.Value);
     }
 }

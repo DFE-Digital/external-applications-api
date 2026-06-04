@@ -68,4 +68,16 @@ public interface IPermissionCheckerService
     /// </summary>
     /// <returns>True if the user is an Admin, false otherwise</returns>
     bool IsAdmin();
+
+    /// <summary>
+    /// Checks if the current user has the Caseworker role.
+    /// </summary>
+    /// <returns>True if the user is a Caseworker, false otherwise</returns>
+    bool IsCaseworker();
+
+    /// <summary>
+    /// Checks if the current user can read all applications in the current tenant.
+    /// </summary>
+    /// <returns>True if the user can read all applications, false otherwise</returns>
+    bool CanReadAllApplications();
 }
