@@ -11,6 +11,11 @@
       "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"
     },
     {
+      "Controller": "UsersController",
+      "Action": "AssignUserRoleAsync",
+      "ExpectedSecurity": "Authorize: Roles=Admin"
+    },
+    {
       "Controller": "TemplatesController",
       "Action": "GetLatestTemplateSchemaAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadTemplate"
@@ -28,6 +33,11 @@
     {
       "Controller": "ApplicationsController",
       "Action": "GetMyApplicationsAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
+    },
+    {
+      "Controller": "ApplicationsController",
+      "Action": "GetApplicationsByTemplateAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadAnyApplication"
     },
     {

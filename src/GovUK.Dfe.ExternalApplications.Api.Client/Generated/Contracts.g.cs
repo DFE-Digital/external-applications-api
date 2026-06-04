@@ -51,11 +51,19 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Returns a paged list of applications the current user can access.
+        /// Returns a paged list of the current user's own applications in the current tenant.
         /// </summary>
         /// <returns>A paged list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).
+        /// </summary>
+        /// <returns>A paged list of applications for the template.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetApplicationsByTemplateAsync(System.Guid templateId, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -317,6 +325,14 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <returns>User registered successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<UserDto> RegisterUserAsync(RegisterUserRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Assigns a predefined role to a user, creating the user when they do not already exist.
+        /// </summary>
+        /// <returns>Role assigned successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<UserDto> AssignUserRoleAsync(AssignUserRoleRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DfE.ExternalApplications.Domain.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers
 {
@@ -9,8 +10,7 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             TemplatePermissionRequirement requirement)
         {
-            // Admin bypass - Admin users have full access
-            if (context.User.IsInRole("Admin"))
+            if (PermissionClaimEvaluator.HasFullAdminAccess(context.User))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
