@@ -3,10 +3,12 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -14,7 +16,7 @@ public sealed record GetApplicationByReferenceQuery(string ApplicationReference,
     : IRequest<Result<ApplicationDto>>;
 
 public sealed class GetApplicationByReferenceQueryHandler(
-    IEaRepository<Domain.Entities.Application> applicationRepo,
+    IApplicationRepository applicationRepo,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService)
     : IRequestHandler<GetApplicationByReferenceQuery, Result<ApplicationDto>>
@@ -44,11 +46,30 @@ public sealed class GetApplicationByReferenceQueryHandler(
             if (!canAccess)
                 return Result<ApplicationDto>.Forbid("User does not have permission to read this application");
 
-            return Result<ApplicationDto>.Success(dto);
+            var latestResponseEntity = await applicationRepo.GetLatestResponseAsync(
+                new ApplicationId(dto.ApplicationId),
+                cancellationToken);
+
+            var latestResponse = latestResponseEntity is null
+                ? null
+                : MapLatestResponse(latestResponseEntity);
+
+            return Result<ApplicationDto>.Success(dto with { LatestResponse = latestResponse });
         }
         catch (Exception e)
         {
             return Result<ApplicationDto>.Failure(e.Message);
         }
     }
+
+    private static ApplicationResponseDetailsDto MapLatestResponse(Domain.Entities.ApplicationResponse response) =>
+        new()
+        {
+            ResponseId = response.Id!.Value,
+            ResponseBody = response.ResponseBody,
+            CreatedOn = response.CreatedOn,
+            CreatedBy = response.CreatedBy.Value,
+            LastModifiedOn = response.LastModifiedOn,
+            LastModifiedBy = response.LastModifiedBy?.Value
+        };
 }
