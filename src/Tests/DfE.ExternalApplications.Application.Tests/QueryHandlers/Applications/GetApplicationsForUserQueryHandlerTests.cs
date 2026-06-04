@@ -368,10 +368,13 @@ public class GetApplicationsForUserQueryHandlerTests
         var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         backing.SetValue(user, new List<Permission>());
 
+        var templateId = new TemplateId(Guid.NewGuid());
         var matchCustom = new ApplicationCustomization { OverrideReference = "APP-2024-001" };
         var noMatchCustom = new ApplicationCustomization { OverrideReference = "XYZ-9999-999" };
         var matchApp = new Fixture().Customize(matchCustom).Create<Domain.Entities.Application>();
         var noMatchApp = new Fixture().Customize(noMatchCustom).Create<Domain.Entities.Application>();
+        ApplicationListingTestHelper.AttachTemplateVersion(matchApp, templateId, user.Id!);
+        ApplicationListingTestHelper.AttachTemplateVersion(noMatchApp, templateId, user.Id!);
 
         var perm1 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, matchApp.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
         var perm2 = new Permission(new PermissionId(Guid.NewGuid()), user.Id!, noMatchApp.Id!, "Application:Read", ResourceType.Application, AccessType.Read, DateTime.UtcNow, user.Id!);
@@ -384,7 +387,13 @@ public class GetApplicationsForUserQueryHandlerTests
         cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
             .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
 
-        var handler = new GetApplicationsForUserQueryHandler(userRepo, appRepo, cache, tenantContextAccessor);
+        var handler = new GetApplicationsForUserQueryHandler(
+            userRepo,
+            appRepo,
+            cache,
+            tenantContextAccessor,
+            ApplicationListingTestHelper.CreateTemplateResolver(templateId),
+            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, SearchReference: "APP-2024"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
