@@ -26,14 +26,7 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
         if (accessType == AccessType.Read && IsCaseworkerReadResource(user, resourceType))
             return true;
 
-        if (PermissionClaimEvaluator.HasPermissionClaim(user, resourceType, resourceId, accessType))
-            return true;
-
-        if (accessType == AccessType.Read
-            && PermissionClaimEvaluator.HasPermissionClaim(user, resourceType, PermissionConstants.AnyResourceKey, AccessType.Read))
-            return true;
-
-        return false;
+        return PermissionClaimEvaluator.HasPermissionClaim(user, resourceType, resourceId, accessType);
     }
 
     /// <inheritdoc />
@@ -57,7 +50,7 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
         if (PermissionClaimEvaluator.CanReadAllApplications(user) && resourceType == ResourceType.Application && accessType == AccessType.Read)
             return true;
 
-        return PermissionClaimEvaluator.HasAnyPermissionClaim(user, resourceType, accessType);
+        return PermissionClaimEvaluator.HasAnyExplicitPermissionClaim(user, resourceType, accessType);
     }
 
     /// <inheritdoc />
@@ -66,11 +59,12 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
         var user = _httpContextAccessor.HttpContext?.User;
         if (user == null) return Array.Empty<string>();
 
-        return PermissionClaimEvaluator.HasAnyPermissionClaim(user, resourceType, accessType)
+        return PermissionClaimEvaluator.HasAnyExplicitPermissionClaim(user, resourceType, accessType)
             ? user.Claims
                 .Where(c => c.Type == PermissionClaimEvaluator.PermissionClaimType
                     && c.Value.StartsWith($"{resourceType}:", StringComparison.OrdinalIgnoreCase)
-                    && c.Value.EndsWith($":{accessType}", StringComparison.OrdinalIgnoreCase))
+                    && c.Value.EndsWith($":{accessType}", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(c.Value.Split(':')[1], PermissionConstants.AnyResourceKey, StringComparison.OrdinalIgnoreCase))
                 .Select(c => c.Value.Split(':')[1])
                 .ToList()
                 .AsReadOnly()
