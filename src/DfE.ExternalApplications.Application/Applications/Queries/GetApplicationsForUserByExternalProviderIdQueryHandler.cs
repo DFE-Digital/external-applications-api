@@ -1,6 +1,7 @@
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
@@ -17,7 +18,8 @@ public sealed record GetApplicationsForUserByExternalProviderIdQuery(
     bool IncludeSchema = false,
     Guid? TemplateId = null,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    string? SearchReference = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
@@ -35,7 +37,7 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
         try
         {
             var baseCacheKey =
-                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_t{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}";
+                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_t{request.TemplateId}_sr{request.SearchReference ?? ""}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserByExternalProviderIdQueryHandler);
 
@@ -57,6 +59,11 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                         appRepo,
                         userWithAuthorization,
                         templateIdsFilter);
+
+                    // Apply reference search filter if specified
+                    if (!string.IsNullOrWhiteSpace(request.SearchReference))
+                        query = new GetApplicationsByReferenceSearchQueryObject(request.SearchReference)
+                            .Apply(query);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,

@@ -369,7 +369,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// </summary>
         /// <returns>A paged list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, int? pageNumber = null, int? pageSize = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -400,6 +400,10 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     if (pageSize != null)
                     {
                         urlBuilder_.Append(System.Uri.EscapeDataString("pageSize")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageSize, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (applicationReference != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("applicationReference")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(applicationReference, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
 

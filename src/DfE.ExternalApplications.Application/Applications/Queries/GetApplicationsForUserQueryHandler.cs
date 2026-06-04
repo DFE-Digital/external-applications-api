@@ -1,6 +1,8 @@
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
@@ -11,7 +13,6 @@ using DfE.ExternalApplications.Domain.Tenancy;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
@@ -20,7 +21,8 @@ public sealed record GetApplicationsForUserQuery(
     bool IncludeSchema = false,
     Guid? TemplateId = null,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    string? SearchReference = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserQueryHandler(
@@ -40,7 +42,7 @@ public sealed class GetApplicationsForUserQueryHandler(
         {
             var tenantName = tenantContextAccessor.CurrentTenant?.Name ?? "(none)";
             var baseCacheKey =
-                $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}_t{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}";
+                $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}_t{request.TemplateId}_sr{request.SearchReference ?? ""}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserQueryHandler);
 
@@ -92,6 +94,11 @@ public sealed class GetApplicationsForUserQueryHandler(
                         appRepo,
                         userWithAuthorization,
                         templateIdsFilter);
+
+                    // Apply reference search filter if specified
+                    if (!string.IsNullOrWhiteSpace(request.SearchReference))
+                        query = new GetApplicationsByReferenceSearchQueryObject(request.SearchReference)
+                            .Apply(query);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,

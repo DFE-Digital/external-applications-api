@@ -55,7 +55,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>A paged list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, int? pageNumber = null, int? pageSize = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
