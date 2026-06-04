@@ -1,4 +1,5 @@
 using FluentValidation;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("DfE.ExternalApplications.Application.Tests")]
@@ -11,5 +12,9 @@ internal class GetApplicationsByTemplateQueryValidator : AbstractValidator<GetAp
         RuleFor(x => x.TemplateId)
             .NotEmpty()
             .WithMessage("Template ID is required");
+
+        RuleFor(x => x.Status)
+            .IsEnumName(typeof(ApplicationStatus), false)
+            .WithMessage("{PropertyName} '{PropertyValue}' is invalid");
     }
 }

@@ -347,16 +347,8 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "oneOf": [
-                {
-                  "nullable": true,
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ApplicationStatus"
-                    }
-                  ]
-                }
-              ]
+              "type": "string",
+              "nullable": true
             },
             "x-position": 5
           }

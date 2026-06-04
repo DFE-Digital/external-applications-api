@@ -112,7 +112,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
         [FromQuery] bool? includeSchema = null,
         [FromQuery] int? pageNumber = null,
         [FromQuery] int? pageSize = null,
-        [FromQuery] ApplicationStatus? status = null)
+        [FromQuery] string? status = null)
     {
         var query = new GetApplicationsByTemplateQuery(templateId, includeSchema ?? false, pageNumber, pageSize, status);
         var result = await sender.Send(query, cancellationToken);
