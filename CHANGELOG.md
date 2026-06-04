@@ -79,3 +79,7 @@ All notable changes to this service will be documented in this file.
 ### Notes
 - Added new Role assignment endpoint
 - New endpoint for retrieving tenant-wide applications
+
+## [1.3.1] - Public Beta
+### Notes
+- Added optional status filter (InProgress, Submitted) to above new endpoint for retrieving tenant-wide applications
