@@ -169,16 +169,6 @@ public class UserFactory : IUserFactory
             id, // User grants permission to themselves
             when);
 
-        // Add application permissions for "Any" application
-        AddPermissionToUser(
-            user,
-            PermissionConstants.AnyResourceKey,
-            ResourceType.Application,
-            new[] { AccessType.Read, AccessType.Write },
-            id,
-            null,
-            when);
-
         // Raise domain event for user creation (side effects like email)
         user.AddDomainEvent(new UserCreatedEvent(
             user,
@@ -440,15 +430,6 @@ public class UserFactory : IUserFactory
                 grantedBy,
                 when);
         }
-
-        AddPermissionToUser(
-            user,
-            PermissionConstants.AnyResourceKey,
-            ResourceType.Application,
-            new[] { AccessType.Read, AccessType.Write },
-            grantedBy,
-            null,
-            when);
     }
 
     private void GrantAdminPermissions(User user, UserId grantedBy, DateTime when)

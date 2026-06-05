@@ -79,3 +79,10 @@ All notable changes to this service will be documented in this file.
 ### Notes
 - Added new Role assignment endpoint
 - New endpoint for retrieving tenant-wide applications
+
+## [1.3.2] - Public Beta
+### Notes
+- Improved GetApplicationByReference query performance
+
+
+

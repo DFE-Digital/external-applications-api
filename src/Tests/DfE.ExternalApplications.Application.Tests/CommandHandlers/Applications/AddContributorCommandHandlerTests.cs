@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Application.Applications.Commands;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -79,6 +80,8 @@ public class AddContributorCommandHandlerTests
         permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
         permissionCheckerService.IsAdmin().Returns(false);
 
+        var cacheInvalidator = Substitute.For<IUserPermissionCacheInvalidator>();
+
         // Mock the CreateContributor method
         var contributor = new User(
             new UserId(Guid.NewGuid()),
@@ -109,6 +112,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            cacheInvalidator,
             unitOfWork);
 
         // Act
@@ -124,6 +128,7 @@ public class AddContributorCommandHandlerTests
 
         await userRepo.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+        cacheInvalidator.Received(1).InvalidateForUser(contributor.Email, contributor.Id!);
     }
 
     [Theory]
@@ -206,6 +211,8 @@ public class AddContributorCommandHandlerTests
         permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
         permissionCheckerService.IsAdmin().Returns(false);
 
+        var cacheInvalidator = Substitute.For<IUserPermissionCacheInvalidator>();
+
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
@@ -213,6 +220,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            cacheInvalidator,
             unitOfWork);
 
         // Act
@@ -266,6 +274,7 @@ public class AddContributorCommandHandlerTests
             Arg.Any<DateTime>());
 
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+        cacheInvalidator.Received(1).InvalidateForUser(existingContributor.Email, existingContributor.Id!);
     }
 
     [Theory]
@@ -365,6 +374,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -445,6 +455,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -485,6 +496,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -530,6 +542,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -588,6 +601,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -655,6 +669,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -689,6 +704,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -729,6 +745,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -786,6 +803,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -887,6 +905,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -990,6 +1009,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -1059,6 +1079,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -1159,6 +1180,7 @@ public class AddContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act

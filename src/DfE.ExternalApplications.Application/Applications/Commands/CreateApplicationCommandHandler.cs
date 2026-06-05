@@ -1,13 +1,11 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Templates.Queries;
-using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
-using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -17,8 +15,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using DfE.ExternalApplications.Application.Common.Behaviours;
 using DfE.ExternalApplications.Application.Common.Attributes;
-using GovUK.Dfe.CoreLibs.Caching.Interfaces;
-using GovUK.Dfe.CoreLibs.Caching.Helpers;
+using DfE.ExternalApplications.Application.Services;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
@@ -35,8 +32,7 @@ public sealed class CreateApplicationCommandHandler(
     IApplicationFactory applicationFactory,
     IPermissionCheckerService permissionCheckerService,
     ISender mediator,
-    ICacheService<IRedisCacheType> cacheService,
-    ITenantContextAccessor tenantContextAccessor,
+    IUserPermissionCacheInvalidator userPermissionCacheInvalidator,
     IUnitOfWork unitOfWork) : IRequestHandler<CreateApplicationCommand, Result<ApplicationDto>>
 {
     public async Task<Result<ApplicationDto>> Handle(
@@ -101,10 +97,7 @@ public sealed class CreateApplicationCommandHandler(
             await applicationRepo.AddAsync(application, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
 
-            // invalidate the user claim cache (with tenant scope)
-            var baseCacheKey = $"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(dbUser.Email.ToLower())}";
-            var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
-            cacheService.Remove(cacheKey);
+            userPermissionCacheInvalidator.InvalidateForUser(dbUser.Email, dbUser.Id!);
 
             return Result<ApplicationDto>.Success(new ApplicationDto
             {

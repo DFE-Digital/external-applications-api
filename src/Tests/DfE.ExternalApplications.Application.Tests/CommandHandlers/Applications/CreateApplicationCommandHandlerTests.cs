@@ -4,6 +4,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -97,8 +98,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -192,8 +192,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -243,8 +242,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -291,8 +289,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -343,8 +340,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -411,8 +407,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -482,8 +477,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -552,8 +546,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -593,8 +586,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -643,8 +635,7 @@ public class CreateApplicationCommandHandlerTests
             applicationFactory,
             permissionCheckerService,
             mediator,
-            cache,
-            Substitute.For<ITenantContextAccessor>(),
+            Substitute.For<IUserPermissionCacheInvalidator>(),
             unitOfWork);
 
         // Act

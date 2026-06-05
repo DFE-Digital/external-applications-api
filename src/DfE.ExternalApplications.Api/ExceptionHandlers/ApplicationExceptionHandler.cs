@@ -33,7 +33,7 @@ namespace DfE.ExternalApplications.Api.ExceptionHandlers
             var (statusCode, message) = exception.GetType().Name switch
             {
                 nameof(BadRequestException) => (400, "Invalid request: " + exception.Message),
-                nameof(ForbiddenException) => (401, "Unauthorized access, " + exception.Message),
+                nameof(ForbiddenException) => (403, exception.Message),
                 nameof(UnauthorizedException) => (401, "Unauthorized - no valid user token"),
                 nameof(AuthorizationForbiddenException) => (403, "Forbidden - user does not have required permissions"),
                 nameof(ConflictException) => (409, "Conflict error, " + exception.Message),
