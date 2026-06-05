@@ -245,6 +245,138 @@ public class AssignUserRoleCommandHandlerTests
         Assert.Contains("template ID", result.Error, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_ShouldForbid_WhenDowngradingAdminToUser(
+        string adminEmail,
+        string email,
+        string name,
+        UserId adminUserId,
+        UserId existingUserId,
+        IEaRepository<User> userRepo,
+        IUnitOfWork unitOfWork,
+        IPermissionCheckerService permissionCheckerService,
+        IUserRoleProvisioner provisioner,
+        IUserRoleProvisionerRegistry roleProvisionerRegistry,
+        IHttpContextAccessor httpContextAccessor)
+    {
+        permissionCheckerService.IsAdmin().Returns(true);
+
+        var templateId = Guid.NewGuid();
+        var grantedOn = DateTime.UtcNow;
+
+        var adminUser = new User(
+            adminUserId,
+            new RoleId(RoleConstants.AdminRoleId),
+            "Admin",
+            adminEmail,
+            grantedOn,
+            null,
+            null,
+            null);
+
+        var existingUser = new User(
+            existingUserId,
+            new RoleId(RoleConstants.AdminRoleId),
+            name,
+            email,
+            grantedOn,
+            null,
+            null,
+            null);
+
+        var users = new List<User> { adminUser, existingUser }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        SetupHttpContext(httpContextAccessor, adminEmail);
+
+        provisioner.RequiresTemplateIds.Returns(true);
+        roleProvisionerRegistry.GetProvisioner(RoleNames.User).Returns(provisioner);
+
+        var handler = new AssignUserRoleCommandHandler(
+            userRepo,
+            unitOfWork,
+            permissionCheckerService,
+            roleProvisionerRegistry,
+            httpContextAccessor);
+
+        var result = await handler.Handle(
+            new AssignUserRoleCommand(email, name, RoleNames.User, [templateId]),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.Forbidden, result.ErrorCode);
+        Assert.Contains("Cannot downgrade", result.Error, StringComparison.OrdinalIgnoreCase);
+        provisioner.DidNotReceive().AssignToExistingUser(Arg.Any<User>(), Arg.Any<RoleAssignmentRequest>());
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_ShouldForbid_WhenDowngradingCaseworkerToUser(
+        string adminEmail,
+        string email,
+        string name,
+        UserId adminUserId,
+        UserId existingUserId,
+        IEaRepository<User> userRepo,
+        IUnitOfWork unitOfWork,
+        IPermissionCheckerService permissionCheckerService,
+        IUserRoleProvisioner provisioner,
+        IUserRoleProvisionerRegistry roleProvisionerRegistry,
+        IHttpContextAccessor httpContextAccessor)
+    {
+        permissionCheckerService.IsAdmin().Returns(true);
+
+        var templateId = Guid.NewGuid();
+        var grantedOn = DateTime.UtcNow;
+
+        var adminUser = new User(
+            adminUserId,
+            new RoleId(RoleConstants.AdminRoleId),
+            "Admin",
+            adminEmail,
+            grantedOn,
+            null,
+            null,
+            null);
+
+        var existingUser = new User(
+            existingUserId,
+            new RoleId(RoleConstants.CaseworkerRoleId),
+            name,
+            email,
+            grantedOn,
+            null,
+            null,
+            null);
+
+        var users = new List<User> { adminUser, existingUser }.AsQueryable().BuildMockDbSet();
+        userRepo.Query().Returns(users);
+
+        SetupHttpContext(httpContextAccessor, adminEmail);
+
+        provisioner.RequiresTemplateIds.Returns(true);
+        roleProvisionerRegistry.GetProvisioner(RoleNames.User).Returns(provisioner);
+
+        var handler = new AssignUserRoleCommandHandler(
+            userRepo,
+            unitOfWork,
+            permissionCheckerService,
+            roleProvisionerRegistry,
+            httpContextAccessor);
+
+        var result = await handler.Handle(
+            new AssignUserRoleCommand(email, name, RoleNames.User, [templateId]),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCode.Forbidden, result.ErrorCode);
+        Assert.Contains("Cannot downgrade", result.Error, StringComparison.OrdinalIgnoreCase);
+        provisioner.DidNotReceive().AssignToExistingUser(Arg.Any<User>(), Arg.Any<RoleAssignmentRequest>());
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
     private static void SetupHttpContext(IHttpContextAccessor httpContextAccessor, string adminEmail)
     {
         var claims = new List<Claim> { new(ClaimTypes.Email, adminEmail) };

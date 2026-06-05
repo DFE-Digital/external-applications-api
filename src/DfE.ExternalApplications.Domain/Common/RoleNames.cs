@@ -35,4 +35,38 @@ public static class RoleNames
 
         return Assignable.FirstOrDefault(r => string.Equals(r, roleName, StringComparison.OrdinalIgnoreCase));
     }
+
+    /// <summary>
+    /// Returns true when assigning <paramref name="targetRole"/> would downgrade an existing
+    /// <paramref name="currentRole"/> to User. User is the lowest role; Admin and Caseworker
+    /// cannot be reassigned to User.
+    /// </summary>
+    public static bool IsDowngradeToUser(string? currentRole, string targetRole)
+    {
+        if (!string.Equals(targetRole, User, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var current = ResolveAssignable(currentRole ?? string.Empty);
+        if (current is null || string.Equals(current, User, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Resolves a role name from a well-known role identifier.
+    /// </summary>
+    public static string? FromRoleId(Guid roleId)
+    {
+        if (roleId == RoleConstants.AdminRoleId)
+            return Admin;
+
+        if (roleId == RoleConstants.CaseworkerRoleId)
+            return Caseworker;
+
+        if (roleId == RoleConstants.UserRoleId)
+            return User;
+
+        return null;
+    }
 }
