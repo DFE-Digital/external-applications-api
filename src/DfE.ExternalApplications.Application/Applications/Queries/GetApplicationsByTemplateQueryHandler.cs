@@ -25,7 +25,7 @@ public sealed record GetApplicationsByTemplateQuery(
     bool IncludeSchema = false,
     int? PageNumber = null,
     int? PageSize = null,
-    string? Status = null)
+    ApplicationStatus? Status = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 /// <summary>
@@ -82,9 +82,7 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                         return Result<PagedResult<ApplicationDto>>.Forbid(
                             "User does not have permission to list all applications for this template");
 
-                    ApplicationStatus? status = !string.IsNullOrWhiteSpace(request.Status) ? Enum.Parse<ApplicationStatus>(request.Status, true) : null;
-
-                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId, status);
+                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId, request.Status);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,
