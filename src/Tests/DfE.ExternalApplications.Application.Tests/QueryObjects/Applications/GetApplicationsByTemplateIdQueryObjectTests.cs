@@ -1,9 +1,10 @@
 using AutoFixture;
-using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using MockQueryable;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Applications;
@@ -52,7 +53,7 @@ public class GetApplicationsByTemplateIdQueryObjectTests
         var applications = new[] { targetApp, otherApp };
         var queryable = applications.AsQueryable().BuildMock();
         
-        var queryObject = new GetApplicationsByTemplateIdQueryObject(targetTemplateId);
+        var queryObject = new GetApplicationsByTemplateIdQueryObject(targetTemplateId, null);
         
         // Act
         var result = queryObject.Apply(queryable).ToList();
@@ -91,7 +92,7 @@ public class GetApplicationsByTemplateIdQueryObjectTests
         var applications = new[] { app };
         var queryable = applications.AsQueryable().BuildMock();
         
-        var queryObject = new GetApplicationsByTemplateIdQueryObject(targetTemplateId);
+        var queryObject = new GetApplicationsByTemplateIdQueryObject(targetTemplateId, null);
         
         // Act
         var result = queryObject.Apply(queryable).ToList();
@@ -99,4 +100,52 @@ public class GetApplicationsByTemplateIdQueryObjectTests
         // Assert
         Assert.Empty(result);
     }
-} 
+
+    [Theory]
+    [CustomAutoData(typeof(ApplicationCustomization))]
+    public void Apply_ShouldFilterByStatus_WhenValidStatusProvided(ApplicationCustomization appCustom)
+    {
+        // Arrange
+        var targetTemplateId = new TemplateId(Guid.NewGuid());
+        var otherTemplateId = new TemplateId(Guid.NewGuid());
+
+        // Create applications with different template IDs
+        var fixture = new Fixture().Customize(appCustom);
+
+        // Create template versions for different templates
+        var targetTemplateVersion = new TemplateVersion(
+            new TemplateVersionId(Guid.NewGuid()),
+            targetTemplateId,
+            "1.0.0",
+            "{}",
+            DateTime.UtcNow,
+            new UserId(Guid.NewGuid())
+        );
+
+        // Create applications with different statuses
+        var targetApp = fixture.Create<Domain.Entities.Application>();
+        var otherApp = fixture.Create<Domain.Entities.Application>();
+
+        // Use reflection to set the TemplateVersion property
+        var templateVersionProperty = typeof(Domain.Entities.Application).GetProperty("TemplateVersion");
+        templateVersionProperty?.SetValue(targetApp, targetTemplateVersion);
+        templateVersionProperty?.SetValue(otherApp, targetTemplateVersion);
+
+        // Use reflection to set the status property
+        var statusProperty = typeof(Domain.Entities.Application).GetProperty("Status");
+        statusProperty?.SetValue(targetApp, ApplicationStatus.InProgress);
+        statusProperty?.SetValue(otherApp, ApplicationStatus.Submitted);
+
+        var applications = new[] { targetApp, otherApp };
+        var queryable = applications.AsQueryable().BuildMock();
+
+        var queryObject = new GetApplicationsByTemplateIdQueryObject(targetTemplateId, ApplicationStatus.InProgress);
+
+        // Act
+        var result = queryObject.Apply(queryable).ToList();
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(targetApp, result.First());
+    }
+}

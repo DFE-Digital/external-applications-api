@@ -112,9 +112,10 @@ public class ApplicationsController(ISender sender) : ControllerBase
         CancellationToken cancellationToken,
         [FromQuery] bool? includeSchema = null,
         [FromQuery] int? pageNumber = null,
-        [FromQuery] int? pageSize = null)
+        [FromQuery] int? pageSize = null,
+        [FromQuery] string? status = null)
     {
-        var query = new GetApplicationsByTemplateQuery(templateId, includeSchema ?? false, pageNumber, pageSize);
+        var query = new GetApplicationsByTemplateQuery(templateId, includeSchema ?? false, pageNumber, pageSize, status);
         var result = await sender.Send(query, cancellationToken);
 
         return new ObjectResult(result)

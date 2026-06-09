@@ -84,5 +84,7 @@ All notable changes to this service will be documented in this file.
 ### Notes
 - Improved GetApplicationByReference query performance
 
-
+## [1.3.3] - Public Beta
+### Notes
+- Add optional status filter to get applications by template ID endpoint
 

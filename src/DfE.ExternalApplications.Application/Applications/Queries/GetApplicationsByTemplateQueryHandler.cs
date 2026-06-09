@@ -1,6 +1,3 @@
-using GovUK.Dfe.CoreLibs.Caching.Helpers;
-using GovUK.Dfe.CoreLibs.Caching.Interfaces;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
@@ -9,6 +6,10 @@ using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +24,8 @@ public sealed record GetApplicationsByTemplateQuery(
     Guid TemplateId,
     bool IncludeSchema = false,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    string? Status = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 /// <summary>
@@ -57,7 +59,7 @@ public sealed class GetApplicationsByTemplateQueryHandler(
 
             var templateId = new TemplateId(request.TemplateId);
             var baseCacheKey =
-                $"Applications_ByTemplate_{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
+                $"Applications_ByTemplate_{request.TemplateId}_s{request.Status}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsByTemplateQueryHandler);
 
@@ -80,7 +82,9 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                         return Result<PagedResult<ApplicationDto>>.Forbid(
                             "User does not have permission to list all applications for this template");
 
-                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId);
+                    ApplicationStatus? status = !string.IsNullOrWhiteSpace(request.Status) ? Enum.Parse<ApplicationStatus>(request.Status, true) : null;
+
+                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId, status);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,
