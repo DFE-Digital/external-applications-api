@@ -24,8 +24,8 @@ variable "environment" {
   type        = string
 }
 
-variable "key_vault_access_ipv4" {
-  description = "List of IPv4 Addresses that are permitted to access the Key Vault"
+variable "tfvars_access_ipv4" {
+  description = "List of IPv4 Addresses that are permitted to access the tfvars storage"
   type        = list(string)
 }
 

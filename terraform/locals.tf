@@ -24,7 +24,7 @@ locals {
   dns_ns_records                               = var.dns_ns_records
   dns_txt_records                              = var.dns_txt_records
   dns_mx_records                               = var.dns_mx_records
-  key_vault_access_ipv4                        = var.key_vault_access_ipv4
+  tfvars_access_ipv4                           = var.tfvars_access_ipv4
   tfvars_filename                              = var.tfvars_filename
   enable_monitoring                            = var.enable_monitoring
   monitor_email_receivers                      = var.monitor_email_receivers
@@ -75,4 +75,7 @@ locals {
   signalr_service_mode                         = var.signalr_service_mode
   restrict_container_apps_to_cdn_inbound_only  = var.restrict_container_apps_to_cdn_inbound_only
   container_apps_infra_subnet_cidr             = var.container_apps_infra_subnet_cidr
+
+  is_windows = can(regex("^[A-Za-z]:", abspath(path.root)))
+  bash       = local.is_windows ? "C:/Program Files/Git/bin/bash.exe" : "/bin/bash"
 }
