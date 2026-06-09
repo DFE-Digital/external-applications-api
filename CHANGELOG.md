@@ -88,5 +88,6 @@ All notable changes to this service will be documented in this file.
 ### Notes
 - - Added RG Visits Prod env appsettings
 
-
-
+## [1.3.4] - Public Beta
+### Notes
+- Add optional status filter to get applications by template ID endpoint
