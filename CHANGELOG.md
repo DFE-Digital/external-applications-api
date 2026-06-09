@@ -91,4 +91,3 @@ All notable changes to this service will be documented in this file.
 ## [1.3.4] - Public Beta
 ### Notes
 - Add optional status filter to get applications by template ID endpoint
-
