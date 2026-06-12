@@ -1,4 +1,4 @@
-﻿using DfE.ExternalApplications.Application.Templates.Queries;
+using DfE.ExternalApplications.Application.Templates.Queries;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryValidators.Templates;
 

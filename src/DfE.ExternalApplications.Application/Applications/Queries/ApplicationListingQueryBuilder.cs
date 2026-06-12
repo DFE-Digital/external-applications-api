@@ -57,6 +57,8 @@ internal static class ApplicationListingQueryBuilder
         int? pageSize,
         CancellationToken cancellationToken)
     {
+        query = query.OrderByDescending(a => a.CreatedOn);
+
         int? totalCount = null;
         if (pageNumber.HasValue && pageSize.HasValue)
         {

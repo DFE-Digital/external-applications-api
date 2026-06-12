@@ -7,14 +7,19 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 namespace DfE.ExternalApplications.Application.Services;
 
 /// <summary>
-/// Removes tenant-scoped Redis cache entries used when building user permission claims.
+/// Removes tenant-scoped Redis cache entries used for user permissions and application listings.
 /// </summary>
-public sealed class UserPermissionCacheInvalidator(
+public sealed class UserCacheInvalidator(
     ICacheService<IRedisCacheType> cacheService,
-    ITenantContextAccessor tenantContextAccessor) : IUserPermissionCacheInvalidator
+    IAdvancedRedisCacheService advancedRedisCacheService,
+    ITenantContextAccessor tenantContextAccessor) : IUserCacheInvalidator
 {
     /// <inheritdoc />
-    public void InvalidateForUser(string email, UserId userId)
+    public async Task InvalidateForUserAsync(
+        string? email,
+        string? externalProviderId,
+        UserId userId,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(userId);
 
@@ -24,6 +29,11 @@ public sealed class UserPermissionCacheInvalidator(
                 tenantContextAccessor,
                 $"UserClaims_{CacheKeyHelper.GenerateHashedCacheKey(email.ToLower())}");
             cacheService.Remove(userClaimsKey);
+
+            var emailListingPattern = TenantCacheKeyHelper.CreateTenantScopedKey(
+                tenantContextAccessor,
+                $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(email)}*");
+            await advancedRedisCacheService.RemoveByPatternAsync(emailListingPattern);
         }
 
         var userIdHash = CacheKeyHelper.GenerateHashedCacheKey(userId.Value.ToString());
@@ -35,5 +45,13 @@ public sealed class UserPermissionCacheInvalidator(
         cacheService.Remove(TenantCacheKeyHelper.CreateTenantScopedKey(
             tenantContextAccessor,
             $"Template_Permissions_ByUiD_{userIdHash}"));
+
+        if (!string.IsNullOrWhiteSpace(externalProviderId))
+        {
+            var externalIdListingPattern = TenantCacheKeyHelper.CreateTenantScopedKey(
+                tenantContextAccessor,
+                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(externalProviderId)}*");
+            await advancedRedisCacheService.RemoveByPatternAsync(externalIdListingPattern);
+        }
     }
 }
