@@ -1,4 +1,4 @@
-﻿using GovUK.Dfe.CoreLibs.Security.Configurations;
+using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using GovUK.Dfe.CoreLibs.Security.Models;
 using Microsoft.Extensions.Options;

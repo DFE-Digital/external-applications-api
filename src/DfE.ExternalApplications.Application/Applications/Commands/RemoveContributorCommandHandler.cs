@@ -27,7 +27,7 @@ public sealed class RemoveContributorCommandHandler(
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IUserFactory userFactory,
-    IUserPermissionCacheInvalidator userPermissionCacheInvalidator,
+    IUserCacheInvalidator userCacheInvalidator,
     IUnitOfWork unitOfWork) : IRequestHandler<RemoveContributorCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(
@@ -115,7 +115,11 @@ public sealed class RemoveContributorCommandHandler(
 
             await unitOfWork.CommitAsync(cancellationToken);
 
-            userPermissionCacheInvalidator.InvalidateForUser(contributor.Email, contributor.Id!);
+            await userCacheInvalidator.InvalidateForUserAsync(
+                contributor.Email,
+                contributor.ExternalProviderId,
+                contributor.Id!,
+                cancellationToken);
 
             return Result<bool>.Success(true);
         }
