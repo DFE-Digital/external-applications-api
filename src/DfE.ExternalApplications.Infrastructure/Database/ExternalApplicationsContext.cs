@@ -375,6 +375,12 @@ public class ExternalApplicationsContext : DbContext
         b.HasIndex(e => e.TemplateVersionId)
             .HasDatabaseName("IX_Applications_TemplateVersionId");
 
+        b.HasIndex(e => e.CreatedOn)
+            .HasDatabaseName("IX_Applications_CreatedOn");
+
+        b.HasIndex(e => new { e.Status, e.LastModifiedOn })
+            .HasDatabaseName("IX_Applications_Status_LastModifiedOn");
+
         if (useTemporal)
         {
             b.Property<DateTime>("PeriodStart")

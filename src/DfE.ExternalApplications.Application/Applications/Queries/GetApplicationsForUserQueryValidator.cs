@@ -11,5 +11,9 @@ internal class GetApplicationsForUserQueryValidator : AbstractValidator<GetAppli
         RuleFor(x => x.Email)
             .NotEmpty()
             .EmailAddress();
+
+        RuleFor(x => x.Search)
+            .SetValidator(new ApplicationListingSearchCriteriaValidator()!)
+            .When(x => x.Search is not null);
     }
 }

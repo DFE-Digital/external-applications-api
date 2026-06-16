@@ -389,14 +389,16 @@ public class GetMyApplicationsQueryHandlerTests
             TotalPages = 1
         };
 
-        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.SearchReference == searchReference), Arg.Any<CancellationToken>())
+        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.Search!.Reference == searchReference), Arg.Any<CancellationToken>())
             .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
-        var result = await handler.Handle(new GetMyApplicationsQuery(SearchReference: searchReference), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetMyApplicationsQuery(Search: new ApplicationListingSearchCriteria(Reference: searchReference)),
+            CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.SearchReference == searchReference), Arg.Any<CancellationToken>());
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Search!.Reference == searchReference), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -422,14 +424,16 @@ public class GetMyApplicationsQueryHandlerTests
             TotalPages = 1
         };
 
-        mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.SearchReference == searchReference), Arg.Any<CancellationToken>())
+        mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.Search!.Reference == searchReference), Arg.Any<CancellationToken>())
             .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
 
         var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
-        var result = await handler.Handle(new GetMyApplicationsQuery(SearchReference: searchReference), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetMyApplicationsQuery(Search: new ApplicationListingSearchCriteria(Reference: searchReference)),
+            CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.SearchReference == searchReference), Arg.Any<CancellationToken>());
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.Search!.Reference == searchReference), Arg.Any<CancellationToken>());
     }
 
     [Theory]

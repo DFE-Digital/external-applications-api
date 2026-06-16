@@ -23,7 +23,8 @@ public sealed record GetApplicationsByTemplateQuery(
     Guid TemplateId,
     bool IncludeSchema = false,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    ApplicationListingSearchCriteria? Search = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 /// <summary>
@@ -56,8 +57,9 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                 return Result<PagedResult<ApplicationDto>>.Forbid("No user identifier");
 
             var templateId = new TemplateId(request.TemplateId);
+            var searchKey = request.Search?.ToCacheKeySuffix() ?? "";
             var baseCacheKey =
-                $"Applications_ByTemplate_{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
+                $"Applications_ByTemplate_{request.TemplateId}_{searchKey}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsByTemplateQueryHandler);
 
@@ -81,6 +83,7 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                             "User does not have permission to list all applications for this template");
 
                     var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId);
+                    query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,

@@ -394,7 +394,9 @@ public class GetApplicationsForUserQueryHandlerTests
             tenantContextAccessor,
             ApplicationListingTestHelper.CreateTemplateResolver(templateId),
             Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
-        var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, SearchReference: "APP-2024"), CancellationToken.None);
+        var result = await handler.Handle(
+            new GetApplicationsForUserQuery(rawEmail, Search: new ApplicationListingSearchCriteria(Reference: "APP-2024")),
+            CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value!.Items);

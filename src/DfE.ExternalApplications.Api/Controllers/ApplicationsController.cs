@@ -1,8 +1,8 @@
 ﻿using Asp.Versioning;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
+using DfE.ExternalApplications.Api.Models.Applications;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Application.Common.Exceptions;
@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -82,14 +83,9 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetMyApplicationsAsync(
         CancellationToken cancellationToken,
-        [FromQuery] bool? includeSchema = null,
-        [FromQuery] Guid? templateId = null,
-        [FromQuery] int? pageNumber = null,
-        [FromQuery] int? pageSize = null,
-        [FromQuery] string? applicationReference = null)
+        [FromQuery] GetMyApplicationsQueryParameters parameters)
     {
-        var query = new GetMyApplicationsQuery(includeSchema ?? false, templateId, pageNumber, pageSize, applicationReference);
-        var result = await sender.Send(query, cancellationToken);
+        var result = await sender.Send(parameters.ToQuery(), cancellationToken);
 
         return new ObjectResult(result)
         {
@@ -110,12 +106,9 @@ public class ApplicationsController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetApplicationsByTemplateAsync(
         [FromRoute] Guid templateId,
         CancellationToken cancellationToken,
-        [FromQuery] bool? includeSchema = null,
-        [FromQuery] int? pageNumber = null,
-        [FromQuery] int? pageSize = null)
+        [FromQuery] ApplicationListingQueryParameters parameters)
     {
-        var query = new GetApplicationsByTemplateQuery(templateId, includeSchema ?? false, pageNumber, pageSize);
-        var result = await sender.Send(query, cancellationToken);
+        var result = await sender.Send(parameters.ToQuery(templateId), cancellationToken);
 
         return new ObjectResult(result)
         {
