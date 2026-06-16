@@ -83,8 +83,14 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                         return Result<PagedResult<ApplicationDto>>.Forbid(
                             "User does not have permission to list all applications for this template");
 
-                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId);
-                    query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);
+                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(
+                        appRepo,
+                        templateId,
+                        request.Search?.Status);
+                    query = ApplicationListingQueryBuilder.ApplySearchFilters(
+                        query,
+                        request.Search,
+                        excludeStatus: request.Search?.Status is not null);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,

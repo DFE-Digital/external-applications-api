@@ -51,7 +51,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateTemplateResolver(templateId));
@@ -78,7 +78,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         userRepo.Query().Returns(userQ);
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateEmptyTemplateResolver());
@@ -122,7 +122,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         appRepo.Query().Returns(new List<Domain.Entities.Application> { app1, app2 }.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateTemplateResolver(templateId));
@@ -169,7 +169,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         appRepo.Query().Returns(new List<Domain.Entities.Application> { app1, app2 }.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateTemplateResolver(templateId));
@@ -202,7 +202,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateEmptyTemplateResolver());
@@ -241,7 +241,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         appRepo.Query().Throws(new InvalidOperationException("Database connection failed"));
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateEmptyTemplateResolver());
@@ -284,7 +284,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateEmptyTemplateResolver());
@@ -328,7 +328,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
 
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserByExternalProviderIdQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
             ApplicationListingTestHelper.CreateEmptyTemplateResolver());

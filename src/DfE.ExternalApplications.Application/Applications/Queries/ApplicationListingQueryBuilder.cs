@@ -55,7 +55,8 @@ internal static class ApplicationListingQueryBuilder
     /// </summary>
     internal static IQueryable<Domain.Entities.Application> ApplySearchFilters(
         IQueryable<Domain.Entities.Application> query,
-        ApplicationListingSearchCriteria? search)
+        ApplicationListingSearchCriteria? search,
+        bool excludeStatus = false)
     {
         if (search is null || !search.HasAnyFilter)
             return query;
@@ -71,7 +72,7 @@ internal static class ApplicationListingQueryBuilder
             query = new GetApplicationsByDateSubmittedRangeQueryObject(search.DateSubmittedFrom, search.DateSubmittedTo)
                 .Apply(query);
 
-        if (search.Status.HasValue)
+        if (!excludeStatus && search.Status.HasValue)
             query = new GetApplicationsByStatusQueryObject(search.Status.Value).Apply(query);
 
         return query;

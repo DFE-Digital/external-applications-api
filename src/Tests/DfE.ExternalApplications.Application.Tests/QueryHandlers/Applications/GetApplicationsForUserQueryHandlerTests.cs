@@ -1,5 +1,6 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
@@ -13,7 +14,6 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MockQueryable;
 using NSubstitute;
-using Microsoft.Extensions.Logging;
 using NSubstitute.ExceptionExtensions;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Applications;
@@ -65,12 +65,11 @@ public class GetApplicationsForUserQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, true), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -117,12 +116,11 @@ public class GetApplicationsForUserQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -165,12 +163,11 @@ public class GetApplicationsForUserQueryHandlerTests
         var appList = new List<Domain.Entities.Application> { app };
         appRepo.Query().Returns(appList.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -191,12 +188,11 @@ public class GetApplicationsForUserQueryHandlerTests
         userRepo.Query().Returns(userQ);
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(new TemplateId(Guid.NewGuid())),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            ApplicationListingTestHelper.CreateTemplateResolver(new TemplateId(Guid.NewGuid())));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
@@ -236,12 +232,11 @@ public class GetApplicationsForUserQueryHandlerTests
         userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         appRepo.Query().Returns(new List<Domain.Entities.Application> { app1, app2 }.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            ApplicationListingTestHelper.CreateTemplateResolver(templateId));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -285,12 +280,11 @@ public class GetApplicationsForUserQueryHandlerTests
         userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         appRepo.Query().Returns(new List<Domain.Entities.Application> { app1, app2 }.AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            ApplicationListingTestHelper.CreateTemplateResolver(templateId));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false, null, PageNumber: 1, PageSize: 1), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -336,16 +330,14 @@ public class GetApplicationsForUserQueryHandlerTests
         userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         appRepo.Query().Returns(new List<Domain.Entities.Application> { matchApp, noMatchApp }.AsQueryable().BuildMock());
 
-        cache.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<PagedResult<ApplicationDto>>>>>(), nameof(GetApplicationsForUserQueryHandler))
-            .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
+        ApplicationListingTestHelper.ConfigurePassthroughCache(cache, nameof(GetApplicationsForUserQueryHandler));
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
-            cache,
             tenantContextAccessor,
             ApplicationListingTestHelper.CreateTemplateResolver(templateId),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            cache);
         var result = await handler.Handle(
             new GetApplicationsForUserQuery(rawEmail, Search: new ApplicationListingSearchCriteria(Reference: "APP-2024")),
             CancellationToken.None);
@@ -374,12 +366,11 @@ public class GetApplicationsForUserQueryHandlerTests
         userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable().BuildMock());
 
-        var handler = new GetApplicationsForUserQueryHandler(
+        var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserQueryHandler(
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateEmptyTemplateResolver(),
-            Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
+            ApplicationListingTestHelper.CreateEmptyTemplateResolver());
 
         await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
         await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
