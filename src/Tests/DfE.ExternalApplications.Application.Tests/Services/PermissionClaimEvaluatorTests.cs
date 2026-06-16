@@ -32,6 +32,42 @@ public class PermissionClaimEvaluatorTests
     }
 
     [Fact]
+    public void CanReadApplication_ReturnsFalse_ForStandardUserWithOnlyAnyReadWildcard()
+    {
+        var user = CreateUserWithPermissionClaims("Application:Any:Read");
+        Assert.False(PermissionClaimEvaluator.CanReadApplication(user, Guid.NewGuid().ToString()));
+    }
+
+    [Fact]
+    public void CanReadApplication_ReturnsTrue_ForStandardUserWithExplicitApplicationReadClaim()
+    {
+        var applicationId = Guid.NewGuid().ToString();
+        var user = CreateUserWithPermissionClaims($"Application:{applicationId}:Read");
+        Assert.True(PermissionClaimEvaluator.CanReadApplication(user, applicationId));
+    }
+
+    [Fact]
+    public void CanReadAllApplications_ReturnsFalse_ForStandardUserWithAnyReadWildcard()
+    {
+        var user = CreateUserWithPermissionClaims("Application:Any:Read");
+        Assert.False(PermissionClaimEvaluator.CanReadAllApplications(user));
+    }
+
+    [Fact]
+    public void HasAnyExplicitPermissionClaim_ReturnsFalse_WhenOnlyWildcardClaimExists()
+    {
+        var user = CreateUserWithPermissionClaims("Application:Any:Read");
+        Assert.False(PermissionClaimEvaluator.HasAnyExplicitPermissionClaim(user, ResourceType.Application, AccessType.Read));
+    }
+
+    [Fact]
+    public void HasAnyExplicitPermissionClaim_ReturnsTrue_WhenExplicitApplicationClaimExists()
+    {
+        var user = CreateUserWithPermissionClaims($"Application:{Guid.NewGuid()}:Read");
+        Assert.True(PermissionClaimEvaluator.HasAnyExplicitPermissionClaim(user, ResourceType.Application, AccessType.Read));
+    }
+
+    [Fact]
     public void ApplicationAccessResolver_ReturnsAllApplications_ForAdminRole()
     {
         var user = new User(
@@ -288,4 +324,10 @@ public class PermissionClaimEvaluatorTests
 
     private static ClaimsPrincipal CreateUserWithRole(string role) =>
         new(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, role) }, "Test"));
+
+    private static ClaimsPrincipal CreateUserWithPermissionClaims(params string[] permissionValues)
+    {
+        var claims = permissionValues.Select(v => new Claim(PermissionClaimEvaluator.PermissionClaimType, v));
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+    }
 }

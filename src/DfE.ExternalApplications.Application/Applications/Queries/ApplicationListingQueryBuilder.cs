@@ -45,8 +45,9 @@ internal static class ApplicationListingQueryBuilder
 
     internal static IQueryable<Domain.Entities.Application> BuildTemplateQuery(
         IEaRepository<Domain.Entities.Application> appRepo,
-        TemplateId templateId) =>
-        new GetApplicationsByTemplateIdQueryObject(templateId)
+        TemplateId templateId,
+        ApplicationStatus? status) =>
+        new GetApplicationsByTemplateIdQueryObject(templateId, status)
             .Apply(appRepo.Query().AsNoTracking());
 
     /// <summary>
@@ -83,6 +84,8 @@ internal static class ApplicationListingQueryBuilder
         int? pageSize,
         CancellationToken cancellationToken)
     {
+        query = query.OrderByDescending(a => a.CreatedOn);
+
         int? totalCount = null;
         if (pageNumber.HasValue && pageSize.HasValue)
         {

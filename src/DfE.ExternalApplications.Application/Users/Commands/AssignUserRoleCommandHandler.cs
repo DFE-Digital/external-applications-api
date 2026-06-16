@@ -88,6 +88,19 @@ public sealed class AssignUserRoleCommandHandler(
             .Include(u => u.Permissions)
             .FirstOrDefaultAsync(cancellationToken);
 
+        if (existingUser is not null)
+        {
+            var currentRoleName = existingUser.Role?.Name
+                ?? RoleNames.FromRoleId(existingUser.RoleId.Value);
+
+            if (RoleNames.IsDowngradeToUser(currentRoleName, canonicalRole))
+            {
+                var currentRole = RoleNames.ResolveAssignable(currentRoleName ?? string.Empty)
+                    ?? currentRoleName;
+                return Result<UserDto>.Forbid($"Cannot downgrade a {currentRole} to the User role");
+            }
+        }
+
         User user;
         try
         {

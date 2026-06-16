@@ -1,4 +1,4 @@
-﻿using GovUK.Dfe.CoreLibs.Testing.Authorization;
+using GovUK.Dfe.CoreLibs.Testing.Authorization;
 using GovUK.Dfe.CoreLibs.Testing.Authorization.Helpers;
 using Xunit;
 

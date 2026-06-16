@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 

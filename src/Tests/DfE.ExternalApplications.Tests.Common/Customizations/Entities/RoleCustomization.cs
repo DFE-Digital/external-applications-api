@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 

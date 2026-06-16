@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -26,6 +27,7 @@ public sealed class RemoveContributorCommandHandler(
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IUserFactory userFactory,
+    IUserCacheInvalidator userCacheInvalidator,
     IUnitOfWork unitOfWork) : IRequestHandler<RemoveContributorCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(
@@ -112,6 +114,12 @@ public sealed class RemoveContributorCommandHandler(
                 return Result<bool>.Failure("Failed to remove contributor permissions");
 
             await unitOfWork.CommitAsync(cancellationToken);
+
+            await userCacheInvalidator.InvalidateForUserAsync(
+                contributor.Email,
+                contributor.ExternalProviderId,
+                contributor.Id!,
+                cancellationToken);
 
             return Result<bool>.Success(true);
         }

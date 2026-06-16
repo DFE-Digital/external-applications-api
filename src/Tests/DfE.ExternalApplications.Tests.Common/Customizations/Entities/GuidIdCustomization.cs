@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using DfE.ExternalApplications.Domain.Common;
 
 namespace DfE.ExternalApplications.Tests.Common.Customizations.Entities

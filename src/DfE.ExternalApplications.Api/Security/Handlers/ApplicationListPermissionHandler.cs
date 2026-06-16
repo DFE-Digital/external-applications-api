@@ -23,13 +23,17 @@ public sealed class ApplicationListPermissionHandler : AuthorizationHandler<Appl
         if (!Enum.TryParse<AccessType>(requirement.Action, ignoreCase: true, out var accessType))
             return Task.CompletedTask;
 
-        var hasClaim = PermissionClaimEvaluator.HasAnyPermissionClaim(
-            context.User,
-            ResourceType.Application,
-            accessType);
-
-        if (hasClaim)
+        if (PermissionClaimEvaluator.HasAnyExplicitPermissionClaim(
+                context.User,
+                ResourceType.Application,
+                accessType)
+            || PermissionClaimEvaluator.HasAnyPermissionClaim(
+                context.User,
+                ResourceType.Template,
+                accessType))
+        {
             context.Succeed(requirement);
+        }
 
         return Task.CompletedTask;
     }

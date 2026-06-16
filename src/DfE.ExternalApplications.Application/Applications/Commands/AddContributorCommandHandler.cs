@@ -18,6 +18,7 @@ using DfE.ExternalApplications.Domain.Factories;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Services;
 
 namespace DfE.ExternalApplications.Application.Applications.Commands;
 
@@ -30,10 +31,10 @@ public sealed record AddContributorCommand(
 public sealed class AddContributorCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,
     IEaRepository<User> userRepo,
-    IEaRepository<Role> roleRepo,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IUserFactory userFactory,
+    IUserCacheInvalidator userCacheInvalidator,
     IUnitOfWork unitOfWork) : IRequestHandler<AddContributorCommand, Result<UserDto>>
 {
     public async Task<Result<UserDto>> Handle(
@@ -115,6 +116,12 @@ public sealed class AddContributorCommandHandler(
             await userRepo.AddAsync(contributor, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
 
+            await userCacheInvalidator.InvalidateForUserAsync(
+                contributor.Email,
+                contributor.ExternalProviderId,
+                contributor.Id!,
+                cancellationToken);
+
             // Create authorization data directly from the contributor instead of querying
             var authorization = CreateAuthorizationFromUser(contributor);
 
@@ -190,6 +197,12 @@ public sealed class AddContributorCommandHandler(
             DateTime.UtcNow));
 
         await unitOfWork.CommitAsync(cancellationToken);
+
+        await userCacheInvalidator.InvalidateForUserAsync(
+            existingContributor.Email,
+            existingContributor.ExternalProviderId,
+            existingContributor.Id!,
+            cancellationToken);
 
         // Create authorization data directly from the updated contributor
         var updatedAuthorization = CreateAuthorizationFromUser(existingContributor);

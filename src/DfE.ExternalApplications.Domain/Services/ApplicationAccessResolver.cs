@@ -43,7 +43,6 @@ public static class ApplicationAccessResolver
     /// <summary>
     /// Resolves the application listing scope for the given user based on role.
     /// Standard users only see applications they have explicit permission rows for.
-    /// The <c>Application:Any</c> read grant is used for authorization checks, not listing scope.
     /// </summary>
     public static AccessScope Resolve(User user)
     {

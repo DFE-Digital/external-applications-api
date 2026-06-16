@@ -1,4 +1,4 @@
-﻿using AutoFixture.Xunit2;
+using AutoFixture.Xunit2;
 using DfE.ExternalApplications.Application.Common.QueriesObjects;
 
 namespace DfE.ExternalApplications.Application.Tests.Common.QueryObjects

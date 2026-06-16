@@ -6,6 +6,7 @@ using DfE.ExternalApplications.Api.Models.Applications;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Application.Common.Exceptions;
+using DfE.ExternalApplications.Api.Filters;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -349,12 +350,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
 
         if (result is { IsSuccess: false, Error: not null })
         {
-            throw result.ErrorCode switch
-            {
-                DomainErrorCode.NotFound => new NotFoundException(result.Error),
-                DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
-                _ => new BadRequestException(result.Error)
-            };
+            throw ResultExceptionMapper.ToException(result.ErrorCode, result.Error);
         }
 
         var file = result.Value!;
@@ -406,12 +402,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
 
         if (result is { IsSuccess: false, Error: not null })
         {
-            throw result.ErrorCode switch
-            {
-                DomainErrorCode.NotFound => new NotFoundException(result.Error),
-                DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
-                _ => new BadRequestException(result.Error)
-            };
+            throw ResultExceptionMapper.ToException(result.ErrorCode, result.Error);
         }
 
         var file = result.Value!;

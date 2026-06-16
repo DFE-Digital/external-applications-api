@@ -1,16 +1,53 @@
+using AutoFixture;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using MockQueryable;
 using NSubstitute;
 
 namespace DfE.ExternalApplications.Application.Tests.QueryObjects.Applications;
 
 public class ApplicationListingQueryBuilderTests
 {
+    [Fact]
+    public async Task MapPagedResultAsync_ShouldReturnNewestApplicationsOnPageOne()
+    {
+        var baseDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var oldest = CreateApplication(baseDate);
+        var middle = CreateApplication(baseDate.AddDays(1));
+        var newest = CreateApplication(baseDate.AddDays(2));
+
+        var query = new List<Domain.Entities.Application> { oldest, middle, newest }.AsQueryable().BuildMock();
+
+        var pageOne = await ApplicationListingQueryBuilder.MapPagedResultAsync(
+            query,
+            includeSchema: false,
+            pageNumber: 1,
+            pageSize: 1,
+            CancellationToken.None);
+
+        var pageTwo = await ApplicationListingQueryBuilder.MapPagedResultAsync(
+            query,
+            includeSchema: false,
+            pageNumber: 2,
+            pageSize: 1,
+            CancellationToken.None);
+
+        Assert.Equal(newest.ApplicationReference, pageOne.Items.Single().ApplicationReference);
+        Assert.Equal(middle.ApplicationReference, pageTwo.Items.Single().ApplicationReference);
+    }
+
+    private static Domain.Entities.Application CreateApplication(DateTime createdOn)
+    {
+        var fixture = new Fixture().Customize(new ApplicationCustomization { OverrideCreatedOn = createdOn });
+        return fixture.Create<Domain.Entities.Application>();
+    }
+
     [Fact]
     public void ApplicationAccessResolver_ReturnsAllApplicationsInTenant_ForAdmin_ButMyApplicationsQueryIgnoresRole()
     {
