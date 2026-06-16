@@ -103,7 +103,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -139,7 +139,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -179,7 +179,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -224,7 +224,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -291,7 +291,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -349,7 +349,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -416,7 +416,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -497,7 +497,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
-            Substitute.For<IUserPermissionCacheInvalidator>(),
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
