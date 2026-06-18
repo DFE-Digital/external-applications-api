@@ -367,9 +367,19 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// <summary>
         /// Returns a paged list of the current user's own applications in the current tenant.
         /// </summary>
+        /// <param name="templateId">Optional template identifier to restrict results to a single template.</param>
+        /// <param name="includeSchema">When true, includes the template JSON schema in each application response.</param>
+        /// <param name="pageNumber">One-based page number for paged results.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="applicationReference">Partial or full application reference to search for.</param>
+        /// <param name="dateStartedFrom">Inclusive start of the date-started (created) range.</param>
+        /// <param name="dateStartedTo">Inclusive end of the date-started (created) range.</param>
+        /// <param name="dateSubmittedFrom">Inclusive start of the date-submitted range.</param>
+        /// <param name="dateSubmittedTo">Inclusive end of the date-submitted range.</param>
+        /// <param name="status">Application status filter.</param>
         /// <returns>A paged list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, int? pageNumber = null, int? pageSize = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(System.Guid? templateId = null, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.DateTime? dateStartedFrom = null, System.DateTime? dateStartedTo = null, System.DateTime? dateSubmittedFrom = null, System.DateTime? dateSubmittedTo = null, ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -385,21 +395,45 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     // Operation Path: "v1/me/applications"
                     urlBuilder_.Append("v1/me/applications");
                     urlBuilder_.Append('?');
-                    if (includeSchema != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("includeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
                     if (templateId != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("templateId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("TemplateId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (includeSchema != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("IncludeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     if (pageNumber != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("pageNumber")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageNumber, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageNumber")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageNumber, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     if (pageSize != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("pageSize")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageSize, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageSize")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageSize, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (applicationReference != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("ApplicationReference")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(applicationReference, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateStartedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedTo")).Append('=').Append(System.Uri.EscapeDataString(dateStartedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedTo")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (status != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("Status")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(status, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
 
@@ -499,9 +533,18 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
         /// <summary>
         /// Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).
         /// </summary>
+        /// <param name="includeSchema">When true, includes the template JSON schema in each application response.</param>
+        /// <param name="pageNumber">One-based page number for paged results.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="applicationReference">Partial or full application reference to search for.</param>
+        /// <param name="dateStartedFrom">Inclusive start of the date-started (created) range.</param>
+        /// <param name="dateStartedTo">Inclusive end of the date-started (created) range.</param>
+        /// <param name="dateSubmittedFrom">Inclusive start of the date-submitted range.</param>
+        /// <param name="dateSubmittedTo">Inclusive end of the date-submitted range.</param>
+        /// <param name="status">Application status filter.</param>
         /// <returns>A paged list of applications for the template.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetApplicationsByTemplateAsync(System.Guid templateId, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetApplicationsByTemplateAsync(System.Guid templateId, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.DateTime? dateStartedFrom = null, System.DateTime? dateStartedTo = null, System.DateTime? dateSubmittedFrom = null, System.DateTime? dateSubmittedTo = null, ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (templateId == null)
                 throw new System.ArgumentNullException("templateId");
@@ -523,19 +566,39 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     urlBuilder_.Append('?');
                     if (includeSchema != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("includeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("IncludeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     if (pageNumber != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("pageNumber")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageNumber, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageNumber")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageNumber, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     if (pageSize != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("pageSize")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageSize, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageSize")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageSize, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (applicationReference != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("ApplicationReference")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(applicationReference, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateStartedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedTo")).Append('=').Append(System.Uri.EscapeDataString(dateStartedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedTo")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     if (status != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("status")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(status, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("Status")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(status, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
 

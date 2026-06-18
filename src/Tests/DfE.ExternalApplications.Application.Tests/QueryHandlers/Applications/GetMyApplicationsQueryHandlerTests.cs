@@ -367,6 +367,77 @@ public class GetMyApplicationsQueryHandlerTests
 
     [Theory]
     [CustomAutoData]
+    public async Task Handle_ShouldPassSearchReference_WhenUserHasEmailAndSearchReferenceProvided(
+        string emailName,
+        string searchReference,
+        List<ApplicationDto> applications,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ISender mediator)
+    {
+        var email = $"{emailName}@example.com";
+        var context = Substitute.For<HttpContext>();
+        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }, "TestAuth");
+        context.User.Returns(new ClaimsPrincipal(identity));
+        httpContextAccessor.HttpContext.Returns(context);
+
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
+        mediator.Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Email == email && q.Search!.Reference == searchReference), Arg.Any<CancellationToken>())
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
+
+        var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
+        var result = await handler.Handle(
+            new GetMyApplicationsQuery(Search: new ApplicationListingSearchCriteria(Reference: searchReference)),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserQuery>(q => q.Search!.Reference == searchReference), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData]
+    public async Task Handle_ShouldPassSearchReference_WhenUserHasExternalIdAndSearchReferenceProvided(
+        string externalId,
+        string searchReference,
+        List<ApplicationDto> applications,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ISender mediator)
+    {
+        var identity = new ClaimsIdentity(new[] { new Claim("appid", externalId) }, "TestAuth", ClaimTypes.Email, ClaimTypes.Role);
+        var context = Substitute.For<HttpContext>();
+        context.User.Returns(new ClaimsPrincipal(identity));
+        httpContextAccessor.HttpContext.Returns(context);
+
+        var pagedResult = new PagedResult<ApplicationDto>
+        {
+            Items = applications.AsReadOnly(),
+            TotalCount = applications.Count,
+            PageNumber = 1,
+            PageSize = applications.Count,
+            TotalPages = 1
+        };
+
+        mediator.Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.ExternalProviderId == externalId && q.Search!.Reference == searchReference), Arg.Any<CancellationToken>())
+            .Returns(Result<PagedResult<ApplicationDto>>.Success(pagedResult));
+
+        var handler = new GetMyApplicationsQueryHandler(httpContextAccessor, mediator);
+        var result = await handler.Handle(
+            new GetMyApplicationsQuery(Search: new ApplicationListingSearchCriteria(Reference: searchReference)),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        await mediator.Received(1).Send(Arg.Is<GetApplicationsForUserByExternalProviderIdQuery>(q => q.Search!.Reference == searchReference), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [CustomAutoData]
     public async Task Handle_ShouldReturnFailure_WhenNotAuthenticated(
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] ISender mediator)

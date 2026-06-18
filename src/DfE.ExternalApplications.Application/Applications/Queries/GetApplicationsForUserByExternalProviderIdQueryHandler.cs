@@ -1,9 +1,11 @@
+using GovUK.Dfe.CoreLibs.Caching.Helpers;
+using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.Tenancy;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -15,12 +17,15 @@ public sealed record GetApplicationsForUserByExternalProviderIdQuery(
     bool IncludeSchema = false,
     Guid? TemplateId = null,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    ApplicationListingSearchCriteria? Search = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
+    ICacheService<IRedisCacheType> cacheService,
+    ITenantContextAccessor tenantContextAccessor,
     ITenantTemplateResolver tenantTemplateResolver)
     : IRequestHandler<GetApplicationsForUserByExternalProviderIdQuery, Result<PagedResult<ApplicationDto>>>
 {
@@ -30,29 +35,43 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     {
         try
         {
-            var userWithAuthorization = await new GetUserWithAllPermissionsByExternalIdQueryObject(request.ExternalProviderId)
-                .Apply(userRepo.Query().AsNoTracking())
-                .FirstOrDefaultAsync(cancellationToken);
+            var searchKey = request.Search?.ToCacheKeySuffix() ?? "";
+            var baseCacheKey =
+                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_t{request.TemplateId}_{searchKey}_p{request.PageNumber}_ps{request.PageSize}";
+            var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
+            var methodName = nameof(GetApplicationsForUserByExternalProviderIdQueryHandler);
 
-            if (userWithAuthorization is null)
-                return Result<PagedResult<ApplicationDto>>.Success(
-                    ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
+            return await cacheService.GetOrAddAsync(
+                cacheKey,
+                async () =>
+                {
+                    var userWithAuthorization = await new GetUserWithAllPermissionsByExternalIdQueryObject(request.ExternalProviderId)
+                        .Apply(userRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync(cancellationToken);
 
-            var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
+                    if (userWithAuthorization is null)
+                        return Result<PagedResult<ApplicationDto>>.Success(
+                            ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
 
-            var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
-                appRepo,
-                userWithAuthorization,
-                templateIdsFilter);
+                    var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
 
-            var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
-                query,
-                request.IncludeSchema,
-                request.PageNumber,
-                request.PageSize,
-                cancellationToken);
+                    var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
+                        appRepo,
+                        userWithAuthorization,
+                        templateIdsFilter);
 
-            return Result<PagedResult<ApplicationDto>>.Success(pagedResult);
+                    query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);
+
+                    var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
+                        query,
+                        request.IncludeSchema,
+                        request.PageNumber,
+                        request.PageSize,
+                        cancellationToken);
+
+                    return Result<PagedResult<ApplicationDto>>.Success(pagedResult);
+                },
+                methodName);
         }
         catch (Exception e)
         {

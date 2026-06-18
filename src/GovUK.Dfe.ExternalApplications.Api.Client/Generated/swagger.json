@@ -203,27 +203,30 @@
         "operationId": "Applications_GetMyApplications",
         "parameters": [
           {
-            "name": "includeSchema",
+            "name": "TemplateId",
             "in": "query",
-            "schema": {
-              "type": "boolean",
-              "nullable": true
-            },
-            "x-position": 1
-          },
-          {
-            "name": "templateId",
-            "in": "query",
+            "description": "Optional template identifier to restrict results to a single template.",
             "schema": {
               "type": "string",
               "format": "guid",
               "nullable": true
             },
+            "x-position": 1
+          },
+          {
+            "name": "IncludeSchema",
+            "in": "query",
+            "description": "When true, includes the template JSON schema in each application response.",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
             "x-position": 2
           },
           {
-            "name": "pageNumber",
+            "name": "PageNumber",
             "in": "query",
+            "description": "One-based page number for paged results.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -232,14 +235,83 @@
             "x-position": 3
           },
           {
-            "name": "pageSize",
+            "name": "PageSize",
             "in": "query",
+            "description": "Number of items per page.",
             "schema": {
               "type": "integer",
               "format": "int32",
               "nullable": true
             },
             "x-position": 4
+          },
+          {
+            "name": "ApplicationReference",
+            "in": "query",
+            "description": "Partial or full application reference to search for.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 5
+          },
+          {
+            "name": "DateStartedFrom",
+            "in": "query",
+            "description": "Inclusive start of the date-started (created) range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 6
+          },
+          {
+            "name": "DateStartedTo",
+            "in": "query",
+            "description": "Inclusive end of the date-started (created) range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 7
+          },
+          {
+            "name": "DateSubmittedFrom",
+            "in": "query",
+            "description": "Inclusive start of the date-submitted range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 8
+          },
+          {
+            "name": "DateSubmittedTo",
+            "in": "query",
+            "description": "Inclusive end of the date-submitted range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 9
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "description": "Application status filter.",
+            "schema": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ApplicationStatus"
+                }
+              ]
+            },
+            "x-position": 10
           }
         ],
         "responses": {
@@ -315,8 +387,9 @@
             "x-position": 1
           },
           {
-            "name": "includeSchema",
+            "name": "IncludeSchema",
             "in": "query",
+            "description": "When true, includes the template JSON schema in each application response.",
             "schema": {
               "type": "boolean",
               "nullable": true
@@ -324,8 +397,9 @@
             "x-position": 2
           },
           {
-            "name": "pageNumber",
+            "name": "PageNumber",
             "in": "query",
+            "description": "One-based page number for paged results.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -334,8 +408,9 @@
             "x-position": 3
           },
           {
-            "name": "pageSize",
+            "name": "PageSize",
             "in": "query",
+            "description": "Number of items per page.",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -344,21 +419,72 @@
             "x-position": 4
           },
           {
-            "name": "status",
+            "name": "ApplicationReference",
             "in": "query",
+            "description": "Partial or full application reference to search for.",
             "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 5
+          },
+          {
+            "name": "DateStartedFrom",
+            "in": "query",
+            "description": "Inclusive start of the date-started (created) range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 6
+          },
+          {
+            "name": "DateStartedTo",
+            "in": "query",
+            "description": "Inclusive end of the date-started (created) range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 7
+          },
+          {
+            "name": "DateSubmittedFrom",
+            "in": "query",
+            "description": "Inclusive start of the date-submitted range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 8
+          },
+          {
+            "name": "DateSubmittedTo",
+            "in": "query",
+            "description": "Inclusive end of the date-submitted range.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 9
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "description": "Application status filter.",
+            "schema": {
+              "nullable": true,
               "oneOf": [
                 {
-                  "nullable": true,
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ApplicationStatus"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ApplicationStatus"
                 }
               ]
             },
-            "x-position": 5
+            "x-position": 10
           }
         ],
         "responses": {

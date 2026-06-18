@@ -25,7 +25,7 @@ public sealed record GetApplicationsByTemplateQuery(
     bool IncludeSchema = false,
     int? PageNumber = null,
     int? PageSize = null,
-    ApplicationStatus? Status = null)
+    ApplicationListingSearchCriteria? Search = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 /// <summary>
@@ -58,8 +58,9 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                 return Result<PagedResult<ApplicationDto>>.Forbid("No user identifier");
 
             var templateId = new TemplateId(request.TemplateId);
+            var searchKey = request.Search?.ToCacheKeySuffix() ?? "";
             var baseCacheKey =
-                $"Applications_ByTemplate_{request.TemplateId}_s{request.Status}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
+                $"Applications_ByTemplate_{request.TemplateId}_{searchKey}_p{request.PageNumber}_ps{request.PageSize}_{CacheKeyHelper.GenerateHashedCacheKey(principalId)}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsByTemplateQueryHandler);
 
@@ -82,7 +83,14 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                         return Result<PagedResult<ApplicationDto>>.Forbid(
                             "User does not have permission to list all applications for this template");
 
-                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(appRepo, templateId, request.Status);
+                    var query = ApplicationListingQueryBuilder.BuildTemplateQuery(
+                        appRepo,
+                        templateId,
+                        request.Search?.Status);
+                    query = ApplicationListingQueryBuilder.ApplySearchFilters(
+                        query,
+                        request.Search,
+                        excludeStatus: request.Search?.Status is not null);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,
