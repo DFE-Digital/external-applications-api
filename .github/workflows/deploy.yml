@@ -58,7 +58,7 @@ jobs:
   build-import:
     name: Deploy to ${{ needs.set-env.outputs.environment }}
     runs-on: ubuntu-24.04
-    needs: [ set-env ]
+    needs: [ set-env, validate-packages ]
     environment: ${{ needs.set-env.outputs.environment }}
     permissions:
       attestations: write
