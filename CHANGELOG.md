@@ -95,3 +95,7 @@ All notable changes to this service will be documented in this file.
 ## [1.3.5] - Public Beta
 ### Notes
 - Invalidate cache and permissions after a contributor is removed.
+
+## [1.3.6] - Public Beta
+### Notes
+- Fixed contributor access issues
