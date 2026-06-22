@@ -1,5 +1,6 @@
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
@@ -49,17 +50,26 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                             });
                         }
 
+                        var resourcePermissions = userWithPermissions.Permissions
+                            .Select(p => new UserPermissionDto
+                            {
+                                ApplicationId = p.ApplicationId?.Value,
+                                ResourceType = p.ResourceType,
+                                ResourceKey = p.ResourceKey,
+                                AccessType = p.AccessType
+                            });
+
+                        var templatePermissions = userWithPermissions.TemplatePermissions
+                            .Select(tp => new UserPermissionDto
+                            {
+                                ResourceType = ResourceType.Template,
+                                ResourceKey = tp.TemplateId.Value.ToString(),
+                                AccessType = tp.AccessType
+                            });
+
                         var userAuthzDto = new UserAuthorizationDto
                         {
-                            Permissions = userWithPermissions.Permissions
-                                .Select(p => new UserPermissionDto
-                                {
-                                    ApplicationId = p.ApplicationId?.Value,
-                                    ResourceType = p.ResourceType,
-                                    ResourceKey = p.ResourceKey,
-                                    AccessType = p.AccessType
-                                })
-                                .ToArray(),
+                            Permissions = resourcePermissions.Concat(templatePermissions).ToArray(),
                             Roles = new List<string>(){ userWithPermissions.Role?.Name! }
                         };
 
