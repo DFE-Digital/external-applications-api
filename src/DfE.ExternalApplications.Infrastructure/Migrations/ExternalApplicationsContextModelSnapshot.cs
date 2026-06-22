@@ -17,7 +17,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.18")
+                .HasAnnotation("ProductVersion", "10.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -79,10 +79,16 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
 
                     b.HasIndex("CreatedBy");
 
+                    b.HasIndex("CreatedOn")
+                        .HasDatabaseName("IX_Applications_CreatedOn");
+
                     b.HasIndex("LastModifiedBy");
 
                     b.HasIndex("TemplateVersionId")
                         .HasDatabaseName("IX_Applications_TemplateVersionId");
+
+                    b.HasIndex("Status", "LastModifiedOn")
+                        .HasDatabaseName("IX_Applications_Status_LastModifiedOn");
 
                     b.ToTable("Applications", "ea");
 

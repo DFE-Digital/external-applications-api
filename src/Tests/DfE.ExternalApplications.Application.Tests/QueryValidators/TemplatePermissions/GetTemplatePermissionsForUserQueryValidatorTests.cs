@@ -1,4 +1,4 @@
-﻿//using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
+//using DfE.ExternalApplications.Application.TemplatePermissions.Queries;
 
 //namespace DfE.ExternalApplications.Application.Tests.QueryValidators.TemplatePermissions;
 

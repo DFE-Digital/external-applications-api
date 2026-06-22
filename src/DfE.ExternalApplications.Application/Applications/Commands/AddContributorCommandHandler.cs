@@ -31,11 +31,10 @@ public sealed record AddContributorCommand(
 public sealed class AddContributorCommandHandler(
     IEaRepository<Domain.Entities.Application> applicationRepo,
     IEaRepository<User> userRepo,
-    IEaRepository<Role> roleRepo,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
     IUserFactory userFactory,
-    IUserPermissionCacheInvalidator userPermissionCacheInvalidator,
+    IUserCacheInvalidator userCacheInvalidator,
     IUnitOfWork unitOfWork) : IRequestHandler<AddContributorCommand, Result<UserDto>>
 {
     public async Task<Result<UserDto>> Handle(
@@ -117,7 +116,11 @@ public sealed class AddContributorCommandHandler(
             await userRepo.AddAsync(contributor, cancellationToken);
             await unitOfWork.CommitAsync(cancellationToken);
 
-            userPermissionCacheInvalidator.InvalidateForUser(contributor.Email, contributor.Id!);
+            await userCacheInvalidator.InvalidateForUserAsync(
+                contributor.Email,
+                contributor.ExternalProviderId,
+                contributor.Id!,
+                cancellationToken);
 
             // Create authorization data directly from the contributor instead of querying
             var authorization = CreateAuthorizationFromUser(contributor);
@@ -204,7 +207,11 @@ public sealed class AddContributorCommandHandler(
 
         await unitOfWork.CommitAsync(cancellationToken);
 
-        userPermissionCacheInvalidator.InvalidateForUser(existingContributor.Email, existingContributor.Id!);
+        await userCacheInvalidator.InvalidateForUserAsync(
+            existingContributor.Email,
+            existingContributor.ExternalProviderId,
+            existingContributor.Id!,
+            cancellationToken);
 
         // Create authorization data directly from the updated contributor
         var updatedAuthorization = CreateAuthorizationFromUser(existingContributor);

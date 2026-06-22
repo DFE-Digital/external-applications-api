@@ -17,7 +17,8 @@ public sealed record GetApplicationsForUserByExternalProviderIdQuery(
     bool IncludeSchema = false,
     Guid? TemplateId = null,
     int? PageNumber = null,
-    int? PageSize = null)
+    int? PageSize = null,
+    ApplicationListingSearchCriteria? Search = null)
     : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
@@ -34,8 +35,9 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     {
         try
         {
+            var searchKey = request.Search?.ToCacheKeySuffix() ?? "";
             var baseCacheKey =
-                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_t{request.TemplateId}_p{request.PageNumber}_ps{request.PageSize}";
+                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_t{request.TemplateId}_{searchKey}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserByExternalProviderIdQueryHandler);
 
@@ -57,6 +59,8 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                         appRepo,
                         userWithAuthorization,
                         templateIdsFilter);
+
+                    query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);
 
                     var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
                         query,

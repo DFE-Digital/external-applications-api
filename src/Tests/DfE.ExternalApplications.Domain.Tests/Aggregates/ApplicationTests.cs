@@ -1,4 +1,4 @@
-﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;

@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using AutoFixture.Kernel;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Common;

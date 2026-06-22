@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;

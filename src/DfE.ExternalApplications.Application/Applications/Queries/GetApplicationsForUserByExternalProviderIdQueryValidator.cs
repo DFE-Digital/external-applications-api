@@ -11,6 +11,10 @@ internal class GetApplicationsForUserByExternalProviderIdQueryValidator : Abstra
         RuleFor(x => x.ExternalProviderId)
             .NotEmpty()
             .WithMessage("External Provider ID is required");
+
+        RuleFor(x => x.Search)
+            .SetValidator(new ApplicationListingSearchCriteriaValidator()!)
+            .When(x => x.Search is not null);
     }
 }
 

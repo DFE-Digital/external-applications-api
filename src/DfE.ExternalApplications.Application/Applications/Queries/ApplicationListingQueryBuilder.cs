@@ -50,6 +50,34 @@ internal static class ApplicationListingQueryBuilder
         new GetApplicationsByTemplateIdQueryObject(templateId, status)
             .Apply(appRepo.Query().AsNoTracking());
 
+    /// <summary>
+    /// Applies optional listing search filters using composable query objects.
+    /// </summary>
+    internal static IQueryable<Domain.Entities.Application> ApplySearchFilters(
+        IQueryable<Domain.Entities.Application> query,
+        ApplicationListingSearchCriteria? search,
+        bool excludeStatus = false)
+    {
+        if (search is null || !search.HasAnyFilter)
+            return query;
+
+        if (!string.IsNullOrWhiteSpace(search.Reference))
+            query = new GetApplicationsByReferenceSearchQueryObject(search.Reference).Apply(query);
+
+        if (search.DateStartedFrom.HasValue || search.DateStartedTo.HasValue)
+            query = new GetApplicationsByDateStartedRangeQueryObject(search.DateStartedFrom, search.DateStartedTo)
+                .Apply(query);
+
+        if (search.DateSubmittedFrom.HasValue || search.DateSubmittedTo.HasValue)
+            query = new GetApplicationsByDateSubmittedRangeQueryObject(search.DateSubmittedFrom, search.DateSubmittedTo)
+                .Apply(query);
+
+        if (!excludeStatus && search.Status.HasValue)
+            query = new GetApplicationsByStatusQueryObject(search.Status.Value).Apply(query);
+
+        return query;
+    }
+
     internal static async Task<PagedResult<ApplicationDto>> MapPagedResultAsync(
         IQueryable<Domain.Entities.Application> query,
         bool includeSchema,
@@ -57,6 +85,8 @@ internal static class ApplicationListingQueryBuilder
         int? pageSize,
         CancellationToken cancellationToken)
     {
+        query = query.OrderByDescending(a => a.CreatedOn);
+
         int? totalCount = null;
         if (pageNumber.HasValue && pageSize.HasValue)
         {
