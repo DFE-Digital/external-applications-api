@@ -198,18 +198,23 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
 
         [Theory]
         [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-        public async Task GetMyPermissionsAsync_ShouldReturnForbidden_WhenPermissionMissing(
+        public async Task GetMyPermissionsAsync_ShouldReturnNotFound_WhenUserDoesNotExist(
             CustomWebApplicationDbContextFactory<Program> factory,
             IUsersClient usersClient,
             HttpClient httpClient)
         {
+            factory.TestClaims =
+            [
+                new Claim(ClaimTypes.Email, $"unknown-{Guid.NewGuid()}@example.com")
+            ];
+
             httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", "user-token");
 
             var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
                 () => usersClient.GetMyPermissionsAsync());
 
-            Assert.Equal(403, ex.StatusCode);
+            Assert.Equal(404, ex.StatusCode);
         }
 
         [Theory]

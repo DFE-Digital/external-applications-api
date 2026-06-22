@@ -57,6 +57,16 @@ public class UserFactory : IUserFactory
             null,
             null);
 
+        // Required so GetMyPermissions and other self-service endpoints can load claims for this user
+        AddPermissionToUser(
+            contributor,
+            email,
+            ResourceType.User,
+            new[] { AccessType.Read },
+            createdBy,
+            null,
+            when);
+
         // Add all required permissions directly (idempotent)
         
         // Application permissions

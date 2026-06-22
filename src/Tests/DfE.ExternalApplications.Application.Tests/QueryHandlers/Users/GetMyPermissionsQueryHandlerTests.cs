@@ -1,12 +1,10 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -24,23 +22,15 @@ public class GetMyPermissionsQueryHandlerTests
     public async Task Handle_NotAuthenticated_ShouldReturnFailure(
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IPermissionCheckerService permissionCheckerService,
         [Frozen] ISender mediator)
     {
-        // Arrange
         var httpContext = new DefaultHttpContext();
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var handler = new GetMyPermissionsQueryHandler(
-            httpContextAccessor,
-            userRepo,
-            permissionCheckerService,
-            mediator);
+        var handler = new GetMyPermissionsQueryHandler(httpContextAccessor, userRepo, mediator);
 
-        // Act
         var result = await handler.Handle(new GetMyPermissionsQuery(), CancellationToken.None);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Not authenticated", result.Error);
     }
@@ -50,26 +40,17 @@ public class GetMyPermissionsQueryHandlerTests
     public async Task Handle_NoUserIdentifier_ShouldReturnFailure(
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IPermissionCheckerService permissionCheckerService,
         [Frozen] ISender mediator)
     {
-        // Arrange
         var httpContext = new DefaultHttpContext();
         var identity = new ClaimsIdentity(new List<Claim>(), "Test");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-        httpContext.User = claimsPrincipal;
+        httpContext.User = new ClaimsPrincipal(identity);
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var handler = new GetMyPermissionsQueryHandler(
-            httpContextAccessor,
-            userRepo,
-            permissionCheckerService,
-            mediator);
+        var handler = new GetMyPermissionsQueryHandler(httpContextAccessor, userRepo, mediator);
 
-        // Act
         var result = await handler.Handle(new GetMyPermissionsQuery(), CancellationToken.None);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("No user identifier", result.Error);
     }
@@ -80,33 +61,19 @@ public class GetMyPermissionsQueryHandlerTests
         string email,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IPermissionCheckerService permissionCheckerService,
         [Frozen] ISender mediator)
     {
-        // Arrange
         var httpContext = new DefaultHttpContext();
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Email, email)
-        };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-        httpContext.User = claimsPrincipal;
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Email, email)], "Test"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var emptyQueryable = new List<User>().AsQueryable().BuildMock();
-        userRepo.Query().Returns(emptyQueryable);
+        userRepo.Query().Returns(new List<User>().AsQueryable().BuildMock());
 
-        var handler = new GetMyPermissionsQueryHandler(
-            httpContextAccessor,
-            userRepo,
-            permissionCheckerService,
-            mediator);
+        var handler = new GetMyPermissionsQueryHandler(httpContextAccessor, userRepo, mediator);
 
-        // Act
         var result = await handler.Handle(new GetMyPermissionsQuery(), CancellationToken.None);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("User not found", result.Error);
     }
@@ -117,79 +84,52 @@ public class GetMyPermissionsQueryHandlerTests
         string externalProviderId,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IPermissionCheckerService permissionCheckerService,
         [Frozen] ISender mediator)
     {
-        // Arrange
         var httpContext = new DefaultHttpContext();
-        var claims = new List<Claim>
-        {
-            new("appid", externalProviderId)
-        };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-        httpContext.User = claimsPrincipal;
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim("appid", externalProviderId)], "Test"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var emptyQueryable = new List<User>().AsQueryable().BuildMock();
-        userRepo.Query().Returns(emptyQueryable);
+        userRepo.Query().Returns(new List<User>().AsQueryable().BuildMock());
 
-        var handler = new GetMyPermissionsQueryHandler(
-            httpContextAccessor,
-            userRepo,
-            permissionCheckerService,
-            mediator);
+        var handler = new GetMyPermissionsQueryHandler(httpContextAccessor, userRepo, mediator);
 
-        // Act
         var result = await handler.Handle(new GetMyPermissionsQuery(), CancellationToken.None);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("User not found", result.Error);
     }
 
     [Theory]
     [CustomAutoData(typeof(UserCustomization))]
-    public async Task Handle_NoPermission_ShouldReturnFailure(
+    public async Task Handle_ContributorWithoutUserRead_ShouldReturnPermissions(
         string emailName,
         UserCustomization userCustom,
+        UserAuthorizationDto authorizationData,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IPermissionCheckerService permissionCheckerService,
         [Frozen] ISender mediator)
     {
-        // Arrange
         var email = $"{emailName}@example.com";
         var httpContext = new DefaultHttpContext();
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Email, email)
-        };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-        httpContext.User = claimsPrincipal;
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Email, email)], "Test"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         userCustom.OverrideEmail = email;
         var user = new Fixture().Customize(userCustom).Create<User>();
-        var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
-        userRepo.Query().Returns(userQueryable);
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
 
-        permissionCheckerService.HasPermission(ResourceType.User, user.Id!.Value.ToString(), AccessType.Read)
-            .Returns(false);
+        mediator.Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == user.Id), Arg.Any<CancellationToken>())
+            .Returns(Result<UserAuthorizationDto>.Success(authorizationData));
 
-        var handler = new GetMyPermissionsQueryHandler(
-            httpContextAccessor,
-            userRepo,
-            permissionCheckerService,
-            mediator);
+        var handler = new GetMyPermissionsQueryHandler(httpContextAccessor, userRepo, mediator);
 
-        // Act
         var result = await handler.Handle(new GetMyPermissionsQuery(), CancellationToken.None);
 
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Equal("User does not have permission to view permissions.", result.Error);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(authorizationData, result.Value);
     }
 
     [Theory]
@@ -200,42 +140,25 @@ public class GetMyPermissionsQueryHandlerTests
         UserAuthorizationDto authorizationData,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IPermissionCheckerService permissionCheckerService,
         [Frozen] ISender mediator)
     {
-        // Arrange
         var email = $"{emailName}@example.com";
         var httpContext = new DefaultHttpContext();
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Email, email)
-        };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-        httpContext.User = claimsPrincipal;
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Email, email)], "Test"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         userCustom.OverrideEmail = email;
         var user = new Fixture().Customize(userCustom).Create<User>();
-        var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
-        userRepo.Query().Returns(userQueryable);
-
-        permissionCheckerService.HasPermission(ResourceType.User, user.Id!.Value.ToString(), AccessType.Read)
-            .Returns(true);
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
 
         mediator.Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == user.Id), Arg.Any<CancellationToken>())
             .Returns(Result<UserAuthorizationDto>.Success(authorizationData));
 
-        var handler = new GetMyPermissionsQueryHandler(
-            httpContextAccessor,
-            userRepo,
-            permissionCheckerService,
-            mediator);
+        var handler = new GetMyPermissionsQueryHandler(httpContextAccessor, userRepo, mediator);
 
-        // Act
         var result = await handler.Handle(new GetMyPermissionsQuery(), CancellationToken.None);
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(authorizationData, result.Value);
     }
@@ -248,41 +171,24 @@ public class GetMyPermissionsQueryHandlerTests
         UserAuthorizationDto authorizationData,
         [Frozen] IHttpContextAccessor httpContextAccessor,
         [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IPermissionCheckerService permissionCheckerService,
         [Frozen] ISender mediator)
     {
-        // Arrange
         var httpContext = new DefaultHttpContext();
-        var claims = new List<Claim>
-        {
-            new("appid", externalProviderId)
-        };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-        httpContext.User = claimsPrincipal;
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim("appid", externalProviderId)], "Test"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         userCustom.OverrideExternalProviderId = externalProviderId;
         var user = new Fixture().Customize(userCustom).Create<User>();
-        var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
-        userRepo.Query().Returns(userQueryable);
-
-        permissionCheckerService.HasPermission(ResourceType.User, user.Id!.Value.ToString(), AccessType.Read)
-            .Returns(true);
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
 
         mediator.Send(Arg.Is<GetAllUserPermissionsQuery>(q => q.UserId == user.Id), Arg.Any<CancellationToken>())
             .Returns(Result<UserAuthorizationDto>.Success(authorizationData));
 
-        var handler = new GetMyPermissionsQueryHandler(
-            httpContextAccessor,
-            userRepo,
-            permissionCheckerService,
-            mediator);
+        var handler = new GetMyPermissionsQueryHandler(httpContextAccessor, userRepo, mediator);
 
-        // Act
         var result = await handler.Handle(new GetMyPermissionsQuery(), CancellationToken.None);
 
-        // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(authorizationData, result.Value);
     }

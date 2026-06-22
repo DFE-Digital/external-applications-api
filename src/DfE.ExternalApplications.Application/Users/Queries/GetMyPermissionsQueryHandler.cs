@@ -1,9 +1,7 @@
-﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.Services;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +15,6 @@ namespace DfE.ExternalApplications.Application.Users.Queries
     public sealed class GetMyPermissionsQueryHandler(
         IHttpContextAccessor httpContextAccessor,
         IEaRepository<User> userRepo,
-        IPermissionCheckerService permissionCheckerService,
         ISender mediator)
         : IRequestHandler<GetMyPermissionsQuery, Result<UserAuthorizationDto>>
     {
@@ -54,13 +51,9 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             if (dbUser is null)
                 return Result<UserAuthorizationDto>.NotFound("User not found");
 
-            var canAccess = permissionCheckerService.HasPermission(ResourceType.User, dbUser.Id!.Value.ToString(), AccessType.Read);
-            var canAccessByEmail = permissionCheckerService.HasPermission(ResourceType.User, dbUser.Email, AccessType.Read);
-            var canAccessByExtId = permissionCheckerService.HasPermission(ResourceType.User, dbUser?.ExternalProviderId ?? "", AccessType.Read);
-
-            if (!canAccess && !canAccessByEmail && !canAccessByExtId)
-                return Result<UserAuthorizationDto>.Forbid("User does not have permission to view permissions.");
-
+            // The caller is authenticated and matched to this user by token identity (email or external id).
+            // Returning their own permissions is safe without a separate User:Read claim, which invited
+            // contributors may not have been provisioned with historically.
             return await mediator.Send(new GetAllUserPermissionsQuery(dbUser.Id), cancellationToken);
 
         }

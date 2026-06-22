@@ -50,6 +50,11 @@ public class UserFactoryTests
         Assert.Equal(createdOn, contributor.CreatedOn);
         Assert.Equal(createdBy, contributor.CreatedBy);
 
+        Assert.Contains(contributor.Permissions, p =>
+            p.ResourceType == ResourceType.User
+            && p.ResourceKey == "john@example.com"
+            && p.AccessType == AccessType.Read);
+
         // Check that domain event was raised (permissions will be added in the event handler)
         var domainEvents = contributor.DomainEvents.ToList();
         Assert.Single(domainEvents);

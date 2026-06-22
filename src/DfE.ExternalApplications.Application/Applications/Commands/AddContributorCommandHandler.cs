@@ -147,7 +147,16 @@ public sealed class AddContributorCommandHandler(
         User dbUser,
         CancellationToken cancellationToken)
     {
-        
+        // Ensure self-service endpoints (e.g. GetMyPermissions) work for invited contributors
+        userFactory.AddPermissionToUser(
+            existingContributor,
+            existingContributor.Email,
+            ResourceType.User,
+            new[] { AccessType.Read },
+            dbUser.Id!,
+            null,
+            DateTime.UtcNow);
+
         // Application permissions
         userFactory.AddPermissionToUser(
             existingContributor,

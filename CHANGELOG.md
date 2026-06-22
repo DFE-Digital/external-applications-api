@@ -108,3 +108,7 @@ All notable changes to this service will be documented in this file.
 ## [1.3.7] - Public Beta
 ### Notes
 - Added the ability to search for applications by different parameters on the dashboard
+
+## [1.3.8] - Public Beta
+### Notes
+- Fixed contributor access issues
