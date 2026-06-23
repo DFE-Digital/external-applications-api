@@ -220,6 +220,43 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     b.ToTable("Files", "ea");
                 });
 
+            modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.CustomApplicationStatus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CustomApplicationStatusId");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("CreatedBy");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CreatedOn")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<int>("ApplicationStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("ApplicationStatus");
+
+                    b.Property<Guid>("TemplateId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("TemplateId");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("Label");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TemplateId", "ApplicationStatus")
+                        .HasDatabaseName("IX_CustomApplicationStatuses_TemplateId_ApplicationStatus");
+
+                    b.ToTable("CustomApplicationStatuses", "ea");
+                });
+
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")

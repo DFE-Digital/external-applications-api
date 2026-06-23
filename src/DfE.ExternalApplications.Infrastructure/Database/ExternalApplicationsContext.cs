@@ -41,6 +41,7 @@ public class ExternalApplicationsContext : DbContext
     public DbSet<TaskAssignmentLabel> TaskAssignmentLabels { get; set; } = null!;
     public DbSet<TemplatePermission> TemplatePermissions { get; set; } = null!;
     public DbSet<File> Files { get; set; } = null!;
+    public DbSet<CustomApplicationStatus> CustomApplicationStatuses { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -72,8 +73,52 @@ public class ExternalApplicationsContext : DbContext
         modelBuilder.Entity<TemplatePermission>(b => ConfigureTemplatePermission(b, useTemporal));
         modelBuilder.Entity<TaskAssignmentLabel>(ConfigureTaskAssignmentLabel);
         modelBuilder.Entity<File>(ConfigureFile);
+        modelBuilder.Entity<CustomApplicationStatus>(b => ConfigureCustomApplicationStatus(b));
 
         base.OnModelCreating(modelBuilder);
+    }
+
+    private static void ConfigureCustomApplicationStatus(EntityTypeBuilder<CustomApplicationStatus> b)
+    {
+        b.ToTable("CustomApplicationStatuses", DefaultSchema);
+        b.HasKey(e => e.Id);
+        b.Property(e => e.Id)
+            .HasColumnName("CustomApplicationStatusId")
+            .ValueGeneratedNever()
+            .HasConversion(v => v.Value, v => new CustomApplicationStatusId(v))
+            .IsRequired();
+        b.Property(e => e.TemplateId)
+            .HasColumnName("TemplateId")
+            .HasConversion(v => v.Value, v => new TemplateId(v))
+            .IsRequired();
+        b.Property(e => e.ApplicationStatus)
+            .HasColumnName("ApplicationStatus")
+            .IsRequired();
+        b.Property(e => e.Label)
+            .HasColumnName("Label")
+            .HasMaxLength(200)
+            .IsRequired();
+        b.Property(e => e.CreatedOn)
+            .HasColumnName("CreatedOn")
+            .HasDefaultValueSql("GETDATE()")
+            .IsRequired();
+        b.Property(e => e.CreatedBy)
+            .HasColumnName("CreatedBy")
+            .HasConversion(v => v.Value, v => new UserId(v))
+            .IsRequired();
+
+        b.HasOne(e => e.Template)
+            .WithMany()
+            .HasForeignKey(e => e.TemplateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne(e => e.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(e => e.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        b.HasIndex(e => new { e.TemplateId, e.ApplicationStatus })
+            .HasDatabaseName("IX_CustomApplicationStatuses_TemplateId_ApplicationStatus");
     }
 
     private static void ConfigureRole(EntityTypeBuilder<Role> b, bool useTemporal)
