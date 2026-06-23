@@ -1,5 +1,6 @@
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Applications.Commands;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces;
@@ -102,6 +103,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -137,6 +139,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -176,6 +179,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -220,6 +224,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -286,6 +291,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -343,6 +349,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -409,6 +416,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -489,6 +497,7 @@ public class RemoveContributorCommandHandlerTests
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act

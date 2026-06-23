@@ -1,36 +1,43 @@
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Common;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
-using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetApplicationsForUserByExternalProviderIdQuery(string ExternalProviderId, bool IncludeSchema = false, Guid? TemplateId = null)
-    : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
+public sealed record GetApplicationsForUserByExternalProviderIdQuery(
+    string ExternalProviderId,
+    bool IncludeSchema = false,
+    Guid? TemplateId = null,
+    int? PageNumber = null,
+    int? PageSize = null,
+    ApplicationListingSearchCriteria? Search = null)
+    : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
-    ITenantContextAccessor tenantContextAccessor)
-    : IRequestHandler<GetApplicationsForUserByExternalProviderIdQuery, Result<IReadOnlyCollection<ApplicationDto>>>
+    ITenantContextAccessor tenantContextAccessor,
+    ITenantTemplateResolver tenantTemplateResolver)
+    : IRequestHandler<GetApplicationsForUserByExternalProviderIdQuery, Result<PagedResult<ApplicationDto>>>
 {
-    public async Task<Result<IReadOnlyCollection<ApplicationDto>>> Handle(
+    public async Task<Result<PagedResult<ApplicationDto>>> Handle(
         GetApplicationsForUserByExternalProviderIdQuery request,
         CancellationToken cancellationToken)
     {
         try
         {
-            var baseCacheKey = $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}";
+            var searchKey = request.Search?.ToCacheKeySuffix() ?? "";
+            var baseCacheKey =
+                $"Applications_ForUserExternal_{CacheKeyHelper.GenerateHashedCacheKey(request.ExternalProviderId)}_t{request.TemplateId}_{searchKey}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserByExternalProviderIdQueryHandler);
 
@@ -38,60 +45,37 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                 cacheKey,
                 async () =>
                 {
-                    var userWithPerms = await new GetUserWithAllPermissionsByExternalIdQueryObject(request.ExternalProviderId)
+                    var userWithAuthorization = await new GetUserWithAllPermissionsByExternalIdQueryObject(request.ExternalProviderId)
                         .Apply(userRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
 
-                    if (userWithPerms is null)
-                        return Result<IReadOnlyCollection<ApplicationDto>>.Success(Array.Empty<ApplicationDto>());
+                    if (userWithAuthorization is null)
+                        return Result<PagedResult<ApplicationDto>>.Success(
+                            ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
 
-                    var ids = userWithPerms.Permissions
-                        .Where(p => p.ApplicationId != null)
-                        .Select(p => p.ApplicationId!)
-                        .Distinct()
-                        .ToList();
+                    var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
 
-                    if (!ids.Any())
-                        return Result<IReadOnlyCollection<ApplicationDto>>.Success(Array.Empty<ApplicationDto>());
+                    var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
+                        appRepo,
+                        userWithAuthorization,
+                        templateIdsFilter);
 
-                    var query = new GetApplicationsByIdsQueryObject(ids)
-                        .Apply(appRepo.Query().AsNoTracking());
+                    query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);
 
-                    // Apply template filter if specified
-                    if (request.TemplateId.HasValue)
-                    {
-                        query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(request.TemplateId.Value))
-                            .Apply(query);
-                    }
+                    var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
+                        query,
+                        request.IncludeSchema,
+                        request.PageNumber,
+                        request.PageSize,
+                        cancellationToken);
 
-                    var apps = await query.ToListAsync(cancellationToken);
-
-
-                    var dtoList = apps.Select(a => new ApplicationDto
-                    {
-                        ApplicationId = a.Id!.Value,
-                        ApplicationReference = a.ApplicationReference,
-                        TemplateVersionId = a.TemplateVersionId.Value,
-                        DateCreated = a.CreatedOn,
-                        DateSubmitted = a.Status == ApplicationStatus.Submitted ? a.LastModifiedOn : null,
-                        TemplateName = a.TemplateVersion?.Template?.Name ?? string.Empty,
-                        Status = a.Status,
-                        TemplateSchema = request.IncludeSchema && a.TemplateVersion != null ? new TemplateSchemaDto
-                        {
-                            TemplateId = a.TemplateVersion.Template?.Id?.Value ?? Guid.Empty,
-                            TemplateVersionId = a.TemplateVersion.Id!.Value,
-                            VersionNumber = a.TemplateVersion.VersionNumber,
-                            JsonSchema = a.TemplateVersion.JsonSchema
-                        } : null
-                    }).ToList().AsReadOnly();
-
-                    return Result<IReadOnlyCollection<ApplicationDto>>.Success(dtoList);
+                    return Result<PagedResult<ApplicationDto>>.Success(pagedResult);
                 },
                 methodName);
         }
         catch (Exception e)
         {
-            return Result<IReadOnlyCollection<ApplicationDto>>.Failure(e.ToString());
+            return Result<PagedResult<ApplicationDto>>.Failure(e.ToString());
         }
     }
 }

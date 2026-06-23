@@ -365,11 +365,21 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Returns all applications the current user can access.
+        /// Returns a paged list of the current user's own applications in the current tenant.
         /// </summary>
-        /// <returns>A list of applications accessible to the user.</returns>
+        /// <param name="templateId">Optional template identifier to restrict results to a single template.</param>
+        /// <param name="includeSchema">When true, includes the template JSON schema in each application response.</param>
+        /// <param name="pageNumber">One-based page number for paged results.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="applicationReference">Partial or full application reference to search for.</param>
+        /// <param name="dateStartedFrom">Inclusive start of the date-started (created) range.</param>
+        /// <param name="dateStartedTo">Inclusive end of the date-started (created) range.</param>
+        /// <param name="dateSubmittedFrom">Inclusive start of the date-submitted range.</param>
+        /// <param name="dateSubmittedTo">Inclusive end of the date-submitted range.</param>
+        /// <param name="status">Application status filter.</param>
+        /// <returns>A paged list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(System.Guid? templateId = null, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.DateTime? dateStartedFrom = null, System.DateTime? dateStartedTo = null, System.DateTime? dateSubmittedFrom = null, System.DateTime? dateSubmittedTo = null, ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -385,13 +395,45 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                     // Operation Path: "v1/me/applications"
                     urlBuilder_.Append("v1/me/applications");
                     urlBuilder_.Append('?');
-                    if (includeSchema != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("includeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
                     if (templateId != null)
                     {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("templateId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                        urlBuilder_.Append(System.Uri.EscapeDataString("TemplateId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (includeSchema != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("IncludeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (pageNumber != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageNumber")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageNumber, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (pageSize != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageSize")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageSize, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (applicationReference != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("ApplicationReference")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(applicationReference, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateStartedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedTo")).Append('=').Append(System.Uri.EscapeDataString(dateStartedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedTo")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (status != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("Status")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(status, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
 
@@ -420,7 +462,172 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<PagedResultOfApplicationDto>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 400)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Invalid request data.", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Unauthorized no valid user token", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 403)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Forbidden - user does not have required permissions", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Internal server error.", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
+                            throw new ExternalApplicationsException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).
+        /// </summary>
+        /// <param name="includeSchema">When true, includes the template JSON schema in each application response.</param>
+        /// <param name="pageNumber">One-based page number for paged results.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="applicationReference">Partial or full application reference to search for.</param>
+        /// <param name="dateStartedFrom">Inclusive start of the date-started (created) range.</param>
+        /// <param name="dateStartedTo">Inclusive end of the date-started (created) range.</param>
+        /// <param name="dateSubmittedFrom">Inclusive start of the date-submitted range.</param>
+        /// <param name="dateSubmittedTo">Inclusive end of the date-submitted range.</param>
+        /// <param name="status">Application status filter.</param>
+        /// <returns>A paged list of applications for the template.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetApplicationsByTemplateAsync(System.Guid templateId, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.DateTime? dateStartedFrom = null, System.DateTime? dateStartedTo = null, System.DateTime? dateSubmittedFrom = null, System.DateTime? dateSubmittedTo = null, ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            if (templateId == null)
+                throw new System.ArgumentNullException("templateId");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    // Operation Path: "v1/Applications/templates/{templateId}"
+                    urlBuilder_.Append("v1/Applications/templates/");
+                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(templateId, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append('?');
+                    if (includeSchema != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("IncludeSchema")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(includeSchema, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (pageNumber != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageNumber")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageNumber, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (pageSize != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("PageSize")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pageSize, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (applicationReference != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("ApplicationReference")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(applicationReference, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateStartedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateStartedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateStartedTo")).Append('=').Append(System.Uri.EscapeDataString(dateStartedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedFrom != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedFrom")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedFrom.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (dateSubmittedTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("DateSubmittedTo")).Append('=').Append(System.Uri.EscapeDataString(dateSubmittedTo.Value.ToString("s", System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (status != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("Status")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(status, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<PagedResultOfApplicationDto>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -6498,6 +6705,127 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client
                                 throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             throw new ExternalApplicationsException<ExceptionResponse>("Too Many Requests.", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 500)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Internal server error.", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
+                            throw new ExternalApplicationsException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Assigns a predefined role to a user, creating the user when they do not already exist.
+        /// </summary>
+        /// <returns>Role assigned successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<UserDto> AssignUserRoleAsync(AssignUserRoleRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            if (request == null)
+                throw new System.ArgumentNullException("request");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(request, JsonSerializerSettings);
+                    var content_ = new System.Net.Http.ByteArrayContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    // Operation Path: "v1/Users/roles"
+                    urlBuilder_.Append("v1/Users/roles");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<UserDto>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 400)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Invalid request data.", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Unauthorized - no valid user token", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 403)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ExceptionResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ExternalApplicationsException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ExternalApplicationsException<ExceptionResponse>("Forbidden - only administrators can assign roles", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
                         }
                         else
                         if (status_ == 500)

@@ -51,11 +51,38 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Returns all applications the current user can access.
+        /// Returns a paged list of the current user's own applications in the current tenant.
         /// </summary>
-        /// <returns>A list of applications accessible to the user.</returns>
+        /// <param name="templateId">Optional template identifier to restrict results to a single template.</param>
+        /// <param name="includeSchema">When true, includes the template JSON schema in each application response.</param>
+        /// <param name="pageNumber">One-based page number for paged results.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="applicationReference">Partial or full application reference to search for.</param>
+        /// <param name="dateStartedFrom">Inclusive start of the date-started (created) range.</param>
+        /// <param name="dateStartedTo">Inclusive end of the date-started (created) range.</param>
+        /// <param name="dateSubmittedFrom">Inclusive start of the date-submitted range.</param>
+        /// <param name="dateSubmittedTo">Inclusive end of the date-submitted range.</param>
+        /// <param name="status">Application status filter.</param>
+        /// <returns>A paged list of applications accessible to the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetMyApplicationsAsync(bool? includeSchema = null, System.Guid? templateId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetMyApplicationsAsync(System.Guid? templateId = null, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.DateTime? dateStartedFrom = null, System.DateTime? dateStartedTo = null, System.DateTime? dateSubmittedFrom = null, System.DateTime? dateSubmittedTo = null, ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).
+        /// </summary>
+        /// <param name="includeSchema">When true, includes the template JSON schema in each application response.</param>
+        /// <param name="pageNumber">One-based page number for paged results.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="applicationReference">Partial or full application reference to search for.</param>
+        /// <param name="dateStartedFrom">Inclusive start of the date-started (created) range.</param>
+        /// <param name="dateStartedTo">Inclusive end of the date-started (created) range.</param>
+        /// <param name="dateSubmittedFrom">Inclusive start of the date-submitted range.</param>
+        /// <param name="dateSubmittedTo">Inclusive end of the date-submitted range.</param>
+        /// <param name="status">Application status filter.</param>
+        /// <returns>A paged list of applications for the template.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetApplicationsByTemplateAsync(System.Guid templateId, bool? includeSchema = null, int? pageNumber = null, int? pageSize = null, string applicationReference = null, System.DateTime? dateStartedFrom = null, System.DateTime? dateStartedTo = null, System.DateTime? dateSubmittedFrom = null, System.DateTime? dateSubmittedTo = null, ApplicationStatus? status = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -386,6 +413,14 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <returns>User registered successfully.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<UserDto> RegisterUserAsync(RegisterUserRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Assigns a predefined role to a user, creating the user when they do not already exist.
+        /// </summary>
+        /// <returns>Role assigned successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<UserDto> AssignUserRoleAsync(AssignUserRoleRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 

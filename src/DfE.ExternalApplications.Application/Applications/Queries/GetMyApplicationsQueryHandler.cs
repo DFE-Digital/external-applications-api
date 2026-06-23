@@ -1,24 +1,30 @@
-﻿using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetMyApplicationsQuery(bool IncludeSchema = false, Guid? TemplateId = null) : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
+public sealed record GetMyApplicationsQuery(
+    bool IncludeSchema = false,
+    Guid? TemplateId = null,
+    int? PageNumber = null,
+    int? PageSize = null,
+    ApplicationListingSearchCriteria? Search = null)
+    : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetMyApplicationsQueryHandler(
     IHttpContextAccessor httpContextAccessor,
     ISender mediator)
-    : IRequestHandler<GetMyApplicationsQuery, Result<IReadOnlyCollection<ApplicationDto>>>
+    : IRequestHandler<GetMyApplicationsQuery, Result<PagedResult<ApplicationDto>>>
 {
-    public async Task<Result<IReadOnlyCollection<ApplicationDto>>> Handle(
+    public async Task<Result<PagedResult<ApplicationDto>>> Handle(
         GetMyApplicationsQuery request,
         CancellationToken cancellationToken)
     {
         var user = httpContextAccessor.HttpContext?.User;
         if (user is null || !user.Identity?.IsAuthenticated == true)
-            return Result<IReadOnlyCollection<ApplicationDto>>.Forbid("Not authenticated");
+            return Result<PagedResult<ApplicationDto>>.Forbid("Not authenticated");
 
         var principalId = user.FindFirstValue(ClaimTypes.Email);
 
@@ -26,18 +32,19 @@ public sealed class GetMyApplicationsQueryHandler(
             principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
 
         if (string.IsNullOrEmpty(principalId))
-            return Result<IReadOnlyCollection<ApplicationDto>>.Forbid("No user identifier");
+            return Result<PagedResult<ApplicationDto>>.Forbid("No user identifier");
 
-        Result<IReadOnlyCollection<ApplicationDto>> result;
         if (principalId.Contains('@'))
         {
-            result = await mediator.Send(new GetApplicationsForUserQuery(principalId, request.IncludeSchema, request.TemplateId), cancellationToken);
+            return await mediator.Send(
+                new GetApplicationsForUserQuery(principalId, request.IncludeSchema, request.TemplateId, request.PageNumber, request.PageSize, request.Search),
+                cancellationToken);
         }
         else
         {
-            result = await mediator.Send(new GetApplicationsForUserByExternalProviderIdQuery(principalId, request.IncludeSchema, request.TemplateId), cancellationToken);
+            return await mediator.Send(
+                new GetApplicationsForUserByExternalProviderIdQuery(principalId, request.IncludeSchema, request.TemplateId, request.PageNumber, request.PageSize, request.Search),
+                cancellationToken);
         }
-
-        return result;
     }
 }

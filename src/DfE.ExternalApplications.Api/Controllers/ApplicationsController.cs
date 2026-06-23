@@ -1,16 +1,18 @@
 ﻿using Asp.Versioning;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
+using DfE.ExternalApplications.Api.Models.Applications;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.Queries;
 using DfE.ExternalApplications.Application.Common.Exceptions;
+using DfE.ExternalApplications.Api.Filters;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -70,11 +72,11 @@ public class ApplicationsController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Returns all applications the current user can access.
+    /// Returns a paged list of the current user's own applications in the current tenant.
     /// </summary>
     [HttpGet]
     [Route("/v{version:apiVersion}/me/applications")]
-    [SwaggerResponse(200, "A list of applications accessible to the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
+    [SwaggerResponse(200, "A paged list of applications accessible to the user.", typeof(PagedResult<ApplicationDto>))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
@@ -82,11 +84,32 @@ public class ApplicationsController(ISender sender) : ControllerBase
     [Authorize(Policy = "CanReadAnyApplication")]
     public async Task<IActionResult> GetMyApplicationsAsync(
         CancellationToken cancellationToken,
-        [FromQuery] bool? includeSchema = null,
-        [FromQuery] Guid? templateId = null)
+        [FromQuery] GetMyApplicationsQueryParameters parameters)
     {
-        var query = new GetMyApplicationsQuery(includeSchema ?? false, templateId);
-        var result = await sender.Send(query, cancellationToken);
+        var result = await sender.Send(parameters.ToQuery(), cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Returns a paged list of all applications for the specified template, based on the caller's role (admin or caseworker).
+    /// </summary>
+    [HttpGet("templates/{templateId:guid}")]
+    [SwaggerResponse(200, "A paged list of applications for the template.", typeof(PagedResult<ApplicationDto>))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [Authorize(Policy = "CanReadAnyApplication")]
+    public async Task<IActionResult> GetApplicationsByTemplateAsync(
+        [FromRoute] Guid templateId,
+        CancellationToken cancellationToken,
+        [FromQuery] ApplicationListingQueryParameters parameters)
+    {
+        var result = await sender.Send(parameters.ToQuery(templateId), cancellationToken);
 
         return new ObjectResult(result)
         {
@@ -327,12 +350,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
 
         if (result is { IsSuccess: false, Error: not null })
         {
-            throw result.ErrorCode switch
-            {
-                DomainErrorCode.NotFound => new NotFoundException(result.Error),
-                DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
-                _ => new BadRequestException(result.Error)
-            };
+            throw ResultExceptionMapper.ToException(result.ErrorCode, result.Error);
         }
 
         var file = result.Value!;
@@ -384,12 +402,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
 
         if (result is { IsSuccess: false, Error: not null })
         {
-            throw result.ErrorCode switch
-            {
-                DomainErrorCode.NotFound => new NotFoundException(result.Error),
-                DomainErrorCode.Forbidden => new ForbiddenException(result.Error),
-                _ => new BadRequestException(result.Error)
-            };
+            throw ResultExceptionMapper.ToException(result.ErrorCode, result.Error);
         }
 
         var file = result.Value!;

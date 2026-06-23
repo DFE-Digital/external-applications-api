@@ -4,6 +4,7 @@ using DfE.ExternalApplications.Application.Consumers;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Services.RoleProvisioners;
 using DfE.ExternalApplications.Domain.Tenancy;
 using FluentValidation;
 using MediatR;
@@ -63,6 +64,14 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             });
             services.AddScoped<IPermissionCheckerService, ClaimBasedPermissionCheckerService>();
+            services.AddScoped<IUserCacheInvalidator, UserCacheInvalidator>();
+            services.AddScoped<IAuthenticatedUserService, AuthenticatedUserService>();
+            services.AddScoped<IApplicationCreationService, ApplicationCreationService>();
+
+            services.AddSingleton<IUserRoleProvisionerRegistry, UserRoleProvisionerRegistry>();
+            services.AddTransient<IUserRoleProvisioner, CaseworkerRoleProvisioner>();
+            services.AddTransient<IUserRoleProvisioner, StandardUserRoleProvisioner>();
+            services.AddTransient<IUserRoleProvisioner, AdminRoleProvisioner>();
 
             services.AddKeyedScoped<ICustomRequestChecker, InternalAuthRequestChecker>("internal");
 
@@ -72,6 +81,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<IFileFactory, FileFactory>();
 
             services.AddTransient<IEmailTemplateResolver, EmailTemplateResolver>();
+            services.AddScoped<ITenantTemplateResolver, TenantTemplateResolver>();
 
             services.AddBackgroundService();
             

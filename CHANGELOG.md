@@ -2,67 +2,113 @@
 
 All notable changes to this service will be documented in this file.
 
-## [1.0.0] – Public Beta
+## [1.0.0] ï¿½ Public Beta
 ### Notes
 - First formally versioned public beta release.
 
-## [1.0.1] – Public Beta
+## [1.0.1] ï¿½ Public Beta
 ### Notes
 - Optimised Application entity queries and added indexes to the tables.
 
-## [1.0.2] – Public Beta
+## [1.0.2] ï¿½ Public Beta
 ### Notes
 - Added diagnostics endpoint.
 
-## [1.0.3] – Public Beta
+## [1.0.3] ï¿½ Public Beta
 ### Notes
 - Improved loading of application response performance.
 - Improved file upload performance.
 
-## [1.1.0] – Public Beta
+## [1.1.0] ï¿½ Public Beta
 ### Notes
 - Added multi-tenancy support.
 
-## [1.1.1] – Public Beta
+## [1.1.1] ï¿½ Public Beta
 ### Notes
 - Improved Auto-Registration to support multi-tenancy and multi-template users 
 
-## [1.1.2] – Public Beta
+## [1.1.2] ï¿½ Public Beta
 ### Notes
 - Improved Unit and Integration tests 
 
-## [1.1.3] – Public Beta
+## [1.1.3] ï¿½ Public Beta
 ### Notes
 - Enabled Test Auth in LSRP Test Environment. 
 
-## [1.1.4] – Public Beta
+## [1.1.4] ï¿½ Public Beta
 ### Notes
 - Updated CoreLibs Security package to support ExtIdentityValidator for multi-tenancy.
 
-## [1.2.0] – Public Beta
+## [1.2.0] ï¿½ Public Beta
 ### Notes
 - Upgraded to .NET10
 
-## [1.2.1] – Public Beta
+## [1.2.1] ï¿½ Public Beta
 ### Notes
 - Updated application status update logic to not update the status if the application is already submitted.
 
-## [1.2.2] – Public Beta
+## [1.2.2] ï¿½ Public Beta
 ### Notes
 - Updated LSRP appsettings for Production environment.
 
-## [1.2.3] – Public Beta
+## [1.2.3] ï¿½ Public Beta
 ### Notes
 - Disabled Test Auth in LSRP Test Environment.
 
-## [1.2.4] – Public Beta
+## [1.2.4] ï¿½ Public Beta
 ### Notes
 - Fixed EmailTemplateResolver logic to support Multi-Tenancy.
 
-## [1.2.5] – Public Beta
+## [1.2.5] ï¿½ Public Beta
 ### Notes
 - Updated LSRP template IDs for govuk notify
 
-## [1.2.6] – Public Beta
+## [1.2.6] ï¿½ Public Beta
 ### Notes
 - Added support for EntraSSO validation and authentication
+
+## [1.2.7] - Public Beta
+### Notes
+- Added server-side pagination to GET /v1/me/applications (optional pageNumber and pageSize query parameters)
+
+## [1.2.8] - Public Beta
+### Notes
+- Added RG Visits Test env appsettings
+
+## [1.3.0] - Public Beta
+### Notes
+- Added new Role assignment endpoint
+- New endpoint for retrieving tenant-wide applications
+- Added RG Visits Test env appsettings
+
+## [1.3.1] - Public Beta
+### Notes
+- Added the ability to search for applications by reference on the dashboard
+
+## [1.3.2] - Public Beta
+### Notes
+- Improved GetApplicationByReference query performance
+
+## [1.3.3] - Public Beta
+### Notes
+- - Added RG Visits Prod env appsettings
+
+## [1.3.4] - Public Beta
+### Notes
+- Add optional status filter to get applications by template ID endpoint
+
+## [1.3.5] - Public Beta
+### Notes
+- Invalidate cache and permissions after a contributor is removed.
+
+## [1.3.6] - Public Beta
+### Notes
+- Improved caching and invalidate cache and permissions after a change is made.
+
+## [1.3.7] - Public Beta
+### Notes
+- Added the ability to search for applications by different parameters on the dashboard
+
+## [1.3.8] - Public Beta
+### Notes
+- Fixed contributor access issues

@@ -316,6 +316,29 @@ public class ClaimBasedPermissionCheckerServiceTests
         Assert.Contains("456", result);
     }
 
+    [Fact]
+    public void HasPermission_WhenUserHasOnlyAnyReadWildcard_ReturnsFalse()
+    {
+        var resourceId = Guid.NewGuid().ToString();
+        var claim = new Claim("permission", $"{ResourceType.Application}:Any:{AccessType.Read}");
+        _user.AddIdentity(new ClaimsIdentity(new[] { claim }));
+
+        var result = _service.HasPermission(ResourceType.Application, resourceId, AccessType.Read);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void HasAnyPermission_WhenUserHasOnlyAnyReadWildcard_ReturnsFalse()
+    {
+        var claim = new Claim("permission", $"{ResourceType.Application}:Any:{AccessType.Read}");
+        _user.AddIdentity(new ClaimsIdentity(new[] { claim }));
+
+        var result = _service.HasAnyPermission(ResourceType.Application, AccessType.Read);
+
+        Assert.False(result);
+    }
+
     [Theory]
     [InlineData(ResourceType.Application)]
     [InlineData(ResourceType.Template)]

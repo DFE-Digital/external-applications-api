@@ -1,4 +1,5 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.Factories;
@@ -48,6 +49,11 @@ public class UserFactoryTests
         Assert.Equal("john@example.com", contributor.Email);
         Assert.Equal(createdOn, contributor.CreatedOn);
         Assert.Equal(createdBy, contributor.CreatedBy);
+
+        Assert.Contains(contributor.Permissions, p =>
+            p.ResourceType == ResourceType.User
+            && p.ResourceKey == "john@example.com"
+            && p.AccessType == AccessType.Read);
 
         // Check that domain event was raised (permissions will be added in the event handler)
         var domainEvents = contributor.DomainEvents.ToList();
@@ -221,5 +227,46 @@ public class UserFactoryTests
         Assert.All(user.Permissions, p => Assert.Equal(applicationId, p.ApplicationId));
         Assert.All(user.Permissions, p => Assert.Equal(grantedBy, p.GrantedBy));
         Assert.All(user.Permissions, p => Assert.Equal(grantedOn, p.GrantedOn));
+    }
+
+    [Fact]
+    public void CreateStandardUser_ShouldGrantTemplateWriteWithoutApplicationAnyPermissions()
+    {
+        var templateId = new TemplateId(Guid.NewGuid());
+        var grantedBy = new UserId(Guid.NewGuid());
+
+        var user = _userFactory.CreateStandardUser(
+            new UserId(Guid.NewGuid()),
+            "New User",
+            "new.user@example.com",
+            [templateId],
+            grantedBy);
+
+        Assert.Contains(user.TemplatePermissions, tp =>
+            tp.TemplateId == templateId && tp.AccessType == AccessType.Write);
+        Assert.Contains(user.TemplatePermissions, tp =>
+            tp.TemplateId == templateId && tp.AccessType == AccessType.Read);
+        Assert.DoesNotContain(user.Permissions, p =>
+            p.ResourceType == ResourceType.Application
+            && p.ResourceKey == PermissionConstants.AnyResourceKey);
+    }
+
+    [Fact]
+    public void CreateUser_ShouldGrantTemplateWriteWithoutApplicationAnyPermissions()
+    {
+        var templateId = new TemplateId(Guid.NewGuid());
+
+        var user = _userFactory.CreateUser(
+            new UserId(Guid.NewGuid()),
+            new RoleId(RoleConstants.UserRoleId),
+            "Registered User",
+            "registered.user@example.com",
+            templateId);
+
+        Assert.Contains(user.TemplatePermissions, tp =>
+            tp.TemplateId == templateId && tp.AccessType == AccessType.Write);
+        Assert.DoesNotContain(user.Permissions, p =>
+            p.ResourceType == ResourceType.Application
+            && p.ResourceKey == PermissionConstants.AnyResourceKey);
     }
 } 

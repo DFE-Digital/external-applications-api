@@ -1,14 +1,14 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Applications.QueryObjects;
 
 /// <summary>
 /// Optimized read/query for "application by reference" that:
-/// - Fetches ONLY the latest response (not the full response history)
-/// - Only fetches JsonSchema when includeSchema=true
 /// - Projects directly to ApplicationDto to avoid loading entire entity graphs
+/// - Only fetches JsonSchema when includeSchema=true
+/// - Latest response is loaded separately via <see cref="GetLatestApplicationResponseByApplicationIdQueryObject"/>
+///   to avoid EF generating a full-table ROW_NUMBER() scan over ApplicationResponses.
 /// </summary>
 public sealed class GetApplicationByReferenceDtoQueryObject(string applicationReference, bool includeSchema = true)
 {
@@ -30,18 +30,6 @@ public sealed class GetApplicationByReferenceDtoQueryObject(string applicationRe
                 DateSubmitted = a.Status == GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums.ApplicationStatus.Submitted
                     ? a.LastModifiedOn
                     : null,
-                LatestResponse = a.Responses
-                    .OrderByDescending(r => r.CreatedOn)
-                    .Select(r => new ApplicationResponseDetailsDto
-                    {
-                        ResponseId = r.Id!.Value,
-                        ResponseBody = r.ResponseBody,
-                        CreatedOn = r.CreatedOn,
-                        CreatedBy = r.CreatedBy.Value,
-                        LastModifiedOn = r.LastModifiedOn,
-                        LastModifiedBy = r.LastModifiedBy != null ? r.LastModifiedBy.Value : null
-                    })
-                    .FirstOrDefault(),
                 TemplateSchema = includeSchema
                     ? new TemplateSchemaDto
                     {
@@ -62,5 +50,3 @@ public sealed class GetApplicationByReferenceDtoQueryObject(string applicationRe
             });
     }
 }
-
-

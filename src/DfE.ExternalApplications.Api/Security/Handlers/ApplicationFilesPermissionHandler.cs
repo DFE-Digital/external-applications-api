@@ -1,4 +1,5 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace DfE.ExternalApplications.Api.Security.Handlers
@@ -13,8 +14,7 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             AuthorizationHandlerContext context,
             ApplicationFilesPermissionRequirement requirement)
         {
-            // Admin bypass - Admin users have full access
-            if (context.User.IsInRole("Admin"))
+            if (PermissionClaimEvaluator.HasFullAdminAccess(context.User))
             {
                 context.Succeed(requirement);
                 return Task.CompletedTask;
@@ -24,15 +24,21 @@ namespace DfE.ExternalApplications.Api.Security.Handlers
             if (string.IsNullOrWhiteSpace(applicationId))
                 return Task.CompletedTask;
 
-            var expected = $"{ResourceType.ApplicationFiles}:{applicationId}:{requirement.Action}";
-            var hasClaim = context.User.Claims.Any(c =>
-                c.Type == "permission" &&
-                string.Equals(c.Value, expected, StringComparison.OrdinalIgnoreCase));
+            var hasAccess = requirement.Action switch
+            {
+                var action when action.Equals(AccessType.Read.ToString(), StringComparison.OrdinalIgnoreCase)
+                    => PermissionClaimEvaluator.CanReadApplicationFiles(context.User, applicationId),
+                var action when action.Equals(AccessType.Write.ToString(), StringComparison.OrdinalIgnoreCase)
+                    => PermissionClaimEvaluator.CanWriteApplicationFiles(context.User, applicationId),
+                var action when action.Equals(AccessType.Delete.ToString(), StringComparison.OrdinalIgnoreCase)
+                    => PermissionClaimEvaluator.CanDeleteApplicationFiles(context.User, applicationId),
+                _ => false
+            };
 
-            if (hasClaim)
+            if (hasAccess)
                 context.Succeed(requirement);
 
             return Task.CompletedTask;
         }
     }
-} 
+}

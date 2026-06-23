@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
@@ -128,8 +129,9 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             {
                 var isExcludedRole =
                     (svcRole.Type == ClaimTypes.Role || svcRole.Type == "roles") &&
-                    (svcRole.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
-                     svcRole.Value.Equals("User", StringComparison.OrdinalIgnoreCase));
+                    (svcRole.Value.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase) ||
+                     svcRole.Value.Equals(RoleNames.User, StringComparison.OrdinalIgnoreCase) ||
+                     svcRole.Value.Equals(RoleNames.Caseworker, StringComparison.OrdinalIgnoreCase));
 
                 if (isExcludedRole)
                     continue;

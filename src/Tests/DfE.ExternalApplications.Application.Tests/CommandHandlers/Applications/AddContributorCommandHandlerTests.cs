@@ -1,4 +1,5 @@
 using DfE.ExternalApplications.Application.Applications.Commands;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -27,7 +28,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUnitOfWork unitOfWork,
         IUserFactory userFactory)
@@ -79,6 +79,8 @@ public class AddContributorCommandHandlerTests
         permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
         permissionCheckerService.IsAdmin().Returns(false);
 
+        var cacheInvalidator = Substitute.For<IUserCacheInvalidator>();
+
         // Mock the CreateContributor method
         var contributor = new User(
             new UserId(Guid.NewGuid()),
@@ -105,10 +107,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            cacheInvalidator,
             unitOfWork);
 
         // Act
@@ -124,6 +126,7 @@ public class AddContributorCommandHandlerTests
 
         await userRepo.Received(1).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+        await cacheInvalidator.Received(1).InvalidateForUserAsync(contributor.Email, Arg.Any<string?>(), contributor.Id!, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -132,7 +135,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUnitOfWork unitOfWork,
         IUserFactory userFactory)
@@ -206,13 +208,15 @@ public class AddContributorCommandHandlerTests
         permissionCheckerService.IsApplicationOwner(application, user.Id!.Value.ToString()).Returns(true);
         permissionCheckerService.IsAdmin().Returns(false);
 
+        var cacheInvalidator = Substitute.For<IUserCacheInvalidator>();
+
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            cacheInvalidator,
             unitOfWork);
 
         // Act
@@ -266,6 +270,7 @@ public class AddContributorCommandHandlerTests
             Arg.Any<DateTime>());
 
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+        await cacheInvalidator.Received(1).InvalidateForUserAsync(existingContributor.Email, Arg.Any<string?>(), existingContributor.Id!, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -274,7 +279,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUnitOfWork unitOfWork,
         IUserFactory userFactory)
@@ -361,10 +365,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -427,7 +431,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -441,10 +444,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -463,7 +466,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -481,10 +483,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -503,7 +505,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -526,10 +527,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -548,7 +549,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -584,10 +584,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -606,7 +606,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -651,10 +650,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -673,7 +672,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -685,10 +683,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -707,7 +705,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -725,10 +722,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -747,7 +744,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -782,10 +778,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -804,7 +800,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUnitOfWork unitOfWork,
         IUserFactory userFactory)
@@ -883,10 +878,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -907,7 +902,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUnitOfWork unitOfWork,
         IUserFactory userFactory)
@@ -986,10 +980,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -1010,7 +1004,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUserFactory userFactory,
         IUnitOfWork unitOfWork)
@@ -1055,10 +1048,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act
@@ -1077,7 +1070,6 @@ public class AddContributorCommandHandlerTests
         AddContributorCommand command,
         IEaRepository<Domain.Entities.Application> applicationRepo,
         IEaRepository<User> userRepo,
-        IEaRepository<Role> roleRepo,
         IPermissionCheckerService permissionCheckerService,
         IUnitOfWork unitOfWork,
         IUserFactory userFactory)
@@ -1155,10 +1147,10 @@ public class AddContributorCommandHandlerTests
         var handler = new AddContributorCommandHandler(
             applicationRepo,
             userRepo,
-            roleRepo,
             httpContextAccessor,
             permissionCheckerService,
             userFactory,
+            Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
 
         // Act

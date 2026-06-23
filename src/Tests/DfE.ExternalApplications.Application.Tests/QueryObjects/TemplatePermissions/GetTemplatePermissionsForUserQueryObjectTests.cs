@@ -1,4 +1,4 @@
-﻿//using AutoFixture;
+//using AutoFixture;
 //using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 //using DfE.ExternalApplications.Application.TemplatePermissions.QueryObjects;
 //using DfE.ExternalApplications.Domain.Entities;

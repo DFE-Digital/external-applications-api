@@ -26,6 +26,64 @@ public interface IUserFactory
         TemplateId templateId,
         DateTime? createdOn = null);
 
+    /// <summary>
+    /// Creates a new standard user with the User role and access to the given templates.
+    /// </summary>
+    User CreateStandardUser(
+        UserId id,
+        string name,
+        string email,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? createdOn = null);
+
+    /// <summary>
+    /// Assigns the User role and standard permissions to an existing user.
+    /// </summary>
+    void GrantStandardUserAccess(
+        User user,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? grantedOn = null);
+
+    /// <summary>
+    /// Creates a new admin user with the Admin role.
+    /// </summary>
+    User CreateAdmin(
+        UserId id,
+        string name,
+        string email,
+        UserId grantedBy,
+        DateTime? createdOn = null);
+
+    /// <summary>
+    /// Assigns the Admin role to an existing user.
+    /// </summary>
+    void GrantAdminAccess(
+        User user,
+        UserId grantedBy,
+        DateTime? grantedOn = null);
+
+    /// <summary>
+    /// Creates a new caseworker with read-only tenant-wide application access scoped to the given templates.
+    /// </summary>
+    User CreateCaseworker(
+        UserId id,
+        string name,
+        string email,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? createdOn = null);
+
+    /// <summary>
+    /// Grants caseworker read permissions and template access to an existing user, and assigns the Caseworker role.
+    /// </summary>
+    void GrantCaseworkerAccess(
+        User user,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? grantedOn = null);
+
     void AddPermissionToUser(
         User user,
         string resourceKey,

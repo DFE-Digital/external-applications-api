@@ -48,10 +48,22 @@ jobs:
             echo "image-name=${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
           fi
 
+  validate-packages:
+    runs-on: windows-latest
+    name: Package Validation
+    permissions:
+      contents: read
+    needs: [ set-env ]
+    steps:
+      - name: Validate Packages
+        uses: DFE-Digital/rsd-github-actions/.github/actions/validate-packages@v1
+        with:
+          environment: ${{ needs.set-env.outputs.environment }}
+
   build-import:
     name: Deploy to ${{ needs.set-env.outputs.environment }}
     runs-on: ubuntu-24.04
-    needs: [ set-env ]
+    needs: [ set-env, validate-packages ]
     environment: ${{ needs.set-env.outputs.environment }}
     permissions:
       attestations: write

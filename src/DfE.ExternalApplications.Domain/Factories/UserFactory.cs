@@ -1,4 +1,5 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Events;
 using DfE.ExternalApplications.Domain.ValueObjects;
@@ -55,6 +56,16 @@ public class UserFactory : IUserFactory
             createdBy,
             null,
             null);
+
+        // Required so GetMyPermissions and other self-service endpoints can load claims for this user
+        AddPermissionToUser(
+            contributor,
+            email,
+            ResourceType.User,
+            new[] { AccessType.Read },
+            createdBy,
+            null,
+            when);
 
         // Add all required permissions directly (idempotent)
         
@@ -168,22 +179,279 @@ public class UserFactory : IUserFactory
             id, // User grants permission to themselves
             when);
 
-        // Add application permissions for "Any" application
-        AddPermissionToUser(
-            user,
-            "Any",
-            ResourceType.Application,
-            new[] { AccessType.Read, AccessType.Write },
-            id,
-            null,
-            when);
-
         // Raise domain event for user creation (side effects like email)
         user.AddDomainEvent(new UserCreatedEvent(
             user,
             when));
 
         return user;
+    }
+
+    /// <inheritdoc />
+    public User CreateStandardUser(
+        UserId id,
+        string name,
+        string email,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? createdOn = null)
+    {
+        if (id == null)
+            throw new ArgumentException("Id cannot be null", nameof(id));
+
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be null or empty", nameof(name));
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be null or empty", nameof(email));
+
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        var templateIdList = templateIds?.ToList() ?? throw new ArgumentNullException(nameof(templateIds));
+        if (templateIdList.Count == 0)
+            throw new ArgumentException("At least one template ID is required for standard user provisioning", nameof(templateIds));
+
+        var when = createdOn ?? DateTime.UtcNow;
+
+        var user = new User(
+            id,
+            new RoleId(RoleConstants.UserRoleId),
+            name,
+            email,
+            when,
+            grantedBy,
+            null,
+            null);
+
+        GrantStandardUserPermissions(user, templateIdList, grantedBy, when);
+        user.AddDomainEvent(new UserCreatedEvent(user, when));
+        return user;
+    }
+
+    /// <inheritdoc />
+    public void GrantStandardUserAccess(
+        User user,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? grantedOn = null)
+    {
+        if (user == null)
+            throw new ArgumentException("User cannot be null", nameof(user));
+
+        var templateIdList = templateIds?.ToList() ?? throw new ArgumentNullException(nameof(templateIds));
+        if (templateIdList.Count == 0)
+            throw new ArgumentException("At least one template ID is required for standard user provisioning", nameof(templateIds));
+
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        var when = grantedOn ?? DateTime.UtcNow;
+
+        user.AssignRole(new RoleId(RoleConstants.UserRoleId));
+        GrantStandardUserPermissions(user, templateIdList, grantedBy, when);
+    }
+
+    /// <inheritdoc />
+    public User CreateAdmin(
+        UserId id,
+        string name,
+        string email,
+        UserId grantedBy,
+        DateTime? createdOn = null)
+    {
+        if (id == null)
+            throw new ArgumentException("Id cannot be null", nameof(id));
+
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be null or empty", nameof(name));
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be null or empty", nameof(email));
+
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        var when = createdOn ?? DateTime.UtcNow;
+
+        var user = new User(
+            id,
+            new RoleId(RoleConstants.AdminRoleId),
+            name,
+            email,
+            when,
+            grantedBy,
+            null,
+            null);
+
+        GrantAdminPermissions(user, grantedBy, when);
+        return user;
+    }
+
+    /// <inheritdoc />
+    public void GrantAdminAccess(
+        User user,
+        UserId grantedBy,
+        DateTime? grantedOn = null)
+    {
+        if (user == null)
+            throw new ArgumentException("User cannot be null", nameof(user));
+
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        var when = grantedOn ?? DateTime.UtcNow;
+
+        user.AssignRole(new RoleId(RoleConstants.AdminRoleId));
+        GrantAdminPermissions(user, grantedBy, when);
+    }
+
+    /// <inheritdoc />
+    public User CreateCaseworker(
+        UserId id,
+        string name,
+        string email,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? createdOn = null)
+    {
+        if (id == null)
+            throw new ArgumentException("Id cannot be null", nameof(id));
+
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name cannot be null or empty", nameof(name));
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be null or empty", nameof(email));
+
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        var templateIdList = templateIds?.ToList() ?? throw new ArgumentNullException(nameof(templateIds));
+        if (templateIdList.Count == 0)
+            throw new ArgumentException("At least one template ID is required for caseworker provisioning", nameof(templateIds));
+
+        var when = createdOn ?? DateTime.UtcNow;
+
+        var user = CreateUser(id, new RoleId(RoleConstants.CaseworkerRoleId), name, email, templateIds.FirstOrDefault(), when);
+
+        GrantCaseworkerPermissions(user, templateIdList, grantedBy, when);
+        return user;
+    }
+
+    /// <inheritdoc />
+    public void GrantCaseworkerAccess(
+        User user,
+        IEnumerable<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime? grantedOn = null)
+    {
+        if (user == null)
+            throw new ArgumentException("User cannot be null", nameof(user));
+
+        var templateIdList = templateIds?.ToList() ?? throw new ArgumentNullException(nameof(templateIds));
+        if (templateIdList.Count == 0)
+            throw new ArgumentException("At least one template ID is required for caseworker provisioning", nameof(templateIds));
+
+        if (grantedBy == null)
+            throw new ArgumentException("GrantedBy cannot be null", nameof(grantedBy));
+
+        var when = grantedOn ?? DateTime.UtcNow;
+
+        user.AssignRole(new RoleId(RoleConstants.CaseworkerRoleId));
+
+        GrantCaseworkerPermissions(user, templateIdList, grantedBy, when);
+    }
+
+    private void GrantCaseworkerPermissions(
+        User user,
+        IReadOnlyCollection<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime when)
+    {
+        AddPermissionToUser(
+            user,
+            user.Email,
+            ResourceType.User,
+            new[] { AccessType.Read },
+            grantedBy,
+            null,
+            when);
+
+        AddPermissionToUser(
+            user,
+            PermissionConstants.AnyResourceKey,
+            ResourceType.Application,
+            new[] { AccessType.Read },
+            grantedBy,
+            null,
+            when);
+
+        AddPermissionToUser(
+            user,
+            PermissionConstants.AnyResourceKey,
+            ResourceType.ApplicationFiles,
+            new[] { AccessType.Read },
+            grantedBy,
+            null,
+            when);
+
+        foreach (var templateId in templateIds)
+        {
+            AddTemplatePermissionToUser(
+                user,
+                templateId.Value.ToString(),
+                new[] { AccessType.Read },
+                grantedBy,
+                when);
+        }
+    }
+
+    private void GrantStandardUserPermissions(
+        User user,
+        IReadOnlyCollection<TemplateId> templateIds,
+        UserId grantedBy,
+        DateTime when)
+    {
+        AddPermissionToUser(
+            user,
+            user.Email,
+            ResourceType.User,
+            new[] { AccessType.Read },
+            grantedBy,
+            null,
+            when);
+
+        AddPermissionToUser(
+            user,
+            user.Email,
+            ResourceType.Notifications,
+            new[] { AccessType.Read, AccessType.Write, AccessType.Delete },
+            grantedBy,
+            null,
+            when);
+
+        foreach (var templateId in templateIds)
+        {
+            AddTemplatePermissionToUser(
+                user,
+                templateId.Value.ToString(),
+                new[] { AccessType.Read, AccessType.Write },
+                grantedBy,
+                when);
+        }
+    }
+
+    private void GrantAdminPermissions(User user, UserId grantedBy, DateTime when)
+    {
+        AddPermissionToUser(
+            user,
+            user.Email,
+            ResourceType.User,
+            new[] { AccessType.Read },
+            grantedBy,
+            null,
+            when);
     }
 
     public void AddPermissionToUser(

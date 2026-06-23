@@ -2,35 +2,46 @@ using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
-using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Common;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
-using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace DfE.ExternalApplications.Application.Applications.Queries;
 
-public sealed record GetApplicationsForUserQuery(string Email, bool IncludeSchema = false, Guid? TemplateId = null)
-    : IRequest<Result<IReadOnlyCollection<ApplicationDto>>>;
+public sealed record GetApplicationsForUserQuery(
+    string Email,
+    bool IncludeSchema = false,
+    Guid? TemplateId = null,
+    int? PageNumber = null,
+    int? PageSize = null,
+    ApplicationListingSearchCriteria? Search = null)
+    : IRequest<Result<PagedResult<ApplicationDto>>>;
 
 public sealed class GetApplicationsForUserQueryHandler(
     IEaRepository<User> userRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
-    ITenantContextAccessor tenantContextAccessor)
-    : IRequestHandler<GetApplicationsForUserQuery, Result<IReadOnlyCollection<ApplicationDto>>>
+    ITenantContextAccessor tenantContextAccessor,
+    ITenantTemplateResolver tenantTemplateResolver,
+    ILogger<GetApplicationsForUserQueryHandler> logger)
+    : IRequestHandler<GetApplicationsForUserQuery, Result<PagedResult<ApplicationDto>>>
 {
-    public async Task<Result<IReadOnlyCollection<ApplicationDto>>> Handle(
+    public async Task<Result<PagedResult<ApplicationDto>>> Handle(
         GetApplicationsForUserQuery request,
         CancellationToken cancellationToken)
     {
         try
         {
-            var baseCacheKey = $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}";
+            var tenantName = tenantContextAccessor.CurrentTenant?.Name ?? "(none)";
+            var searchKey = request.Search?.ToCacheKeySuffix() ?? "";
+            var baseCacheKey =
+                $"Applications_ForUser_{CacheKeyHelper.GenerateHashedCacheKey(request.Email)}_t{request.TemplateId}_{searchKey}_p{request.PageNumber}_ps{request.PageSize}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);
             var methodName = nameof(GetApplicationsForUserQueryHandler);
 
@@ -38,65 +49,75 @@ public sealed class GetApplicationsForUserQueryHandler(
                 cacheKey,
                 async () =>
                 {
-                    var dbUser = await (new GetUserByEmailQueryObject(request.Email))
-                            .Apply(userRepo.Query().AsNoTracking())
-                            .FirstOrDefaultAsync(cancellationToken);
-
-                    if (dbUser is null)
-                     return Result<IReadOnlyCollection<ApplicationDto>>.Failure("GetApplicationsForUserQueryHandler > User not found.");
-
-                    var userWithPerms = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
+                    var dbUser = await new GetUserByEmailQueryObject(request.Email)
                         .Apply(userRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
 
-                    if (userWithPerms is null)
-                        return Result<IReadOnlyCollection<ApplicationDto>>.Success(Array.Empty<ApplicationDto>());
-
-                    var ids = userWithPerms.Permissions
-                        .Where(p => p is { ApplicationId: not null, ResourceType: ResourceType.Application })
-                        .Select(p => p.ApplicationId!)
-                        .Distinct()
-                        .ToList();
-
-                    if (!ids.Any())
-                        return Result<IReadOnlyCollection<ApplicationDto>>.Success(Array.Empty<ApplicationDto>());
-
-                    var query = new GetApplicationsByIdsQueryObject(ids)
-                        .Apply(appRepo.Query().AsNoTracking());
-
-                    // Apply template filter if specified
-                    if (request.TemplateId.HasValue)
+                    if (dbUser is null)
                     {
-                        query = new GetApplicationsByTemplateIdQueryObject(new TemplateId(request.TemplateId.Value))
-                            .Apply(query);
+                        logger.LogWarning(
+                            "Application listing: user not found. Tenant={Tenant}, Email={Email}",
+                            tenantName,
+                            request.Email);
+                        return Result<PagedResult<ApplicationDto>>.Failure("GetApplicationsForUserQueryHandler > User not found.");
                     }
 
-                    var apps = await query.ToListAsync(cancellationToken);
+                    var userWithAuthorization = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
+                        .Apply(userRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync(cancellationToken);
 
-                    var dtoList = apps.Select(a => new ApplicationDto
+                    if (userWithAuthorization is null)
                     {
-                        ApplicationId = a.Id!.Value,
-                        ApplicationReference = a.ApplicationReference,
-                        TemplateVersionId = a.TemplateVersionId.Value,
-                        DateCreated = a.CreatedOn,
-                        DateSubmitted = a.Status == ApplicationStatus.Submitted ? a.LastModifiedOn : null,
-                        Status = a.Status,
-                        TemplateSchema = request.IncludeSchema && a.TemplateVersion != null ? new TemplateSchemaDto
-                        {
-                            TemplateId = a.TemplateVersion.Template?.Id?.Value ?? Guid.Empty,
-                            TemplateVersionId = a.TemplateVersion.Id!.Value,
-                            VersionNumber = a.TemplateVersion.VersionNumber,
-                            JsonSchema = a.TemplateVersion.JsonSchema
-                        } : null
-                    }).ToList().AsReadOnly();
+                        logger.LogWarning(
+                            "Application listing: authorization profile missing. Tenant={Tenant}, Email={Email}, UserId={UserId}",
+                            tenantName,
+                            request.Email,
+                            dbUser.Id!.Value);
+                        return Result<PagedResult<ApplicationDto>>.Success(
+                            ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
+                    }
 
-                    return Result<IReadOnlyCollection<ApplicationDto>>.Success(dtoList);
+                    var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
+
+                    logger.LogInformation(
+                        "My applications listing (own applications only). Tenant={Tenant}, Email={Email}, Role={Role}, ExplicitApplicationCount={ApplicationCount}, RequestedTemplateId={RequestedTemplateId}, EffectiveTemplateCount={EffectiveTemplateCount}",
+                        tenantName,
+                        request.Email,
+                        userWithAuthorization.Role?.Name ?? "(unknown)",
+                        userWithAuthorization.Permissions.Count(p =>
+                            p is { ApplicationId: not null, ResourceType: ResourceType.Application }),
+                        request.TemplateId,
+                        templateIdsFilter.Count);
+
+                    var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
+                        appRepo,
+                        userWithAuthorization,
+                        templateIdsFilter);
+
+                    query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);
+
+                    var pagedResult = await ApplicationListingQueryBuilder.MapPagedResultAsync(
+                        query,
+                        request.IncludeSchema,
+                        request.PageNumber,
+                        request.PageSize,
+                        cancellationToken);
+
+                    logger.LogInformation(
+                        "Application listing completed. Tenant={Tenant}, Email={Email}, ReturnedCount={ReturnedCount}, TotalCount={TotalCount}",
+                        tenantName,
+                        request.Email,
+                        pagedResult.Items.Count,
+                        pagedResult.TotalCount);
+
+                    return Result<PagedResult<ApplicationDto>>.Success(pagedResult);
                 },
                 methodName);
         }
         catch (Exception e)
         {
-            return Result<IReadOnlyCollection<ApplicationDto>>.Failure(e.ToString());
+            logger.LogError(e, "Application listing failed for {Email}", request.Email);
+            return Result<PagedResult<ApplicationDto>>.Failure(e.ToString());
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
