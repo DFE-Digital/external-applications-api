@@ -122,7 +122,7 @@ public class ApplicationsController(ISender sender) : ControllerBase
     /// </summary>
     [HttpGet]
     [Route("/v{version:apiVersion}/Users/{email}/applications")]
-    [SwaggerResponse(200, "Applications for the user.", typeof(IReadOnlyCollection<ApplicationDto>))]
+    [SwaggerResponse(200, "A paged list of applications for the user.", typeof(PagedResult<ApplicationDto>))]
     [SwaggerResponse(400, "Email cannot be null or empty.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]

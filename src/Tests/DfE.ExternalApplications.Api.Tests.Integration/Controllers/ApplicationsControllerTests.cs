@@ -642,8 +642,8 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
-        Assert.All(result, app => 
+        Assert.NotEmpty(result.Items);
+        Assert.All(result.Items, app => 
         {
             Assert.NotNull(app.TemplateSchema);
             Assert.NotEqual(Guid.Empty, app.TemplateSchema.TemplateId);
@@ -675,8 +675,8 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
-        Assert.All(result, app => 
+        Assert.NotEmpty(result.Items);
+        Assert.All(result.Items, app => 
         {
             Assert.Null(app.TemplateSchema);
         });
@@ -1517,10 +1517,20 @@ public class ApplicationsControllerTests
             InitialResponseBody = "Second application"
         };
 
-        // First creation should work
+        // First three creations should work (rate limit is 3 per 30 seconds)
         await applicationsClient.CreateApplicationAsync(request1);
+        await applicationsClient.CreateApplicationAsync(new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
+            InitialResponseBody = "Second application"
+        });
+        await applicationsClient.CreateApplicationAsync(new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
+            InitialResponseBody = "Third application"
+        });
 
-        // Act - Try to create another application immediately (should hit rate limit)
+        // Act - Fourth creation should hit the rate limit
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.CreateApplicationAsync(request2));
 
@@ -1720,7 +1730,8 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -1748,7 +1759,8 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -1776,7 +1788,8 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
