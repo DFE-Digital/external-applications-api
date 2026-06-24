@@ -1,38 +1,29 @@
 using DfE.ExternalApplications.Application.Templates.Models;
 using DfE.ExternalApplications.Domain.Entities;
-using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using static MassTransit.ValidationResultExtensions;
 
-namespace DfE.ExternalApplications.Application.Templates.Commands
+namespace DfE.ExternalApplications.Application.Templates.Queries
 {
-    public sealed record UpdateCustomApplicationStatusCommand(
-        Guid CustomApplicationStatusId,
-        int ApplicationStatus,
-        string Label) : IRequest<Result<CustomApplicationStatusDto>>;
+    public sealed record GetCustomApplicationStatusByApplicationStatusQuery(Guid TemplateId, int ApplicationStatus)
+        : IRequest<Result<CustomApplicationStatusDto>>;
 
-    public sealed class UpdateCustomApplicationStatusCommandHandler(
-        IEaRepository<CustomApplicationStatus> repo,
-        IUnitOfWork unitOfWork)
-        : IRequestHandler<UpdateCustomApplicationStatusCommand, Result<CustomApplicationStatusDto>>
+    public sealed class GetCustomApplicationStatusByApplicationStatusQueryHandler(
+        IEaRepository<CustomApplicationStatus> customApplicationStatusRepo)
+        : IRequestHandler<GetCustomApplicationStatusByApplicationStatusQuery, Result<CustomApplicationStatusDto>>
     {
-        public async Task<Result<CustomApplicationStatusDto>> Handle(UpdateCustomApplicationStatusCommand request, CancellationToken cancellationToken)
+        public async Task<Result<CustomApplicationStatusDto>> Handle(GetCustomApplicationStatusByApplicationStatusQuery request, CancellationToken cancellationToken)
         {
             try
             {
-                var entity = await repo.Query()
-                    .FirstOrDefaultAsync(x => x.Id!.Value == request.CustomApplicationStatusId, cancellationToken);
+                var entity = await customApplicationStatusRepo.Query()
+                    .FirstOrDefaultAsync(x => x.TemplateId == new TemplateId(request.TemplateId) && x.ApplicationStatus == request.ApplicationStatus, cancellationToken);
 
                 if (entity is null)
                     return Result<CustomApplicationStatusDto>.NotFound("Custom application status not found");
-
-                entity.UpdateLabel(request.Label);
-
-                await unitOfWork.CommitAsync(cancellationToken);
 
                 var dto = new CustomApplicationStatusDto
                 {

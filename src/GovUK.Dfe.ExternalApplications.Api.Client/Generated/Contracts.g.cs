@@ -300,19 +300,13 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Create a custom application status for a template.
+        /// Create or update a custom application status for a template.
+        /// <br/>If a CustomApplicationStatus for the TemplateId and ApplicationStatus exists, update its label; otherwise create one.
+        /// <br/>Returns the created or updated CustomApplicationStatus.
         /// </summary>
-        /// <returns>Custom status created.</returns>
+        /// <returns>Custom status created/updated.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Guid> CreateCustomApplicationStatusAsync(System.Guid templateId, CustomApplicationStatusDto request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Update an existing custom application status.
-        /// </summary>
-        /// <returns>Custom status updated.</returns>
-        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task UpdateCustomApplicationStatusAsync(System.Guid templateId, System.Guid customApplicationStatusId, CustomApplicationStatusDto request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<CustomApplicationStatusDto> CreateCustomApplicationStatusAsync(System.Guid templateId, CustomApplicationStatusDto request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>

@@ -32,5 +32,14 @@ namespace DfE.ExternalApplications.Domain.Entities
             CreatedOn = createdOn;
             CreatedBy = createdBy;
         }
+
+        /// <summary>
+        /// Updates the label for this custom application status.
+        /// </summary>
+        public void UpdateLabel(string label)
+        {
+            if (label == null) throw new ArgumentNullException(nameof(label));
+            Label = label;
+        }
     }
 }

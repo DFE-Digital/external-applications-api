@@ -2641,7 +2641,7 @@
         "tags": [
           "Templates"
         ],
-        "summary": "Create a custom application status for a template.",
+        "summary": "Create or update a custom application status for a template.\nIf a CustomApplicationStatus for the TemplateId and ApplicationStatus exists, update its label; otherwise create one.\nReturns the created or updated CustomApplicationStatus.",
         "operationId": "Templates_CreateCustomApplicationStatus",
         "parameters": [
           {
@@ -2669,63 +2669,14 @@
         },
         "responses": {
           "201": {
-            "description": "Custom status created.",
+            "description": "Custom status created/updated.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "guid"
+                  "$ref": "#/components/schemas/CustomApplicationStatusDto"
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/v1/Templates/{templateId}/custom-statuses/{customApplicationStatusId}": {
-      "put": {
-        "tags": [
-          "Templates"
-        ],
-        "summary": "Update an existing custom application status.",
-        "operationId": "Templates_UpdateCustomApplicationStatus",
-        "parameters": [
-          {
-            "name": "templateId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "customApplicationStatusId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 2
-          }
-        ],
-        "requestBody": {
-          "x-name": "request",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CustomApplicationStatusDto"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 3
-        },
-        "responses": {
-          "200": {
-            "description": "Custom status updated."
           }
         }
       }

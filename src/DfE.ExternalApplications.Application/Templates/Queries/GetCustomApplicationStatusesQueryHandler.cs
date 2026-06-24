@@ -2,6 +2,7 @@ using DfE.ExternalApplications.Application.Templates.Models;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -24,20 +25,32 @@ namespace DfE.ExternalApplications.Application.Templates.Queries
         {
             try
             {
-                var items = await new GetCustomApplicationStatusesByTemplateIdQueryObject(request.TemplateId)
+                // Load existing custom statuses for the template
+                var existing = await new GetCustomApplicationStatusesByTemplateIdQueryObject(request.TemplateId)
                     .Apply(repo.Query().AsNoTracking())
-                    .Select(s => new CustomApplicationStatusDto
-                    {
-                        CustomApplicationStatusId = s.Id!.Value,
-                        TemplateId = s.TemplateId.Value,
-                        ApplicationStatus = s.ApplicationStatus,
-                        Label = s.Label,
-                        CreatedOn = s.CreatedOn,
-                        CreatedBy = s.CreatedBy.Value
-                    })
                     .ToListAsync(cancellationToken);
 
-                return Result<IReadOnlyCollection<CustomApplicationStatusDto>>.Success(items.AsReadOnly());
+                // For every ApplicationStatus enum value, return either the custom status (if exists) or a blank-label entry
+                var statuses = Enum.GetValues(typeof(ApplicationStatus))
+                    .Cast<ApplicationStatus>();
+
+                var resultList = statuses
+                    .Select(s =>
+                    {
+                        var match = existing.FirstOrDefault(e => e.ApplicationStatus == (int)s);
+                        return new CustomApplicationStatusDto
+                        {
+                            CustomApplicationStatusId = match?.Id?.Value,
+                            TemplateId = request.TemplateId,
+                            ApplicationStatus = (int)s,
+                            Label = match?.Label ?? string.Empty,
+                            CreatedOn = match?.CreatedOn ?? default,
+                            CreatedBy = match?.CreatedBy?.Value ?? Guid.Empty
+                        };
+                    })
+                    .ToList();
+
+                return Result<IReadOnlyCollection<CustomApplicationStatusDto>>.Success(resultList.AsReadOnly());
             }
             catch (Exception e)
             {

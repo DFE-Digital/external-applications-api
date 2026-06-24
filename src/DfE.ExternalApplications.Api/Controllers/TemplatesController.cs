@@ -60,38 +60,39 @@ public class TemplatesController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Create a custom application status for a template.
+    /// Create or update a custom application status for a template.
+    /// If a CustomApplicationStatus for the TemplateId and ApplicationStatus exists, update its label; otherwise create one.
+    /// Returns the created or updated CustomApplicationStatus.
     /// </summary>
     [HttpPost("{templateId}/custom-statuses")]
-    [SwaggerResponse(201, "Custom status created.", typeof(Guid))]
+    [SwaggerResponse(201, "Custom status created/updated.", typeof(CustomApplicationStatusDto))]
     [Authorize(Policy = "CanWriteTemplate")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
     {
-        var command = new CreateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
-        var result = await sender.Send(command, cancellationToken);
+        // Check if custom status exists for this template & application status using dedicated query
+        var existingStatusResult = await sender.Send(new GetCustomApplicationStatusByApplicationStatusQuery(templateId, request.ApplicationStatus), cancellationToken);
 
-        return new ObjectResult(result)
+        if (existingStatusResult.IsSuccess)
+        {
+            // Found - update
+            var existing = existingStatusResult.Value!;
+            var updateCommand = new UpdateCustomApplicationStatusCommand(existing.CustomApplicationStatusId!.Value, request.ApplicationStatus, request.Label);
+            var updateResult = await sender.Send(updateCommand, cancellationToken);
+
+            return new ObjectResult(updateResult)
+            {
+                StatusCode = StatusCodes.Status200OK
+            };
+        }
+
+        // Not found - create
+        var createCommand = new CreateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
+        var createResult = await sender.Send(createCommand, cancellationToken);
+
+        return new ObjectResult(createResult)
         {
             StatusCode = StatusCodes.Status201Created
-        };
-    }
-
-    /// <summary>
-    /// Update an existing custom application status.
-    /// </summary>
-    [HttpPut("{templateId}/custom-statuses/{customApplicationStatusId}")]
-    [SwaggerResponse(200, "Custom status updated.")]
-    [Authorize(Policy = "CanWriteTemplate")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromRoute] Guid customApplicationStatusId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
-    {
-        var command = new UpdateCustomApplicationStatusCommand(customApplicationStatusId, request.ApplicationStatus, request.Label);
-        var result = await sender.Send(command, cancellationToken);
-
-        return new ObjectResult(result)
-        {
-            StatusCode = StatusCodes.Status200OK
         };
     }
 

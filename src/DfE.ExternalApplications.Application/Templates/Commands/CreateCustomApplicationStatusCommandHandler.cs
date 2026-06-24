@@ -4,62 +4,108 @@ using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Templates.Models;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Templates.Commands
 {
     public sealed record CreateCustomApplicationStatusCommand(
         Guid TemplateId,
         int ApplicationStatus,
-        string Label) : IRequest<Result<Guid>>;
+        string Label) : IRequest<Result<CustomApplicationStatusDto>>;
 
     public sealed class CreateCustomApplicationStatusCommandHandler(
         IEaRepository<CustomApplicationStatus> customApplicationStatusRepo,
+        IEaRepository<User> userRepo,
         IHttpContextAccessor httpContextAccessor,
         IUnitOfWork unitOfWork)
-        : IRequestHandler<CreateCustomApplicationStatusCommand, Result<Guid>>
+        : IRequestHandler<CreateCustomApplicationStatusCommand, Result<CustomApplicationStatusDto>>
     {
-        public async Task<Result<Guid>> Handle(CreateCustomApplicationStatusCommand request, CancellationToken cancellationToken)
+        public async Task<Result<CustomApplicationStatusDto>> Handle(CreateCustomApplicationStatusCommand request, CancellationToken cancellationToken)
         {
             try
             {
                 var httpContext = httpContextAccessor.HttpContext;
                 if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
-                    return Result<Guid>.Forbid("Not authenticated");
-
+                    return Result<CustomApplicationStatusDto>.Forbid("Not authenticated");
                 var principalId = user.FindFirstValue("appid") ?? user.FindFirstValue("azp");
                 if (string.IsNullOrEmpty(principalId))
                     principalId = user.FindFirstValue(ClaimTypes.Email);
                 if (string.IsNullOrEmpty(principalId))
-                    return Result<Guid>.Forbid("No user identifier");
+                    return Result<CustomApplicationStatusDto>.Forbid("No user identifier");
 
-                // assume CreatedBy is the user id claim email/external id mapping exists elsewhere; for now use Guid.NewGuid as placeholder is not acceptable
-                // We will attempt to parse a guid claim 'uid' or 'sub' if present
-                Guid createdByGuid;
-                var uidClaim = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (!Guid.TryParse(uidClaim, out createdByGuid))
+                User? dbUser;
+                if (principalId.Contains('@'))
                 {
-                    return Result<Guid>.Forbid("Unable to determine user id for CreatedBy");
+                    dbUser = await new DfE.ExternalApplications.Application.Users.QueryObjects.GetUserByEmailQueryObject(principalId)
+                        .Apply(userRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync(cancellationToken);
+                }
+                else
+                {
+                    dbUser = await new DfE.ExternalApplications.Application.Users.QueryObjects.GetUserByExternalProviderIdQueryObject(principalId)
+                        .Apply(userRepo.Query().AsNoTracking())
+                        .FirstOrDefaultAsync(cancellationToken);
                 }
 
+                if (dbUser is null || dbUser.Id is null)
+                    return Result<CustomApplicationStatusDto>.Forbid("Unable to resolve CreatedBy user");
+
+                var createdByUserId = dbUser.Id;
+
+                // Check for existing custom status for this template and application status
+                var existing = await customApplicationStatusRepo.Query()
+                    .FirstOrDefaultAsync(x => x.TemplateId == new TemplateId(request.TemplateId) && x.ApplicationStatus == request.ApplicationStatus, cancellationToken);
+
+                if (existing is not null)
+                {
+                    existing.UpdateLabel(request.Label);
+
+                    await unitOfWork.CommitAsync(cancellationToken);
+
+                    var dto = new CustomApplicationStatusDto
+                    {
+                        CustomApplicationStatusId = existing.Id!.Value,
+                        TemplateId = existing.TemplateId.Value,
+                        ApplicationStatus = existing.ApplicationStatus,
+                        Label = existing.Label,
+                        CreatedOn = existing.CreatedOn,
+                        CreatedBy = existing.CreatedBy.Value
+                    };
+
+                    return Result<CustomApplicationStatusDto>.Success(dto);
+                }
+
+                // Create new
                 var entity = new CustomApplicationStatus(
                     new CustomApplicationStatusId(Guid.NewGuid()),
                     new TemplateId(request.TemplateId),
                     request.ApplicationStatus,
                     request.Label,
                     DateTime.UtcNow,
-                    new UserId(createdByGuid));
+                    createdByUserId);
 
                 await customApplicationStatusRepo.AddAsync(entity, cancellationToken);
                 await unitOfWork.CommitAsync(cancellationToken);
 
-                return Result<Guid>.Success(entity.Id!.Value);
+                var createdDto = new CustomApplicationStatusDto
+                {
+                    CustomApplicationStatusId = entity.Id!.Value,
+                    TemplateId = entity.TemplateId.Value,
+                    ApplicationStatus = entity.ApplicationStatus,
+                    Label = entity.Label,
+                    CreatedOn = entity.CreatedOn,
+                    CreatedBy = entity.CreatedBy.Value
+                };
+
+                return Result<CustomApplicationStatusDto>.Success(createdDto);
             }
             catch (Exception e)
             {
-                return Result<Guid>.Failure(e.ToString());
+                return Result<CustomApplicationStatusDto>.Failure(e.ToString());
             }
         }
     }
