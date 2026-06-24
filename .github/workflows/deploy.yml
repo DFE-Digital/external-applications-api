@@ -17,6 +17,10 @@ concurrency:
 env:
   IMAGE_NAME: extapp-api
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   set-env:
     name: Preflight
@@ -55,10 +59,22 @@ jobs:
         with:
           environment: ${{ needs.set-env.outputs.environment }}
 
+  test:
+    name: Run tests
+    needs: [ set-env ]
+    if: needs.set-env.outputs.environment == 'production'
+    uses: ./.github/workflows/test-solution.yml
+    secrets: inherit
+
   build-import:
     name: Deploy to ${{ needs.set-env.outputs.environment }}
     runs-on: ubuntu-24.04
-    needs: [ set-env, validate-packages ]
+    needs: [ set-env, validate-packages, test ]
+    if: |
+      always() &&
+      needs.set-env.result == 'success' &&
+      needs.validate-packages.result == 'success' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     environment: ${{ needs.set-env.outputs.environment }}
     permissions:
       attestations: write
