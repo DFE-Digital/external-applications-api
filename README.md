@@ -4,6 +4,7 @@ The **External Applications API** is the backend service for the **External Appl
 
 This API manages templates, applications, user permissions, file uploads, and real-time notifications. It serves as the data and business logic layer for the EAT Web frontend, enabling rapid deployment of new government application forms without code changes.
 
+
 ---
 
 ## 🚀 Features
