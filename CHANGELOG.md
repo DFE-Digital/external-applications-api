@@ -112,3 +112,7 @@ All notable changes to this service will be documented in this file.
 ## [1.3.8] - Public Beta
 ### Notes
 - Fixed contributor access issues
+
+## [1.4.0] - Public Beta
+### Notes
+- Added Tests to the PR and Prod workflows
