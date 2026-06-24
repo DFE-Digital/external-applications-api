@@ -2602,6 +2602,134 @@
         }
       }
     },
+    "/v1/Templates/{templateId}/custom-statuses": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Get custom application statuses for a template.",
+        "operationId": "Templates_GetCustomApplicationStatuses",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom statuses returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomApplicationStatusDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Create a custom application status for a template.",
+        "operationId": "Templates_CreateCustomApplicationStatus",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomApplicationStatusDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "201": {
+            "description": "Custom status created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "guid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/Templates/{templateId}/custom-statuses/{customApplicationStatusId}": {
+      "put": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Update an existing custom application status.",
+        "operationId": "Templates_UpdateCustomApplicationStatus",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "customApplicationStatusId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomApplicationStatusDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
+        "responses": {
+          "200": {
+            "description": "Custom status updated."
+          }
+        }
+      }
+    },
     "/v1/Templates/{templateId}/versions": {
       "post": {
         "tags": [
@@ -3736,6 +3864,36 @@
             "type": "string",
             "format": "guid",
             "nullable": true
+          }
+        }
+      },
+      "CustomApplicationStatusDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "customApplicationStatusId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "applicationStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "guid"
           }
         }
       },

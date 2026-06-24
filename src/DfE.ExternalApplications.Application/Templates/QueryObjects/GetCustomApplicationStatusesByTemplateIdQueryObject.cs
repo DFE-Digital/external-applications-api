@@ -1,10 +1,12 @@
+using DfE.ExternalApplications.Application.Common.QueriesObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using System;
+using System.Linq;
 
 namespace DfE.ExternalApplications.Application.Templates.QueryObjects
 {
-    public sealed class GetCustomApplicationStatusesByTemplateIdQueryObject : DfE.ExternalApplications.Application.Common.QueryObjects.IQueryObject<CustomApplicationStatus>
+    public sealed class GetCustomApplicationStatusesByTemplateIdQueryObject : IQueryObject<CustomApplicationStatus>
     {
         private readonly TemplateId _templateId;
 

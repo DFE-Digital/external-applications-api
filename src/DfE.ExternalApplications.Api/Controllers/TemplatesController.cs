@@ -65,6 +65,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     [HttpPost("{templateId}/custom-statuses")]
     [SwaggerResponse(201, "Custom status created.", typeof(Guid))]
     [Authorize(Policy = "CanWriteTemplate")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
     {
         var command = new CreateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
@@ -82,6 +83,7 @@ public class TemplatesController(ISender sender) : ControllerBase
     [HttpPut("{templateId}/custom-statuses/{customApplicationStatusId}")]
     [SwaggerResponse(200, "Custom status updated.")]
     [Authorize(Policy = "CanWriteTemplate")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromRoute] Guid customApplicationStatusId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
     {
         var command = new UpdateCustomApplicationStatusCommand(customApplicationStatusId, request.ApplicationStatus, request.Label);

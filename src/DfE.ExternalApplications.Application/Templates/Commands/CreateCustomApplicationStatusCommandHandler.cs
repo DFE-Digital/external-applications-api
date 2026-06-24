@@ -3,14 +3,20 @@ using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Application.Templates.Commands
 {
+    public sealed record CreateCustomApplicationStatusCommand(
+        Guid TemplateId,
+        int ApplicationStatus,
+        string Label) : IRequest<Result<Guid>>;
+
     public sealed class CreateCustomApplicationStatusCommandHandler(
-        IEaRepository<CustomApplicationStatus> repo,
+        IEaRepository<CustomApplicationStatus> customApplicationStatusRepo,
         IHttpContextAccessor httpContextAccessor,
         IUnitOfWork unitOfWork)
         : IRequestHandler<CreateCustomApplicationStatusCommand, Result<Guid>>
@@ -46,7 +52,7 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
                     DateTime.UtcNow,
                     new UserId(createdByGuid));
 
-                await repo.AddAsync(entity, cancellationToken);
+                await customApplicationStatusRepo.AddAsync(entity, cancellationToken);
                 await unitOfWork.CommitAsync(cancellationToken);
 
                 return Result<Guid>.Success(entity.Id!.Value);

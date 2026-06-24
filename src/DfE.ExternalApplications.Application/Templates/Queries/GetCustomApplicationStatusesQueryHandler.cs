@@ -2,6 +2,7 @@ using DfE.ExternalApplications.Application.Templates.Models;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,6 +11,9 @@ using System.Threading.Tasks;
 
 namespace DfE.ExternalApplications.Application.Templates.Queries
 {
+    public sealed record GetCustomApplicationStatusesQuery(Guid TemplateId)
+       : IRequest<Result<IReadOnlyCollection<CustomApplicationStatusDto>>>;
+
     public sealed class GetCustomApplicationStatusesQueryHandler(
         IEaRepository<CustomApplicationStatus> repo)
         : IRequestHandler<GetCustomApplicationStatusesQuery, Result<IReadOnlyCollection<CustomApplicationStatusDto>>>
