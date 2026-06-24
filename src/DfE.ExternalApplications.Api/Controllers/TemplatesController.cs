@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using GovUK.Dfe.CoreLibs.Http.Models;
+using DfE.ExternalApplications.Application.Templates.Queries;
+using DfE.ExternalApplications.Application.Templates.Commands;
+using DfE.ExternalApplications.Application.Templates.Models;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -32,6 +35,57 @@ public class TemplatesController(ISender sender) : ControllerBase
     {
         var query = new GetLatestTemplateSchemaQuery(templateId);
         var result = await sender.Send(query, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Get custom application statuses for a template.
+    /// </summary>
+    [HttpGet("{templateId}/custom-statuses")]
+    [SwaggerResponse(200, "Custom statuses returned.", typeof(IReadOnlyCollection<CustomApplicationStatusDto>))]
+    [Authorize(Policy = "CanReadTemplate")]
+    public async Task<IActionResult> GetCustomApplicationStatusesAsync([FromRoute] Guid templateId, CancellationToken cancellationToken)
+    {
+        var query = new GetCustomApplicationStatusesQuery(templateId);
+        var result = await sender.Send(query, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Create a custom application status for a template.
+    /// </summary>
+    [HttpPost("{templateId}/custom-statuses")]
+    [SwaggerResponse(201, "Custom status created.", typeof(Guid))]
+    [Authorize(Policy = "CanWriteTemplate")]
+    public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
+    {
+        var command = new CreateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
+        var result = await sender.Send(command, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status201Created
+        };
+    }
+
+    /// <summary>
+    /// Update an existing custom application status.
+    /// </summary>
+    [HttpPut("{templateId}/custom-statuses/{customApplicationStatusId}")]
+    [SwaggerResponse(200, "Custom status updated.")]
+    [Authorize(Policy = "CanWriteTemplate")]
+    public async Task<IActionResult> UpdateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromRoute] Guid customApplicationStatusId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
+    {
+        var command = new UpdateCustomApplicationStatusCommand(customApplicationStatusId, request.ApplicationStatus, request.Label);
+        var result = await sender.Send(command, cancellationToken);
 
         return new ObjectResult(result)
         {
