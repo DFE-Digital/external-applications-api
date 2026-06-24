@@ -580,14 +580,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Applications for the user.",
+            "description": "A paged list of applications for the user.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ApplicationDto"
-                  }
+                  "$ref": "#/components/schemas/PagedResultOfApplicationDto"
                 }
               }
             }
@@ -2863,8 +2860,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden - user does not have required permissions",
+          "404": {
+            "description": "User not found.",
             "content": {
               "application/json": {
                 "schema": {

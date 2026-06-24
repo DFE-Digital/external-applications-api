@@ -2,6 +2,7 @@ using AutoFixture;
 using AutoFixture.Xunit2;
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using DfE.ExternalApplications.Application.Users.Queries;
@@ -32,6 +33,7 @@ public class GetAllUserPermissionsQueryHandlerTests
         // Arrange
         userCustom.OverrideId = userId;
         userCustom.OverridePermissions = Array.Empty<Permission>();
+        userCustom.OverrideTemplatePermissions = Array.Empty<TemplatePermission>();
         var fixture = new Fixture().Customize(userCustom);
         var user = fixture.Create<User>();
 
@@ -41,8 +43,12 @@ public class GetAllUserPermissionsQueryHandlerTests
 
         // Add permissions to user
         var permissions = fixture.Customize(permCustom).CreateMany<Permission>().ToList();
-        var backing = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        backing.SetValue(user, permissions);
+        var permissionsBacking = typeof(User).GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        permissionsBacking.SetValue(user, permissions);
+
+        var templatePermissions = fixture.CreateMany<TemplatePermission>().ToList();
+        var templatePermissionsBacking = typeof(User).GetField("_templatePermissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        templatePermissionsBacking.SetValue(user, templatePermissions);
 
         var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
         userRepo.Query().Returns(userQueryable);
@@ -67,15 +73,24 @@ public class GetAllUserPermissionsQueryHandlerTests
         Assert.NotNull(result.Value);
         Assert.NotEmpty(result.Value.Permissions);
         Assert.NotEmpty(result.Value.Roles);
-        Assert.Equal(permissions.Count, result.Value.Permissions.Count());
+        Assert.Equal(permissions.Count + templatePermissions.Count, result.Value.Permissions.Count());
         Assert.Single(result.Value.Roles);
         Assert.Equal("TestRole", result.Value.Roles.First());
-        Assert.All(result.Value.Permissions, dto =>
+        Assert.All(permissions, permission =>
         {
-            var permission = permissions.First(p => p.ApplicationId?.Value == dto.ApplicationId);
-            Assert.Equal(permission.ResourceType, dto.ResourceType);
-            Assert.Equal(permission.ResourceKey, dto.ResourceKey);
-            Assert.Equal(permission.AccessType, dto.AccessType);
+            var dto = result.Value.Permissions.First(p =>
+                p.ResourceType == permission.ResourceType
+                && p.ResourceKey == permission.ResourceKey
+                && p.AccessType == permission.AccessType);
+            Assert.Equal(permission.ApplicationId?.Value, dto.ApplicationId);
+        });
+        Assert.All(templatePermissions, templatePermission =>
+        {
+            var dto = result.Value.Permissions.First(p =>
+                p.ResourceType == ResourceType.Template
+                && p.ResourceKey == templatePermission.TemplateId.Value.ToString()
+                && p.AccessType == templatePermission.AccessType);
+            Assert.NotNull(dto);
         });
     }
 

@@ -3,9 +3,11 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
+using DfE.ExternalApplications.Infrastructure.Database;
 using DfE.ExternalApplications.Tests.Common.Customizations;
 using DfE.ExternalApplications.Tests.Common.Seeders;
 using GovUK.Dfe.ExternalApplications.Api.Client.Contracts;
+using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
@@ -642,8 +644,8 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
-        Assert.All(result, app => 
+        Assert.NotEmpty(result.Items);
+        Assert.All(result.Items, app => 
         {
             Assert.NotNull(app.TemplateSchema);
             Assert.NotEqual(Guid.Empty, app.TemplateSchema.TemplateId);
@@ -675,8 +677,8 @@ public class ApplicationsControllerTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.NotEmpty(result);
-        Assert.All(result, app => 
+        Assert.NotEmpty(result.Items);
+        Assert.All(result.Items, app => 
         {
             Assert.Null(app.TemplateSchema);
         });
@@ -782,6 +784,83 @@ public class ApplicationsControllerTests
         Assert.NotNull(result.Authorization.Roles);
         Assert.NotEmpty(result.Authorization.Permissions);
         Assert.NotEmpty(result.Authorization.Roles);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task AddContributorAsync_ShouldGrantContributorFullWriteAccessToApplication_WhenAddedByOwner(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        IApplicationsClient applicationsClient,
+        IUsersClient usersClient,
+        HttpClient httpClient,
+        string responseBody)
+    {
+        var applicationId = new Guid(EaContextSeeder.ApplicationId);
+        var uniqueEmail = $"contributor-write-{Guid.NewGuid()}@example.com";
+
+        factory.TestClaims =
+        [
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", $"Application:{EaContextSeeder.ApplicationId}:Write")
+        ];
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var contributor = await applicationsClient.AddContributorAsync(
+            applicationId,
+            new AddContributorRequest
+            {
+                Name = "Contributor User",
+                Email = uniqueEmail
+            });
+
+        Assert.NotNull(contributor.Authorization?.Permissions);
+        Assert.Contains(
+            contributor.Authorization.Permissions,
+            p => p.ResourceType == ResourceType.Application
+                 && p.ResourceKey == EaContextSeeder.ApplicationId
+                 && p.AccessType == AccessType.Read);
+        Assert.Contains(
+            contributor.Authorization.Permissions,
+            p => p.ResourceType == ResourceType.Application
+                 && p.ResourceKey == EaContextSeeder.ApplicationId
+                 && p.AccessType == AccessType.Write);
+        Assert.Contains(
+            contributor.Authorization.Permissions,
+            p => p.ResourceType == ResourceType.ApplicationFiles
+                 && p.ResourceKey == EaContextSeeder.ApplicationId
+                 && p.AccessType == AccessType.Write);
+
+        var dbContext = factory.GetDbContext<ExternalApplicationsContext>();
+        factory.TestClaims = BuildPermissionClaimsForUser(dbContext, uniqueEmail);
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "user-token");
+
+        var permissions = await usersClient.GetMyPermissionsAsync();
+
+        Assert.NotNull(permissions.Permissions);
+        Assert.Contains(
+            permissions.Permissions,
+            p => p.ResourceType == ResourceType.Application
+                 && p.ResourceKey == EaContextSeeder.ApplicationId
+                 && p.AccessType == AccessType.Write);
+        Assert.Contains(
+            permissions.Permissions,
+            p => p.ResourceType == ResourceType.ApplicationFiles
+                 && p.ResourceKey == EaContextSeeder.ApplicationId
+                 && p.AccessType == AccessType.Write);
+        Assert.Contains(
+            permissions.Permissions,
+            p => p.ResourceType == ResourceType.Template
+                 && p.ResourceKey == EaContextSeeder.TemplateId
+                 && p.AccessType == AccessType.Write);
+
+        var encodedBody = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(responseBody));
+        var response = await applicationsClient.AddApplicationResponseAsync(
+            applicationId,
+            new AddApplicationResponseRequest { ResponseBody = encodedBody });
+
+        Assert.NotNull(response);
     }
 
     [Theory]
@@ -1517,10 +1596,20 @@ public class ApplicationsControllerTests
             InitialResponseBody = "Second application"
         };
 
-        // First creation should work
+        // First three creations should work (rate limit is 3 per 30 seconds)
         await applicationsClient.CreateApplicationAsync(request1);
+        await applicationsClient.CreateApplicationAsync(new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
+            InitialResponseBody = "Second application"
+        });
+        await applicationsClient.CreateApplicationAsync(new CreateApplicationRequest
+        {
+            TemplateId = Guid.Parse(EaContextSeeder.TemplateId),
+            InitialResponseBody = "Third application"
+        });
 
-        // Act - Try to create another application immediately (should hit rate limit)
+        // Act - Fourth creation should hit the rate limit
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
             () => applicationsClient.CreateApplicationAsync(request2));
 
@@ -1720,7 +1809,8 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -1748,7 +1838,8 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -1776,7 +1867,8 @@ public class ApplicationsControllerTests
         // Arrange
         factory.TestClaims = new List<Claim>
         {
-            new(ClaimTypes.Email, EaContextSeeder.BobEmail)
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new("permission", "Application:Read")
         };
 
         httpClient.DefaultRequestHeaders.Authorization =
@@ -1794,4 +1886,30 @@ public class ApplicationsControllerTests
     }
 
     #endregion
+
+    private static List<Claim> BuildPermissionClaimsForUser(ExternalApplicationsContext dbContext, string email)
+    {
+        var user = dbContext.Users
+            .Include(u => u.Permissions)
+            .Include(u => u.TemplatePermissions)
+            .Single(u => u.Email == email);
+
+        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
+
+        foreach (var permission in user.Permissions)
+        {
+            claims.Add(new Claim(
+                "permission",
+                $"{permission.ResourceType}:{permission.ResourceKey}:{permission.AccessType}"));
+        }
+
+        foreach (var templatePermission in user.TemplatePermissions)
+        {
+            claims.Add(new Claim(
+                "permission",
+                $"Template:{templatePermission.TemplateId.Value}:{templatePermission.AccessType}"));
+        }
+
+        return claims;
+    }
 }

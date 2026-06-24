@@ -25,9 +25,9 @@ public class UsersController(ISender sender) : ControllerBase
     [SwaggerResponse(200, "A UserAuthorizationDto object representing the User's Permissions and Roles.", typeof(UserAuthorizationDto))]
     [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized no valid user token", typeof(ExceptionResponse))]
-    [SwaggerResponse(403, "Forbidden - user does not have required permissions", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "User not found.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-    [Authorize(Policy = "CanReadUser")]
+    [Authorize]
     public async Task<IActionResult> GetMyPermissionsAsync(
         CancellationToken cancellationToken)
     {

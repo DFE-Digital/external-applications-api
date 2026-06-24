@@ -1,0 +1,16 @@
+name: .NET CI
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  test:
+    name: Build and Test
+    uses: ./.github/workflows/test-solution.yml
+    secrets: inherit

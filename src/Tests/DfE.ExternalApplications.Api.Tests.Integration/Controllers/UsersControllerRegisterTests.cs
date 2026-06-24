@@ -302,34 +302,29 @@ public class UsersControllerRegisterTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "azure-token");
 
-        // Act - Make multiple rapid requests to test rate limiting
-        var tasks = new List<Task<bool>>();
+        // Act - Make rapid sequential requests to test rate limiting (limit is 5 per 30 seconds)
+        var successCount = 0;
         for (int i = 0; i < 10; i++)
         {
             var token = TestExternalIdentityValidator.CreateToken($"user{i}@example.com");
-            var request = new RegisterUserRequest 
-            { 
+            var request = new RegisterUserRequest
+            {
                 AccessToken = token,
                 TemplateId = Guid.Parse(EaContextSeeder.TemplateId)
             };
-            tasks.Add(Task.Run(async () =>
+
+            try
             {
-                try
-                {
-                    await usersClient.RegisterUserAsync(request);
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }));
+                await usersClient.RegisterUserAsync(request);
+                successCount++;
+            }
+            catch
+            {
+                // Rate-limited or validation failures are acceptable after the limit is reached
+            }
         }
 
-        var results = await Task.WhenAll(tasks);
-
         // Assert - At least one request should succeed (rate limit is 5 in 30 seconds)
-        var successCount = results.Count(r => r);
         Assert.True(successCount >= 1, "At least one request should succeed");
     }
 }
