@@ -25,6 +25,7 @@ public sealed class GetApplicationByReferenceQueryHandler(
         GetApplicationByReferenceQuery request,
         CancellationToken cancellationToken)
     {
+
         try
         {
             var httpContext = httpContextAccessor.HttpContext;
