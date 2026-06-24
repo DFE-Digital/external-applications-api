@@ -67,7 +67,7 @@ jobs:
     secrets: inherit
 
   build-import:
-    name: Deploy to ${{ needs.set-env.outputs.environment }}
+    name: Build & import (${{ matrix.target }}) → ${{ needs.set-env.outputs.environment }}
     runs-on: ubuntu-24.04
     needs: [ set-env, validate-packages, test ]
     if: |
@@ -117,6 +117,7 @@ jobs:
           AZURE_ACR_CLIENT_ID: ${{ secrets.ACR_CLIENT_ID || '' }}
 
   deploy:
+    name: Release → ${{ needs.set-env.outputs.environment }}
     runs-on: ubuntu-24.04
     needs: [ build-import, set-env ]
     environment: ${{ needs.set-env.outputs.environment }}

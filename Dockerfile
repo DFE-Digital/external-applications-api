@@ -18,14 +18,18 @@ COPY Directory.Build.props ./
 COPY DfE.ExternalApplications.Api.sln ./
 
 # Restore + build
-RUN dotnet restore DfE.ExternalApplications.Api.sln
-RUN dotnet build ./src/DfE.ExternalApplications.Api -c Release --no-restore
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore DfE.ExternalApplications.Api.sln
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet build ./src/DfE.ExternalApplications.Api -c Release --no-restore
 
 # Install Playwright browsers + OS dependencies (Ubuntu!)
-RUN playwright install --with-deps
+RUN --mount=type=cache,target=/root/.cache/ms-playwright \
+    playwright install --with-deps
 
 # Publish final output
-RUN dotnet publish ./src/DfE.ExternalApplications.Api -c Release --no-build -o /app
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish ./src/DfE.ExternalApplications.Api -c Release --no-build -o /app
 
 
 # ============================================================

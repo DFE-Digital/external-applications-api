@@ -34,6 +34,16 @@ jobs:
           distribution: 'microsoft'
           java-version: ${{ env.JAVA_VERSION }}
 
+      - name: Cache NuGet packages and dotnet tools
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: |
+            ~/.nuget/packages
+            ~/.dotnet/tools
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props', '**/Directory.Build.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       - name: Cache SonarCloud packages
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
