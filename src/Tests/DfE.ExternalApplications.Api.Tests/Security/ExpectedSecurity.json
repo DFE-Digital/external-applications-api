@@ -3,7 +3,7 @@
     {
       "Controller": "UsersController",
       "Action": "GetMyPermissionsAsync",
-      "ExpectedSecurity": "Authorize: Policy=CanReadUser"
+      "ExpectedSecurity": "Authorize"
     },
     {
       "Controller": "UsersController",

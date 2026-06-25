@@ -35,8 +35,8 @@ jobs:
           secrets: github_token=${{ secrets.GITHUB_TOKEN }}
           load: true
           build-args: CI=true
-          cache-from: type=gha
-          cache-to: type=gha
+          cache-from: type=gha,scope=extapp-api
+          cache-to: type=gha,mode=max,scope=extapp-api
           target: ${{ matrix.stage }}
           push: false
 

@@ -39,9 +39,10 @@ namespace DfE.ExternalApplications.Tests.Common.Seeders
             var roleAdmin = new Role(new RoleId(RoleConstants.AdminRoleId), "Administrator");
             var roleSubmitter = new Role(new RoleId(new Guid(SubmitterRoleId)), "Submitter");
             var roleUser = new Role(new RoleId(RoleConstants.UserRoleId), "User");
+            var roleCaseworker = new Role(new RoleId(RoleConstants.CaseworkerRoleId), RoleNames.Caseworker);
             var now = DateTime.UtcNow;
 
-            ctx.Roles.AddRange(roleAdmin, roleSubmitter, roleUser);
+            ctx.Roles.AddRange(roleAdmin, roleSubmitter, roleUser, roleCaseworker);
 
             var aliceId = new UserId(new Guid(AliceId));
             var alice = new User(
