@@ -2,13 +2,14 @@ using DfE.ExternalApplications.Application.Templates.Models;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DfE.ExternalApplications.Application.Templates.Queries
 {
-    public sealed record GetCustomApplicationStatusByApplicationStatusQuery(Guid TemplateId, int ApplicationStatus)
+    public sealed record GetCustomApplicationStatusByApplicationStatusQuery(Guid TemplateId, ApplicationStatus ApplicationStatus)
         : IRequest<Result<CustomApplicationStatusDto>>;
 
     public sealed class GetCustomApplicationStatusByApplicationStatusQueryHandler(

@@ -1,3 +1,4 @@
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using System;
 
 namespace DfE.ExternalApplications.Application.Templates.Models
@@ -6,8 +7,8 @@ namespace DfE.ExternalApplications.Application.Templates.Models
     {
         public Guid? CustomApplicationStatusId { get; set; }
         public Guid TemplateId { get; set; }
-        public int ApplicationStatus { get; set; }
-        public string Label { get; set; } = null!;
+        public ApplicationStatus ApplicationStatus { get; set; }
+        public string? Label { get; set; }
         public DateTime CreatedOn { get; set; }
         public Guid CreatedBy { get; set; }
     }

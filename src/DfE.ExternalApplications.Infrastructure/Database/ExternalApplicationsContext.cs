@@ -97,7 +97,7 @@ public class ExternalApplicationsContext : DbContext
         b.Property(e => e.Label)
             .HasColumnName("Label")
             .HasMaxLength(200)
-            .IsRequired();
+            .IsRequired(false);
         b.Property(e => e.CreatedOn)
             .HasColumnName("CreatedOn")
             .HasDefaultValueSql("GETDATE()")
@@ -118,7 +118,8 @@ public class ExternalApplicationsContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         b.HasIndex(e => new { e.TemplateId, e.ApplicationStatus })
-            .HasDatabaseName("IX_CustomApplicationStatuses_TemplateId_ApplicationStatus");
+            .HasDatabaseName("IX_CustomApplicationStatuses_TemplateId_ApplicationStatus")
+            .IsUnique();
     }
 
     private static void ConfigureRole(EntityTypeBuilder<Role> b, bool useTemporal)

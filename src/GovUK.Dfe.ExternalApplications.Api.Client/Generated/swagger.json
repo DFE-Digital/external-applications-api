@@ -3832,11 +3832,11 @@
             "format": "guid"
           },
           "applicationStatus": {
-            "type": "integer",
-            "format": "int32"
+            "$ref": "#/components/schemas/ApplicationStatus"
           },
           "label": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "createdOn": {
             "type": "string",

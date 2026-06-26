@@ -37,13 +37,13 @@ namespace DfE.ExternalApplications.Application.Templates.Queries
                 var resultList = statuses
                     .Select(s =>
                     {
-                        var match = existing.FirstOrDefault(e => e.ApplicationStatus == (int)s);
+                        var match = existing.FirstOrDefault(e => e.ApplicationStatus == s);
                         return new CustomApplicationStatusDto
                         {
                             CustomApplicationStatusId = match?.Id?.Value,
                             TemplateId = request.TemplateId,
-                            ApplicationStatus = (int)s,
-                            Label = match?.Label ?? string.Empty,
+                            ApplicationStatus = s,
+                            Label = match?.Label,
                             CreatedOn = match?.CreatedOn ?? default,
                             CreatedBy = match?.CreatedBy?.Value ?? Guid.Empty
                         };

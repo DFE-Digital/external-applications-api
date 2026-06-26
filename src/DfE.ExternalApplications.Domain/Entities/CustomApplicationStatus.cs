@@ -1,5 +1,6 @@
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.ValueObjects;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using System;
 
 namespace DfE.ExternalApplications.Domain.Entities
@@ -9,8 +10,8 @@ namespace DfE.ExternalApplications.Domain.Entities
         public CustomApplicationStatusId? Id { get; private set; }
         public TemplateId TemplateId { get; private set; }
         public Template? Template { get; private set; }
-        public int ApplicationStatus { get; private set; }
-        public string Label { get; private set; } = null!;
+        public ApplicationStatus ApplicationStatus { get; private set; }
+        public string? Label { get; private set; }
         public DateTime CreatedOn { get; private set; }
         public UserId CreatedBy { get; private set; }
         public User? CreatedByUser { get; private set; }
@@ -20,15 +21,15 @@ namespace DfE.ExternalApplications.Domain.Entities
         public CustomApplicationStatus(
             CustomApplicationStatusId id,
             TemplateId templateId,
-            int applicationStatus,
-            string label,
+            ApplicationStatus applicationStatus,
+            string? label,
             DateTime createdOn,
             UserId createdBy)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             TemplateId = templateId ?? throw new ArgumentNullException(nameof(templateId));
             ApplicationStatus = applicationStatus;
-            Label = label ?? throw new ArgumentNullException(nameof(label));
+            Label = label;
             CreatedOn = createdOn;
             CreatedBy = createdBy;
         }
@@ -36,9 +37,8 @@ namespace DfE.ExternalApplications.Domain.Entities
         /// <summary>
         /// Updates the label for this custom application status.
         /// </summary>
-        public void UpdateLabel(string label)
+        public void UpdateLabel(string? label)
         {
-            if (label == null) throw new ArgumentNullException(nameof(label));
             Label = label;
         }
     }

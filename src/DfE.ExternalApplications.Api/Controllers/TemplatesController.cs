@@ -8,8 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using GovUK.Dfe.CoreLibs.Http.Models;
-using DfE.ExternalApplications.Application.Templates.Queries;
-using DfE.ExternalApplications.Application.Templates.Commands;
 using DfE.ExternalApplications.Application.Templates.Models;
 
 namespace DfE.ExternalApplications.Api.Controllers;
@@ -70,27 +68,10 @@ public class TemplatesController(ISender sender) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
     {
-        // Check if custom status exists for this template & application status using dedicated query
-        var existingStatusResult = await sender.Send(new GetCustomApplicationStatusByApplicationStatusQuery(templateId, request.ApplicationStatus), cancellationToken);
+        var command = new UpdateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
+        var result = await sender.Send(command, cancellationToken);
 
-        if (existingStatusResult.IsSuccess)
-        {
-            // Found - update
-            var existing = existingStatusResult.Value!;
-            var updateCommand = new UpdateCustomApplicationStatusCommand(existing.CustomApplicationStatusId!.Value, request.ApplicationStatus, request.Label);
-            var updateResult = await sender.Send(updateCommand, cancellationToken);
-
-            return new ObjectResult(updateResult)
-            {
-                StatusCode = StatusCodes.Status200OK
-            };
-        }
-
-        // Not found - create
-        var createCommand = new CreateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
-        var createResult = await sender.Send(createCommand, cancellationToken);
-
-        return new ObjectResult(createResult)
+        return new ObjectResult(result)
         {
             StatusCode = StatusCodes.Status201Created
         };

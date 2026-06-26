@@ -1,14 +1,14 @@
-using System;
-using DfE.ExternalApplications.Domain.ValueObjects;
-using DfE.ExternalApplications.Domain.Common;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace DfE.ExternalApplications.Infrastructure.Migrations
 {
+    /// <inheritdoc />
     public partial class AddCustomApplicationStatus : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -19,7 +19,7 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                     CustomApplicationStatusId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     TemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ApplicationStatus = table.Column<int>(type: "int", nullable: false),
-                    Label = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Label = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETDATE()"),
                     CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
@@ -43,12 +43,20 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_CustomApplicationStatuses_CreatedBy",
+                schema: "ea",
+                table: "CustomApplicationStatuses",
+                column: "CreatedBy");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CustomApplicationStatuses_TemplateId_ApplicationStatus",
                 schema: "ea",
                 table: "CustomApplicationStatuses",
-                columns: new[] { "TemplateId", "ApplicationStatus" });
+                columns: new[] { "TemplateId", "ApplicationStatus" },
+                unique: true);
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
