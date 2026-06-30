@@ -17,12 +17,17 @@ concurrency:
 env:
   IMAGE_NAME: extapp-api
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   set-env:
     name: Preflight
     runs-on: ubuntu-24.04
     outputs:
       environment: ${{ steps.var.outputs.environment }}
+      environment-lower: ${{ steps.var.outputs.environment-lower }}
       branch: ${{ steps.var.outputs.branch }}
       checked-out-sha: ${{ steps.var.outputs.checked-out-sha }}
       image-name: ${{ steps.var.outputs.image-name }}
@@ -34,11 +39,12 @@ jobs:
         run: |
           GIT_REF=${{ github.ref_name }}
           GIT_BRANCH=${GIT_REF##*/}
-          INPUT=${{ github.event.inputs.environment }}
+          INPUT="${{ github.event.inputs.environment }}"
           ENVIRONMENT=${INPUT:-"development"}
           CHECKED_OUT_SHA="$(git log -1 '--format=format:%H')"
           TIME="$(date)"
-          echo "environment=${ENVIRONMENT,,}" >> $GITHUB_OUTPUT
+          echo "environment=${ENVIRONMENT}" >> $GITHUB_OUTPUT
+          echo "environment-lower=${ENVIRONMENT,,}" >> $GITHUB_OUTPUT
           echo "branch=$GIT_BRANCH" >> $GITHUB_OUTPUT
           echo "checked-out-sha=${CHECKED_OUT_SHA}" >> $GITHUB_OUTPUT
           echo "image-name=${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
@@ -55,10 +61,22 @@ jobs:
         with:
           environment: ${{ needs.set-env.outputs.environment }}
 
+  test:
+    name: Run tests
+    needs: [ set-env ]
+    if: needs.set-env.outputs.environment-lower == 'production'
+    uses: ./.github/workflows/test-solution.yml
+    secrets: inherit
+
   build-import:
-    name: Deploy to ${{ needs.set-env.outputs.environment }}
+    name: Build & import (${{ matrix.target }}) → ${{ needs.set-env.outputs.environment }}
     runs-on: ubuntu-24.04
-    needs: [ set-env, validate-packages ]
+    needs: [ set-env, validate-packages, test ]
+    if: |
+      always() &&
+      needs.set-env.result == 'success' &&
+      needs.validate-packages.result == 'success' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     environment: ${{ needs.set-env.outputs.environment }}
     permissions:
       attestations: write
@@ -101,8 +119,13 @@ jobs:
           AZURE_ACR_CLIENT_ID: ${{ secrets.ACR_CLIENT_ID || '' }}
 
   deploy:
+    name: Release → ${{ needs.set-env.outputs.environment }}
     runs-on: ubuntu-24.04
     needs: [ build-import, set-env ]
+    if: |
+      always() &&
+      needs.set-env.result == 'success' &&
+      needs.build-import.result == 'success'
     environment: ${{ needs.set-env.outputs.environment }}
     permissions:
       id-token: write

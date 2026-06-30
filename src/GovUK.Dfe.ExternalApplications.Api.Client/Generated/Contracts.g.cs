@@ -88,9 +88,9 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <summary>
         /// Returns all applications for the user by {email}.
         /// </summary>
-        /// <returns>Applications for the user.</returns>
+        /// <returns>A paged list of applications for the user.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<ApplicationDto>> GetApplicationsForUserAsync(string email, bool? includeSchema = null, System.Guid? templateId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<PagedResultOfApplicationDto> GetApplicationsForUserAsync(string email, bool? includeSchema = null, System.Guid? templateId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>

@@ -1,4 +1,5 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
 using GovUK.Dfe.CoreLibs.Testing.Mocks.WebApplicationFactory;
@@ -56,10 +57,25 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
 
             var expectedUser = dbContext.Users
                 .Include(u => u.Permissions)
+                .Include(u => u.TemplatePermissions)
                 .Include(u => u.Role)
                 .FirstOrDefault(u => u.ExternalProviderId == externalId.ToString())!;
 
-            var expectedPermissions = expectedUser.Permissions.ToList();
+            var expectedPermissions = expectedUser.Permissions
+                .Select(p => new UserPermissionDto
+                {
+                    ApplicationId = p.ApplicationId?.Value,
+                    ResourceType = p.ResourceType,
+                    ResourceKey = p.ResourceKey,
+                    AccessType = p.AccessType
+                })
+                .Concat(expectedUser.TemplatePermissions.Select(tp => new UserPermissionDto
+                {
+                    ResourceType = ResourceType.Template,
+                    ResourceKey = tp.TemplateId.Value.ToString(),
+                    AccessType = tp.AccessType
+                }))
+                .ToList();
 
             var result = await usersClient.GetMyPermissionsAsync();
 
@@ -69,16 +85,25 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             Assert.Equal(expectedPermissions.Count, result.Permissions.Count());
 
             var actual = result.Permissions
-                .Select(dto => (dto.ResourceKey, dto.AccessType))
-                .OrderBy(x => x.ResourceKey)
+                .Select(dto => (dto.ResourceType, dto.ResourceKey, dto.AccessType))
+                .OrderBy(x => x.ResourceType)
+                .ThenBy(x => x.ResourceKey)
+                .ThenBy(x => x.AccessType)
+                .ToList();
+
+            var expected = expectedPermissions
+                .Select(dto => (dto.ResourceType, dto.ResourceKey, dto.AccessType))
+                .OrderBy(x => x.ResourceType)
+                .ThenBy(x => x.ResourceKey)
                 .ThenBy(x => x.AccessType)
                 .ToList();
 
             // Compare element by element
-            for (int i = 0; i < expectedPermissions.Count; i++)
+            for (int i = 0; i < expected.Count; i++)
             {
-                Assert.Equal(expectedPermissions[i].ResourceKey, actual[i].ResourceKey);
-                Assert.Equal((AccessType)expectedPermissions[i].AccessType, actual[i].AccessType);
+                Assert.Equal(expected[i].ResourceType, actual[i].ResourceType);
+                Assert.Equal(expected[i].ResourceKey, actual[i].ResourceKey);
+                Assert.Equal(expected[i].AccessType, actual[i].AccessType);
             }
 
             // Assert: Check roles
@@ -146,10 +171,25 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
 
             var expectedUser = dbContext.Users
                 .Include(u => u.Permissions)
+                .Include(u => u.TemplatePermissions)
                 .Include(u => u.Role)
                 .First(u => u.Email == testEmail);
 
-            var expectedPermissions = expectedUser.Permissions.ToList();
+            var expectedPermissions = expectedUser.Permissions
+                .Select(p => new UserPermissionDto
+                {
+                    ApplicationId = p.ApplicationId?.Value,
+                    ResourceType = p.ResourceType,
+                    ResourceKey = p.ResourceKey,
+                    AccessType = p.AccessType
+                })
+                .Concat(expectedUser.TemplatePermissions.Select(tp => new UserPermissionDto
+                {
+                    ResourceType = ResourceType.Template,
+                    ResourceKey = tp.TemplateId.Value.ToString(),
+                    AccessType = tp.AccessType
+                }))
+                .ToList();
 
             var result = await usersClient.GetMyPermissionsAsync();
 
@@ -159,16 +199,25 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             Assert.Equal(expectedPermissions.Count, result.Permissions.Count());
 
             var actual = result.Permissions
-                .Select(dto => (dto.ResourceKey, dto.AccessType))
-                .OrderBy(x => x.ResourceKey)
+                .Select(dto => (dto.ResourceType, dto.ResourceKey, dto.AccessType))
+                .OrderBy(x => x.ResourceType)
+                .ThenBy(x => x.ResourceKey)
+                .ThenBy(x => x.AccessType)
+                .ToList();
+
+            var expected = expectedPermissions
+                .Select(dto => (dto.ResourceType, dto.ResourceKey, dto.AccessType))
+                .OrderBy(x => x.ResourceType)
+                .ThenBy(x => x.ResourceKey)
                 .ThenBy(x => x.AccessType)
                 .ToList();
 
             // Compare element by element
-            for (int i = 0; i < expectedPermissions.Count; i++)
+            for (int i = 0; i < expected.Count; i++)
             {
-                Assert.Equal(expectedPermissions[i].ResourceKey, actual[i].ResourceKey);
-                Assert.Equal((AccessType)expectedPermissions[i].AccessType, actual[i].AccessType);
+                Assert.Equal(expected[i].ResourceType, actual[i].ResourceType);
+                Assert.Equal(expected[i].ResourceKey, actual[i].ResourceKey);
+                Assert.Equal(expected[i].AccessType, actual[i].AccessType);
             }
 
             // Assert: Check roles
@@ -193,7 +242,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
                 () => usersClient.GetMyPermissionsAsync());
 
-            Assert.Equal(403, ex.StatusCode);
+            Assert.Equal(401, ex.StatusCode);
         }
 
         [Theory]
@@ -258,7 +307,7 @@ namespace DfE.ExternalApplications.Api.Tests.Integration.Controllers
             var list = await appsClient.GetApplicationsForUserAsync("bob@example.com");
 
             Assert.NotNull(list);
-            Assert.NotEmpty(list!);
+            Assert.NotEmpty(list!.Items);
         }
 
         [Theory]
