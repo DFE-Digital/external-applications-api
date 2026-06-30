@@ -1,4 +1,3 @@
-using DfE.ExternalApplications.Application.Templates.Models;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -9,7 +8,6 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using static MassTransit.ValidationResultExtensions;
 
 namespace DfE.ExternalApplications.Application.Templates.Commands
 {

@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <Folder Include="Services\BackgroundServices\" />
+    <Folder Include="Templates\Models\" />
   </ItemGroup>
 
 </Project>

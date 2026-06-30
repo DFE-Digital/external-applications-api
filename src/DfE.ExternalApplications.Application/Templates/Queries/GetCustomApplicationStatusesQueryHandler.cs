@@ -1,4 +1,3 @@
-using DfE.ExternalApplications.Application.Templates.Models;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
