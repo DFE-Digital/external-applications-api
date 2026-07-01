@@ -2,6 +2,7 @@ using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DfE.ExternalApplications.Domain.Entities
 {
@@ -16,7 +17,13 @@ namespace DfE.ExternalApplications.Domain.Entities
         public UserId CreatedBy { get; private set; }
         public User? CreatedByUser { get; private set; }
 
-        private CustomApplicationStatus() { /* For EF Core */ }
+        [ExcludeFromCodeCoverage]
+        private CustomApplicationStatus()
+        {
+            // Required by EF Core for materialization
+            TemplateId = null!;
+            CreatedBy = null!;
+        }
 
         public CustomApplicationStatus(
             CustomApplicationStatusId id,
@@ -31,7 +38,7 @@ namespace DfE.ExternalApplications.Domain.Entities
             ApplicationStatus = applicationStatus;
             Label = label;
             CreatedOn = createdOn;
-            CreatedBy = createdBy;
+            CreatedBy = createdBy ?? throw new ArgumentNullException(nameof(createdBy));
         }
 
         /// <summary>
