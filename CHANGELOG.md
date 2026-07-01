@@ -116,3 +116,7 @@ All notable changes to this service will be documented in this file.
 ## [1.4.0] - Public Beta
 ### Notes
 - Added Tests to the PR and Prod workflows
+
+## [1.4.1] - Public Beta
+### Notes
+- Fix file upload extensions list user message
