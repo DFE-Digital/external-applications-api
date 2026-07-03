@@ -31,31 +31,7 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
         public async Task<Result<CustomApplicationStatusDto>> Handle(UpdateCustomApplicationStatusCommand request, CancellationToken cancellationToken)
         {
             try
-            {
-                // Check if custom status exists for this template and application status
-                var existing = await customApplicationStatusRepo.Query()
-                    .FirstOrDefaultAsync(x => x.TemplateId == new TemplateId(request.TemplateId) && x.ApplicationStatus == request.ApplicationStatus, cancellationToken);
-
-                if (existing is not null)
-                {
-                    // Update existing
-                    existing.UpdateLabel(request.Label);
-                    await unitOfWork.CommitAsync(cancellationToken);
-
-                    var dto = new CustomApplicationStatusDto
-                    {
-                        CustomApplicationStatusId = existing.Id!.Value,
-                        TemplateId = existing.TemplateId.Value,
-                        ApplicationStatus = existing.ApplicationStatus,
-                        Label = existing.Label,
-                        CreatedOn = existing.CreatedOn,
-                        CreatedBy = existing.CreatedBy.Value
-                    };
-
-                    return Result<CustomApplicationStatusDto>.Success(dto);
-                }
-
-                // Not found - create new
+            {            
                 var httpContext = httpContextAccessor.HttpContext;
                 if (httpContext?.User is not ClaimsPrincipal user || !user.Identity?.IsAuthenticated == true)
                     return Result<CustomApplicationStatusDto>.Forbid("Not authenticated");
@@ -84,6 +60,29 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
                     return Result<CustomApplicationStatusDto>.Forbid("Unable to resolve CreatedBy user");
 
                 var createdByUserId = dbUser.Id;
+
+                // Check if custom status exists for this template and application status
+                var existing = await customApplicationStatusRepo.Query()
+                    .FirstOrDefaultAsync(x => x.TemplateId == new TemplateId(request.TemplateId) && x.ApplicationStatus == request.ApplicationStatus, cancellationToken);
+
+                if (existing is not null)
+                {
+                    // Update existing
+                    existing.UpdateLabel(request.Label);
+                    await unitOfWork.CommitAsync(cancellationToken);
+
+                    var dto = new CustomApplicationStatusDto
+                    {
+                        CustomApplicationStatusId = existing.Id!.Value,
+                        TemplateId = existing.TemplateId.Value,
+                        ApplicationStatus = existing.ApplicationStatus,
+                        Label = existing.Label,
+                        CreatedOn = DateTime.UtcNow,
+                        CreatedBy = createdByUserId.Value
+                    };
+
+                    return Result<CustomApplicationStatusDto>.Success(dto);
+                }
 
                 var entity = new CustomApplicationStatus(
                     new CustomApplicationStatusId(Guid.NewGuid()),
