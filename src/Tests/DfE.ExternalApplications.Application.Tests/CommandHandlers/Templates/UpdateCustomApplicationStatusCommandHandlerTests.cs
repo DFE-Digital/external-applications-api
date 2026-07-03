@@ -10,84 +10,103 @@ using MockQueryable;
 using MockQueryable.NSubstitute;
 using NSubstitute;
 using System.Security.Claims;
-using AutoFixture;
-using DfE.ExternalApplications.Tests.Common.Customizations.Entities;
 
 namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Templates;
 
 public class UpdateCustomApplicationStatusCommandHandlerTests
 {
+    private readonly IEaRepository<CustomApplicationStatus> _customStatusRepo = Substitute.For<IEaRepository<CustomApplicationStatus>>();
+    private readonly IEaRepository<User> _userRepo = Substitute.For<IEaRepository<User>>();
+    private readonly IHttpContextAccessor _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly UpdateCustomApplicationStatusCommandHandler _handler;
+
+    private readonly User _testUser;
+    private readonly Guid _testTemplateId = Guid.NewGuid();
+    private readonly string _testUserEmail = "test@example.com";
+
+    public UpdateCustomApplicationStatusCommandHandlerTests()
+    {
+        _testUser = new User(
+            new UserId(Guid.NewGuid()),
+            new RoleId(Guid.NewGuid()),
+            "Test User",
+            _testUserEmail,
+            DateTime.UtcNow,
+            null,
+            null,
+            null);
+
+        // Set Role property for Include() support
+        var role = new Role(_testUser.RoleId, "Test Role");
+        typeof(User).GetProperty("Role")!.SetValue(_testUser, role);
+
+        var userQueryable = new[] { _testUser }.AsQueryable().BuildMock();
+        _userRepo.Query().Returns(userQueryable);
+
+        var claims = new List<Claim> { new(ClaimTypes.Email, _testUserEmail) };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        var httpContext = new DefaultHttpContext { User = claimsPrincipal };
+        _httpContextAccessor.HttpContext.Returns(httpContext);
+
+        _handler = new UpdateCustomApplicationStatusCommandHandler(
+            _customStatusRepo,
+            _userRepo,
+            _httpContextAccessor,
+            _unitOfWork);
+    }
     [Theory]
     [CustomAutoData]
-    public async Task Handle_UpdatesLabel_WhenCustomStatusExists(
-        Guid templateId,
-        string newLabel)
+    public async Task Handle_UpdatesLabel_WhenCustomStatusExists(string newLabel)
     {
         // Arrange
-        var customStatusRepo = Substitute.For<IEaRepository<CustomApplicationStatus>>();
-        var userRepo = Substitute.For<IEaRepository<User>>();
-        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
-        var unitOfWork = Substitute.For<IUnitOfWork>();
-
         var existingStatus = new CustomApplicationStatus(
             new CustomApplicationStatusId(Guid.NewGuid()),
-            new TemplateId(templateId),
+            new TemplateId(_testTemplateId),
             ApplicationStatus.Submitted,
             "Old Label",
             DateTime.UtcNow,
-            new UserId(Guid.NewGuid())
+            _testUser.Id
         );
 
         var statusQueryable = new List<CustomApplicationStatus> { existingStatus }.AsQueryable().BuildMock();
-        customStatusRepo.Query().Returns(statusQueryable);
+        _customStatusRepo.Query().Returns(_ => statusQueryable);
 
-        var handler = new UpdateCustomApplicationStatusCommandHandler(
-            customStatusRepo,
-            userRepo,
-            httpContextAccessor,
-            unitOfWork);
-
-        var command = new UpdateCustomApplicationStatusCommand(templateId, ApplicationStatus.Submitted, newLabel);
+        var command = new UpdateCustomApplicationStatusCommand(_testTemplateId, ApplicationStatus.Submitted, newLabel);
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error}");
         Assert.Equal(newLabel, result.Value.Label);
         Assert.Equal(ApplicationStatus.Submitted, result.Value.ApplicationStatus);
-        await unitOfWork.Received(1).CommitAsync(CancellationToken.None);
-        await customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).CommitAsync(CancellationToken.None);
+        await _customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
     [CustomAutoData]
-    public async Task Handle_ReturnsForbid_WhenUserNotAuthenticated(
-        Guid templateId,
-        string label)
+    public async Task Handle_ReturnsForbid_WhenUserNotAuthenticated(string label)
     {
         // Arrange
-        var customStatusRepo = Substitute.For<IEaRepository<CustomApplicationStatus>>();
-        var userRepo = Substitute.For<IEaRepository<User>>();
-        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
-        var unitOfWork = Substitute.For<IUnitOfWork>();
-
-        // No existing custom status
         var emptyStatusList = new List<CustomApplicationStatus>().AsQueryable().BuildMock();
-        customStatusRepo.Query().Returns(emptyStatusList);
+        _customStatusRepo.Query().Returns(emptyStatusList);
 
         // Unauthenticated user
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
         httpContextAccessor.HttpContext.Returns(httpContext);
 
         var handler = new UpdateCustomApplicationStatusCommandHandler(
-            customStatusRepo,
-            userRepo,
+            _customStatusRepo,
+            _userRepo,
             httpContextAccessor,
-            unitOfWork);
+            _unitOfWork);
 
-        var command = new UpdateCustomApplicationStatusCommand(templateId, ApplicationStatus.Submitted, label);
+        var command = new UpdateCustomApplicationStatusCommand(_testTemplateId, ApplicationStatus.Submitted, label);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -95,43 +114,30 @@ public class UpdateCustomApplicationStatusCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Not authenticated", result.Error);
-        await customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
-        await unitOfWork.DidNotReceive().CommitAsync(CancellationToken.None);
+        await _customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().CommitAsync(CancellationToken.None);
     }
 
     [Theory]
     [CustomAutoData]
-    public async Task Handle_ReturnsForbid_WhenUserNotFoundInDatabase(
-        Guid templateId,
-        string label,
-        string userEmail)
+    public async Task Handle_ReturnsForbid_WhenUserNotFoundInDatabase(string label)
     {
         // Arrange
-        var customStatusRepo = Substitute.For<IEaRepository<CustomApplicationStatus>>();
-        var userRepo = Substitute.For<IEaRepository<User>>();
-        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
-        var unitOfWork = Substitute.For<IUnitOfWork>();
-
-        // No existing custom status
         var emptyStatusList = new List<CustomApplicationStatus>().AsQueryable().BuildMock();
-        customStatusRepo.Query().Returns(emptyStatusList);
+        _customStatusRepo.Query().Returns(emptyStatusList);
 
         // User not found in database
         var emptyUserList = new List<User>().AsQueryable().BuildMock();
+        var userRepo = Substitute.For<IEaRepository<User>>();
         userRepo.Query().Returns(emptyUserList);
 
-        var httpContext = new DefaultHttpContext();
-        var claims = new List<Claim> { new(ClaimTypes.Email, userEmail) };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
-        httpContextAccessor.HttpContext.Returns(httpContext);
-
         var handler = new UpdateCustomApplicationStatusCommandHandler(
-            customStatusRepo,
+            _customStatusRepo,
             userRepo,
-            httpContextAccessor,
-            unitOfWork);
+            _httpContextAccessor,
+            _unitOfWork);
 
-        var command = new UpdateCustomApplicationStatusCommand(templateId, ApplicationStatus.Submitted, label);
+        var command = new UpdateCustomApplicationStatusCommand(_testTemplateId, ApplicationStatus.Submitted, label);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -139,47 +145,35 @@ public class UpdateCustomApplicationStatusCommandHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Unable to resolve CreatedBy user", result.Error);
-        await customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
-        await unitOfWork.DidNotReceive().CommitAsync(CancellationToken.None);
+        await _customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().CommitAsync(CancellationToken.None);
     }
 
     [Theory]
     [CustomAutoData]
-    public async Task Handle_AllowsNullLabel_WhenUpdating(
-        Guid templateId)
+    public async Task Handle_AllowsNullLabel_WhenUpdating()
     {
         // Arrange
-        var customStatusRepo = Substitute.For<IEaRepository<CustomApplicationStatus>>();
-        var userRepo = Substitute.For<IEaRepository<User>>();
-        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
-        var unitOfWork = Substitute.For<IUnitOfWork>();
-
         var existingStatus = new CustomApplicationStatus(
             new CustomApplicationStatusId(Guid.NewGuid()),
-            new TemplateId(templateId),
+            new TemplateId(_testTemplateId),
             ApplicationStatus.Submitted,
             "Old Label",
             DateTime.UtcNow,
-            new UserId(Guid.NewGuid())
+            _testUser.Id
         );
 
         var statusQueryable = new List<CustomApplicationStatus> { existingStatus }.AsQueryable().BuildMock();
-        customStatusRepo.Query().Returns(statusQueryable);
+        _customStatusRepo.Query().Returns(_ => statusQueryable);
 
-        var handler = new UpdateCustomApplicationStatusCommandHandler(
-            customStatusRepo,
-            userRepo,
-            httpContextAccessor,
-            unitOfWork);
-
-        var command = new UpdateCustomApplicationStatusCommand(templateId, ApplicationStatus.Submitted, null);
+        var command = new UpdateCustomApplicationStatusCommand(_testTemplateId, ApplicationStatus.Submitted, null);
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error}");
         Assert.Null(result.Value.Label);
-        await unitOfWork.Received(1).CommitAsync(CancellationToken.None);
+        await _unitOfWork.Received(1).CommitAsync(CancellationToken.None);
     }
 }
