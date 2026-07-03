@@ -12,4 +12,5 @@ namespace DfE.ExternalApplications.Domain.ValueObjects
     public record TaskAssignmentLabelId(Guid Value) : IStronglyTypedId;
     public record TemplatePermissionId(Guid Value) : IStronglyTypedId;
     public record FileId(Guid Value) : IStronglyTypedId;
+    public record CustomApplicationStatusId(Guid Value) : IStronglyTypedId;
 }

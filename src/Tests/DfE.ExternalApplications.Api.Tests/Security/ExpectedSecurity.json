@@ -26,6 +26,16 @@
       "ExpectedSecurity": "Authorize: Policy=CanWriteTemplate"
     },
     {
+      "Controller": "TemplatesController",
+      "Action": "GetCustomApplicationStatusesAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanReadTemplate"
+    },
+    {
+      "Controller": "TemplatesController",
+      "Action": "CreateCustomApplicationStatusAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanWriteTemplate"
+    },
+    {
       "Controller": "TokensController",
       "Action": "Exchange",
       "ExpectedSecurity": "Authorize: Policy=SvcCanReadWrite"

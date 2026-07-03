@@ -40,6 +40,43 @@ public class TemplatesController(ISender sender) : ControllerBase
     }
 
     /// <summary>
+    /// Get custom application statuses for a template.
+    /// </summary>
+    [HttpGet("{templateId}/custom-statuses")]
+    [SwaggerResponse(200, "Custom statuses returned.", typeof(IReadOnlyCollection<CustomApplicationStatusDto>))]
+    [Authorize(Policy = "CanReadTemplate")]
+    public async Task<IActionResult> GetCustomApplicationStatusesAsync([FromRoute] Guid templateId, CancellationToken cancellationToken)
+    {
+        var query = new GetCustomApplicationStatusesQuery(templateId);
+        var result = await sender.Send(query, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Create or update a custom application status for a template.
+    /// If a CustomApplicationStatus for the TemplateId and ApplicationStatus exists, update its label; otherwise create one.
+    /// Returns the created or updated CustomApplicationStatus.
+    /// </summary>
+    [HttpPost("{templateId}/custom-statuses")]
+    [SwaggerResponse(201, "Custom status created/updated.", typeof(CustomApplicationStatusDto))]
+    [Authorize(Policy = "CanWriteTemplate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
+    {
+        var command = new UpdateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
+        var result = await sender.Send(command, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status201Created
+        };
+    }
+
+    /// <summary>
     /// Creates a new schema version for the specified template.
     /// </summary>
     [HttpPost("{templateId}/versions")]
