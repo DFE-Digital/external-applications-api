@@ -306,7 +306,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// </summary>
         /// <returns>Custom status created/updated.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<CustomApplicationStatusDto> CreateCustomApplicationStatusAsync(System.Guid templateId, CustomApplicationStatusDto request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<CustomApplicationStatusDto> CreateCustomApplicationStatusAsync(System.Guid templateId, CustomApplicationStatusRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>

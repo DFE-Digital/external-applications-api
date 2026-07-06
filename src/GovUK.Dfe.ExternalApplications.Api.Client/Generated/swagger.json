@@ -2657,7 +2657,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CustomApplicationStatusDto"
+                "$ref": "#/components/schemas/CustomApplicationStatusRequest"
               }
             }
           },
@@ -2671,6 +2671,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CustomApplicationStatusDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
                 }
               }
             }
@@ -3839,9 +3849,22 @@
             "type": "string",
             "format": "date-time"
           },
-          "CreatedBy": {
+          "createdBy": {
             "type": "string",
             "format": "guid"
+          }
+        }
+      },
+      "CustomApplicationStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "applicationStatus": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

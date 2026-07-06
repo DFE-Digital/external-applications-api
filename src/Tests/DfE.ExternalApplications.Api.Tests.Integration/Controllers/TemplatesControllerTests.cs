@@ -322,7 +322,7 @@ public class TemplatesControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "test-token");
 
-        var request = new CustomApplicationStatusDto
+        var request = new CustomApplicationStatusRequest
         {
             ApplicationStatus = ApplicationStatus.Submitted,
             Label = "Custom Rejection Label"
@@ -356,7 +356,7 @@ public class TemplatesControllerTests
             new AuthenticationHeaderValue("Bearer", "test-token");
 
         // Create first
-        var request1 = new CustomApplicationStatusDto
+        var request1 = new CustomApplicationStatusRequest
         {
             ApplicationStatus = ApplicationStatus.InProgress,
             Label = "First Label"
@@ -366,7 +366,7 @@ public class TemplatesControllerTests
         var firstId = firstResult.CustomApplicationStatusId;
 
         // Update with new label
-        var request2 = new CustomApplicationStatusDto
+        var request2 = new CustomApplicationStatusRequest
         {
             ApplicationStatus = ApplicationStatus.InProgress,
             Label = "Updated Label"
@@ -380,11 +380,13 @@ public class TemplatesControllerTests
         Assert.Equal(firstId, secondResult.CustomApplicationStatusId); // Same ID
         Assert.Equal(ApplicationStatus.InProgress, secondResult.ApplicationStatus);
         Assert.Equal("Updated Label", secondResult.Label);
+        Assert.Equal(firstResult.CreatedOn, secondResult.CreatedOn);
+        Assert.Equal(firstResult.CreatedBy, secondResult.CreatedBy);
     }
 
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
-    public async Task CreateCustomApplicationStatusAsync_ShouldAllowNullLabel(
+    public async Task CreateCustomApplicationStatusAsync_ShouldReturnBadRequest_WhenLabelIsEmpty(
         CustomWebApplicationDbContextFactory<Program> factory,
         ITemplatesClient templatesClient,
         HttpClient httpClient)
@@ -399,19 +401,45 @@ public class TemplatesControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "test-token");
 
-        var request = new CustomApplicationStatusDto
+        var request = new CustomApplicationStatusRequest
         {
             ApplicationStatus = ApplicationStatus.Submitted,
-            Label = null
+            Label = string.Empty
         };
 
-        // Act
-        var result = await templatesClient.CreateCustomApplicationStatusAsync(Guid.Parse(EaContextSeeder.TemplateId), request);
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+            () => templatesClient.CreateCustomApplicationStatusAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
+        Assert.Equal(400, ex.StatusCode);
+    }
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(ApplicationStatus.Submitted, result.ApplicationStatus);
-        Assert.Null(result.Label);
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateCustomApplicationStatusAsync_ShouldReturnBadRequest_WhenApplicationStatusIsInvalid(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITemplatesClient templatesClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new(ClaimTypes.Role, "Admin")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        var request = new CustomApplicationStatusRequest
+        {
+            ApplicationStatus = (ApplicationStatus)999,
+            Label = "Test Label"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+            () => templatesClient.CreateCustomApplicationStatusAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
+        Assert.Equal(400, ex.StatusCode);
     }
 
     [Theory]
@@ -430,7 +458,7 @@ public class TemplatesControllerTests
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", "test-token");
 
-        var request = new CustomApplicationStatusDto
+        var request = new CustomApplicationStatusRequest
         {
             ApplicationStatus = ApplicationStatus.Submitted,
             Label = "Test Label"
@@ -447,7 +475,7 @@ public class TemplatesControllerTests
     public async Task CreateCustomApplicationStatusAsync_ShouldReturnForbidden_WhenNotAuthenticated(
         CustomWebApplicationDbContextFactory<Program> factory,
         ITemplatesClient templatesClient,
-        CustomApplicationStatusDto request)
+        CustomApplicationStatusRequest request)
     {
         // Act & Assert
         var ex = await Assert.ThrowsAsync<ExternalApplicationsException>(
