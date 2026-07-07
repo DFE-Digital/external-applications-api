@@ -15,6 +15,8 @@ public class UpdateCustomApplicationStatusCommandValidator : AbstractValidator<U
             .WithMessage("Label is required");
 
         RuleFor(x => x.ApplicationStatus)
+            .NotNull()
+            .WithMessage("ApplicationStatus is required")
             .IsInEnum()
             .WithMessage($"ApplicationStatus must be a valid {nameof(ApplicationStatus)} value");
     }

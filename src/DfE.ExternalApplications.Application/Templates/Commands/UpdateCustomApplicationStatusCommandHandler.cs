@@ -19,7 +19,7 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
     /// </summary>
     public sealed record UpdateCustomApplicationStatusCommand(
         Guid TemplateId,
-        ApplicationStatus ApplicationStatus,
+        ApplicationStatus? ApplicationStatus,
         string? Label) : IRequest<Result<CustomApplicationStatusDto>>;
 
     public sealed class UpdateCustomApplicationStatusCommandHandler(
@@ -65,7 +65,7 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
                 // Check if custom status exists for this template and application status
                 var existing = await new GetCustomApplicationStatusByTemplateIdAndApplicationStatusQueryObject(
                         request.TemplateId,
-                        request.ApplicationStatus)
+                        request.ApplicationStatus!.Value)
                     .Apply(customApplicationStatusRepo.Query())
                     .FirstOrDefaultAsync(cancellationToken);
 
@@ -80,7 +80,7 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
                 var entity = new CustomApplicationStatus(
                     new CustomApplicationStatusId(Guid.NewGuid()),
                     new TemplateId(request.TemplateId),
-                    request.ApplicationStatus,
+                    request.ApplicationStatus!.Value,
                     request.Label,
                     DateTime.UtcNow,
                     createdByUserId);

@@ -37,6 +37,19 @@ public class UpdateCustomApplicationStatusCommandValidatorTests
     }
 
     [Fact]
+    public void Validate_ShouldFail_WhenApplicationStatusIsMissing()
+    {
+        var command = new UpdateCustomApplicationStatusCommand(
+            Guid.NewGuid(),
+            null,
+            "Custom Label");
+
+        var result = _validator.TestValidate(command);
+
+        result.ShouldHaveValidationErrorFor(c => c.ApplicationStatus);
+    }
+
+    [Fact]
     public void Validate_ShouldFail_WhenApplicationStatusIsInvalidEnum()
     {
         var command = new UpdateCustomApplicationStatusCommand(

@@ -444,6 +444,66 @@ public class TemplatesControllerTests
 
     [Theory]
     [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateCustomApplicationStatusAsync_ShouldReturnBadRequest_WhenApplicationStatusIsMissing(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        ITemplatesClient templatesClient,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new(ClaimTypes.Role, "Admin")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        var request = new CustomApplicationStatusRequest
+        {
+            Label = "Test Label"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ExternalApplicationsException<ExceptionResponse>>(
+            () => templatesClient.CreateCustomApplicationStatusAsync(Guid.Parse(EaContextSeeder.TemplateId), request));
+        Assert.Equal(400, ex.StatusCode);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
+    public async Task CreateCustomApplicationStatusAsync_ShouldReturnBadRequest_WhenApplicationStatusStringIsInvalid(
+        CustomWebApplicationDbContextFactory<Program> factory,
+        HttpClient httpClient)
+    {
+        // Arrange
+        factory.TestClaims = new List<Claim>
+        {
+            new(ClaimTypes.Email, EaContextSeeder.BobEmail),
+            new(ClaimTypes.Role, "Admin")
+        };
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", "test-token");
+
+        using var content = new StringContent(
+            """{"applicationStatus":"NotAValidStatus","label":"Test Label"}""",
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await httpClient.PostAsync(
+            $"v1/Templates/{EaContextSeeder.TemplateId}/custom-statuses",
+            content);
+
+        // Assert
+        Assert.Equal(400, (int)response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Invalid request data", body);
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(CustomWebApplicationDbContextFactoryCustomization))]
     public async Task CreateCustomApplicationStatusAsync_ShouldReturnForbidden_WhenNotAdmin(
         CustomWebApplicationDbContextFactory<Program> factory,
         ITemplatesClient templatesClient,

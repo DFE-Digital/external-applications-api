@@ -3858,13 +3858,17 @@
       "CustomApplicationStatusRequest": {
         "type": "object",
         "additionalProperties": false,
+        "required": [
+          "applicationStatus",
+          "label"
+        ],
         "properties": {
           "applicationStatus": {
             "$ref": "#/components/schemas/ApplicationStatus"
           },
           "label": {
             "type": "string",
-            "nullable": true
+            "minLength": 1
           }
         }
       },
