@@ -124,3 +124,7 @@ All notable changes to this service will be documented in this file.
 ## [1.5.0] - Public Beta
 ### Notes
 - Added support for Custom Application Status 
+
+## [1.5.1] - Public Beta
+### Notes
+- Added a new request model for Custom Statuses and fixed model bugs 

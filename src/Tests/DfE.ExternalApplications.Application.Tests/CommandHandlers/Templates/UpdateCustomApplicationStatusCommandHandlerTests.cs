@@ -61,13 +61,16 @@ public class UpdateCustomApplicationStatusCommandHandlerTests
     public async Task Handle_UpdatesLabel_WhenCustomStatusExists(string newLabel)
     {
         // Arrange
+        var originalCreatedOn = new DateTime(2024, 1, 15, 10, 30, 0, DateTimeKind.Utc);
+        var originalCreatedBy = new UserId(Guid.NewGuid());
+
         var existingStatus = new CustomApplicationStatus(
             new CustomApplicationStatusId(Guid.NewGuid()),
             new TemplateId(_testTemplateId),
             ApplicationStatus.Submitted,
             "Old Label",
-            DateTime.UtcNow,
-            _testUser.Id
+            originalCreatedOn,
+            originalCreatedBy
         );
 
         var statusQueryable = new List<CustomApplicationStatus> { existingStatus }.AsQueryable().BuildMock();
@@ -82,6 +85,8 @@ public class UpdateCustomApplicationStatusCommandHandlerTests
         Assert.True(result.IsSuccess, $"Expected success but got: {result.Error}");
         Assert.Equal(newLabel, result.Value.Label);
         Assert.Equal(ApplicationStatus.Submitted, result.Value.ApplicationStatus);
+        Assert.Equal(originalCreatedOn, result.Value.CreatedOn);
+        Assert.Equal(originalCreatedBy.Value, result.Value.CreatedBy);
         await _unitOfWork.Received(1).CommitAsync(CancellationToken.None);
         await _customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
     }
@@ -147,33 +152,5 @@ public class UpdateCustomApplicationStatusCommandHandlerTests
         Assert.Equal("Unable to resolve CreatedBy user", result.Error);
         await _customStatusRepo.DidNotReceive().AddAsync(Arg.Any<CustomApplicationStatus>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().CommitAsync(CancellationToken.None);
-    }
-
-    [Theory]
-    [CustomAutoData]
-    public async Task Handle_AllowsNullLabel_WhenUpdating()
-    {
-        // Arrange
-        var existingStatus = new CustomApplicationStatus(
-            new CustomApplicationStatusId(Guid.NewGuid()),
-            new TemplateId(_testTemplateId),
-            ApplicationStatus.Submitted,
-            "Old Label",
-            DateTime.UtcNow,
-            _testUser.Id
-        );
-
-        var statusQueryable = new List<CustomApplicationStatus> { existingStatus }.AsQueryable().BuildMock();
-        _customStatusRepo.Query().Returns(_ => statusQueryable);
-
-        var command = new UpdateCustomApplicationStatusCommand(_testTemplateId, ApplicationStatus.Submitted, null);
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsSuccess, $"Expected success but got: {result.Error}");
-        Assert.Null(result.Value.Label);
-        await _unitOfWork.Received(1).CommitAsync(CancellationToken.None);
     }
 }

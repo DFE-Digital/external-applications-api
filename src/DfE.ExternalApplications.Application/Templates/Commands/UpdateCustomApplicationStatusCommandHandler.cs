@@ -1,3 +1,4 @@
+using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -18,7 +19,7 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
     /// </summary>
     public sealed record UpdateCustomApplicationStatusCommand(
         Guid TemplateId,
-        ApplicationStatus ApplicationStatus,
+        ApplicationStatus? ApplicationStatus,
         string? Label) : IRequest<Result<CustomApplicationStatusDto>>;
 
     public sealed class UpdateCustomApplicationStatusCommandHandler(
@@ -62,32 +63,24 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
                 var createdByUserId = dbUser.Id;
 
                 // Check if custom status exists for this template and application status
-                var existing = await customApplicationStatusRepo.Query()
-                    .FirstOrDefaultAsync(x => x.TemplateId == new TemplateId(request.TemplateId) && x.ApplicationStatus == request.ApplicationStatus, cancellationToken);
+                var existing = await new GetCustomApplicationStatusByTemplateIdAndApplicationStatusQueryObject(
+                        request.TemplateId,
+                        request.ApplicationStatus!.Value)
+                    .Apply(customApplicationStatusRepo.Query())
+                    .FirstOrDefaultAsync(cancellationToken);
 
                 if (existing is not null)
                 {
-                    // Update existing
                     existing.UpdateLabel(request.Label);
                     await unitOfWork.CommitAsync(cancellationToken);
 
-                    var dto = new CustomApplicationStatusDto
-                    {
-                        CustomApplicationStatusId = existing.Id!.Value,
-                        TemplateId = existing.TemplateId.Value,
-                        ApplicationStatus = existing.ApplicationStatus,
-                        Label = existing.Label,
-                        CreatedOn = DateTime.UtcNow,
-                        CreatedBy = createdByUserId.Value
-                    };
-
-                    return Result<CustomApplicationStatusDto>.Success(dto);
+                    return Result<CustomApplicationStatusDto>.Success(MapToDto(existing));
                 }
 
                 var entity = new CustomApplicationStatus(
                     new CustomApplicationStatusId(Guid.NewGuid()),
                     new TemplateId(request.TemplateId),
-                    request.ApplicationStatus,
+                    request.ApplicationStatus!.Value,
                     request.Label,
                     DateTime.UtcNow,
                     createdByUserId);
@@ -95,22 +88,23 @@ namespace DfE.ExternalApplications.Application.Templates.Commands
                 await customApplicationStatusRepo.AddAsync(entity, cancellationToken);
                 await unitOfWork.CommitAsync(cancellationToken);
 
-                var createdDto = new CustomApplicationStatusDto
-                {
-                    CustomApplicationStatusId = entity.Id!.Value,
-                    TemplateId = entity.TemplateId.Value,
-                    ApplicationStatus = entity.ApplicationStatus,
-                    Label = entity.Label,
-                    CreatedOn = entity.CreatedOn,
-                    CreatedBy = entity.CreatedBy.Value
-                };
-
-                return Result<CustomApplicationStatusDto>.Success(createdDto);
+                return Result<CustomApplicationStatusDto>.Success(MapToDto(entity));
             }
             catch (Exception e)
             {
                 return Result<CustomApplicationStatusDto>.Failure(e.ToString());
             }
         }
+
+        private static CustomApplicationStatusDto MapToDto(CustomApplicationStatus entity) =>
+            new()
+            {
+                CustomApplicationStatusId = entity.Id!.Value,
+                TemplateId = entity.TemplateId.Value,
+                ApplicationStatus = entity.ApplicationStatus,
+                Label = entity.Label,
+                CreatedOn = entity.CreatedOn,
+                CreatedBy = entity.CreatedBy.Value
+            };
     }
 }

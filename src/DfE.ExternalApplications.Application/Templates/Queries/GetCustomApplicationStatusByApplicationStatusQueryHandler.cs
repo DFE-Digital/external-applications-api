@@ -1,6 +1,6 @@
+using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
@@ -19,8 +19,11 @@ namespace DfE.ExternalApplications.Application.Templates.Queries
         {
             try
             {
-                var entity = await customApplicationStatusRepo.Query()
-                    .FirstOrDefaultAsync(x => x.TemplateId == new TemplateId(request.TemplateId) && x.ApplicationStatus == request.ApplicationStatus, cancellationToken);
+                var entity = await new GetCustomApplicationStatusByTemplateIdAndApplicationStatusQueryObject(
+                        request.TemplateId,
+                        request.ApplicationStatus)
+                    .Apply(customApplicationStatusRepo.Query())
+                    .FirstOrDefaultAsync(cancellationToken);
 
                 if (entity is null)
                     return Result<CustomApplicationStatusDto>.NotFound("Custom application status not found");

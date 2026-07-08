@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Common.Exceptions;
 using DfE.ExternalApplications.Application.Templates.Commands;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using MediatR;
@@ -63,10 +64,14 @@ public class TemplatesController(ISender sender) : ControllerBase
     /// </summary>
     [HttpPost("{templateId}/custom-statuses")]
     [SwaggerResponse(201, "Custom status created/updated.", typeof(CustomApplicationStatusDto))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
     [Authorize(Policy = "CanWriteTemplate")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusRequest request, CancellationToken cancellationToken)
     {
+        if (request is null)
+            throw new BadRequestException("Invalid request data.");
+
         var command = new UpdateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
         var result = await sender.Send(command, cancellationToken);
 
