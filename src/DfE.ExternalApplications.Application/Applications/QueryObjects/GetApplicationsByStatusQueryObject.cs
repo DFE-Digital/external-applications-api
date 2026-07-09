@@ -10,5 +10,5 @@ public sealed class GetApplicationsByStatusQueryObject(ApplicationStatus status)
     : IQueryObject<Domain.Entities.Application>
 {
     public IQueryable<Domain.Entities.Application> Apply(IQueryable<Domain.Entities.Application> query) =>
-        query.Where(a => a.Status == status);
+        query.Where(a => (a.Status ?? ApplicationStatus.InProgress) == status);
 }
