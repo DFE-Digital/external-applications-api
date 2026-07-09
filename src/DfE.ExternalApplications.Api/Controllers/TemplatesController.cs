@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using DfE.ExternalApplications.Application.Common.Exceptions;
 using DfE.ExternalApplications.Application.Templates.Commands;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using MediatR;
@@ -36,6 +37,47 @@ public class TemplatesController(ISender sender) : ControllerBase
         return new ObjectResult(result)
         {
             StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Get custom application statuses for a template.
+    /// </summary>
+    [HttpGet("{templateId}/custom-statuses")]
+    [SwaggerResponse(200, "Custom statuses returned.", typeof(IReadOnlyCollection<CustomApplicationStatusDto>))]
+    [Authorize(Policy = "CanReadTemplate")]
+    public async Task<IActionResult> GetCustomApplicationStatusesAsync([FromRoute] Guid templateId, CancellationToken cancellationToken)
+    {
+        var query = new GetCustomApplicationStatusesQuery(templateId);
+        var result = await sender.Send(query, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Create or update a custom application status for a template.
+    /// If a CustomApplicationStatus for the TemplateId and ApplicationStatus exists, update its label; otherwise create one.
+    /// Returns the created or updated CustomApplicationStatus.
+    /// </summary>
+    [HttpPost("{templateId}/custom-statuses")]
+    [SwaggerResponse(201, "Custom status created/updated.", typeof(CustomApplicationStatusDto))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [Authorize(Policy = "CanWriteTemplate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateCustomApplicationStatusAsync([FromRoute] Guid templateId, [FromBody] CustomApplicationStatusRequest request, CancellationToken cancellationToken)
+    {
+        if (request is null)
+            throw new BadRequestException("Invalid request data.");
+
+        var command = new UpdateCustomApplicationStatusCommand(templateId, request.ApplicationStatus, request.Label);
+        var result = await sender.Send(command, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status201Created
         };
     }
 

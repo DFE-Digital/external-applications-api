@@ -163,6 +163,7 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddScoped<ICorrelationContext, CorrelationContext>();
 
             builder.Services.AddCustomExceptionHandler<ValidationExceptionHandler>();
+            builder.Services.AddCustomExceptionHandler<JsonExceptionHandler>();
             builder.Services.AddCustomExceptionHandler<ApplicationExceptionHandler>();
 
             // Collect all frontend origins from all tenants for the default CORS policy
@@ -332,6 +333,19 @@ namespace DfE.ExternalApplications.Api
                 options.IncludeDetails = builder.Environment.IsDevelopment();
                 options.LogExceptions = true;
                 options.DefaultErrorMessage = "Something went wrong";
+                options.SharedPostProcessingAction = (exception, response) =>
+                {
+                    if (exception is DfE.ExternalApplications.Application.Common.Exceptions.ValidationException validationException)
+                    {
+                        response.Details = string.Join("; ",
+                            validationException.Errors
+                                .SelectMany(kvp => kvp.Value.Select(error => $"{kvp.Key}: {error}")));
+                    }
+                    else if (exception is JsonException jsonException)
+                    {
+                        response.Details = jsonException.Message;
+                    }
+                };
             });
 
 

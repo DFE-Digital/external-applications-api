@@ -215,8 +215,12 @@ namespace DfE.ExternalApplications.Application.Services
                 AllowedExtensions = tenant.Settings.GetSection("FileStorage:Local:AllowedExtensions").Get<string[]>() ?? Array.Empty<string>(),
                 AllowedFileNamePattern = tenant.Settings.GetValue<string>("FileStorage:Local:AllowedFileNamePattern"),
                 AllowedFileNamePatternFriendlyList = tenant.Settings.GetValue<string>("FileStorage:Local:AllowedFileNamePatternFriendlyList") ?? "a-z A-Z 0-9 _ - no-space",
-                AllowedExtensionsFriendlyList = tenant.Settings.GetValue<string>("FileStorage:Local:AllowedExtensionsFriendlyList") ?? "jpg, png, pdf, docx"
+                AllowedExtensionsFriendlyList = tenant.Settings.GetValue<string>("FileStorage:Local:AllowedExtensionsFriendlyList") ?? string.Empty
             };
+            if (string.IsNullOrEmpty(options.AllowedExtensionsFriendlyList))
+            {
+                options.AllowedExtensionsFriendlyList = string.Join(", ", options.AllowedExtensions);
+            }
 
             _logger.LogDebug("Resolved tenant options for {TenantName}: BaseDirectory={BaseDirectory}", 
                 tenant.Name, options.BaseDirectory);

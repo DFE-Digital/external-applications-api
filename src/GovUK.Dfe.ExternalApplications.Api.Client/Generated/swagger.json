@@ -2672,6 +2672,95 @@
         }
       }
     },
+    "/v1/Templates/{templateId}/custom-statuses": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Get custom application statuses for a template.",
+        "operationId": "Templates_GetCustomApplicationStatuses",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom statuses returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomApplicationStatusDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Create or update a custom application status for a template.\nIf a CustomApplicationStatus for the TemplateId and ApplicationStatus exists, update its label; otherwise create one.\nReturns the created or updated CustomApplicationStatus.",
+        "operationId": "Templates_CreateCustomApplicationStatus",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomApplicationStatusRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "201": {
+            "description": "Custom status created/updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomApplicationStatusDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/Templates/{templateId}/versions": {
       "post": {
         "tags": [
@@ -4167,6 +4256,53 @@
             "type": "string",
             "format": "guid",
             "nullable": true
+          }
+        }
+      },
+      "CustomApplicationStatusDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "customApplicationStatusId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "templateId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "applicationStatus": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdOn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "CustomApplicationStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "applicationStatus",
+          "label"
+        ],
+        "properties": {
+          "applicationStatus": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
           }
         }
       },

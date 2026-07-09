@@ -4,6 +4,7 @@ using DfE.ExternalApplications.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DfE.ExternalApplications.Infrastructure.Migrations
 {
     [DbContext(typeof(ExternalApplicationsContext))]
-    partial class ExternalApplicationsContextModelSnapshot : ModelSnapshot
+    [Migration("20260625153442_AddCustomApplicationStatus")]
+    partial class AddCustomApplicationStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -175,16 +178,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("Label");
 
-                    b.Property<DateTime>("PeriodEnd")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("PeriodEnd");
-
-                    b.Property<DateTime>("PeriodStart")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("PeriodStart");
-
                     b.Property<Guid>("TemplateId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("TemplateId");
@@ -198,17 +191,6 @@ namespace DfE.ExternalApplications.Infrastructure.Migrations
                         .HasDatabaseName("IX_CustomApplicationStatuses_TemplateId_ApplicationStatus");
 
                     b.ToTable("CustomApplicationStatuses", "ea");
-
-                    b.ToTable(tb => tb.IsTemporal(ttb =>
-                            {
-                                ttb.UseHistoryTable("History_CustomApplicationStatuses", "ea");
-                                ttb
-                                    .HasPeriodStart("PeriodStart")
-                                    .HasColumnName("PeriodStart");
-                                ttb
-                                    .HasPeriodEnd("PeriodEnd")
-                                    .HasColumnName("PeriodEnd");
-                            }));
                 });
 
             modelBuilder.Entity("DfE.ExternalApplications.Domain.Entities.File", b =>
