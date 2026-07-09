@@ -47,9 +47,12 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
         TemplateVersionId = templateVersionId;
         CreatedOn = createdOn;
         CreatedBy = createdBy;
-        Status = status;
         LastModifiedOn = lastModifiedOn;
         LastModifiedBy = lastModifiedBy;
+        if(status is null)
+        {
+            Status = ApplicationStatus.Created;
+        }
     }
 
     public void AddResponse(ApplicationResponse response)
