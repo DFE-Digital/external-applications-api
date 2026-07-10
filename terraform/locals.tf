@@ -52,8 +52,6 @@ locals {
   existing_virtual_network                     = var.existing_virtual_network
   virtual_network_address_space                = var.virtual_network_address_space
   virtual_network_address_space_mask           = element(split("/", local.virtual_network_address_space), 1)
-  key_vault_subnet_cidr                        = cidrsubnet(local.virtual_network_address_space, 21 - local.virtual_network_address_space_mask, 2)
-  enable_keyvault_private_endpoint             = var.enable_keyvault_private_endpoint
   storage_subnet_cidr                          = var.storage_subnet_cidr
   mssql_private_endpoint_subnet_cidr           = var.mssql_private_endpoint_subnet_cidr
   existing_resource_group                      = var.existing_resource_group

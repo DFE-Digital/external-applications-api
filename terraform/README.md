@@ -133,7 +133,7 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.76.0 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.77.0 |
 | <a name="provider_null"></a> [null](#provider\_null) | 3.3.0 |
 
 ## Modules
@@ -183,7 +183,6 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 | <a name="input_enable_dns_zone"></a> [enable\_dns\_zone](#input\_enable\_dns\_zone) | Conditionally create a DNS zone | `bool` | n/a | yes |
 | <a name="input_enable_health_insights_api"></a> [enable\_health\_insights\_api](#input\_enable\_health\_insights\_api) | Deploys a Function App that exposes the last 3 HTTP Web Tests via an API endpoint. 'enable\_app\_insights\_integration' and 'enable\_monitoring' must be set to 'true'. | `bool` | `false` | no |
 | <a name="input_enable_init_container"></a> [enable\_init\_container](#input\_enable\_init\_container) | Deploy an Init Container. Init containers run before the primary app container and are used to perform initialization tasks such as downloading data or preparing the environment | `bool` | `false` | no |
-| <a name="input_enable_keyvault_private_endpoint"></a> [enable\_keyvault\_private\_endpoint](#input\_enable\_keyvault\_private\_endpoint) | Set to true to create a private endpoint for key vault. | `bool` | n/a | yes |
 | <a name="input_enable_monitoring"></a> [enable\_monitoring](#input\_enable\_monitoring) | Create an App Insights instance and notification group for the Container App | `bool` | n/a | yes |
 | <a name="input_enable_monitoring_traces"></a> [enable\_monitoring\_traces](#input\_enable\_monitoring\_traces) | Monitor App Insights traces for error messages | `bool` | `true` | no |
 | <a name="input_enable_mssql_database"></a> [enable\_mssql\_database](#input\_enable\_mssql\_database) | Set to true to create an Azure SQL server/database, with a private endpoint within the virtual network | `bool` | `false` | no |

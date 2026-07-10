@@ -34,11 +34,6 @@ variable "virtual_network_address_space" {
   type        = string
 }
 
-variable "enable_keyvault_private_endpoint" {
-  description = "Set to true to create a private endpoint for key vault."
-  type        = bool
-}
-
 variable "tfvars_filename" {
   description = "tfvars filename. This file is uploaded and stored encrupted within Key Vault, to ensure that the latest tfvars are stored in a shared place."
   type        = string
