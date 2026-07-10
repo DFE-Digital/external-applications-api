@@ -18,7 +18,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security;
 public class CachedInternalUserTokenStore(
     IHttpContextAccessor httpContextAccessor,
     IDistributedCache distributedCache,
-    ApiClientSettings apiClientSettings,
+    IApiClientSettingsProvider settingsProvider,
     ILogger<CachedInternalUserTokenStore> logger)
     : IInternalUserTokenStore
 {
@@ -31,9 +31,10 @@ public class CachedInternalUserTokenStore(
     /// </summary>
     private string GetTenantPrefixedKey(string key)
     {
-        if (apiClientSettings.TenantId.HasValue)
+        var tenantId = settingsProvider.GetSettings().TenantId;
+        if (tenantId.HasValue)
         {
-            return $"t:{apiClientSettings.TenantId}:{key}";
+            return $"t:{tenantId}:{key}";
         }
         return key;
     }

@@ -30,6 +30,34 @@ public class GetPlatformTenantConfigurationQueryHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldExcludeConnectionStrings_WhenTargetIsWeb()
+    {
+        var tenantId = Guid.NewGuid();
+        var reader = Substitute.For<ITenantSettingsReader>();
+        reader.GetConfigurationAsync(tenantId, "Web", Arg.Any<CancellationToken>())
+            .Returns(new TenantConfigurationSnapshot(
+                tenantId,
+                "Transfers",
+                DateTime.UtcNow,
+                new Dictionary<string, string?>
+                {
+                    ["DfESignIn:ClientId"] = "test",
+                    ["ConnectionStrings:Redis"] = "localhost:6379"
+                }));
+
+        var handler = new GetPlatformTenantConfigurationQueryHandler(reader);
+
+        var result = await handler.Handle(
+            new GetPlatformTenantConfigurationQuery(tenantId, "Web"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains("DfESignIn:ClientId", result.Value!.Configuration.Keys);
+        Assert.DoesNotContain(result.Value.Configuration.Keys, key =>
+            key.StartsWith("ConnectionStrings:", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Handle_ShouldReturnNotFound_WhenTenantMissing()
     {
         var tenantId = Guid.NewGuid();

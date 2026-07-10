@@ -18,9 +18,9 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
     public class HeaderForwardingHandler : DelegatingHandler
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IApiClientSettingsProvider _settingsProvider;
         private readonly ILogger<HeaderForwardingHandler> _logger;
         private readonly string[] _headersToForward;
-        private readonly Guid? _tenantId;
 
         /// <summary>
         /// The header name used to identify the tenant for multi-tenant API requests.
@@ -44,14 +44,14 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
         /// <param name="logger">Logger for diagnostic information</param>
         public HeaderForwardingHandler(
             IHttpContextAccessor httpContextAccessor,
-            ApiClientSettings apiSettings,
+            IApiClientSettingsProvider settingsProvider,
             ILogger<HeaderForwardingHandler> logger)
         {
             _httpContextAccessor = httpContextAccessor;
+            _settingsProvider = settingsProvider;
             _logger = logger;
-            _tenantId = apiSettings.TenantId;
-            
-            // Use configured headers if provided, otherwise use defaults
+
+            var apiSettings = settingsProvider.GetSettings();
             _headersToForward = apiSettings.HeadersToForward?.Any() == true
                 ? apiSettings.HeadersToForward
                 : DefaultHeadersToForward;
@@ -65,20 +65,20 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            // Always add the tenant ID header if configured
-            if (_tenantId.HasValue)
+            var tenantId = _settingsProvider.GetSettings().TenantId;
+            if (tenantId.HasValue)
             {
                 if (request.Headers.Contains(TenantIdHeaderName))
                 {
                     request.Headers.Remove(TenantIdHeaderName);
                 }
-                
-                request.Headers.Add(TenantIdHeaderName, _tenantId.Value.ToString());
-                
+
+                request.Headers.Add(TenantIdHeaderName, tenantId.Value.ToString());
+
                 _logger.LogDebug(
                     "Added {HeaderName} header with value {TenantId} to API request: {RequestUri}",
                     TenantIdHeaderName,
-                    _tenantId.Value,
+                    tenantId.Value,
                     request.RequestUri);
             }
 

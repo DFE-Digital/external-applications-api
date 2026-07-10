@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -8,66 +9,54 @@ using GovUK.Dfe.ExternalApplications.Api.Client.Settings;
 namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
 {
     [ExcludeFromCodeCoverage]
-    public class TokenAcquisitionService : ITokenAcquisitionService
+    public class TokenAcquisitionService(
+        IApiClientSettingsProvider settingsProvider,
+        ILogger<TokenAcquisitionService> logger) : ITokenAcquisitionService
     {
-        private readonly ApiClientSettings _settings;
-        private readonly ILogger<TokenAcquisitionService> _logger;
-        private readonly Lazy<IConfidentialClientApplication> _app;
-
-        public TokenAcquisitionService(ApiClientSettings settings, ILogger<TokenAcquisitionService> logger)
-        {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            _app = new Lazy<IConfidentialClientApplication>(() =>
-            {
-                try
-                {
-                    var app = ConfidentialClientApplicationBuilder.Create(_settings.ClientId)
-                        .WithClientSecret(_settings.ClientSecret)
-                        .WithAuthority(new Uri(_settings.Authority!))
-                        .Build();
-                    
-                    return app;
-                }
-                catch (Exception ex)
-                {
-                    throw;
-                }
-            });
-        }
+        private readonly ConcurrentDictionary<string, Lazy<IConfidentialClientApplication>> _applications = new();
 
         public async Task<string> GetTokenAsync()
         {
-            try
-            {
-                var authResult = await _app.Value.AcquireTokenForClient(new[] { _settings.Scope })
-                    .ExecuteAsync();
+            var settings = settingsProvider.GetSettings()
+                ?? throw new InvalidOperationException("API client settings are not available.");
 
-                if (authResult == null)
-                {
-                    throw new InvalidOperationException("Token acquisition returned null result");
-                }
+            if (string.IsNullOrWhiteSpace(settings.ClientId))
+            {
+                throw new InvalidOperationException("ExternalApplicationsApiClient:ClientId is not configured.");
+            }
 
-                if (string.IsNullOrEmpty(authResult.AccessToken))
-                {
-                    throw new InvalidOperationException("Token acquisition returned empty access token");
-                }
+            if (string.IsNullOrWhiteSpace(settings.ClientSecret))
+            {
+                throw new InvalidOperationException("ExternalApplicationsApiClient:ClientSecret is not configured.");
+            }
 
-                return authResult.AccessToken;
-            }
-            catch (MsalServiceException ex)
+            if (string.IsNullOrWhiteSpace(settings.Authority))
             {
-                throw;
+                throw new InvalidOperationException("ExternalApplicationsApiClient:Authority is not configured.");
             }
-            catch (MsalClientException ex)
+
+            if (string.IsNullOrWhiteSpace(settings.Scope))
             {
-                throw;
+                throw new InvalidOperationException("ExternalApplicationsApiClient:Scope is not configured.");
             }
-            catch (Exception ex)
+
+            var cacheKey = $"{settings.Authority}|{settings.ClientId}";
+            var application = _applications.GetOrAdd(cacheKey, _ => new Lazy<IConfidentialClientApplication>(() =>
+                ConfidentialClientApplicationBuilder.Create(settings.ClientId)
+                    .WithClientSecret(settings.ClientSecret)
+                    .WithAuthority(new Uri(settings.Authority))
+                    .Build())).Value;
+
+            var authResult = await application.AcquireTokenForClient(new[] { settings.Scope })
+                .ExecuteAsync();
+
+            if (authResult?.AccessToken is not { Length: > 0 } accessToken)
             {
-                throw;
+                throw new InvalidOperationException("Token acquisition returned empty access token");
             }
+
+            logger.LogDebug("Acquired client-credentials token for API client {ClientId}", settings.ClientId);
+            return accessToken;
         }
     }
 }

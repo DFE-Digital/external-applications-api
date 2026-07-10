@@ -44,11 +44,17 @@ public sealed class GetPlatformTenantConfigurationQueryHandler(ITenantSettingsRe
                 $"Tenant '{request.TenantId}' is not active or no longer exists.");
         }
 
+        var configuration = normalizedTarget.Equals("Web", StringComparison.OrdinalIgnoreCase)
+            ? snapshot.Configuration
+                .Where(pair => !pair.Key.StartsWith("ConnectionStrings:", StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(pair => pair.Key, pair => pair.Value)
+            : snapshot.Configuration;
+
         return Result<TenantConfigurationDto>.Success(new TenantConfigurationDto(
             snapshot.TenantId,
             snapshot.TenantName,
             normalizedTarget,
             snapshot.LoadedAtUtc,
-            snapshot.Configuration));
+            configuration));
     }
 }

@@ -19,7 +19,7 @@ public static class TenantConfigSeeder
 
     private static readonly HashSet<string> SkipKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Id", "Name"
+        "Id", "Name", "Web", "Hostnames"
     };
 
     /// <summary>
@@ -91,6 +91,21 @@ public static class TenantConfigSeeder
                 });
             }
 
+            var hostnamesSection = tenantSection.GetSection("Hostnames");
+            var hostnames = hostnamesSection.Exists()
+                ? hostnamesSection.Get<string[]>() ?? []
+                : [];
+
+            foreach (var hostname in hostnames.Where(h => !string.IsNullOrWhiteSpace(h)))
+            {
+                tenantEntity.Hostnames.Add(new TenantHostnameEntity
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    Hostname = hostname.Trim()
+                });
+            }
+
             // Group child sections into categories and serialize each as JSON
             foreach (var categorySection in tenantSection.GetChildren())
             {
@@ -119,10 +134,40 @@ public static class TenantConfigSeeder
                 });
             }
 
+            var webSection = tenantSection.GetSection("Web");
+            if (webSection.Exists())
+            {
+                foreach (var webCategorySection in webSection.GetChildren())
+                {
+                    var webCategoryJson = SerializeSectionToJson(webCategorySection);
+                    if (string.IsNullOrWhiteSpace(webCategoryJson) || webCategoryJson == "{}")
+                    {
+                        continue;
+                    }
+
+                    var webIsSecret = SecretCategories.Contains(webCategorySection.Key);
+                    var webStoredJson = webIsSecret && encryptor != null
+                        ? encryptor.Encrypt(webCategoryJson)
+                        : webCategoryJson;
+
+                    tenantEntity.Settings.Add(new TenantSettingEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        TenantId = tenantId,
+                        Category = webCategorySection.Key,
+                        Target = "Web",
+                        Settings = webStoredJson,
+                        IsSecret = webIsSecret,
+                        CreatedAtUtc = DateTime.UtcNow,
+                        UpdatedAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
             dbContext.Tenants.Add(tenantEntity);
             logger?.LogInformation(
-                "Seeded tenant '{TenantName}' ({TenantId}) with {SettingsCount} setting categories and {OriginsCount} origins",
-                tenantName, tenantId, tenantEntity.Settings.Count, tenantEntity.FrontendOrigins.Count);
+                "Seeded tenant '{TenantName}' ({TenantId}) with {SettingsCount} setting categories, {OriginsCount} origins and {HostnamesCount} hostnames",
+                tenantName, tenantId, tenantEntity.Settings.Count, tenantEntity.FrontendOrigins.Count, tenantEntity.Hostnames.Count);
         }
 
         await dbContext.SaveChangesAsync();

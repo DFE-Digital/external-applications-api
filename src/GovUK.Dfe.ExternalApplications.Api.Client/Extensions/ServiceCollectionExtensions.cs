@@ -3,8 +3,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,126 +18,60 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
         public static IServiceCollection AddExternalApplicationsApiClient<TClientInterface, TClientImplementation>(
             this IServiceCollection services,
             IConfiguration configuration,
-            HttpClient? existingHttpClient = null)
+            HttpClient? existingHttpClient = null,
+            bool? enableTokenExchange = null)
             where TClientInterface : class
             where TClientImplementation : class, TClientInterface
         {
-            var apiSettings = new ApiClientSettings();
-            configuration.GetSection("ExternalApplicationsApiClient").Bind(apiSettings);
+            ExternalApplicationsApiClientRegistrar.RegisterInfrastructure(
+                services,
+                configuration,
+                enableTokenExchange);
 
-            services.AddSingleton(apiSettings);
-            services.AddSingleton<ITokenAcquisitionService, TokenAcquisitionService>();
             services.AddHttpContextAccessor();
-            
-            // Register handlers
-            services.AddTransient<HeaderForwardingHandler>();
-            services.AddTransient<AzureBearerTokenHandler>();
-            
-            if (apiSettings.RequestTokenExchange)
-            {
-                // Ensure distributed cache is registered
-                if (!services.Any(x => x.ServiceType == typeof(IDistributedCache)))
-                {
-                    services.AddMemoryCache();
-                    services.AddDistributedMemoryCache();
-                }
-                
-                // Frontend clients need internal token storage and exchange handler
-                // CachedInternalUserTokenStore uses ApiClientSettings.TenantId for cache key prefixing
-                services.AddScoped<IInternalUserTokenStore, CachedInternalUserTokenStore>();
-                
-                services.AddScoped<ICacheManager, DistributedCacheManager>();
-                services.AddScoped<ITokenStateManager, TokenStateManager>();
-                
-                services.AddTransient<TokenExchangeHandler>(serviceProvider =>
-                {
-                    return new TokenExchangeHandler(
-                        serviceProvider.GetRequiredService<IHttpContextAccessor>(),
-                        serviceProvider.GetRequiredService<IInternalUserTokenStore>(),
-                        serviceProvider.GetRequiredService<ITokensClient>(),
-                        serviceProvider.GetRequiredService<ITokenAcquisitionService>(),
-                        serviceProvider.GetRequiredService<ITokenStateManager>(),
-                        serviceProvider.GetRequiredService<ILogger<TokenExchangeHandler>>());
-                });
 
-                using (var tempProvider = services.BuildServiceProvider())
-                {
-                    var logger = tempProvider.GetService<ILoggerFactory>()?.CreateLogger("ExternalApplicationsApiClient");
-
-                    if (apiSettings.AutoRegisterUsers)
-                    {
-                        logger?.LogInformation("Auto user registration is enabled for ExternalApplicationsApiClient (BaseUrl: {BaseUrl})", apiSettings.BaseUrl);
-                    }
-                    else
-                    {
-                        logger?.LogInformation("Auto user registration is disabled for ExternalApplicationsApiClient (BaseUrl: {BaseUrl})", apiSettings.BaseUrl);
-                    }
-                }
-
-                // Register UserAutoRegistrationHandler for auto-registering new users
-                if (apiSettings.AutoRegisterUsers)
-                {
-                    // Simple registration; the handler manually uses IHttpClientFactory and sets Azure token
-                    services.AddTransient<UserAutoRegistrationHandler>(serviceProvider =>
-                    {
-                        return new UserAutoRegistrationHandler(
-                            serviceProvider.GetRequiredService<IHttpClientFactory>(),
-                            serviceProvider.GetRequiredService<ITokenStateManager>(),
-                            serviceProvider.GetRequiredService<ITokenAcquisitionService>(),
-                            serviceProvider.GetRequiredService<IHttpContextAccessor>(),
-                            apiSettings,
-                            serviceProvider.GetRequiredService<ILogger<UserAutoRegistrationHandler>>());
-                    });
-                }
-            }
+            var startupSettings = ConfigurationApiClientSettingsProvider.BindSettings(configuration);
+            var useTokenExchange = enableTokenExchange ?? startupSettings.RequestTokenExchange;
+            var fallbackBaseUrl = startupSettings.BaseUrl ?? "https://localhost/";
 
             if (existingHttpClient != null)
             {
                 services.AddSingleton(existingHttpClient);
                 services.AddTransient<TClientInterface, TClientImplementation>(serviceProvider =>
-                {
-                    return ActivatorUtilities.CreateInstance<TClientImplementation>(
-                        serviceProvider, existingHttpClient, apiSettings.BaseUrl!);
-                });
+                    ActivatorUtilities.CreateInstance<TClientImplementation>(
+                        serviceProvider, existingHttpClient, fallbackBaseUrl));
             }
             else
             {
                 var builder = services.AddHttpClient<TClientInterface, TClientImplementation>((httpClient, serviceProvider) =>
                 {
-                    httpClient.BaseAddress = new Uri(apiSettings.BaseUrl!);
+                    httpClient.BaseAddress = new Uri(fallbackBaseUrl);
 
                     return ActivatorUtilities.CreateInstance<TClientImplementation>(
-                        serviceProvider, httpClient, apiSettings.BaseUrl!);
+                        serviceProvider, httpClient, fallbackBaseUrl);
                 });
 
-                // Add header forwarding handler FIRST in the chain
-                // This ensures headers like X-Cypress-Test are available for all subsequent handlers
+                builder.AddHttpMessageHandler<ApiClientRequestConfigurationHandler>();
                 builder.AddHttpMessageHandler<HeaderForwardingHandler>();
 
-                if (apiSettings.RequestTokenExchange)
+                if (useTokenExchange)
                 {
-                    // Frontend clients: Use exchange flow
                     if (typeof(TClientInterface) == typeof(ITokensClient))
                     {
-                        // Tokens client always uses Azure token (for exchange endpoint authentication)
                         builder.AddHttpMessageHandler<AzureBearerTokenHandler>();
 
-                        // Add auto-registration handler BEFORE token exchange
-                        // This intercepts "user not found" errors and auto-registers the user
-                        if (apiSettings.AutoRegisterUsers)
+                        if (startupSettings.AutoRegisterUsers)
                         {
                             builder.AddHttpMessageHandler<UserAutoRegistrationHandler>();
                         }
                     }
                     else
                     {
-                        // Other clients use token exchange to get internal tokens
                         builder.AddHttpMessageHandler<TokenExchangeHandler>();
                     }
                 }
                 else
                 {
-                    // Service clients: Use Azure token for everything (no exchange needed)
                     builder.AddHttpMessageHandler<AzureBearerTokenHandler>();
                 }
             }
@@ -154,11 +86,5 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Extensions
         {
             return app.UseMiddleware<TokenManagementMiddleware>();
         }
-
-
-
-
     }
-
-
 }

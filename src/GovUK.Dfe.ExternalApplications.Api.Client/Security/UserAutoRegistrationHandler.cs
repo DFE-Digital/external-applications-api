@@ -29,7 +29,7 @@ public class UserAutoRegistrationHandler : DelegatingHandler
     private readonly ITokenStateManager _tokenStateManager;
     private readonly ITokenAcquisitionService _tokenAcquisitionService;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ApiClientSettings _settings;
+    private readonly IApiClientSettingsProvider _settingsProvider;
     private readonly ILogger<UserAutoRegistrationHandler> _logger;
     private readonly SemaphoreSlim _registrationLock = new(1, 1);
     public const string TenantIdHeaderName = "X-Tenant-ID";
@@ -39,14 +39,14 @@ public class UserAutoRegistrationHandler : DelegatingHandler
         ITokenStateManager tokenStateManager,
         ITokenAcquisitionService tokenAcquisitionService,
         IHttpContextAccessor httpContextAccessor,
-        ApiClientSettings settings,
+        IApiClientSettingsProvider settingsProvider,
         ILogger<UserAutoRegistrationHandler> logger)
     {
         _httpClientFactory = httpClientFactory;
         _tokenStateManager = tokenStateManager;
         _tokenAcquisitionService = tokenAcquisitionService;
         _httpContextAccessor = httpContextAccessor;
-        _settings = settings;
+        _settingsProvider = settingsProvider;
         _logger = logger;
     }
 
@@ -54,8 +54,10 @@ public class UserAutoRegistrationHandler : DelegatingHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
+        var settings = _settingsProvider.GetSettings();
+
         // If auto-registration is disabled, just pass through
-        if (!_settings.AutoRegisterUsers)
+        if (!settings.AutoRegisterUsers)
         {
             _logger.LogWarning(">>>>>>>>>>> AutoRegistration disabled!");
 
@@ -191,13 +193,15 @@ public class UserAutoRegistrationHandler : DelegatingHandler
                 TemplateId = templateId.Value
             };
 
+            var settings = _settingsProvider.GetSettings();
+
             // Call the register endpoint using a local client with Azure token only for this request
             var client = _httpClientFactory.CreateClient();
-            client.BaseAddress = new Uri(_settings.BaseUrl!);
+            client.BaseAddress = new Uri(settings.BaseUrl!);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", azureToken);
-            client.DefaultRequestHeaders.Add(TenantIdHeaderName, _settings.TenantId.ToString());
+            client.DefaultRequestHeaders.Add(TenantIdHeaderName, settings.TenantId.ToString());
 
-            var usersClient = new UsersClient(_settings.BaseUrl!, client);
+            var usersClient = new UsersClient(settings.BaseUrl!, client);
             var result = await usersClient.RegisterUserAsync(registerRequest, cancellationToken);
 
             _logger.LogInformation("User auto-registered successfully: {UserId} - {Email}", 
@@ -234,11 +238,13 @@ public class UserAutoRegistrationHandler : DelegatingHandler
                 }
             }
 
+            var settings = _settingsProvider.GetSettings();
+
             // Fall back to configuration
-            if (_settings.DefaultTemplateId.HasValue)
+            if (settings.DefaultTemplateId.HasValue)
             {
-                _logger.LogDebug("Using DefaultTemplateId from configuration: {TemplateId}", _settings.DefaultTemplateId.Value);
-                return _settings.DefaultTemplateId.Value;
+                _logger.LogDebug("Using DefaultTemplateId from configuration: {TemplateId}", settings.DefaultTemplateId.Value);
+                return settings.DefaultTemplateId.Value;
             }
 
             return null;
@@ -246,7 +252,7 @@ public class UserAutoRegistrationHandler : DelegatingHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving TemplateId from session or configuration");
-            return _settings.DefaultTemplateId;
+            return _settingsProvider.GetSettings().DefaultTemplateId;
         }
     }
 

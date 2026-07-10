@@ -19,7 +19,7 @@ public class DistributedCacheManager(
     IDistributedCache distributedCache,
     IHttpContextAccessor httpContextAccessor,
     IInternalUserTokenStore tokenStore,
-    ApiClientSettings apiClientSettings,
+    IApiClientSettingsProvider settingsProvider,
     ILogger<DistributedCacheManager> logger) : ICacheManager
 {
     /// <summary>
@@ -28,9 +28,10 @@ public class DistributedCacheManager(
     /// </summary>
     private string GetTenantPrefixedKey(string key)
     {
-        if (apiClientSettings.TenantId.HasValue)
+        var tenantId = settingsProvider.GetSettings().TenantId;
+        if (tenantId.HasValue)
         {
-            return $"t:{apiClientSettings.TenantId}:{key}";
+            return $"t:{tenantId}:{key}";
         }
         return key;
     }
