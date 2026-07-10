@@ -128,3 +128,7 @@ All notable changes to this service will be documented in this file.
 ## [1.5.1] - Public Beta
 ### Notes
 - Added a new request model for Custom Statuses and fixed model bugs 
+
+## [1.5.2] - Filter on status fix
+### Notes
+- Fix for the filtering not working when a null value for status is encountered in the db
