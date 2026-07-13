@@ -20,7 +20,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IApiClientSettingsProvider _settingsProvider;
         private readonly ILogger<HeaderForwardingHandler> _logger;
-        private readonly string[] _headersToForward;
+        private string[]? _headersToForward;
 
         /// <summary>
         /// The header name used to identify the tenant for multi-tenant API requests.
@@ -50,11 +50,22 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
             _httpContextAccessor = httpContextAccessor;
             _settingsProvider = settingsProvider;
             _logger = logger;
+            _headersToForward = null;
+        }
 
-            var apiSettings = settingsProvider.GetSettings();
+        private string[] GetHeadersToForward()
+        {
+            if (_headersToForward is not null)
+            {
+                return _headersToForward;
+            }
+
+            var apiSettings = _settingsProvider.GetSettings();
             _headersToForward = apiSettings.HeadersToForward?.Any() == true
                 ? apiSettings.HeadersToForward
                 : DefaultHeadersToForward;
+
+            return _headersToForward;
         }
 
         /// <summary>
@@ -89,7 +100,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Security
                 var headersForwarded = 0;
 
                 // Forward each configured header if present in the incoming request
-                foreach (var headerName in _headersToForward)
+                foreach (var headerName in GetHeadersToForward())
                 {
                     if (httpContext.Request.Headers.TryGetValue(headerName, out var headerValue))
                     {

@@ -3207,6 +3207,159 @@
         }
       }
     },
+    "/v1/tenant-config/tenants/{tenantId}": {
+      "get": {
+        "tags": [
+          "TenantConfig"
+        ],
+        "summary": "Returns merged configuration for the specified tenant. For platform callers (shared Web container)\nthat resolve the tenant from the request hostname or X-Tenant-ID.",
+        "operationId": "TenantConfig_GetTenantConfigurationByTenantId",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "Web"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfigurationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing Platform.TenantConfig.Read app role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tenant inactive or no longer exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenant-config/resolve": {
+      "get": {
+        "tags": [
+          "TenantConfig"
+        ],
+        "summary": "Resolves a tenant id from an HTTP hostname using TenantHostnames.",
+        "operationId": "TenantConfig_ResolveTenantByHostname",
+        "parameters": [
+          {
+            "name": "hostname",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant resolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResolutionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid hostname.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing Platform.TenantConfig.Read app role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Hostname not mapped to any tenant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/Tokens/exchange": {
       "post": {
         "tags": [
@@ -4461,6 +4614,22 @@
               "type": "string",
               "nullable": true
             }
+          }
+        }
+      },
+      "TenantResolutionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "tenantName": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
           }
         }
       },
