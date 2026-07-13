@@ -50,6 +50,10 @@ public sealed class Application : BaseAggregateRoot, IEntity<ApplicationId>
         Status = status;
         LastModifiedOn = lastModifiedOn;
         LastModifiedBy = lastModifiedBy;
+        if(status is null)
+        {
+            Status = ApplicationStatus.Created;
+        }
     }
 
     public void AddResponse(ApplicationResponse response)
