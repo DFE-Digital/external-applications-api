@@ -3900,15 +3900,21 @@
         "description": "",
         "x-enumNames": [
           "InProgress",
-          "Submitted"
+          "Submitted",
+          "Deleted",
+          "Created"
         ],
         "x-enum-descriptions": [
           "In progress",
-          "Submitted"
+          "Submitted",
+          "Deleted",
+          "Created"
         ],
         "enum": [
           "InProgress",
-          "Submitted"
+          "Submitted",
+          "Deleted",
+          "Created"
         ]
       },
       "UserDto": {
