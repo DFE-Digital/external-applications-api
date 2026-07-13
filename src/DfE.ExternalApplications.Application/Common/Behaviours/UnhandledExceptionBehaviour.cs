@@ -16,6 +16,11 @@ namespace DfE.ExternalApplications.Application.Common.Behaviours
             {
                 return await next();
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Client aborted the request (navigation, timeout). Not an application fault.
+                throw;
+            }
             catch (Exception ex)
             {
                 var requestName = typeof(TRequest).Name;
