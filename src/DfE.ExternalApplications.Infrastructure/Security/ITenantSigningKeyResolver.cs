@@ -9,8 +9,8 @@ namespace DfE.ExternalApplications.Infrastructure.Security;
 /// (<c>ITenantAuthProviderRegistry</c>) deliberately stays free of <c>Microsoft.IdentityModel.*</c>
 /// types.
 /// <para>
-/// For <c>JwtHmac</c> providers this returns a single <see cref="SymmetricSecurityKey"/> built
-/// from the per-tenant signing secret. For <c>Oidc</c> / <c>EntraOidc</c> providers this returns
+/// For <c>JwtHmac</c> providers this returns one or more <see cref="SymmetricSecurityKey"/>s built
+/// from the per-tenant signing secret(s). For <c>Oidc</c> / <c>EntraOidc</c> providers this returns
 /// the JWKS keys fetched (and cached / auto-refreshed) by a <c>ConfigurationManager</c>
 /// pinned per discovery endpoint.
 /// </para>

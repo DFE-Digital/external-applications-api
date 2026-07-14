@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
@@ -113,23 +114,17 @@ namespace DfE.ExternalApplications.Api.Security
                 }
             });
 
-            // SaaS: register one named TokenSettings per tenant so each tenant gets its own
-            // internal-JWT signing key. IUserTokenServiceFactory.GetService(tenantId.ToString())
-            // returns the per-tenant token service. The legacy single-tenant AddUserTokenService
-            // is intentionally NOT used here - all callers must resolve via the factory.
-            foreach (var tenant in allTenants)
-            {
-                var ts = new TokenSettings();
-                tenant.Settings.GetSection("Authorization:TokenSettings").Bind(ts);
-                services.Configure<TokenSettings>(tenant.Id.ToString(), opts =>
-                {
-                    opts.SecretKey = ts.SecretKey;
-                    opts.Issuer = ts.Issuer;
-                    opts.Audience = ts.Audience;
-                    opts.TokenLifetimeMinutes = ts.TokenLifetimeMinutes;
-                    opts.BufferInSeconds = ts.BufferInSeconds;
-                });
-            }
+            // SaaS: named TokenSettings are resolved live from ITenantConfigurationProvider so
+            // /tokens/exchange signs with the same Authorization:TokenSettings secret that
+            // TenantBearer validates. Must register as IConfigureOptions (OptionsFactory DI),
+            // not only IConfigureNamedOptions — otherwise Configure is never called and SecretKey
+            // stays empty (IDX10703).
+            services.AddSingleton<TenantTokenSettingsConfigurator>();
+            services.AddSingleton<IConfigureOptions<TokenSettings>>(sp =>
+                sp.GetRequiredService<TenantTokenSettingsConfigurator>());
+            services.AddSingleton<IConfigureNamedOptions<TokenSettings>>(sp =>
+                sp.GetRequiredService<TenantTokenSettingsConfigurator>());
+            services.AddSingleton<IOptionsChangeTokenSource<TokenSettings>, TenantTokenSettingsChangeTokenSource>();
             services.AddUserTokenServiceFactory();
             services.AddHttpContextAccessor();
 
@@ -363,12 +358,19 @@ namespace DfE.ExternalApplications.Api.Security
             ITenantSigningKeyResolver signingKeyResolver,
             IHttpContextAccessor httpContextAccessor)
         {
+            // IdentityModel 8+ defaults to JsonWebTokenHandler, which reports misleading
+            // IDX10517 ("kid is missing") for HS256 internal JWTs that omit kid (as issued by
+            // UserTokenService). Align with the issuing handler for HMAC user tokens.
+            opts.TokenHandlers.Clear();
+            opts.TokenHandlers.Add(new JwtSecurityTokenHandler());
+
             opts.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
+                TryAllIssuerSigningKeys = true,
                 IssuerValidator = (issuer, _, _) =>
                     registry.HasAnyProviderForIssuer(issuer)
                         ? issuer
