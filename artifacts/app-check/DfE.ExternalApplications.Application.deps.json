@@ -1,0 +1,1270 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "DfE.ExternalApplications.Application/1.0.0": {
+        "dependencies": {
+          "AutoMapper": "14.0.0",
+          "DfE.ExternalApplications.Domain": "1.0.0",
+          "DfE.ExternalApplications.Utils": "1.0.0",
+          "FluentValidation": "12.0.0",
+          "FluentValidation.AspNetCore": "11.3.0",
+          "GovUK.Dfe.CoreLibs.AsyncProcessing": "1.0.12",
+          "GovUK.Dfe.CoreLibs.Email": "0.1.1",
+          "GovUK.Dfe.CoreLibs.FileStorage": "0.1.5-prerelease-36",
+          "GovUK.Dfe.CoreLibs.Messaging.Contracts": "0.1.3",
+          "GovUK.Dfe.CoreLibs.Messaging.MassTransit": "0.1.3",
+          "GovUK.Dfe.CoreLibs.Notifications": "0.1.6-prerelease-42",
+          "GovUK.Dfe.CoreLibs.Security": "1.1.25-prerelease-11",
+          "GovUK.Dfe.CoreLibs.Utilities": "1.0.16",
+          "Microsoft.EntityFrameworkCore": "10.0.3",
+          "Scrutor": "4.2.2",
+          "System.IdentityModel.Tokens.Jwt": "8.10.0"
+        },
+        "runtime": {
+          "DfE.ExternalApplications.Application.dll": {}
+        }
+      },
+      "AutoMapper/14.0.0": {
+        "runtime": {
+          "lib/net8.0/AutoMapper.dll": {
+            "assemblyVersion": "14.0.0.0",
+            "fileVersion": "14.0.0.0"
+          }
+        }
+      },
+      "Azure.Core/1.47.3": {
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "8.0.0",
+          "System.ClientModel": "1.6.1",
+          "System.Memory.Data": "8.0.1"
+        },
+        "runtime": {
+          "lib/net8.0/Azure.Core.dll": {
+            "assemblyVersion": "1.47.3.0",
+            "fileVersion": "1.4700.325.42004"
+          }
+        }
+      },
+      "Azure.Core.Amqp/1.3.1": {
+        "dependencies": {
+          "Microsoft.Azure.Amqp": "2.7.0",
+          "System.Memory.Data": "8.0.1"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Core.Amqp.dll": {
+            "assemblyVersion": "1.3.1.0",
+            "fileVersion": "1.300.124.38003"
+          }
+        }
+      },
+      "Azure.Identity/1.16.0": {
+        "dependencies": {
+          "Azure.Core": "1.47.3",
+          "Microsoft.Identity.Client": "4.76.0",
+          "Microsoft.Identity.Client.Extensions.Msal": "4.76.0"
+        },
+        "runtime": {
+          "lib/net8.0/Azure.Identity.dll": {
+            "assemblyVersion": "1.16.0.0",
+            "fileVersion": "1.1600.25.45906"
+          }
+        }
+      },
+      "Azure.Messaging.ServiceBus/7.20.1": {
+        "dependencies": {
+          "Azure.Core": "1.47.3",
+          "Azure.Core.Amqp": "1.3.1",
+          "Microsoft.Azure.Amqp": "2.7.0"
+        },
+        "runtime": {
+          "lib/net8.0/Azure.Messaging.ServiceBus.dll": {
+            "assemblyVersion": "7.20.1.0",
+            "fileVersion": "7.2000.125.31203"
+          }
+        }
+      },
+      "Azure.Security.KeyVault.Certificates/4.6.0": {
+        "dependencies": {
+          "Azure.Core": "1.47.3"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Security.KeyVault.Certificates.dll": {
+            "assemblyVersion": "4.6.0.0",
+            "fileVersion": "4.600.24.11403"
+          }
+        }
+      },
+      "Azure.Security.KeyVault.Secrets/4.6.0": {
+        "dependencies": {
+          "Azure.Core": "1.47.3"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Security.KeyVault.Secrets.dll": {
+            "assemblyVersion": "4.6.0.0",
+            "fileVersion": "4.600.24.11403"
+          }
+        }
+      },
+      "Azure.Storage.Common/12.18.1": {
+        "dependencies": {
+          "Azure.Core": "1.47.3",
+          "System.IO.Hashing": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Azure.Storage.Common.dll": {
+            "assemblyVersion": "12.18.1.0",
+            "fileVersion": "12.1800.123.56305"
+          }
+        }
+      },
+      "Azure.Storage.Files.Shares/12.17.1": {
+        "dependencies": {
+          "Azure.Storage.Common": "12.18.1"
+        },
+        "runtime": {
+          "lib/net6.0/Azure.Storage.Files.Shares.dll": {
+            "assemblyVersion": "12.17.1.0",
+            "fileVersion": "12.1700.123.56305"
+          }
+        }
+      },
+      "Castle.Core/5.1.1": {
+        "runtime": {
+          "lib/net6.0/Castle.Core.dll": {
+            "assemblyVersion": "5.0.0.0",
+            "fileVersion": "5.1.1.0"
+          }
+        }
+      },
+      "FluentValidation/12.0.0": {
+        "runtime": {
+          "lib/net8.0/FluentValidation.dll": {
+            "assemblyVersion": "12.0.0.0",
+            "fileVersion": "12.0.0.0"
+          }
+        }
+      },
+      "FluentValidation.AspNetCore/11.3.0": {
+        "dependencies": {
+          "FluentValidation": "12.0.0",
+          "FluentValidation.DependencyInjectionExtensions": "11.5.1"
+        },
+        "runtime": {
+          "lib/net6.0/FluentValidation.AspNetCore.dll": {
+            "assemblyVersion": "11.0.0.0",
+            "fileVersion": "11.3.0.0"
+          }
+        }
+      },
+      "FluentValidation.DependencyInjectionExtensions/11.5.1": {
+        "dependencies": {
+          "FluentValidation": "12.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.1/FluentValidation.DependencyInjectionExtensions.dll": {
+            "assemblyVersion": "11.0.0.0",
+            "fileVersion": "11.5.1.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.AsyncProcessing/1.0.12": {
+        "dependencies": {
+          "MediatR": "12.5.0",
+          "MediatR.Contracts": "2.0.1"
+        },
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.AsyncProcessing.dll": {
+            "assemblyVersion": "1.0.12.0",
+            "fileVersion": "1.0.12.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Caching/1.0.13": {
+        "dependencies": {
+          "StackExchange.Redis": "2.9.32"
+        },
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Caching.dll": {
+            "assemblyVersion": "1.0.13.0",
+            "fileVersion": "1.0.13.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Contracts/1.0.75": {
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Contracts.dll": {
+            "assemblyVersion": "1.0.75.0",
+            "fileVersion": "1.0.75.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Email/0.1.1": {
+        "dependencies": {
+          "GovukNotify": "7.2.0"
+        },
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Email.dll": {
+            "assemblyVersion": "0.1.1.0",
+            "fileVersion": "0.1.1.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.FileStorage/0.1.5-prerelease-36": {
+        "dependencies": {
+          "Azure.Storage.Files.Shares": "12.17.1",
+          "NSubstitute": "5.3.0",
+          "xunit.abstractions": "2.0.3",
+          "xunit.assert": "2.5.3",
+          "xunit.extensibility.core": "2.2.0"
+        },
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.FileStorage.dll": {
+            "assemblyVersion": "0.1.5.0",
+            "fileVersion": "0.1.5.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Messaging.Contracts/0.1.3": {
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Messaging.Contracts.dll": {
+            "assemblyVersion": "0.1.3.0",
+            "fileVersion": "0.1.3.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Messaging.MassTransit/0.1.3": {
+        "dependencies": {
+          "MassTransit": "8.5.5",
+          "MassTransit.Azure.ServiceBus.Core": "8.5.5"
+        },
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Messaging.MassTransit.dll": {
+            "assemblyVersion": "0.1.3.0",
+            "fileVersion": "0.1.3.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Notifications/0.1.6-prerelease-42": {
+        "dependencies": {
+          "GovUK.Dfe.CoreLibs.Contracts": "1.0.75",
+          "StackExchange.Redis": "2.9.32"
+        },
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Notifications.dll": {
+            "assemblyVersion": "0.1.6.0",
+            "fileVersion": "0.1.6.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Security/1.1.25-prerelease-11": {
+        "dependencies": {
+          "GovUK.Dfe.CoreLibs.Caching": "1.0.13",
+          "Microsoft.Identity.Web": "3.8.2"
+        },
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Security.dll": {
+            "assemblyVersion": "1.1.25.0",
+            "fileVersion": "1.1.25.0"
+          }
+        }
+      },
+      "GovUK.Dfe.CoreLibs.Utilities/1.0.16": {
+        "runtime": {
+          "lib/net8.0/GovUK.Dfe.CoreLibs.Utilities.dll": {
+            "assemblyVersion": "1.0.16.0",
+            "fileVersion": "1.0.16.0"
+          }
+        }
+      },
+      "GovukNotify/7.2.0": {
+        "dependencies": {
+          "JWT": "7.1.0",
+          "Newtonsoft.Json": "13.0.4"
+        },
+        "runtime": {
+          "lib/net6.0/GovukNotify.dll": {
+            "assemblyVersion": "7.2.0.0",
+            "fileVersion": "7.2.0.0"
+          }
+        }
+      },
+      "JWT/7.1.0": {
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.4"
+        },
+        "runtime": {
+          "lib/netstandard2.0/JWT.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.0.0"
+          }
+        }
+      },
+      "MassTransit/8.5.5": {
+        "dependencies": {
+          "MassTransit.Abstractions": "8.5.5"
+        },
+        "runtime": {
+          "lib/net9.0/MassTransit.dll": {
+            "assemblyVersion": "8.5.5.0",
+            "fileVersion": "8.5.5.0"
+          }
+        }
+      },
+      "MassTransit.Abstractions/8.5.5": {
+        "runtime": {
+          "lib/net9.0/MassTransit.Abstractions.dll": {
+            "assemblyVersion": "8.5.5.0",
+            "fileVersion": "8.5.5.0"
+          }
+        }
+      },
+      "MassTransit.Azure.ServiceBus.Core/8.5.5": {
+        "dependencies": {
+          "Azure.Identity": "1.16.0",
+          "Azure.Messaging.ServiceBus": "7.20.1",
+          "MassTransit": "8.5.5"
+        },
+        "runtime": {
+          "lib/net9.0/MassTransit.Azure.ServiceBus.Core.dll": {
+            "assemblyVersion": "8.5.5.0",
+            "fileVersion": "8.5.5.0"
+          }
+        }
+      },
+      "MediatR/12.5.0": {
+        "dependencies": {
+          "MediatR.Contracts": "2.0.1"
+        },
+        "runtime": {
+          "lib/net6.0/MediatR.dll": {
+            "assemblyVersion": "12.0.0.0",
+            "fileVersion": "12.5.0.0"
+          }
+        }
+      },
+      "MediatR.Contracts/2.0.1": {
+        "runtime": {
+          "lib/netstandard2.0/MediatR.Contracts.dll": {
+            "assemblyVersion": "2.0.1.0",
+            "fileVersion": "2.0.1.0"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Authentication.JwtBearer/9.0.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.7.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.24.52903"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Authentication.OpenIdConnect/9.0.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.7.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.Authentication.OpenIdConnect.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.24.52903"
+          }
+        }
+      },
+      "Microsoft.Azure.Amqp/2.7.0": {
+        "runtime": {
+          "lib/net8.0/Microsoft.Azure.Amqp.dll": {
+            "assemblyVersion": "2.7.0.0",
+            "fileVersion": "2.7.0.0"
+          }
+        }
+      },
+      "Microsoft.Bcl.AsyncInterfaces/8.0.0": {
+        "runtime": {
+          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.53103"
+          }
+        }
+      },
+      "Microsoft.EntityFrameworkCore/10.0.3": {
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.3"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.EntityFrameworkCore.dll": {
+            "assemblyVersion": "10.0.3.0",
+            "fileVersion": "10.0.326.7603"
+          }
+        }
+      },
+      "Microsoft.EntityFrameworkCore.Abstractions/10.0.3": {
+        "runtime": {
+          "lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll": {
+            "assemblyVersion": "10.0.3.0",
+            "fileVersion": "10.0.326.7603"
+          }
+        }
+      },
+      "Microsoft.Extensions.DependencyModel/6.0.0": {
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Extensions.DependencyModel.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      },
+      "Microsoft.Identity.Abstractions/9.0.0": {
+        "runtime": {
+          "lib/net8.0/Microsoft.Identity.Abstractions.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.0.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Client/4.76.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Abstractions": "8.10.0"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Identity.Client.dll": {
+            "assemblyVersion": "4.76.0.0",
+            "fileVersion": "4.76.0.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Client.Extensions.Msal/4.76.0": {
+        "dependencies": {
+          "Microsoft.Identity.Client": "4.76.0",
+          "System.Security.Cryptography.ProtectedData": "4.5.0"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Identity.Client.Extensions.Msal.dll": {
+            "assemblyVersion": "4.76.0.0",
+            "fileVersion": "4.76.0.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Web/3.8.2": {
+        "dependencies": {
+          "Microsoft.Identity.Web.Certificate": "3.8.2",
+          "Microsoft.Identity.Web.Certificateless": "3.8.2",
+          "Microsoft.Identity.Web.TokenAcquisition": "3.8.2",
+          "Microsoft.Identity.Web.TokenCache": "3.8.2",
+          "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.7.0",
+          "Microsoft.IdentityModel.Validators": "8.7.0",
+          "System.IdentityModel.Tokens.Jwt": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Identity.Web.dll": {
+            "assemblyVersion": "3.8.2.0",
+            "fileVersion": "3.8.2.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Web.Certificate/3.8.2": {
+        "dependencies": {
+          "Azure.Identity": "1.16.0",
+          "Azure.Security.KeyVault.Certificates": "4.6.0",
+          "Azure.Security.KeyVault.Secrets": "4.6.0",
+          "Microsoft.Identity.Abstractions": "9.0.0",
+          "Microsoft.Identity.Web.Certificateless": "3.8.2",
+          "Microsoft.Identity.Web.Diagnostics": "3.8.2"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Identity.Web.Certificate.dll": {
+            "assemblyVersion": "3.8.2.0",
+            "fileVersion": "3.8.2.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Web.Certificateless/3.8.2": {
+        "dependencies": {
+          "Microsoft.Identity.Client": "4.76.0",
+          "Microsoft.IdentityModel.JsonWebTokens": "8.10.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Identity.Web.Certificateless.dll": {
+            "assemblyVersion": "3.8.2.0",
+            "fileVersion": "3.8.2.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Web.Diagnostics/3.8.2": {
+        "runtime": {
+          "lib/net9.0/Microsoft.Identity.Web.Diagnostics.dll": {
+            "assemblyVersion": "3.8.2.0",
+            "fileVersion": "3.8.2.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Web.TokenAcquisition/3.8.2": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.0",
+          "Microsoft.AspNetCore.Authentication.OpenIdConnect": "9.0.0",
+          "Microsoft.Identity.Abstractions": "9.0.0",
+          "Microsoft.Identity.Web.Certificate": "3.8.2",
+          "Microsoft.Identity.Web.Certificateless": "3.8.2",
+          "Microsoft.Identity.Web.TokenCache": "3.8.2",
+          "Microsoft.IdentityModel.Logging": "8.10.0",
+          "Microsoft.IdentityModel.LoggingExtensions": "8.7.0",
+          "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.7.0",
+          "System.IdentityModel.Tokens.Jwt": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Identity.Web.TokenAcquisition.dll": {
+            "assemblyVersion": "3.8.2.0",
+            "fileVersion": "3.8.2.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Web.TokenCache/3.8.2": {
+        "dependencies": {
+          "Microsoft.Identity.Client": "4.76.0",
+          "Microsoft.Identity.Web.Diagnostics": "3.8.2"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Identity.Web.TokenCache.dll": {
+            "assemblyVersion": "3.8.2.0",
+            "fileVersion": "3.8.2.0"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.Abstractions/8.10.0": {
+        "runtime": {
+          "lib/net9.0/Microsoft.IdentityModel.Abstractions.dll": {
+            "assemblyVersion": "8.10.0.0",
+            "fileVersion": "8.10.0.60515"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.JsonWebTokens/8.10.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Tokens": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.IdentityModel.JsonWebTokens.dll": {
+            "assemblyVersion": "8.10.0.0",
+            "fileVersion": "8.10.0.60515"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.Logging/8.10.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Abstractions": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.IdentityModel.Logging.dll": {
+            "assemblyVersion": "8.10.0.0",
+            "fileVersion": "8.10.0.60515"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.LoggingExtensions/8.7.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Abstractions": "8.10.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.IdentityModel.LoggingExtensions.dll": {
+            "assemblyVersion": "8.7.0.0",
+            "fileVersion": "8.7.0.60321"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.Protocols/8.7.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Tokens": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.IdentityModel.Protocols.dll": {
+            "assemblyVersion": "8.7.0.0",
+            "fileVersion": "8.7.0.60321"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.Protocols.OpenIdConnect/8.7.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Protocols": "8.7.0",
+          "System.IdentityModel.Tokens.Jwt": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll": {
+            "assemblyVersion": "8.7.0.0",
+            "fileVersion": "8.7.0.60321"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.Tokens/8.10.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Logging": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.IdentityModel.Tokens.dll": {
+            "assemblyVersion": "8.10.0.0",
+            "fileVersion": "8.10.0.60515"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.Validators/8.7.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Protocols": "8.7.0",
+          "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.7.0",
+          "Microsoft.IdentityModel.Tokens": "8.10.0",
+          "System.IdentityModel.Tokens.Jwt": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.IdentityModel.Validators.dll": {
+            "assemblyVersion": "8.7.0.0",
+            "fileVersion": "8.7.0.60321"
+          }
+        }
+      },
+      "Newtonsoft.Json/13.0.4": {
+        "runtime": {
+          "lib/net6.0/Newtonsoft.Json.dll": {
+            "assemblyVersion": "13.0.0.0",
+            "fileVersion": "13.0.4.30916"
+          }
+        }
+      },
+      "NSubstitute/5.3.0": {
+        "dependencies": {
+          "Castle.Core": "5.1.1"
+        },
+        "runtime": {
+          "lib/net6.0/NSubstitute.dll": {
+            "assemblyVersion": "5.3.0.0",
+            "fileVersion": "5.3.0.0"
+          }
+        }
+      },
+      "Pipelines.Sockets.Unofficial/2.2.8": {
+        "runtime": {
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "2.2.8.1080"
+          }
+        }
+      },
+      "Scrutor/4.2.2": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyModel": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Scrutor.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.0"
+          }
+        }
+      },
+      "StackExchange.Redis/2.9.32": {
+        "dependencies": {
+          "Pipelines.Sockets.Unofficial": "2.2.8"
+        },
+        "runtime": {
+          "lib/net8.0/StackExchange.Redis.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.9.32.54708"
+          }
+        }
+      },
+      "System.ClientModel/1.6.1": {
+        "dependencies": {
+          "System.Memory.Data": "8.0.1"
+        },
+        "runtime": {
+          "lib/net8.0/System.ClientModel.dll": {
+            "assemblyVersion": "1.6.1.0",
+            "fileVersion": "1.600.125.41908"
+          }
+        }
+      },
+      "System.IdentityModel.Tokens.Jwt/8.10.0": {
+        "dependencies": {
+          "Microsoft.IdentityModel.JsonWebTokens": "8.10.0",
+          "Microsoft.IdentityModel.Tokens": "8.10.0"
+        },
+        "runtime": {
+          "lib/net9.0/System.IdentityModel.Tokens.Jwt.dll": {
+            "assemblyVersion": "8.10.0.0",
+            "fileVersion": "8.10.0.60515"
+          }
+        }
+      },
+      "System.IO.Hashing/6.0.0": {
+        "runtime": {
+          "lib/net6.0/System.IO.Hashing.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      },
+      "System.Memory.Data/8.0.1": {
+        "runtime": {
+          "lib/net8.0/System.Memory.Data.dll": {
+            "assemblyVersion": "8.0.0.1",
+            "fileVersion": "8.0.1024.46610"
+          }
+        }
+      },
+      "System.Security.Cryptography.ProtectedData/4.5.0": {
+        "runtime": {
+          "lib/netstandard2.0/System.Security.Cryptography.ProtectedData.dll": {
+            "assemblyVersion": "4.0.3.0",
+            "fileVersion": "4.6.26515.6"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/netstandard2.0/System.Security.Cryptography.ProtectedData.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "4.0.3.0",
+            "fileVersion": "4.6.26515.6"
+          }
+        }
+      },
+      "xunit.abstractions/2.0.3": {
+        "runtime": {
+          "lib/netstandard2.0/xunit.abstractions.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "xunit.assert/2.5.3": {
+        "runtime": {
+          "lib/netstandard1.1/xunit.assert.dll": {
+            "assemblyVersion": "2.5.3.0",
+            "fileVersion": "2.5.3.0"
+          }
+        }
+      },
+      "xunit.extensibility.core/2.2.0": {
+        "dependencies": {
+          "xunit.abstractions": "2.0.3"
+        },
+        "runtime": {
+          "lib/netstandard1.1/xunit.core.dll": {
+            "assemblyVersion": "2.2.0.3545",
+            "fileVersion": "2.2.0.0"
+          }
+        }
+      },
+      "DfE.ExternalApplications.Domain/1.0.0": {
+        "dependencies": {
+          "FluentValidation": "12.0.0",
+          "GovUK.Dfe.CoreLibs.Caching": "1.0.13",
+          "GovUK.Dfe.CoreLibs.Contracts": "1.0.75",
+          "MediatR": "12.5.0",
+          "Newtonsoft.Json": "13.0.4"
+        },
+        "runtime": {
+          "DfE.ExternalApplications.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "DfE.ExternalApplications.Utils/1.0.0": {
+        "runtime": {
+          "DfE.ExternalApplications.Utils.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "DfE.ExternalApplications.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AutoMapper/14.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-OC+1neAPM4oCCqQj3g2GJ2shziNNhOkxmNB9cVS8jtx4JbgmRzLcUOxB9Tsz6cVPHugdkHgCaCrTjjSI0Z5sCQ==",
+      "path": "automapper/14.0.0",
+      "hashPath": "automapper.14.0.0.nupkg.sha512"
+    },
+    "Azure.Core/1.47.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-u/uCNtUWT+Q/Is7/PAMy3KP9kq5vY5klRnyAvRxO/kEa5OnV3/X5lHlCajNANC7vmej6jAqceqLBJNO/VyCKzg==",
+      "path": "azure.core/1.47.3",
+      "hashPath": "azure.core.1.47.3.nupkg.sha512"
+    },
+    "Azure.Core.Amqp/1.3.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-AY1ZM4WwLBb9L2WwQoWs7wS2XKYg83tp3yVVdgySdebGN0FuIszuEqCy3Nhv6qHpbkjx/NGuOTsUbF/oNGBgwA==",
+      "path": "azure.core.amqp/1.3.1",
+      "hashPath": "azure.core.amqp.1.3.1.nupkg.sha512"
+    },
+    "Azure.Identity/1.16.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ZTtJt9N1hW9S7JRt05aBy894mp9uK4KbfcVcg2OndKbph/6RCcDEisdBV9iNHiNDSXXQRR52SAYy8RhknQ1xEA==",
+      "path": "azure.identity/1.16.0",
+      "hashPath": "azure.identity.1.16.0.nupkg.sha512"
+    },
+    "Azure.Messaging.ServiceBus/7.20.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-DxCkedWPQuiXrIyFcriOhsQcZmDZW+j9d55Ev4nnK3yjMUFjlVe4Hj37fuZTJlNhC3P+7EumqBTt33R6DfOxGA==",
+      "path": "azure.messaging.servicebus/7.20.1",
+      "hashPath": "azure.messaging.servicebus.7.20.1.nupkg.sha512"
+    },
+    "Azure.Security.KeyVault.Certificates/4.6.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-e2ATU/n2ZDL/S8A8EdrcfKEvKc2BojCrrSpmM+JKnrSTQS32x/W0Ldu8utk+epLKwXvSJRSWtlgdo7X8hG1mCg==",
+      "path": "azure.security.keyvault.certificates/4.6.0",
+      "hashPath": "azure.security.keyvault.certificates.4.6.0.nupkg.sha512"
+    },
+    "Azure.Security.KeyVault.Secrets/4.6.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-vwPceoznuT6glvirZcXlaCQrh1uzTSxpZUi2hRFNumHiS3hVyqIXI5fgWiLtlBzwqPJMTr0flUoSvGKjXXQlfg==",
+      "path": "azure.security.keyvault.secrets/4.6.0",
+      "hashPath": "azure.security.keyvault.secrets.4.6.0.nupkg.sha512"
+    },
+    "Azure.Storage.Common/12.18.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ohCslqP9yDKIn+DVjBEOBuieB1QwsUCz+BwHYNaJ3lcIsTSiI4Evnq81HcKe8CqM8qvdModbipVQKpnxpbdWqA==",
+      "path": "azure.storage.common/12.18.1",
+      "hashPath": "azure.storage.common.12.18.1.nupkg.sha512"
+    },
+    "Azure.Storage.Files.Shares/12.17.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-DL1L3e4uwxYsBVtxncAJYve+q6/iA/k/TjBCmT2nVCdff4d58PGNkmWUKAnESpVj5OZdV6n3bHAJdx1P8eCwuQ==",
+      "path": "azure.storage.files.shares/12.17.1",
+      "hashPath": "azure.storage.files.shares.12.17.1.nupkg.sha512"
+    },
+    "Castle.Core/5.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-rpYtIczkzGpf+EkZgDr9CClTdemhsrwA/W5hMoPjLkRFnXzH44zDLoovXeKtmxb1ykXK9aJVODSpiJml8CTw2g==",
+      "path": "castle.core/5.1.1",
+      "hashPath": "castle.core.5.1.1.nupkg.sha512"
+    },
+    "FluentValidation/12.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-8NVLxtMUXynRHJIX3Hn1ACovaqZIJASufXIIFkD0EUbcd5PmMsL1xUD5h548gCezJ5BzlITaR9CAMrGe29aWpA==",
+      "path": "fluentvalidation/12.0.0",
+      "hashPath": "fluentvalidation.12.0.0.nupkg.sha512"
+    },
+    "FluentValidation.AspNetCore/11.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-jtFVgKnDFySyBlPS8bZbTKEEwJZnn11rXXJ2SQnjDhZ56rQqybBg9Joq4crRLz3y0QR8WoOq4iE4piV81w/Djg==",
+      "path": "fluentvalidation.aspnetcore/11.3.0",
+      "hashPath": "fluentvalidation.aspnetcore.11.3.0.nupkg.sha512"
+    },
+    "FluentValidation.DependencyInjectionExtensions/11.5.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-iWM0LS1MDYX06pcjMEQKqHirl2zkjHlNV23mEJSoR1IZI7KQmTa0RcTtGEJpj5+iHvBCfrzP2mYKM4FtRKVb+A==",
+      "path": "fluentvalidation.dependencyinjectionextensions/11.5.1",
+      "hashPath": "fluentvalidation.dependencyinjectionextensions.11.5.1.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.AsyncProcessing/1.0.12": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-F/xGwGgXMN5/kbgz06F4hXYcx310jndJw6uM7LhHwGn4mcjPmXqVyEPvx9L0MUXGw6Lo6h2gIBwHDuiDE09QOA==",
+      "path": "govuk.dfe.corelibs.asyncprocessing/1.0.12",
+      "hashPath": "govuk.dfe.corelibs.asyncprocessing.1.0.12.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Caching/1.0.13": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oxuvNMKvdIKwiJSrT2yln1YlQyxwtBiThYXJy97NQnkNCfHDlSIMAMIGB56k2qFWrR4cUPF8MIJ7ccfPY9L0sQ==",
+      "path": "govuk.dfe.corelibs.caching/1.0.13",
+      "hashPath": "govuk.dfe.corelibs.caching.1.0.13.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Contracts/1.0.75": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-azi/VysPapD3Q4qWojetsQvnhNAvJiD0O1QCDR7LYJVTXY1VIlcCeR/glYrPel35zCaTkSkRMhTjhE00Xxq5+w==",
+      "path": "govuk.dfe.corelibs.contracts/1.0.75",
+      "hashPath": "govuk.dfe.corelibs.contracts.1.0.75.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Email/0.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-xgZGmML+A0Jgi1uN/Sgw8CRujdT3OWmSjbtOd63Tx1TzX9XhVBFB6zs5LXISMExe0R/Up3pZLyPrO+nFPEH7+Q==",
+      "path": "govuk.dfe.corelibs.email/0.1.1",
+      "hashPath": "govuk.dfe.corelibs.email.0.1.1.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.FileStorage/0.1.5-prerelease-36": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-PHpaMkloUNb9weEmtx4pjZbWzJE6pfqX5Hwp5WsL78V9VrdeFFBvOrw7O33UwB6notiINMTpJVlSlr090OqrMA==",
+      "path": "govuk.dfe.corelibs.filestorage/0.1.5-prerelease-36",
+      "hashPath": "govuk.dfe.corelibs.filestorage.0.1.5-prerelease-36.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Messaging.Contracts/0.1.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-qrNCaNCv+VQ+vd78lHVttg5zOjkPV8C3V9xmkDyR7m0fg+5vz06mVPF0JdmvxYnREqFfKF5g+mUHdHEQ1ZCnEA==",
+      "path": "govuk.dfe.corelibs.messaging.contracts/0.1.3",
+      "hashPath": "govuk.dfe.corelibs.messaging.contracts.0.1.3.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Messaging.MassTransit/0.1.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-hcAWOo4YUKVD/BEscxKWa7sOxiz7UKehfO0i/HYeFdL5L+f9SdUzHoLaB0xDmkwY2vObsf51NhxIgGBbJ0MODg==",
+      "path": "govuk.dfe.corelibs.messaging.masstransit/0.1.3",
+      "hashPath": "govuk.dfe.corelibs.messaging.masstransit.0.1.3.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Notifications/0.1.6-prerelease-42": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Vr3BKqnD9AC+B+Nh91H4QYOzrvBvziHIIvG/isN3Ij1GaDIhwkqVy+nnroUBQyTRMJNWYQy18thVfv4wCkpxTA==",
+      "path": "govuk.dfe.corelibs.notifications/0.1.6-prerelease-42",
+      "hashPath": "govuk.dfe.corelibs.notifications.0.1.6-prerelease-42.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Security/1.1.25-prerelease-11": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-NvmXSOdSapqBEgjXWt0UuGY+nm8PoBZiA5LQ+gJPZeLzkEv+FqzusQmcmmPpiHPYDSLXNBCNAMUS8miCFV8zfg==",
+      "path": "govuk.dfe.corelibs.security/1.1.25-prerelease-11",
+      "hashPath": "govuk.dfe.corelibs.security.1.1.25-prerelease-11.nupkg.sha512"
+    },
+    "GovUK.Dfe.CoreLibs.Utilities/1.0.16": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-BI86KNSwMXYfjqqDIxQvr2VNcBanv0UX8q2vlr+Tc2IbSZGA++tu2Rx62VSiBygnJ42P0E3Vrvb3os/VINnjdA==",
+      "path": "govuk.dfe.corelibs.utilities/1.0.16",
+      "hashPath": "govuk.dfe.corelibs.utilities.1.0.16.nupkg.sha512"
+    },
+    "GovukNotify/7.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FMGqbjf+WO9uhEgrat9MQ7N1hnAsD3ycn2g24FnPPR3/UNFbIT5PxKDobE/kRRU0rxdx27yWG83FrraszL/+LQ==",
+      "path": "govuknotify/7.2.0",
+      "hashPath": "govuknotify.7.2.0.nupkg.sha512"
+    },
+    "JWT/7.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-z33XjdWSKszw/SRde6fvVsCL2gaKdktZDHJIfpp0RqzNU7RQIaWC4wHUVV2i3RzQSsvQ4bjI3/2kwEAT5S62nA==",
+      "path": "jwt/7.1.0",
+      "hashPath": "jwt.7.1.0.nupkg.sha512"
+    },
+    "MassTransit/8.5.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-bSg8k5q+rP1s+dIGXLLbctqDGdIkfDjdxwNWtCUH7xNCN9ZuM7mqSPQPIFgaYIi34e81m4FqAqo4CAHuWPkhRA==",
+      "path": "masstransit/8.5.5",
+      "hashPath": "masstransit.8.5.5.nupkg.sha512"
+    },
+    "MassTransit.Abstractions/8.5.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-0mn2Ay17dD6z5tgSLjbVRlldSbL9iowzFEfVgVfBXVG5ttz9dSWeR4TrdD6pqH93GWXp4CvSmF8i1HqxLX7DZw==",
+      "path": "masstransit.abstractions/8.5.5",
+      "hashPath": "masstransit.abstractions.8.5.5.nupkg.sha512"
+    },
+    "MassTransit.Azure.ServiceBus.Core/8.5.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-/9wmsURLh0CtRpDnI9WLE0NNYHqst7O1t5B7OyF0iUiy5zNy+mq1x9UrsWTz8j63yU4aD23HmMWHLdC+08kaow==",
+      "path": "masstransit.azure.servicebus.core/8.5.5",
+      "hashPath": "masstransit.azure.servicebus.core.8.5.5.nupkg.sha512"
+    },
+    "MediatR/12.5.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-vqm2H8/nqL5NAJHPhsG1JOPwfkmbVrPyh4svdoRzu+uZh6Ex7PRoHBGsLYC0/RWCEJFqD1ohHNpteQvql9OktA==",
+      "path": "mediatr/12.5.0",
+      "hashPath": "mediatr.12.5.0.nupkg.sha512"
+    },
+    "MediatR.Contracts/2.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FYv95bNT4UwcNA+G/J1oX5OpRiSUxteXaUt2BJbRSdRNiIUNbggJF69wy6mnk2wYToaanpdXZdCwVylt96MpwQ==",
+      "path": "mediatr.contracts/2.0.1",
+      "hashPath": "mediatr.contracts.2.0.1.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Authentication.JwtBearer/9.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-bs+1Pq3vQdS2lTyxNUd9fEhtMsq3eLUpK36k2t56iDMVrk6OrAoFtvrQrTK0Y0OetTcJrUkGU7hBlf+ORzHLqQ==",
+      "path": "microsoft.aspnetcore.authentication.jwtbearer/9.0.0",
+      "hashPath": "microsoft.aspnetcore.authentication.jwtbearer.9.0.0.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Authentication.OpenIdConnect/9.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-afrTDM8viZRruJGNkGa0pMhNqgjWBLln3DBPYrQaklOQn+wE9B5ZvOpi7l8l68JEwsBUVKteKyiY1ivPlK6kQw==",
+      "path": "microsoft.aspnetcore.authentication.openidconnect/9.0.0",
+      "hashPath": "microsoft.aspnetcore.authentication.openidconnect.9.0.0.nupkg.sha512"
+    },
+    "Microsoft.Azure.Amqp/2.7.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-gm/AEakujttMzrDhZ5QpRz3fICVkYDn/oDG9SmxDP+J7R8JDBXYU9WWG7hr6wQy40mY+wjUF0yUGXDPRDRNJwQ==",
+      "path": "microsoft.azure.amqp/2.7.0",
+      "hashPath": "microsoft.azure.amqp.2.7.0.nupkg.sha512"
+    },
+    "Microsoft.Bcl.AsyncInterfaces/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3WA9q9yVqJp222P3x1wYIGDAkpjAku0TMUaaQV22g6L67AI0LdOIrVS7Ht2vJfLHGSPVuqN94vIr15qn+HEkHw==",
+      "path": "microsoft.bcl.asyncinterfaces/8.0.0",
+      "hashPath": "microsoft.bcl.asyncinterfaces.8.0.0.nupkg.sha512"
+    },
+    "Microsoft.EntityFrameworkCore/10.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-CDEImwD4A7BseABJMCpLZnhfFjmPY/bHwhhS70elc6gLI/bYUEOhxWt7PmaNGYGhIEzOnStlCy5QcVb+8dod5Q==",
+      "path": "microsoft.entityframeworkcore/10.0.3",
+      "hashPath": "microsoft.entityframeworkcore.10.0.3.nupkg.sha512"
+    },
+    "Microsoft.EntityFrameworkCore.Abstractions/10.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-c7Uoz381xnMHNBRB8eHRhGgzUtXbgddlbODhwZRrTSzZWDharp3RkJsFwhxyESbeXhCqmML7VdvjMQ7uu+HreA==",
+      "path": "microsoft.entityframeworkcore.abstractions/10.0.3",
+      "hashPath": "microsoft.entityframeworkcore.abstractions.10.0.3.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyModel/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TD5QHg98m3+QhgEV1YVoNMl5KtBw/4rjfxLHO0e/YV9bPUBDKntApP4xdrVtGgCeQZHVfC2EXIGsdpRNrr87Pg==",
+      "path": "microsoft.extensions.dependencymodel/6.0.0",
+      "hashPath": "microsoft.extensions.dependencymodel.6.0.0.nupkg.sha512"
+    },
+    "Microsoft.Identity.Abstractions/9.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lqv0+unc21hwpl/UuPl1H278KarYE5x/+rzejg9I/LNKSqDx7uN4pK87ctkYEDZtg/VN1AejHGvHDwoss1OB2g==",
+      "path": "microsoft.identity.abstractions/9.0.0",
+      "hashPath": "microsoft.identity.abstractions.9.0.0.nupkg.sha512"
+    },
+    "Microsoft.Identity.Client/4.76.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-j2FtmljuCveDJ7umBVYm6Bx3iVGA71U07Dc7byGr2Hrj7XlByZSknruCBUeYN3V75nn1VEhXegxE0MerxvxrXQ==",
+      "path": "microsoft.identity.client/4.76.0",
+      "hashPath": "microsoft.identity.client.4.76.0.nupkg.sha512"
+    },
+    "Microsoft.Identity.Client.Extensions.Msal/4.76.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-D0n3yMTa3gnDh1usrJmyxGWKYeqbQNCWLgQ0Tswf7S6nk9YobiCOX+M2V8EX5SPqkZxpwkTT6odAhaafu3TIeA==",
+      "path": "microsoft.identity.client.extensions.msal/4.76.0",
+      "hashPath": "microsoft.identity.client.extensions.msal.4.76.0.nupkg.sha512"
+    },
+    "Microsoft.Identity.Web/3.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oEsQMlPFFUoRpT57HUU7OgMKRz7qOQwb4xhQUVur7iaRHxNQx+hlXiPt9U2Rk3f4mqlHZaEnLBPcCncvki6wxw==",
+      "path": "microsoft.identity.web/3.8.2",
+      "hashPath": "microsoft.identity.web.3.8.2.nupkg.sha512"
+    },
+    "Microsoft.Identity.Web.Certificate/3.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-DH5tMyC4vO72M9nTrAuenj7pGuWALoQG7m2BYNNOGUAwEhRHgdby0R4Nf5jsWh3N5u8qv1Voomg37WcODhOSfw==",
+      "path": "microsoft.identity.web.certificate/3.8.2",
+      "hashPath": "microsoft.identity.web.certificate.3.8.2.nupkg.sha512"
+    },
+    "Microsoft.Identity.Web.Certificateless/3.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-/VIw6U2JzD2Q+7/473pxsl8oh2xbEg3nl+hvlOA6+YolCTk051xE5lHINdzXH0KKXQEDGYTJg/XzaiKYn8Br9Q==",
+      "path": "microsoft.identity.web.certificateless/3.8.2",
+      "hashPath": "microsoft.identity.web.certificateless.3.8.2.nupkg.sha512"
+    },
+    "Microsoft.Identity.Web.Diagnostics/3.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-jsQ1OUAJfX1T5h7anF1BeQFiM55bqJycBwRZ6ZvfoigF2VBkjbwZNaBkHQWB73ha0/omkfbeUZ3Ye2OAbAHDMQ==",
+      "path": "microsoft.identity.web.diagnostics/3.8.2",
+      "hashPath": "microsoft.identity.web.diagnostics.3.8.2.nupkg.sha512"
+    },
+    "Microsoft.Identity.Web.TokenAcquisition/3.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-dbMajPYNx70dKIKvFgsVoGMCHggZ/RnUzIaIg1vgX/qksPNEJSJrRP9cAuLAxu2vU/NyiYYPBPJqaNOz7pGNoA==",
+      "path": "microsoft.identity.web.tokenacquisition/3.8.2",
+      "hashPath": "microsoft.identity.web.tokenacquisition.3.8.2.nupkg.sha512"
+    },
+    "Microsoft.Identity.Web.TokenCache/3.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-70yj1l/piMn87LO0wn2j0r326jGTwBFCLmldAPPz+opQplVZvWJhDlBSUzKE1WctF+g3P1+v/s39uf+Em0hvFg==",
+      "path": "microsoft.identity.web.tokencache/3.8.2",
+      "hashPath": "microsoft.identity.web.tokencache.3.8.2.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.Abstractions/8.10.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-JxKG5YRBB3b6kSGFec7sbIOngEzPxu4EKPBEIdj/l0ufS1Qhc4wLxAPGJYGhEYOomTbDWaA+ZKVEaJNU+2iWUQ==",
+      "path": "microsoft.identitymodel.abstractions/8.10.0",
+      "hashPath": "microsoft.identitymodel.abstractions.8.10.0.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.JsonWebTokens/8.10.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-6YcL0exWuiHBUmQIkcocQ0x0mvvNewKbmpJpsZw4uzbweotSmAmb0pOK3CdIDYq31atjxrVOvlfF51+0FmrI5g==",
+      "path": "microsoft.identitymodel.jsonwebtokens/8.10.0",
+      "hashPath": "microsoft.identitymodel.jsonwebtokens.8.10.0.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.Logging/8.10.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-BnkYC9lKYOL3zk7pmle9VJWAzSTPCjkvLyoKPmr4suFZo2hG3YYnFrffjUgdKHIUlyhcd1eHsBHMkfa1S3o/tA==",
+      "path": "microsoft.identitymodel.logging/8.10.0",
+      "hashPath": "microsoft.identitymodel.logging.8.10.0.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.LoggingExtensions/8.7.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-sKiaukUl098FlPaD91p65Go6AvK2CzFPZvA8xtvcujb+9k801dFeKtkr5f4o/WSSCv00FTwwTc8Lo5Cl/5kRaw==",
+      "path": "microsoft.identitymodel.loggingextensions/8.7.0",
+      "hashPath": "microsoft.identitymodel.loggingextensions.8.7.0.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.Protocols/8.7.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-4r4H8LCCoNFlJHRrWCqaNtzJPM4Bfi9ARdl7Gd+OoIZqc1rsp9z60USIf00o5YwAwXwKffPUPrvufkbgR69jYA==",
+      "path": "microsoft.identitymodel.protocols/8.7.0",
+      "hashPath": "microsoft.identitymodel.protocols.8.7.0.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.Protocols.OpenIdConnect/8.7.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-nUifCAs2E9cvBiYBC3/L9PoftSxTVpdUdoIu7VV9M9aw7mogsdFRUn5v23c5Jl9u93jdUc0PCagrItLHncG8Qg==",
+      "path": "microsoft.identitymodel.protocols.openidconnect/8.7.0",
+      "hashPath": "microsoft.identitymodel.protocols.openidconnect.8.7.0.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.Tokens/8.10.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lKS/JCsPnw422g0uk4+iOIJA2Uvq3v6QydDEiOdCFGN1ge/lSeSb8ruZLGLOBMPdN4snSGGn21p92VDuHt4pew==",
+      "path": "microsoft.identitymodel.tokens/8.10.0",
+      "hashPath": "microsoft.identitymodel.tokens.8.10.0.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.Validators/8.7.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3jZQ1y8H6Gm9JtwcPKqtmN2CTVyHNiAQIO+CeGBl/NJgoQ5v55X2OLjzZmAT3QObA8E5gewjHaQRapraWph2BQ==",
+      "path": "microsoft.identitymodel.validators/8.7.0",
+      "hashPath": "microsoft.identitymodel.validators.8.7.0.nupkg.sha512"
+    },
+    "Newtonsoft.Json/13.0.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A==",
+      "path": "newtonsoft.json/13.0.4",
+      "hashPath": "newtonsoft.json.13.0.4.nupkg.sha512"
+    },
+    "NSubstitute/5.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lJ47Cps5Qzr86N99lcwd+OUvQma7+fBgr8+Mn+aOC0WrlqMNkdivaYD9IvnZ5Mqo6Ky3LS7ZI+tUq1/s9ERd0Q==",
+      "path": "nsubstitute/5.3.0",
+      "hashPath": "nsubstitute.5.3.0.nupkg.sha512"
+    },
+    "Pipelines.Sockets.Unofficial/2.2.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-zG2FApP5zxSx6OcdJQLbZDk2AVlN2BNQD6MorwIfV6gVj0RRxWPEp2LXAxqDGZqeNV1Zp0BNPcNaey/GXmTdvQ==",
+      "path": "pipelines.sockets.unofficial/2.2.8",
+      "hashPath": "pipelines.sockets.unofficial.2.2.8.nupkg.sha512"
+    },
+    "Scrutor/4.2.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-t5VIYA7WJXoJJo7s4DoHakMGwTu+MeEnZumMOhTCH7kz9xWha24G7dJNxWrHPlu0ZdZAS4jDZCxxAnyaBh7uYw==",
+      "path": "scrutor/4.2.2",
+      "hashPath": "scrutor.4.2.2.nupkg.sha512"
+    },
+    "StackExchange.Redis/2.9.32": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-j5Rjbf7gWz5izrn0UWQy9RlQY4cQDPkwJfVqATnVsOa/+zzJrps12LOgacMsDl/Vit2f01cDiDkG/Rst8v2iGw==",
+      "path": "stackexchange.redis/2.9.32",
+      "hashPath": "stackexchange.redis.2.9.32.nupkg.sha512"
+    },
+    "System.ClientModel/1.6.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-xcHHhDqB5MnOOY8yIn64Vzp6gtBEs6k5J1hluG04CrShSvQNXOx4PSDs7wJiXLDidlY/FZJmxJdKTKskyJwjvw==",
+      "path": "system.clientmodel/1.6.1",
+      "hashPath": "system.clientmodel.1.6.1.nupkg.sha512"
+    },
+    "System.IdentityModel.Tokens.Jwt/8.10.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UYIcKbMifWTg1CdljV3YSr7X4MKGSjUwLMKNLuSNKOsF65NvDPez0917YSDOr3tXF1GTZKCkfbZwYyPsW2owsQ==",
+      "path": "system.identitymodel.tokens.jwt/8.10.0",
+      "hashPath": "system.identitymodel.tokens.jwt.8.10.0.nupkg.sha512"
+    },
+    "System.IO.Hashing/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Rfm2jYCaUeGysFEZjDe7j1R4x6Z6BzumS/vUT5a1AA/AWJuGX71PoGB0RmpyX3VmrGqVnAwtfMn39OHR8Y/5+g==",
+      "path": "system.io.hashing/6.0.0",
+      "hashPath": "system.io.hashing.6.0.0.nupkg.sha512"
+    },
+    "System.Memory.Data/8.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-BVYuec3jV23EMRDeR7Dr1/qhx7369dZzJ9IWy2xylvb4YfXsrUxspWc4UWYid/tj4zZK58uGZqn2WQiaDMhmAg==",
+      "path": "system.memory.data/8.0.1",
+      "hashPath": "system.memory.data.8.0.1.nupkg.sha512"
+    },
+    "System.Security.Cryptography.ProtectedData/4.5.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-wLBKzFnDCxP12VL9ANydSYhk59fC4cvOr9ypYQLPnAj48NQIhqnjdD2yhP8yEKyBJEjERWS9DisKL7rX5eU25Q==",
+      "path": "system.security.cryptography.protecteddata/4.5.0",
+      "hashPath": "system.security.cryptography.protecteddata.4.5.0.nupkg.sha512"
+    },
+    "xunit.abstractions/2.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pot1I4YOxlWjIb5jmwvvQNbTrZ3lJQ+jUGkGjWE3hEFM0l5gOnBWS+H3qsex68s5cO52g+44vpGzhAt+42vwKg==",
+      "path": "xunit.abstractions/2.0.3",
+      "hashPath": "xunit.abstractions.2.0.3.nupkg.sha512"
+    },
+    "xunit.assert/2.5.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-MK3HiBckO3vdxEdUxXZyyRPsBNPsC/nz6y1gj/UZIZkjMnsVQyZPU8yxS/3cjTchYcqskt/nqUOS5wmD8JezdQ==",
+      "path": "xunit.assert/2.5.3",
+      "hashPath": "xunit.assert.2.5.3.nupkg.sha512"
+    },
+    "xunit.extensibility.core/2.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-2bT3sG8obWbRm45NewcV+Sr2K1whj88LnjQT7szJx1DcydgKR86ggV5rIZ5NccCWo2ctZMRb0QMYttVrhrG9Gw==",
+      "path": "xunit.extensibility.core/2.2.0",
+      "hashPath": "xunit.extensibility.core.2.2.0.nupkg.sha512"
+    },
+    "DfE.ExternalApplications.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "DfE.ExternalApplications.Utils/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

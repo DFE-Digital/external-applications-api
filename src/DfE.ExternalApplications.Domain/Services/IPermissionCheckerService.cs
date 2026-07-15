@@ -70,6 +70,14 @@ public interface IPermissionCheckerService
     bool IsAdmin();
 
     /// <summary>
+    /// Checks if the current principal is an interactive tenant Admin (user JWT with Admin role).
+    /// Returns false for machine identities (client credentials, API key, mTLS) even when they
+    /// carry an Admin role claim.
+    /// </summary>
+    /// <returns>True if the caller is an interactive Admin user; otherwise false.</returns>
+    bool IsInteractiveTenantAdmin();
+
+    /// <summary>
     /// Checks if the current user has the Caseworker role.
     /// </summary>
     /// <returns>True if the user is a Caseworker, false otherwise</returns>

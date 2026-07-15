@@ -1,5 +1,6 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Common;
+using DfE.ExternalApplications.Domain.Tenancy;
 using System.Security.Claims;
 
 namespace DfE.ExternalApplications.Domain.Services;
@@ -17,6 +18,30 @@ public static class PermissionClaimEvaluator
     /// </summary>
     public static bool HasFullAdminAccess(ClaimsPrincipal user) =>
         user.IsInRole(RoleNames.Admin);
+
+    /// <summary>
+    /// Returns true when the principal is an interactive Admin user (user JWT), not a machine/
+    /// service identity. Client-credentials and other <c>is_service=true</c> callers are rejected
+    /// even if they were given an Admin role claim via AuthProviders.
+    /// </summary>
+    public static bool IsInteractiveTenantAdmin(ClaimsPrincipal user)
+    {
+        if (!HasFullAdminAccess(user))
+        {
+            return false;
+        }
+
+        if (user.HasClaim(c =>
+                c.Type == TenantAuthClaimTypes.IsService
+                && string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        var email = user.FindFirst(ClaimTypes.Email)?.Value
+            ?? user.FindFirst("email")?.Value;
+        return !string.IsNullOrWhiteSpace(email);
+    }
 
     /// <summary>
     /// Returns true when the user can read all applications in the current tenant (Admin or Caseworker only).

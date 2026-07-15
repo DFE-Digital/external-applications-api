@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
 using System.Security.Claims;
@@ -320,6 +321,31 @@ public class PermissionClaimEvaluatorTests
         });
 
         return user;
+    }
+
+    [Fact]
+    public void IsInteractiveTenantAdmin_ReturnsTrue_ForAdminUserWithEmail()
+    {
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.Role, RoleNames.Admin),
+            new Claim(ClaimTypes.Email, "admin@example.com")
+        ], "Test"));
+
+        Assert.True(PermissionClaimEvaluator.IsInteractiveTenantAdmin(user));
+    }
+
+    [Fact]
+    public void IsInteractiveTenantAdmin_ReturnsFalse_ForServicePrincipalWithAdminRole()
+    {
+        var user = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.Role, RoleNames.Admin),
+            new Claim(TenantAuthClaimTypes.IsService, "true"),
+            new Claim(ClaimTypes.Email, "svc@apps.local")
+        ], "Test"));
+
+        Assert.False(PermissionClaimEvaluator.IsInteractiveTenantAdmin(user));
     }
 
     private static ClaimsPrincipal CreateUserWithRole(string role) =>

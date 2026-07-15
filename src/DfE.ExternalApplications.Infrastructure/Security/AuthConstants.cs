@@ -38,5 +38,12 @@
         /// <c>ServiceCallers</c> authorization policy + <c>TenantClaimsTransformation</c>.
         /// </summary>
         public const string MatchedAuthProviderKey = "DfE.ExternalApplications.MatchedAuthProvider";
+
+        /// <summary>
+        /// Authorization policy for tenant-admin APIs that must be called with an interactive
+        /// user JWT (Admin role). Explicitly rejects machine identities (<c>is_service=true</c>),
+        /// including Entra client-credentials / API key / mTLS service principals.
+        /// </summary>
+        public const string TenantAdminUserPolicy = "TenantAdminUser";
     }
 }

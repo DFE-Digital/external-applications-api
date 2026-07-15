@@ -6,7 +6,10 @@
 # Prerequisites
 # - Windows PowerShell 5.1+ or PowerShell 7+
 # - API running (for upserts)
-# - Bearer token for an authenticated API caller (admin endpoints are [Authorize] today)
+# - Bearer token must be an exchanged *user* JWT for an Admin user (not Entra
+#   client-credentials / ServiceCallers). Machine tokens are rejected.
+# - X-Tenant-ID (or matching Origin) MUST equal the tenantId being upserted
+#   (tenant admins cannot write another tenant's settings)
 #
 # -----------------------------------------------------------------------------
 # Web settings (Target=Web) — Import-WebTenantConfig.ps1

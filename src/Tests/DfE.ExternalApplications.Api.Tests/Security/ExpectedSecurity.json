@@ -193,22 +193,22 @@
     {
       "Controller": "TenantAdminController",
       "Action": "RefreshTenantConfiguration",
-      "ExpectedSecurity": "Authorize"
+      "ExpectedSecurity": "Authorize: Policy=TenantAdminUser"
     },
     {
       "Controller": "TenantAdminController",
       "Action": "GetTenants",
-      "ExpectedSecurity": "Authorize"
+      "ExpectedSecurity": "Authorize: Policy=TenantAdminUser"
     },
     {
       "Controller": "TenantAdminController",
       "Action": "SeedFromAppSettings",
-      "ExpectedSecurity": "Authorize"
+      "ExpectedSecurity": "Authorize: Policy=PlatformTenantConfig"
     },
     {
       "Controller": "TenantAdminController",
       "Action": "UpsertTenantSetting",
-      "ExpectedSecurity": "Authorize"
+      "ExpectedSecurity": "Authorize: Policy=TenantAdminUser"
     },
     {
       "Controller": "TenantConfigController",

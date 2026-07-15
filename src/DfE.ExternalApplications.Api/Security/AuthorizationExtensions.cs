@@ -301,6 +301,12 @@ namespace DfE.ExternalApplications.Api.Security
                             .RequireAuthenticatedUser()
                             .AddRequirements(new Handlers.ServicePrincipalRequirement()));
 
+                // Interactive tenant Admin only (user JWT). Rejects client-credentials / API key / mTLS.
+                options.AddPolicy(AuthConstants.TenantAdminUserPolicy, p =>
+                        p.AddAuthenticationSchemes(AuthConstants.CompositeScheme)
+                            .RequireAuthenticatedUser()
+                            .AddRequirements(new Handlers.TenantAdminUserRequirement()));
+
                 options.AddPolicy(PlatformConstants.PlatformHostPolicy, p =>
                     p.AddAuthenticationSchemes(AuthConstants.PlatformBearer)
                         .RequireAuthenticatedUser()
@@ -327,6 +333,7 @@ namespace DfE.ExternalApplications.Api.Security
             services.AddSingleton<IAuthorizationHandler, ApplicationFilesPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, NotificationsPermissionHandler>();
             services.AddSingleton<IAuthorizationHandler, ServicePrincipalHandler>();
+            services.AddSingleton<IAuthorizationHandler, Handlers.TenantAdminUserAuthorizationHandler>();
             services.AddSingleton<IAuthorizationHandler, Handlers.PlatformHostRoleAuthorizationHandler>();
             services.AddSingleton<IAuthorizationHandler, Handlers.PlatformTenantConfigRoleAuthorizationHandler>();
             services.AddTransient<ICustomClaimProvider, PermissionsClaimProvider>();

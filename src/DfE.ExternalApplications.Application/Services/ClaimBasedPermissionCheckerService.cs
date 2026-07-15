@@ -120,6 +120,15 @@ public sealed class ClaimBasedPermissionCheckerService(IHttpContextAccessor http
     }
 
     /// <inheritdoc />
+    public bool IsInteractiveTenantAdmin()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        if (user == null) return false;
+
+        return PermissionClaimEvaluator.IsInteractiveTenantAdmin(user);
+    }
+
+    /// <inheritdoc />
     public bool IsCaseworker()
     {
         var user = _httpContextAccessor.HttpContext?.User;

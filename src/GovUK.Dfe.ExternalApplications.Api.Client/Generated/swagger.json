@@ -2871,7 +2871,7 @@
         "tags": [
           "TenantAdmin"
         ],
-        "summary": "Triggers an immediate refresh of the in-memory tenant configuration cache.",
+        "summary": "Triggers an immediate refresh of the in-memory tenant configuration cache.\nRequires an interactive Admin user JWT.",
         "operationId": "TenantAdmin_RefreshTenantConfiguration",
         "responses": {
           "200": {
@@ -2895,7 +2895,7 @@
             }
           },
           "403": {
-            "description": "Forbidden.",
+            "description": "Forbidden - interactive Admin user required.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2922,7 +2922,7 @@
         "tags": [
           "TenantAdmin"
         ],
-        "summary": "Returns a summary of all loaded tenant configurations.",
+        "summary": "Returns a summary of the caller's own tenant (not the full SaaS catalogue).\nRequires an interactive Admin user JWT.",
         "operationId": "TenantAdmin_GetTenants",
         "responses": {
           "200": {
@@ -2946,7 +2946,7 @@
             }
           },
           "403": {
-            "description": "Forbidden.",
+            "description": "Forbidden - interactive Admin user required.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2973,7 +2973,7 @@
         "tags": [
           "TenantAdmin"
         ],
-        "summary": "Seeds tenant configuration from appsettings into the tenant config database.",
+        "summary": "Seeds tenant configuration from appsettings into the tenant config database.\nPlatform-only: requires Platform.TenantConfig.Read (machine / platform app role).",
         "operationId": "TenantAdmin_SeedFromAppSettings",
         "responses": {
           "200": {
@@ -2997,7 +2997,7 @@
             }
           },
           "403": {
-            "description": "Forbidden.",
+            "description": "Forbidden - Missing Platform.TenantConfig.Read app role.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3024,7 +3024,7 @@
         "tags": [
           "TenantAdmin"
         ],
-        "summary": "Adds or updates a configuration section for a specific tenant.\nSecret sections are encrypted before storage.",
+        "summary": "Adds or updates a configuration section for the caller's own tenant only.\nRequires an interactive Admin user JWT; the route tenantId must\nmatch the resolved tenant context.",
         "operationId": "TenantAdmin_UpsertTenantSetting",
         "parameters": [
           {
@@ -3092,7 +3092,7 @@
             }
           },
           "403": {
-            "description": "Forbidden.",
+            "description": "Forbidden - interactive Admin of own tenant required.",
             "content": {
               "application/json": {
                 "schema": {

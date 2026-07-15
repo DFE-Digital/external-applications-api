@@ -340,6 +340,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Triggers an immediate refresh of the in-memory tenant configuration cache.
+        /// <br/>Requires an interactive Admin user JWT.
         /// </summary>
         /// <returns>Tenant configuration refreshed.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -347,7 +348,8 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Returns a summary of all loaded tenant configurations.
+        /// Returns a summary of the caller's own tenant (not the full SaaS catalogue).
+        /// <br/>Requires an interactive Admin user JWT.
         /// </summary>
         /// <returns>List of tenants.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -356,6 +358,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Seeds tenant configuration from appsettings into the tenant config database.
+        /// <br/>Platform-only: requires Platform.TenantConfig.Read (machine / platform app role).
         /// </summary>
         /// <returns>Seeding complete.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -363,8 +366,9 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Adds or updates a configuration section for a specific tenant.
-        /// <br/>Secret sections are encrypted before storage.
+        /// Adds or updates a configuration section for the caller's own tenant only.
+        /// <br/>Requires an interactive Admin user JWT; the route tenantId must
+        /// <br/>match the resolved tenant context.
         /// </summary>
         /// <returns>Setting updated.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>

@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using DfE.ExternalApplications.Application.TenantAdmin.Commands;
 using DfE.ExternalApplications.Application.TenantAdmin.Queries;
+using DfE.ExternalApplications.Infrastructure.Security;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Http.Models;
@@ -13,20 +15,25 @@ namespace DfE.ExternalApplications.Api.Controllers;
 
 /// <summary>
 /// Administrative endpoints for tenant configuration management.
+/// Tenant-facing actions require an interactive Admin <strong>user</strong> JWT
+/// (not Entra client-credentials / machine tokens). Admins may only manage their
+/// resolved tenant (from <c>X-Tenant-ID</c> / Origin). Platform-wide seed uses the
+/// platform TenantConfig app role.
 /// </summary>
 [ApiController]
 [ApiVersion("1.0")]
 [Route("v{version:apiVersion}/admin/tenants")]
-[Authorize] // TODO: tighten to [Authorize(Policy = "IsAdmin")] once the IsAdmin policy is registered.
 public class TenantAdminController(ISender sender) : ControllerBase
 {
     /// <summary>
     /// Triggers an immediate refresh of the in-memory tenant configuration cache.
+    /// Requires an interactive Admin user JWT.
     /// </summary>
     [HttpPost("refresh")]
+    [Authorize(Policy = AuthConstants.TenantAdminUserPolicy)]
     [SwaggerResponse(200, "Tenant configuration refreshed.", typeof(RefreshTenantConfigurationResponse))]
     [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
-    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - interactive Admin user required.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     public async Task<IActionResult> RefreshTenantConfiguration(CancellationToken cancellationToken)
     {
@@ -39,16 +46,23 @@ public class TenantAdminController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Returns a summary of all loaded tenant configurations.
+    /// Returns a summary of the caller's own tenant (not the full SaaS catalogue).
+    /// Requires an interactive Admin user JWT.
     /// </summary>
     [HttpGet]
+    [Authorize(Policy = AuthConstants.TenantAdminUserPolicy)]
     [SwaggerResponse(200, "List of tenants.", typeof(GetTenantsResponse))]
     [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
-    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - interactive Admin user required.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     public async Task<IActionResult> GetTenants(CancellationToken cancellationToken)
     {
         var result = await sender.Send(new GetTenantsQuery(), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return MapFailure(result);
+        }
 
         return new ObjectResult(result)
         {
@@ -58,11 +72,13 @@ public class TenantAdminController(ISender sender) : ControllerBase
 
     /// <summary>
     /// Seeds tenant configuration from appsettings into the tenant config database.
+    /// Platform-only: requires <c>Platform.TenantConfig.Read</c> (machine / platform app role).
     /// </summary>
     [HttpPost("seed")]
+    [Authorize(Policy = PlatformConstants.PlatformTenantConfigPolicy)]
     [SwaggerResponse(200, "Seeding complete.", typeof(SeedTenantsResponse))]
     [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
-    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - Missing Platform.TenantConfig.Read app role.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     public async Task<IActionResult> SeedFromAppSettings(CancellationToken cancellationToken)
     {
@@ -75,15 +91,17 @@ public class TenantAdminController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Adds or updates a configuration section for a specific tenant.
-    /// Secret sections are encrypted before storage.
+    /// Adds or updates a configuration section for the caller's own tenant only.
+    /// Requires an interactive Admin user JWT; the route <paramref name="tenantId"/> must
+    /// match the resolved tenant context.
     /// </summary>
     [HttpPut("{tenantId:guid}/settings")]
+    [Authorize(Policy = AuthConstants.TenantAdminUserPolicy)]
     [SwaggerResponse(200, "Setting updated.", typeof(UpsertTenantSettingResponse))]
     [SwaggerResponse(201, "Setting created.", typeof(UpsertTenantSettingResponse))]
     [SwaggerResponse(400, "Validation error.", typeof(ExceptionResponse))]
     [SwaggerResponse(401, "Unauthorized.", typeof(ExceptionResponse))]
-    [SwaggerResponse(403, "Forbidden.", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Forbidden - interactive Admin of own tenant required.", typeof(ExceptionResponse))]
     [SwaggerResponse(404, "Tenant not found.", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
     public async Task<IActionResult> UpsertTenantSetting(
@@ -101,11 +119,24 @@ public class TenantAdminController(ISender sender) : ControllerBase
         var result = await sender.Send(command, cancellationToken);
 
         if (!result.IsSuccess)
-            return new ObjectResult(result) { StatusCode = StatusCodes.Status404NotFound };
+            return MapFailure(result);
 
         var statusCode = result.Value!.WasCreated
             ? StatusCodes.Status201Created
             : StatusCodes.Status200OK;
+
+        return new ObjectResult(result) { StatusCode = statusCode };
+    }
+
+    private static IActionResult MapFailure<T>(Result<T> result)
+    {
+        var statusCode = result.ErrorCode switch
+        {
+            DomainErrorCode.Forbidden => StatusCodes.Status403Forbidden,
+            DomainErrorCode.NotFound => StatusCodes.Status404NotFound,
+            DomainErrorCode.Validation => StatusCodes.Status400BadRequest,
+            _ => StatusCodes.Status400BadRequest
+        };
 
         return new ObjectResult(result) { StatusCode = statusCode };
     }
