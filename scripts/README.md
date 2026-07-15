@@ -1,4 +1,8 @@
-# TenantConfig import scripts
+# TenantConfig import scripts (Path 3 — migration / bootstrap only)
+#
+# These scripts seed TenantConfig from legacy per-app folders and secrets.
+# They are NOT used by the runtime platform Web/API artefacts. Once tenant
+# settings live in the TenantConfig database, prefer admin APIs / SQL for updates.
 #
 # Prerequisites
 # - Windows PowerShell 5.1+ or PowerShell 7+
@@ -8,7 +12,8 @@
 # -----------------------------------------------------------------------------
 # Web settings (Target=Web) — Import-WebTenantConfig.ps1
 # -----------------------------------------------------------------------------
-# Reads external-applications-web configurations/{App}/appsettings*.json + Web user secrets.
+# Reads external-applications-web configurations/{App}/appsettings*.json + Web user secrets
+# (migration source only; those folders are not packaged into the Web image).
 #
 # Dry run:
 #   powershell -File ./Import-WebTenantConfig.ps1 -DryRun

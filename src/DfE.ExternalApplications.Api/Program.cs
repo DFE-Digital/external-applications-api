@@ -124,7 +124,8 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddSingleton<ITenantConfigurationChangedNotifier>(tenantConfigChangedNotifier);
 
             // Tenant configuration provider: Database or AppSettings based on config toggle
-            var tenantConfigSource = builder.Configuration["TenantConfigSource"] ?? "AppSettings";
+            // Path 3: TenantConfig DB is the runtime source of truth; AppSettings remains for tests/codegen.
+            var tenantConfigSource = builder.Configuration["TenantConfigSource"] ?? "Database";
             ITenantConfigurationProvider tenantConfigurationProvider;
 
             if (string.Equals(tenantConfigSource, "Database", StringComparison.OrdinalIgnoreCase))

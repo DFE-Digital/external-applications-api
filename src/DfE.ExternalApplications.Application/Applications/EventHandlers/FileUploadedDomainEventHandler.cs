@@ -63,6 +63,7 @@ public sealed class FileUploadedDomainEventHandler(
             {
                 { "TenantId", tenant.Id.ToString() },
                 { "TenantName", tenant.Name },
+                { "ApplicationName", tenant.Settings["ApplicationName"] ?? tenant.Name },
                 { "Reference", file.Application!.ApplicationReference },
                 { "applicationId", file.ApplicationId.Value },
                 { "userId", file.UploadedBy.Value },

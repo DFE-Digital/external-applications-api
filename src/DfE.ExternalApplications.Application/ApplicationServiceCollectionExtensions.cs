@@ -33,13 +33,13 @@ namespace Microsoft.Extensions.DependencyInjection
             IConfiguration config,
             ITenantConfigurationProvider tenantConfigurationProvider)
         {
-            // TODO: Move FileStorage, Email, Notifications config to GlobalConfiguration
-            // so they don't depend on first tenant. Kept as-is for now because CoreLibs extensions
-            // expect root-level IConfiguration. Runtime tenant-specific behaviour is handled by
-            // TenantAwareFileStorageService and other tenant-aware wrappers.
+            // CoreLibs FileStorage/Email/Notifications expect an IConfiguration shaped like their
+            // root sections. Prefer GlobalConfiguration when those sections are present; otherwise
+            // fall back to the first tenant for DI registration shape only. Runtime behaviour is
+            // still tenant-aware via TenantAwareFileStorageService and related wrappers.
             var firstTenant = tenantConfigurationProvider.GetAllTenants().FirstOrDefault()
                 ?? throw new InvalidOperationException("At least one tenant must be configured.");
-            var tenantConfig = firstTenant.Settings;
+            var tenantConfig = ResolveCoreLibsHostConfiguration(config, firstTenant.Settings);
             
             // Performance logging is enabled if any tenant has it enabled
             var performanceLoggingEnabled = tenantConfigurationProvider
@@ -85,8 +85,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddBackgroundService();
             
-            // Use first tenant's config for CoreLibs services
-            // These services read from root-level config, so we pass the tenant's settings
+            // Host-shaped config for CoreLibs DI registration (see ResolveCoreLibsHostConfiguration).
             services.AddNotificationServicesWithRedis(tenantConfig);
 
             services.AddFileStorage(tenantConfig);
@@ -159,6 +158,24 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             return services;
+        }
+
+        /// <summary>
+        /// Resolves the IConfiguration used to register CoreLibs host services.
+        /// Prefers <c>GlobalConfiguration</c> when it already contains FileStorage (Path 3 host shape);
+        /// otherwise falls back to the first tenant's settings for DI registration only.
+        /// </summary>
+        private static IConfiguration ResolveCoreLibsHostConfiguration(
+            IConfiguration root,
+            IConfiguration firstTenantSettings)
+        {
+            var global = root.GetSection("GlobalConfiguration");
+            if (global.Exists() && global.GetSection("FileStorage").GetChildren().Any())
+            {
+                return global;
+            }
+
+            return firstTenantSettings;
         }
     }
 }
