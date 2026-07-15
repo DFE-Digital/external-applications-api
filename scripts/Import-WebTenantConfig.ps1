@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-  Imports Web folder appsettings (+ user secrets) into TenantConfig as Target=Web settings.
+  Imports Web tenant settings into TenantConfig as Target=Web settings.
 
 .DESCRIPTION
-  Loads:
-    1) configurations/{ApplicationName}/appsettings.json
-    2) configurations/{ApplicationName}/appsettings.{Environment}.json (optional)
-    3) Web user secrets (UserSecretsId from the Web csproj), merging the
-       application-named section (e.g. "Transfers") onto the root, same as Program.cs
+  Loads (first match wins for base settings):
+    1) -TenantSettingsFile (JSON export / dump of tenant web settings)
+    2) Legacy configurations/{ApplicationName}/appsettings.json (if still present)
+    3) Web user secrets application-named section only (insufficient alone for full import)
+
+  Optional overlay: configurations/{ApplicationName}/appsettings.{Environment}.json
 
   Then upserts each top-level category via:
     PUT /v1/admin/tenants/{tenantId}/settings
@@ -20,11 +21,7 @@
   .\Import-WebTenantConfig.ps1 -DryRun
 
 .EXAMPLE
-  .\Import-WebTenantConfig.ps1 -AccessToken $token
-
-.EXAMPLE
-  .\Import-WebTenantConfig.ps1 -AccessToken $token `
-    -SqlConnectionString "Server=localhost,1433;Database=TenantConfig;User Id=SA;Password=YourPassword123!;TrustServerCertificate=True;"
+  .\Import-WebTenantConfig.ps1 -AccessToken $token -TenantSettingsFile .\transfers-web.json
 #>
 [CmdletBinding()]
 param(
@@ -45,6 +42,8 @@ param(
     [string] $FrontendOrigin = "https://localhost:7020",
 
     [string] $SqlConnectionString = "",
+
+    [string] $TenantSettingsFile = "",
 
     [string[]] $SkipCategories = @(
         "AllowedHosts",
@@ -353,27 +352,49 @@ $configurationsPath = Join-Path $webProject "configurations\$ApplicationName"
 $baseSettingsPath = Join-Path $configurationsPath "appsettings.json"
 $envSettingsPath = Join-Path $configurationsPath "appsettings.$Environment.json"
 
-if (-not (Test-Path $baseSettingsPath)) {
-    throw "Base settings not found: $baseSettingsPath"
+$merged = $null
+
+if (-not [string]::IsNullOrWhiteSpace($TenantSettingsFile)) {
+    if (-not (Test-Path $TenantSettingsFile)) {
+        throw "TenantSettingsFile not found: $TenantSettingsFile"
+    }
+
+    Write-Host "Web project:     $webProject" -ForegroundColor Cyan
+    Write-Host "Application:     $ApplicationName" -ForegroundColor Cyan
+    Write-Host "TenantId:        $TenantId" -ForegroundColor Cyan
+    Write-Host "Settings file:   $TenantSettingsFile" -ForegroundColor Cyan
+
+    $merged = Read-JsonFileAsHashtable -Path $TenantSettingsFile
+    if ($null -eq $merged) {
+        throw "Failed to parse $TenantSettingsFile"
+    }
 }
+elseif (Test-Path $baseSettingsPath) {
+    Write-Host "Web project:     $webProject" -ForegroundColor Cyan
+    Write-Host "Application:     $ApplicationName" -ForegroundColor Cyan
+    Write-Host "TenantId:        $TenantId" -ForegroundColor Cyan
+    Write-Host "Base settings:   $baseSettingsPath" -ForegroundColor Cyan
 
-Write-Host "Web project:     $webProject" -ForegroundColor Cyan
-Write-Host "Application:     $ApplicationName" -ForegroundColor Cyan
-Write-Host "TenantId:        $TenantId" -ForegroundColor Cyan
-Write-Host "Base settings:   $baseSettingsPath" -ForegroundColor Cyan
+    $merged = Read-JsonFileAsHashtable -Path $baseSettingsPath
+    if ($null -eq $merged) {
+        throw "Failed to parse $baseSettingsPath"
+    }
 
-$merged = Read-JsonFileAsHashtable -Path $baseSettingsPath
-if ($null -eq $merged) {
-    throw "Failed to parse $baseSettingsPath"
-}
-
-$envOverlay = Read-JsonFileAsHashtable -Path $envSettingsPath
-if ($null -ne $envOverlay) {
-    Write-Host "Env overlay:     $envSettingsPath" -ForegroundColor Cyan
-    $merged = Merge-HashtablesDeep -Base $merged -Overlay $envOverlay
+    $envOverlay = Read-JsonFileAsHashtable -Path $envSettingsPath
+    if ($null -ne $envOverlay) {
+        Write-Host "Env overlay:     $envSettingsPath" -ForegroundColor Cyan
+        $merged = Merge-HashtablesDeep -Base $merged -Overlay $envOverlay
+    }
+    else {
+        Write-Host "Env overlay:     (none)" -ForegroundColor DarkGray
+    }
 }
 else {
-    Write-Host "Env overlay:     (none)" -ForegroundColor DarkGray
+    throw @"
+No Web tenant settings source found.
+Provide -TenantSettingsFile <path-to-json>, or restore legacy configurations\$ApplicationName\appsettings.json.
+(configurations/ folders are no longer part of the platform Web artefact.)
+"@
 }
 
 $userSecretsId = Get-UserSecretsId -ProjectPath $webProject
