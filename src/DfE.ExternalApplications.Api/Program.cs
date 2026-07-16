@@ -30,6 +30,8 @@ using DfE.ExternalApplications.Infrastructure.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
+using Serilog.Events;
 using TelemetryConfiguration = Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration;
 
 namespace DfE.ExternalApplications.Api
@@ -46,6 +48,9 @@ namespace DfE.ExternalApplications.Api
             {
                 loggerConfiguration
                     .ReadFrom.Configuration(context.Configuration)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection", LogEventLevel.Warning)
                     .Enrich.FromLogContext()
                     .WriteTo.Console();
             });
@@ -119,7 +124,7 @@ namespace DfE.ExternalApplications.Api
             // Instantiated directly here so the singleton instance can be wired into the
             // DatabaseTenantConfigurationProvider (which is built before app.Build()).
             var tenantConfigChangedNotifier = new DfE.ExternalApplications.Infrastructure.Services.TenantConfigurationChangedNotifier(
-                LoggerFactory.Create(lb => lb.AddConsole())
+                CreateBootstrapLoggerFactory()
                     .CreateLogger<DfE.ExternalApplications.Infrastructure.Services.TenantConfigurationChangedNotifier>());
             builder.Services.AddSingleton<ITenantConfigurationChangedNotifier>(tenantConfigChangedNotifier);
 
@@ -134,7 +139,7 @@ namespace DfE.ExternalApplications.Api
 
                 var dbProvider = new DatabaseTenantConfigurationProvider(
                     tempScopeFactory,
-                    LoggerFactory.Create(lb => lb.AddConsole())
+                    CreateBootstrapLoggerFactory()
                         .CreateLogger<DatabaseTenantConfigurationProvider>(),
                     encryptor: encryptor,
                     targetApplication: "Api",
@@ -249,6 +254,9 @@ namespace DfE.ExternalApplications.Api
             {
                 Log.Logger = new Serilog.LoggerConfiguration()
                     .ReadFrom.Configuration(builder.Configuration)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection", LogEventLevel.Warning)
                     .Enrich.FromLogContext()
                     .WriteTo.Console()
                     .WriteTo.ApplicationInsights(
@@ -447,9 +455,24 @@ namespace DfE.ExternalApplications.Api
             var tempServices = new ServiceCollection();
             tempServices.AddDbContext<TenantConfigDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("TenantConfigDatabase")));
-            tempServices.AddLogging(lb => lb.AddConsole());
+            tempServices.AddLogging(ConfigureConsoleLogging);
             return tempServices.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
         }
+
+        /// <summary>
+        /// Console logging for bootstrap/temporary service providers (tenant config load before
+        /// the main Serilog pipeline is fully wired). Suppresses noisy EF SQL command output.
+        /// </summary>
+        private static void ConfigureConsoleLogging(ILoggingBuilder logging)
+        {
+            logging.AddConsole();
+            logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+            logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+            logging.AddFilter("Microsoft.AspNetCore.DataProtection", LogLevel.Warning);
+        }
+
+        private static ILoggerFactory CreateBootstrapLoggerFactory()
+            => LoggerFactory.Create(ConfigureConsoleLogging);
 
         /// <summary>
         /// Builds a DataProtection-backed ITenantSettingsEncryptor for encrypting/decrypting
@@ -461,7 +484,7 @@ namespace DfE.ExternalApplications.Api
         {
             var tempServices = new ServiceCollection();
             tempServices.AddDataProtection();
-            tempServices.AddLogging(lb => lb.AddConsole());
+            tempServices.AddLogging(ConfigureConsoleLogging);
             var tempProvider = tempServices.BuildServiceProvider();
             return new DataProtectionTenantSettingsEncryptor(
                 tempProvider.GetRequiredService<IDataProtectionProvider>());
