@@ -110,7 +110,10 @@ namespace DfE.ExternalApplications.Api
             builder.Services.AddDbContext<TenantConfigDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("TenantConfigDatabase")));
 
-            var encryptor = BuildTenantSettingsEncryptor(builder.Services, builder.Configuration);
+            // Shared Data Protection key ring for secret TenantSettings (local keys in Local/Development;
+            // Azure Blob + Key Vault when DataProtection:UseAzure is true in deployed environments).
+            builder.Services.AddTenantSettingsDataProtection(builder.Configuration, builder.Environment);
+            var encryptor = BuildTenantSettingsEncryptor(builder.Configuration, builder.Environment);
             builder.Services.AddSingleton<ITenantSettingsEncryptor>(encryptor);
             builder.Services.AddScoped<ITenantConfigSeeder, DfE.ExternalApplications.Infrastructure.Services.TenantConfigSeederService>();
             builder.Services.AddScoped<ITenantSettingsWriter, DfE.ExternalApplications.Infrastructure.Services.TenantSettingsWriterService>();
@@ -476,14 +479,15 @@ namespace DfE.ExternalApplications.Api
 
         /// <summary>
         /// Builds a DataProtection-backed ITenantSettingsEncryptor for encrypting/decrypting
-        /// secret tenant settings. Uses the application's Data Protection key ring.
+        /// secret tenant settings before the main host DI container is built.
+        /// Uses the same Local vs Azure key-ring rules as <see cref="TenantSettingsDataProtectionExtensions"/>.
         /// </summary>
         private static ITenantSettingsEncryptor BuildTenantSettingsEncryptor(
-            IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHostEnvironment environment)
         {
             var tempServices = new ServiceCollection();
-            tempServices.AddDataProtection();
+            tempServices.AddTenantSettingsDataProtection(configuration, environment);
             tempServices.AddLogging(ConfigureConsoleLogging);
             var tempProvider = tempServices.BuildServiceProvider();
             return new DataProtectionTenantSettingsEncryptor(

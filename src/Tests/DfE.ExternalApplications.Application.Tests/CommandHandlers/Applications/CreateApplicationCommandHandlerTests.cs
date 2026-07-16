@@ -20,6 +20,14 @@ namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Application
 
 public class CreateApplicationCommandHandlerTests
 {
+    private static ITenantTemplateResolver AllowAllTenantTemplates()
+    {
+        var resolver = Substitute.For<ITenantTemplateResolver>();
+        resolver.IsTemplateInCurrentTenantAsync(Arg.Any<TemplateId>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+        return resolver;
+    }
+
     [Theory]
     [CustomAutoData(typeof(ApplicationCustomization))]
     public async Task Handle_ShouldCreateApplicationAndResponse_WhenValidRequestWithAppId(
@@ -58,6 +66,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             ApplicationCreationServiceTestHelper.MockReturning(application),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
@@ -111,6 +120,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             ApplicationCreationServiceTestHelper.MockReturning(application),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
@@ -138,6 +148,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturning(Result<User>.Forbid("Not authenticated")),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
@@ -164,6 +175,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturning(Result<User>.Forbid("No user identifier")),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
@@ -189,6 +201,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturning(Result<User>.NotFound("User not found")),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
@@ -227,6 +240,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
@@ -267,6 +281,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);
@@ -307,6 +322,7 @@ public class CreateApplicationCommandHandlerTests
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
+            AllowAllTenantTemplates(),
             mediator,
             Substitute.For<IUserCacheInvalidator>(),
             unitOfWork);

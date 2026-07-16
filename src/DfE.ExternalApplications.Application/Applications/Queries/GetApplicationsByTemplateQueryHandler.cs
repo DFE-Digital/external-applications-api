@@ -75,7 +75,7 @@ public sealed class GetApplicationsByTemplateQueryHandler(
                     if (userWithAuthorization is null)
                         return Result<PagedResult<ApplicationDto>>.Forbid("User not found");
 
-                    if (!tenantTemplateResolver.IsTemplateInCurrentTenant(templateId))
+                    if (!await tenantTemplateResolver.IsTemplateInCurrentTenantAsync(templateId, cancellationToken))
                         return Result<PagedResult<ApplicationDto>>.Forbid(
                             "Template does not belong to the current tenant");
 

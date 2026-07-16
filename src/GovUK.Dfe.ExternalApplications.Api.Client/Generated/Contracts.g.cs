@@ -299,6 +299,24 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
+        /// Returns templates in the current tenant that the caller can access.
+        /// <br/>Admins see the full tenant catalogue; other users see only templates they have permission for.
+        /// </summary>
+        /// <returns>Accessible templates for the current tenant.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<System.Collections.ObjectModel.ObservableCollection<TemplateDto>> GetAccessibleTemplatesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Creates a new template in the current tenant. Admin only.
+        /// <br/>The creating admin is granted Read/Write template permission.
+        /// </summary>
+        /// <returns>Template created successfully.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<TemplateDto> CreateTemplateAsync(CreateTemplateRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
         /// Returns the latest template schema for the specified template name if the user has access.
         /// </summary>
         /// <returns>The latest template schema.</returns>

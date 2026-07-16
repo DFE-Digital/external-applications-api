@@ -17,6 +17,16 @@
     },
     {
       "Controller": "TemplatesController",
+      "Action": "GetAccessibleTemplatesAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanListTemplates"
+    },
+    {
+      "Controller": "TemplatesController",
+      "Action": "CreateTemplateAsync",
+      "ExpectedSecurity": "Authorize: Policy=CanCreateTemplate"
+    },
+    {
+      "Controller": "TemplatesController",
       "Action": "GetLatestTemplateSchemaAsync",
       "ExpectedSecurity": "Authorize: Policy=CanReadTemplate"
     },

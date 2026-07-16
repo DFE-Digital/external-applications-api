@@ -1,5 +1,6 @@
 using AutoFixture;
 using AutoFixture.Xunit2;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -26,22 +27,47 @@ namespace DfE.ExternalApplications.Application.Tests.QueryHandlers.Users;
 
 public class ExchangeTokenQueryHandlerTests
 {
-    private static (TenantConfiguration Tenant, Guid TemplateId) CreateTenantWithSingleTemplate()
+    private static TenantConfiguration CreateTenant()
     {
-        var templateId = Guid.NewGuid();
-        var configData = new Dictionary<string, string?>
-        {
-            ["ApplicationTemplates:HostMappings:transfer"] = templateId.ToString()
-        };
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(configData)
+            .AddInMemoryCollection(new Dictionary<string, string?>())
             .Build();
-        var tenant = new TenantConfiguration(
+        return new TenantConfiguration(
             Guid.NewGuid(),
             "TestTenant",
             configuration,
             Array.Empty<string>());
-        return (tenant, templateId);
+    }
+
+    private static IUserAccessibleTemplateService CreateAccessibleService(params TemplateId[] accessible)
+    {
+        var service = Substitute.For<IUserAccessibleTemplateService>();
+        service.GetAccessibleTemplateIdsAsync(
+                Arg.Any<IEnumerable<TemplatePermission>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(accessible.ToList().AsReadOnly());
+        return service;
+    }
+
+    private static ExchangeTokenQueryHandler CreateHandler(
+        IExternalIdentityValidator externalValidator,
+        IEaRepository<User> userRepo,
+        IUserTokenServiceFactory tokenServiceFactory,
+        IHttpContextAccessor httpContextAccessor,
+        ITenantContextAccessor tenantContextAccessor,
+        ICustomRequestChecker internalRequestChecker,
+        ILogger<ExchangeTokenQueryHandler> logger,
+        IUserAccessibleTemplateService? accessibleTemplateService = null)
+    {
+        return new ExchangeTokenQueryHandler(
+            externalValidator,
+            userRepo,
+            tokenServiceFactory,
+            httpContextAccessor,
+            tenantContextAccessor,
+            accessibleTemplateService ?? CreateAccessibleService(new TemplateId(Guid.NewGuid())),
+            internalRequestChecker,
+            logger);
     }
 
     [Theory]
@@ -59,8 +85,9 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
         // Arrange
-        var (tenant, templateId) = CreateTenantWithSingleTemplate();
+        var tenant = CreateTenant();
         tenantContextAccessor.CurrentTenant.Returns(tenant);
+        var accessibleTemplateId = new TemplateId(Guid.NewGuid());
 
         var claims = new List<Claim>
         {
@@ -78,7 +105,7 @@ public class ExchangeTokenQueryHandlerTests
             new TemplatePermission(
                 new TemplatePermissionId(Guid.NewGuid()),
                 new UserId(Guid.NewGuid()),
-                new TemplateId(templateId),
+                accessibleTemplateId,
                 AccessType.Read,
                 DateTime.UtcNow,
                 new UserId(Guid.NewGuid()))
@@ -90,7 +117,6 @@ public class ExchangeTokenQueryHandlerTests
         var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
         userRepo.Query().Returns(userQueryable);
 
-        // Handler reads Entra/app roles from HttpContext.User (already authenticated by the API pipeline).
         var httpContext = Substitute.For<HttpContext>();
         var entraIdentity = new ClaimsIdentity(
             new[] { new Claim(ClaimTypes.Role, "TestRole") },
@@ -110,24 +136,88 @@ public class ExchangeTokenQueryHandlerTests
             .GetUserTokenModelAsync(Arg.Any<ClaimsPrincipal>())
             .Returns(Task.FromResult(expectedInternalToken));
 
-        var handler = new ExchangeTokenQueryHandler(
+        var handler = CreateHandler(
             externalValidator,
             userRepo,
             tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,
-            logger);
+            logger,
+            CreateAccessibleService(accessibleTemplateId));
 
         // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
+        Assert.True(result.IsSuccess);
         await externalValidator.Received(1).ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>());
         await tokenService.Received(1).GetUserTokenModelAsync(Arg.Is<ClaimsPrincipal>(p =>
             p.HasClaim(ClaimTypes.Role, user.Role.Name) &&
             p.HasClaim(TenantAuthClaimTypes.TenantId, tenant.Id.ToString())));
+    }
+
+    [Theory]
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_UserWithAccessToOneOfManyTenantTemplates_ShouldSucceed(
+        string subjectToken,
+        string email,
+        UserCustomization userCustom,
+        [Frozen] IExternalIdentityValidator externalValidator,
+        [Frozen] IEaRepository<User> userRepo,
+        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
+        [Frozen] IHttpContextAccessor httpContextAccessor,
+        [Frozen] ITenantContextAccessor tenantContextAccessor,
+        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
+        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
+    {
+        var tenant = CreateTenant();
+        tenantContextAccessor.CurrentTenant.Returns(tenant);
+
+        var permittedTemplateId = new TemplateId(Guid.NewGuid());
+        var otherTenantTemplateId = new TemplateId(Guid.NewGuid());
+
+        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) })));
+
+        userCustom.OverrideEmail = email;
+        userCustom.OverrideTemplatePermissions = new[]
+        {
+            new TemplatePermission(
+                new TemplatePermissionId(Guid.NewGuid()),
+                new UserId(Guid.NewGuid()),
+                permittedTemplateId,
+                AccessType.Read,
+                DateTime.UtcNow,
+                new UserId(Guid.NewGuid()))
+        };
+        var user = new Fixture().Customize(userCustom).Create<User>();
+        user.GetType().GetProperty("Role")!.SetValue(user, new Role(user.RoleId, "TestRole"));
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
+
+        var httpContext = Substitute.For<HttpContext>();
+        httpContext.User.Returns(new ClaimsPrincipal(new ClaimsIdentity(authenticationType: "Bearer")));
+        httpContextAccessor.HttpContext.Returns(httpContext);
+
+        var tokenService = Substitute.For<IUserTokenService>();
+        tokenServiceFactory.GetService(tenant.Id.ToString()).Returns(tokenService);
+        tokenService.GetUserTokenModelAsync(Arg.Any<ClaimsPrincipal>())
+            .Returns(Task.FromResult(new Token { AccessToken = "token", ExpiresIn = 60 }));
+
+        var handler = CreateHandler(
+            externalValidator,
+            userRepo,
+            tokenServiceFactory,
+            httpContextAccessor,
+            tenantContextAccessor,
+            internalRequestChecker,
+            logger,
+            CreateAccessibleService(permittedTemplateId, otherTenantTemplateId));
+
+        var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
     }
 
     [Theory]
@@ -143,26 +233,17 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
         [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
-        // Arrange
-        var (tenant, _) = CreateTenantWithSingleTemplate();
+        var tenant = CreateTenant();
         tenantContextAccessor.CurrentTenant.Returns(tenant);
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Email, email)
-        };
-        var identity = new ClaimsIdentity(claims);
-        var claimsPrincipal = new ClaimsPrincipal(identity);
-
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
-            .Returns(claimsPrincipal);
+            .Returns(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) })));
 
         var user = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "test user", email, DateTime.UtcNow,
             null, null, null);
-        var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
-        userRepo.Query().Returns(userQueryable);
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
         
-        var handler = new ExchangeTokenQueryHandler(
+        var handler = CreateHandler(
             externalValidator,
             userRepo,
             tokenServiceFactory,
@@ -171,14 +252,11 @@ public class ExchangeTokenQueryHandlerTests
             internalRequestChecker,
             logger);
 
-        // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal($"User {email} has no role assigned", result.Error);
     }
-
 
     [Theory]
     [CustomAutoData]
@@ -192,12 +270,10 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
         [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
-        // Arrange
-        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>()));
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
-            .Returns(claimsPrincipal);
+            .Returns(new ClaimsPrincipal(new ClaimsIdentity(new List<Claim>())));
 
-        var handler = new ExchangeTokenQueryHandler(
+        var handler = CreateHandler(
             externalValidator,
             userRepo,
             tokenServiceFactory,
@@ -206,17 +282,15 @@ public class ExchangeTokenQueryHandlerTests
             internalRequestChecker,
             logger);
 
-        // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Missing email", result.Error);
     }
 
     [Theory]
-    [CustomAutoData]
-    public async Task Handle_UserNotFound_ShouldThrowSecurityTokenException(
+    [CustomAutoData(typeof(UserCustomization))]
+    public async Task Handle_UserNotFound_ShouldReturnNotFound(
         string subjectToken,
         string email,
         [Frozen] IExternalIdentityValidator externalValidator,
@@ -227,24 +301,14 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
         [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
-        // Arrange
-        var (tenant, _) = CreateTenantWithSingleTemplate();
-        tenantContextAccessor.CurrentTenant.Returns(tenant);
-
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Email, email)
-        };
-        var identity = new ClaimsIdentity(claims);
-        var claimsPrincipal = new ClaimsPrincipal(identity);
+        tenantContextAccessor.CurrentTenant.Returns(CreateTenant());
 
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
-            .Returns(claimsPrincipal);
+            .Returns(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) })));
 
-        var emptyQueryable = new List<User>().AsQueryable().BuildMock();
-        userRepo.Query().Returns(emptyQueryable);
+        userRepo.Query().Returns(new List<User>().AsQueryable().BuildMock());
 
-        var handler = new ExchangeTokenQueryHandler(
+        var handler = CreateHandler(
             externalValidator,
             userRepo,
             tokenServiceFactory,
@@ -253,17 +317,15 @@ public class ExchangeTokenQueryHandlerTests
             internalRequestChecker,
             logger);
 
-        // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
 
-        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal($"User not found for email {email}", result.Error);
     }
 
     [Theory]
     [CustomAutoData]
-    public async Task Handle_ShouldThrow_WhenValidationFails(
+    public async Task Handle_InvalidToken_ShouldPropagateException(
         string subjectToken,
         [Frozen] IExternalIdentityValidator externalValidator,
         [Frozen] IEaRepository<User> userRepo,
@@ -273,17 +335,19 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
         [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
-        // Arrange - when validation throws, handler should let SecurityTokenException propagate
-        var exception = new SecurityTokenException("Invalid token");
-        var faultedTask = Task.FromException<ClaimsPrincipal>(exception);
-        externalValidator.ValidateIdTokenAsync(Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(faultedTask);
+        var faultedTask = Task.FromException<ClaimsPrincipal>(new SecurityTokenException("Invalid token"));
         externalValidator.ValidateIdTokenAsync(Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Returns(faultedTask);
 
-        var handler = new ExchangeTokenQueryHandler(externalValidator, userRepo, tokenServiceFactory, httpCtxAcc, tenantContextAccessor, internalRequestChecker, logger);
+        var handler = CreateHandler(
+            externalValidator,
+            userRepo,
+            tokenServiceFactory,
+            httpCtxAcc,
+            tenantContextAccessor,
+            internalRequestChecker,
+            logger);
 
-        // Act & Assert
         var ex = await Assert.ThrowsAsync<SecurityTokenException>(
             () => handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None));
         Assert.Equal("Invalid token", ex.Message);
@@ -291,7 +355,7 @@ public class ExchangeTokenQueryHandlerTests
 
     [Theory]
     [CustomAutoData(typeof(UserCustomization))]
-    public async Task Handle_UserWithoutTemplateAccess_ReturnsNotFound(
+    public async Task Handle_UserWithoutAccessibleTemplate_ReturnsNotFound(
         string subjectToken,
         string email,
         UserCustomization userCustom,
@@ -303,87 +367,39 @@ public class ExchangeTokenQueryHandlerTests
         [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
         [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
     {
-        // Arrange: tenant has template A; user exists but has permission only for a different template B
-        var (tenant, requestTemplateId) = CreateTenantWithSingleTemplate();
-        tenantContextAccessor.CurrentTenant.Returns(tenant);
+        tenantContextAccessor.CurrentTenant.Returns(CreateTenant());
 
-        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
-            .Returns(new ClaimsPrincipal(new ClaimsIdentity(claims)));
+            .Returns(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) })));
 
         userCustom.OverrideEmail = email;
-        var otherTemplateId = Guid.NewGuid(); // different from requestTemplateId
         userCustom.OverrideTemplatePermissions = new[]
         {
             new TemplatePermission(
                 new TemplatePermissionId(Guid.NewGuid()),
                 new UserId(Guid.NewGuid()),
-                new TemplateId(otherTemplateId),
+                new TemplateId(Guid.NewGuid()),
                 AccessType.Read,
                 DateTime.UtcNow,
                 new UserId(Guid.NewGuid()))
         };
         var user = new Fixture().Customize(userCustom).Create<User>();
-        var role = new Role(user.RoleId, "TestRole");
-        user.GetType().GetProperty("Role")!.SetValue(user, role);
+        user.GetType().GetProperty("Role")!.SetValue(user, new Role(user.RoleId, "TestRole"));
+        userRepo.Query().Returns(new List<User> { user }.AsQueryable().BuildMock());
 
-        var userQueryable = new List<User> { user }.AsQueryable().BuildMock();
-        userRepo.Query().Returns(userQueryable);
-
-        var handler = new ExchangeTokenQueryHandler(
+        var handler = CreateHandler(
             externalValidator,
             userRepo,
             tokenServiceFactory,
             httpContextAccessor,
             tenantContextAccessor,
             internalRequestChecker,
-            logger);
+            logger,
+            CreateAccessibleService()); // empty intersection
 
-        // Act
         var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
 
-        // Assert: treated as "user not found" so client triggers auto-registration
         Assert.False(result.IsSuccess);
         Assert.Equal($"User not found for email {email}", result.Error);
     }
-
-    [Theory]
-    [CustomAutoData]
-    public async Task Handle_WhenTenantHasNoTemplateConfig_ReturnsFailure(
-        string subjectToken,
-        string email,
-        [Frozen] IExternalIdentityValidator externalValidator,
-        [Frozen] IEaRepository<User> userRepo,
-        [Frozen] IUserTokenServiceFactory tokenServiceFactory,
-        [Frozen] IHttpContextAccessor httpContextAccessor,
-        [Frozen] ITenantContextAccessor tenantContextAccessor,
-        [Frozen][FromKeyedServices("internal")] ICustomRequestChecker internalRequestChecker,
-        [Frozen] ILogger<ExchangeTokenQueryHandler> logger)
-    {
-        // Arrange: tenant has no ApplicationTemplates:HostMappings
-        var configData = new Dictionary<string, string?>();
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(configData).Build();
-        var tenant = new TenantConfiguration(Guid.NewGuid(), "TestTenant", configuration, Array.Empty<string>());
-        tenantContextAccessor.CurrentTenant.Returns(tenant);
-
-        var claims = new List<Claim> { new(ClaimTypes.Email, email) };
-        externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
-            .Returns(new ClaimsPrincipal(new ClaimsIdentity(claims)));
-
-        var handler = new ExchangeTokenQueryHandler(
-            externalValidator,
-            userRepo,
-            tokenServiceFactory,
-            httpContextAccessor,
-            tenantContextAccessor,
-            internalRequestChecker,
-            logger);
-
-        // Act
-        var result = await handler.Handle(new ExchangeTokenQuery(subjectToken), CancellationToken.None);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Contains("Template could not be resolved", result.Error);
-    }
-} 
+}

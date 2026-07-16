@@ -28,7 +28,7 @@ public sealed class GetApplicationsForUserQueryHandler(
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
     ITenantContextAccessor tenantContextAccessor,
-    ITenantTemplateResolver tenantTemplateResolver,
+    IUserAccessibleTemplateService userAccessibleTemplateService,
     ILogger<GetApplicationsForUserQueryHandler> logger)
     : IRequestHandler<GetApplicationsForUserQuery, Result<PagedResult<ApplicationDto>>>
 {
@@ -77,7 +77,10 @@ public sealed class GetApplicationsForUserQueryHandler(
                             ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
                     }
 
-                    var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
+                    var templateIdsFilter = await userAccessibleTemplateService.ResolveAccessibleListingFilterAsync(
+                        userWithAuthorization.TemplatePermissions,
+                        request.TemplateId,
+                        cancellationToken);
 
                     logger.LogInformation(
                         "My applications listing (own applications only). Tenant={Tenant}, Email={Email}, Role={Role}, ExplicitApplicationCount={ApplicationCount}, RequestedTemplateId={RequestedTemplateId}, EffectiveTemplateCount={EffectiveTemplateCount}",

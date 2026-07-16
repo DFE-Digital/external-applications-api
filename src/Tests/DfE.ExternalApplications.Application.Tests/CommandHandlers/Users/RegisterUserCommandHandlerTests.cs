@@ -23,6 +23,14 @@ namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Users;
 
 public class RegisterUserCommandHandlerTests
 {
+    private static DfE.ExternalApplications.Application.Services.ITenantTemplateResolver AllowAllTenantTemplates()
+    {
+        var resolver = Substitute.For<DfE.ExternalApplications.Application.Services.ITenantTemplateResolver>();
+        resolver.IsTemplateInCurrentTenantAsync(Arg.Any<TemplateId>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+        return resolver;
+    }
+
     [Theory]
     [CustomAutoData(typeof(UserCustomization))]
     public async Task Handle_ShouldCreateNewUser_WhenValidTokenAndUserDoesNotExist(
@@ -79,7 +87,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -156,7 +165,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var command = new RegisterUserCommand(subjectToken, templateId);
 
@@ -229,7 +239,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -307,7 +318,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -342,7 +354,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -388,7 +401,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -439,7 +453,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
@@ -522,7 +537,8 @@ public class RegisterUserCommandHandlerTests
             httpContextAccessor,
             userFactory,
             unitOfWork,
-            tenantContextAccessor);
+            tenantContextAccessor,
+            AllowAllTenantTemplates());
 
         var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);

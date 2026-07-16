@@ -4,6 +4,7 @@ using GovUK.Dfe.CoreLibs.Security.Authorization;
 using GovUK.Dfe.CoreLibs.Security.Configurations;
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Api.Security.Handlers;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Infrastructure.Security;
 using DfE.ExternalApplications.Infrastructure.Services;
 using DfE.ExternalApplications.Domain.Tenancy;
@@ -241,6 +242,18 @@ namespace DfE.ExternalApplications.Api.Security
                     pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
                     pb.RequireAuthenticatedUser();
                     pb.AddRequirements(new Handlers.AnyTemplatePermissionRequirement(AccessType.Write.ToString()));
+                },
+                ["CanListTemplates"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.AddRequirements(new Handlers.AnyTemplatePermissionRequirement(AccessType.Read.ToString()));
+                },
+                ["CanCreateTemplate"] = pb =>
+                {
+                    pb.AddAuthenticationSchemes(AuthConstants.CompositeScheme);
+                    pb.RequireAuthenticatedUser();
+                    pb.RequireRole(RoleNames.Admin);
                 },
                 ["CanReadApplicationFiles"] = pb =>
                 {

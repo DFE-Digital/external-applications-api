@@ -3,8 +3,26 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 
 namespace DfE.ExternalApplications.Domain.Factories;
 
+/// <inheritdoc />
 public class TemplateFactory : ITemplateFactory
 {
+    /// <inheritdoc />
+    public Template CreateTemplate(string name, UserId createdBy, DateTime? createdOn = null)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Template name cannot be null or empty", nameof(name));
+
+        if (createdBy is null)
+            throw new ArgumentNullException(nameof(createdBy));
+
+        return new Template(
+            new TemplateId(Guid.NewGuid()),
+            name.Trim(),
+            createdOn ?? DateTime.UtcNow,
+            createdBy);
+    }
+
+    /// <inheritdoc />
     public TemplateVersion AddVersionToTemplate(
         Template template,
         string versionNumber,

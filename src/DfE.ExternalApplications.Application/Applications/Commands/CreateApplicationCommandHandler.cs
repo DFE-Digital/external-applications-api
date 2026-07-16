@@ -46,6 +46,8 @@ public sealed class CreateApplicationCommandHandler(
 
     IPermissionCheckerService permissionCheckerService,
 
+    ITenantTemplateResolver tenantTemplateResolver,
+
     ISender mediator,
 
     IUserCacheInvalidator userCacheInvalidator,
@@ -89,6 +91,12 @@ public sealed class CreateApplicationCommandHandler(
 
 
             var dbUser = currentUserResult.Value!;
+
+            var templateId = new TemplateId(request.TemplateId);
+
+            if (!await tenantTemplateResolver.IsTemplateInCurrentTenantAsync(templateId, cancellationToken))
+
+                return Result<ApplicationDto>.Forbid("Template does not belong to the current tenant");
 
 
 

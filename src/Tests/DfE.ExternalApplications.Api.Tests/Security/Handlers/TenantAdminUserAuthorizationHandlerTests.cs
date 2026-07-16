@@ -6,6 +6,7 @@ using DfE.ExternalApplications.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
+using Xunit;
 
 namespace DfE.ExternalApplications.Api.Tests.Security.Handlers;
 

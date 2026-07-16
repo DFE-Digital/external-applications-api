@@ -1,14 +1,14 @@
 using Asp.Versioning;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common.Exceptions;
 using DfE.ExternalApplications.Application.Templates.Commands;
 using DfE.ExternalApplications.Application.Templates.Queries;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.CoreLibs.Http.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using GovUK.Dfe.CoreLibs.Http.Models;
 
 namespace DfE.ExternalApplications.Api.Controllers;
 
@@ -17,6 +17,58 @@ namespace DfE.ExternalApplications.Api.Controllers;
 [Route("v{version:apiVersion}/[controller]")]
 public class TemplatesController(ISender sender) : ControllerBase
 {
+    /// <summary>
+    /// Returns templates in the current tenant that the caller can access.
+    /// Admins see the full tenant catalogue; other users see only templates they have permission for.
+    /// </summary>
+    [HttpGet]
+    [Authorize(Policy = "CanListTemplates")]
+    [SwaggerResponse(200, "Accessible templates for the current tenant.", typeof(IReadOnlyCollection<TemplateDto>))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Access denied.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> GetAccessibleTemplatesAsync(CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new GetAccessibleTemplatesQuery(), cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
+        };
+    }
+
+    /// <summary>
+    /// Creates a new template in the current tenant. Admin only.
+    /// The creating admin is granted Read/Write template permission.
+    /// </summary>
+    [HttpPost]
+    [Authorize(Policy = "CanCreateTemplate")]
+    [SwaggerResponse(201, "Template created successfully.", typeof(TemplateDto))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Access denied.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    [SwaggerResponse(429, "Too Many Requests.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> CreateTemplateAsync(
+        [FromBody] CreateTemplateRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+            throw new BadRequestException("Invalid request data.");
+
+        var command = new CreateTemplateCommand(
+            request.Name,
+            request.InitialVersionNumber,
+            request.JsonSchema);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status201Created
+        };
+    }
+
     /// <summary>
     /// Returns the latest template schema for the specified template name if the user has access.
     /// </summary>

@@ -13,18 +13,48 @@ namespace DfE.ExternalApplications.Application.Tests.Helpers;
 
 internal static class ApplicationListingTestHelper
 {
-    internal static ITenantTemplateResolver CreateEmptyTemplateResolver()
+    internal static IUserAccessibleTemplateService CreateEmptyAccessibleTemplateService()
     {
-        var resolver = Substitute.For<ITenantTemplateResolver>();
-        resolver.ResolveListingTemplateFilter(Arg.Any<Guid?>()).Returns(Array.Empty<TemplateId>());
-        return resolver;
+        var service = Substitute.For<IUserAccessibleTemplateService>();
+        service.ResolveAccessibleListingFilterAsync(
+                Arg.Any<IEnumerable<TemplatePermission>>(),
+                Arg.Any<Guid?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<TemplateId>());
+        return service;
+    }
+
+    internal static IUserAccessibleTemplateService CreateAccessibleTemplateService(params TemplateId[] allowedTemplateIds)
+    {
+        var allowed = allowedTemplateIds.ToHashSet();
+        var service = Substitute.For<IUserAccessibleTemplateService>();
+        service.ResolveAccessibleListingFilterAsync(
+                Arg.Any<IEnumerable<TemplatePermission>>(),
+                Arg.Any<Guid?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var requested = call.Arg<Guid?>();
+                if (requested.HasValue)
+                {
+                    var templateId = new TemplateId(requested.Value);
+                    return allowed.Contains(templateId)
+                        ? new[] { templateId }
+                        : Array.Empty<TemplateId>();
+                }
+
+                return allowed.ToList().AsReadOnly();
+            });
+        return service;
     }
 
     internal static ITenantTemplateResolver CreateTemplateResolver(params TemplateId[] allowedTemplateIds)
     {
         var allowed = allowedTemplateIds.ToHashSet();
         var resolver = Substitute.For<ITenantTemplateResolver>();
-        resolver.ResolveListingTemplateFilter(Arg.Any<Guid?>())
+        resolver.IsTemplateInCurrentTenantAsync(Arg.Any<TemplateId>(), Arg.Any<CancellationToken>())
+            .Returns(call => allowed.Contains(call.Arg<TemplateId>()));
+        resolver.ResolveListingTemplateFilterAsync(Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(call =>
             {
                 var requested = call.Arg<Guid?>();
@@ -74,7 +104,7 @@ internal static class ApplicationListingTestHelper
         IEaRepository<User> userRepo,
         IEaRepository<Domain.Entities.Application> appRepo,
         ITenantContextAccessor tenantContextAccessor,
-        ITenantTemplateResolver templateResolver,
+        IUserAccessibleTemplateService accessibleTemplateService,
         ICacheService<IRedisCacheType>? cache = null)
     {
         cache ??= Substitute.For<ICacheService<IRedisCacheType>>();
@@ -85,14 +115,14 @@ internal static class ApplicationListingTestHelper
             appRepo,
             cache,
             tenantContextAccessor,
-            templateResolver,
+            accessibleTemplateService,
             Substitute.For<ILogger<GetApplicationsForUserQueryHandler>>());
     }
 
     internal static GetApplicationsForUserByExternalProviderIdQueryHandler CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
         IEaRepository<User> userRepo,
         IEaRepository<Domain.Entities.Application> appRepo,
-        ITenantTemplateResolver templateResolver,
+        IUserAccessibleTemplateService accessibleTemplateService,
         ICacheService<IRedisCacheType>? cache = null,
         ITenantContextAccessor? tenantContextAccessor = null)
     {
@@ -105,6 +135,6 @@ internal static class ApplicationListingTestHelper
             appRepo,
             cache,
             tenantContextAccessor,
-            templateResolver);
+            accessibleTemplateService);
     }
 }

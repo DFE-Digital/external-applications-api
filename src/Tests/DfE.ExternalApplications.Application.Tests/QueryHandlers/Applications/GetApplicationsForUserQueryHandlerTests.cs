@@ -69,7 +69,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(template.Id!));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, true), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -120,7 +120,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(template.Id!));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -167,7 +167,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(template.Id!));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(template.Id!));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -192,7 +192,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(new TemplateId(Guid.NewGuid())));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(new TemplateId(Guid.NewGuid())));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
@@ -236,7 +236,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(templateId));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -284,7 +284,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(templateId));
         var result = await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false, null, PageNumber: 1, PageSize: 1), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -336,7 +336,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId),
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(templateId),
             cache);
         var result = await handler.Handle(
             new GetApplicationsForUserQuery(rawEmail, Search: new ApplicationListingSearchCriteria(Reference: "APP-2024")),
@@ -370,7 +370,7 @@ public class GetApplicationsForUserQueryHandlerTests
             userRepo,
             appRepo,
             tenantContextAccessor,
-            ApplicationListingTestHelper.CreateEmptyTemplateResolver());
+            ApplicationListingTestHelper.CreateEmptyAccessibleTemplateService());
 
         await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);
         await handler.Handle(new GetApplicationsForUserQuery(rawEmail, false), CancellationToken.None);

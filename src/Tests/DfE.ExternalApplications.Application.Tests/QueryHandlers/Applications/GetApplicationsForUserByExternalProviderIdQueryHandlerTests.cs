@@ -54,7 +54,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(templateId));
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -81,7 +81,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateEmptyTemplateResolver());
+            ApplicationListingTestHelper.CreateEmptyAccessibleTemplateService());
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -125,7 +125,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(templateId));
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -172,7 +172,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateTemplateResolver(templateId));
+            ApplicationListingTestHelper.CreateAccessibleTemplateService(templateId));
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId, false, null, PageNumber: 1, PageSize: 1), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -205,7 +205,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateEmptyTemplateResolver());
+            ApplicationListingTestHelper.CreateEmptyAccessibleTemplateService());
 
         await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
         await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
@@ -244,7 +244,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateEmptyTemplateResolver());
+            ApplicationListingTestHelper.CreateEmptyAccessibleTemplateService());
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert
@@ -287,7 +287,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateEmptyTemplateResolver());
+            ApplicationListingTestHelper.CreateEmptyAccessibleTemplateService());
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert — applications without a template version are excluded from tenant-scoped listings
@@ -331,7 +331,7 @@ public class GetApplicationsForUserByExternalProviderIdQueryHandlerTests
         var handler = ApplicationListingTestHelper.CreateGetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
             appRepo,
-            ApplicationListingTestHelper.CreateEmptyTemplateResolver());
+            ApplicationListingTestHelper.CreateEmptyAccessibleTemplateService());
         var result = await handler.Handle(new GetApplicationsForUserByExternalProviderIdQuery(externalProviderId), CancellationToken.None);
 
         // Assert

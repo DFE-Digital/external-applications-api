@@ -72,9 +72,29 @@ public class DatabaseTenantConfigurationProvider(
 
                 foreach (var setting in entity.Settings)
                 {
-                    var json = setting.IsSecret && encryptor != null
-                        ? encryptor.Decrypt(setting.Settings)
-                        : setting.Settings;
+                    string json;
+                    if (setting.IsSecret && encryptor != null)
+                    {
+                        try
+                        {
+                            json = encryptor.Decrypt(setting.Settings);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(
+                                ex,
+                                "Failed to decrypt secret setting '{Category}' (Target={Target}) for tenant '{TenantName}' ({TenantId}). Skipping setting.",
+                                setting.Category,
+                                setting.Target,
+                                entity.Name,
+                                entity.Id);
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        json = setting.Settings;
+                    }
 
                     FlattenJson(setting.Category, json, configPairs);
                 }

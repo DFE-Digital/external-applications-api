@@ -2,6 +2,7 @@ using System.Net;
 using System.Security.Claims;
 using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
@@ -31,7 +32,8 @@ public sealed class RegisterUserCommandHandler(
     IHttpContextAccessor httpContextAccessor,
     IUserFactory userFactory,
     IUnitOfWork unitOfWork,
-    ITenantContextAccessor tenantContextAccessor) : IRequestHandler<RegisterUserCommand, Result<UserDto>>
+    ITenantContextAccessor tenantContextAccessor,
+    ITenantTemplateResolver tenantTemplateResolver) : IRequestHandler<RegisterUserCommand, Result<UserDto>>
 {
     public async Task<Result<UserDto>> Handle(
         RegisterUserCommand request,
@@ -91,6 +93,11 @@ public sealed class RegisterUserCommandHandler(
             }
 
             var templateId = new TemplateId(request.TemplateId.Value);
+
+            if (!await tenantTemplateResolver.IsTemplateInCurrentTenantAsync(templateId, cancellationToken))
+            {
+                return Result<UserDto>.Forbid("Template does not belong to the current tenant");
+            }
 
             // Load user by email with template permissions to check access
             var dbUser = await (new GetUserWithAllTemplatePermissionsQueryObject(email))
