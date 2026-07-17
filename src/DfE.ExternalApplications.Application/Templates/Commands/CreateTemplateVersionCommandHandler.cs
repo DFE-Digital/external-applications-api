@@ -1,6 +1,7 @@
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common.Attributes;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
@@ -28,6 +29,7 @@ public sealed class CreateTemplateVersionCommandHandler(
     IEaRepository<User> userRepo,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionChecker,
+    ITenantTemplateResolver tenantTemplateResolver,
     ITemplateFactory templateFactory,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateTemplateVersionCommand, Result<TemplateSchemaDto>>
@@ -50,6 +52,12 @@ public sealed class CreateTemplateVersionCommandHandler(
             if (string.IsNullOrEmpty(principalId))
                 return Result<TemplateSchemaDto>.Forbid("No user identifier");
 
+            var templateId = new TemplateId(request.TemplateId);
+            if (!await tenantTemplateResolver.IsTemplateInCurrentTenantAsync(templateId, cancellationToken))
+            {
+                return Result<TemplateSchemaDto>.Forbid("Template does not belong to the current tenant");
+            }
+
             User? dbUser;
             if (principalId.Contains('@'))
             {
@@ -70,7 +78,7 @@ public sealed class CreateTemplateVersionCommandHandler(
             var base64EncodedBytes = System.Convert.FromBase64String(request.JsonSchema);
             var decodedJsonSchema = System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
 
-            var template = await new GetTemplateByIdQueryObject(new TemplateId(request.TemplateId))
+            var template = await new GetTemplateByIdQueryObject(templateId)
                 .Apply(templateRepo.Query())
                 .FirstOrDefaultAsync(cancellationToken);
 

@@ -5,6 +5,7 @@ using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using GovUK.Dfe.CoreLibs.Testing.AutoFixture.Attributes;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Templates.Queries;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -66,7 +67,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, Substitute.For<ITenantContextAccessor>(), mediator);
+        var handler = CreateHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
         // Act
         var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
@@ -117,7 +118,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, Substitute.For<ITenantContextAccessor>(), mediator);
+        var handler = CreateHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
         // Act
         var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
@@ -141,7 +142,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
         var httpContext = new DefaultHttpContext();
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, Substitute.For<ITenantContextAccessor>(), mediator);
+        var handler = CreateHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
         // Act
         var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
@@ -166,7 +167,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(Array.Empty<Claim>(), "TestAuth"));
         httpContextAccessor.HttpContext.Returns(httpContext);
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, Substitute.For<ITenantContextAccessor>(), mediator);
+        var handler = CreateHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
         // Act
         var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
@@ -213,7 +214,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
                 return f();
             });
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, Substitute.For<ITenantContextAccessor>(), mediator);
+        var handler = CreateHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
         // Act
         var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
@@ -248,7 +249,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
         cacheService.GetOrAddAsync(cacheKey, Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), nameof(GetLatestTemplateSchemaQueryHandler))
             .Returns(Result<TemplateSchemaDto>.Success(templateSchema));
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, Substitute.For<ITenantContextAccessor>(), mediator);
+        var handler = CreateHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
         // Act
         var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
@@ -282,7 +283,7 @@ public class GetLatestTemplateSchemaQueryHandlerTests
         cacheService.GetOrAddAsync(Arg.Any<string>(), Arg.Any<Func<Task<Result<TemplateSchemaDto>>>>(), Arg.Any<string>())
             .Throws(new Exception("Boom"));
 
-        var handler = new GetLatestTemplateSchemaQueryHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, Substitute.For<ITenantContextAccessor>(), mediator);
+        var handler = CreateHandler(httpContextAccessor, userRepo, permissionCheckerService, cacheService, mediator);
 
         // Act
         var result = await handler.Handle(new GetLatestTemplateSchemaQuery(templateId), CancellationToken.None);
@@ -290,5 +291,26 @@ public class GetLatestTemplateSchemaQueryHandlerTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Contains("Boom", result.Error);
+    }
+
+    private static GetLatestTemplateSchemaQueryHandler CreateHandler(
+        IHttpContextAccessor httpContextAccessor,
+        IEaRepository<User> userRepo,
+        IPermissionCheckerService permissionCheckerService,
+        ICacheService<IRedisCacheType> cacheService,
+        ISender mediator)
+    {
+        var tenantTemplateResolver = Substitute.For<ITenantTemplateResolver>();
+        tenantTemplateResolver.IsTemplateInCurrentTenantAsync(Arg.Any<TemplateId>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        return new GetLatestTemplateSchemaQueryHandler(
+            httpContextAccessor,
+            userRepo,
+            permissionCheckerService,
+            tenantTemplateResolver,
+            cacheService,
+            Substitute.For<ITenantContextAccessor>(),
+            mediator);
     }
 } 

@@ -50,6 +50,7 @@ public class CreateApplicationCommandHandlerTests
             "external-id");
 
         permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(true);
 
         var application = new Domain.Entities.Application(
             new ApplicationId(Guid.NewGuid()),
@@ -63,6 +64,7 @@ public class CreateApplicationCommandHandlerTests
 
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             ApplicationCreationServiceTestHelper.MockReturning(application),
             permissionCheckerService,
@@ -104,6 +106,7 @@ public class CreateApplicationCommandHandlerTests
             null);
 
         permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(true);
 
         var application = new Domain.Entities.Application(
             new ApplicationId(Guid.NewGuid()),
@@ -117,6 +120,7 @@ public class CreateApplicationCommandHandlerTests
 
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             ApplicationCreationServiceTestHelper.MockReturning(application),
             permissionCheckerService,
@@ -145,6 +149,7 @@ public class CreateApplicationCommandHandlerTests
     {
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturning(Result<User>.Forbid("Not authenticated")),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
@@ -172,6 +177,7 @@ public class CreateApplicationCommandHandlerTests
     {
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturning(Result<User>.Forbid("No user identifier")),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
@@ -198,6 +204,7 @@ public class CreateApplicationCommandHandlerTests
     {
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturning(Result<User>.NotFound("User not found")),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
@@ -234,9 +241,11 @@ public class CreateApplicationCommandHandlerTests
             "external-id");
 
         permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(false);
+        permissionCheckerService.IsAdmin().Returns(true);
 
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
@@ -273,11 +282,13 @@ public class CreateApplicationCommandHandlerTests
             "external-id");
 
         permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(true);
         mediator.Send(Arg.Any<GetLatestTemplateSchemaByUserIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(Result<TemplateSchemaDto>.Failure("Template schema not found"));
 
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,
@@ -314,11 +325,13 @@ public class CreateApplicationCommandHandlerTests
             "external-id");
 
         permissionCheckerService.HasPermission(ResourceType.Template, command.TemplateId.ToString(), AccessType.Write).Returns(true);
+        permissionCheckerService.IsAdmin().Returns(true);
         mediator.When(x => x.Send(Arg.Any<GetLatestTemplateSchemaByUserIdQuery>(), Arg.Any<CancellationToken>()))
             .Do(_ => throw new InvalidOperationException("Database connection failed"));
 
         var handler = new CreateApplicationCommandHandler(
             applicationRepo,
+            Substitute.For<IEaRepository<Template>>(),
             AuthenticatedUserServiceTestHelper.MockReturningUser(user),
             Substitute.For<IApplicationCreationService>(),
             permissionCheckerService,

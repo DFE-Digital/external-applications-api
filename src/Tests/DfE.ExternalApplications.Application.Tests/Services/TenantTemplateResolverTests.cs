@@ -64,12 +64,14 @@ public class TenantTemplateCatalogueTests
     private static readonly TemplateId HostMappedTemplateId = new(Guid.Parse("B2F8E7D4-2C46-4A91-8E73-9D5A1F4B6C89"));
 
     [Fact]
-    public async Task GetTemplateIdsAsync_ShouldUnionDatabaseAndHostMappings()
+    public async Task GetTemplateIdsAsync_ShouldUseHostMappingsOnly_WhenConfigured()
     {
         var createdBy = new UserId(Guid.NewGuid());
+        var otherTenantTemplateId = new TemplateId(Guid.Parse("CCCCCCCC-CCCC-4CCC-8CCC-CCCCCCCCCCCC"));
         var templates = new List<Template>
         {
-            new(DbTemplateId, "DB Template", DateTime.UtcNow, createdBy)
+            new(DbTemplateId, "DB Template", DateTime.UtcNow, createdBy),
+            new(otherTenantTemplateId, "Other Tenant Template", DateTime.UtcNow, createdBy)
         }.AsQueryable().BuildMockDbSet();
 
         var templateRepo = Substitute.For<IEaRepository<Template>>();
@@ -78,7 +80,7 @@ public class TenantTemplateCatalogueTests
         var settings = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ApplicationTemplates:HostMappings:lsrp"] = HostMappedTemplateId.Value.ToString()
+                ["ApplicationTemplates:HostMappings:transfer"] = HostMappedTemplateId.Value.ToString()
             })
             .Build();
 
@@ -98,9 +100,46 @@ public class TenantTemplateCatalogueTests
 
         var result = await catalogue.GetTemplateIdsAsync();
 
-        Assert.Equal(2, result.Count);
-        Assert.Contains(DbTemplateId, result);
+        Assert.Single(result);
         Assert.Contains(HostMappedTemplateId, result);
+        Assert.DoesNotContain(DbTemplateId, result);
+        Assert.DoesNotContain(otherTenantTemplateId, result);
+    }
+
+    [Fact]
+    public async Task GetTemplateIdsAsync_ShouldFallBackToDatabase_WhenNoMappingsConfigured()
+    {
+        var createdBy = new UserId(Guid.NewGuid());
+        var templates = new List<Template>
+        {
+            new(DbTemplateId, "DB Template", DateTime.UtcNow, createdBy)
+        }.AsQueryable().BuildMockDbSet();
+
+        var templateRepo = Substitute.For<IEaRepository<Template>>();
+        templateRepo.Query().Returns(templates);
+
+        var settings = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+
+        var tenant = new TenantConfiguration(
+            Guid.Parse("11111111-1111-4111-8111-111111111111"),
+            "Transfers",
+            settings,
+            Array.Empty<string>());
+
+        var accessor = Substitute.For<ITenantContextAccessor>();
+        accessor.CurrentTenant.Returns(tenant);
+
+        var catalogue = new TenantTemplateCatalogue(
+            templateRepo,
+            accessor,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<TenantTemplateCatalogue>.Instance);
+
+        var result = await catalogue.GetTemplateIdsAsync();
+
+        Assert.Single(result);
+        Assert.Contains(DbTemplateId, result);
     }
 }
 

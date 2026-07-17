@@ -302,6 +302,10 @@ public class ExternalApplicationsContext : DbContext
             .HasColumnName("CreatedBy")
             .HasConversion(v => v.Value, v => new UserId(v))
             .IsRequired();
+        b.Property(e => e.IsLive)
+            .HasColumnName("IsLive")
+            .IsRequired()
+            .HasDefaultValue(true);
 
         b.HasOne(e => e.CreatedByUser)
             .WithMany()

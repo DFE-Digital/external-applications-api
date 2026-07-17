@@ -31,6 +31,19 @@ public class RegisterUserCommandHandlerTests
         return resolver;
     }
 
+    private static IEaRepository<Template> LiveTemplateRepository(Guid templateId)
+    {
+        var template = new Template(
+            new TemplateId(templateId),
+            "Live Template",
+            DateTime.UtcNow,
+            new UserId(Guid.NewGuid()),
+            isLive: true);
+        var repo = Substitute.For<IEaRepository<Template>>();
+        repo.Query().Returns(new List<Template> { template }.AsQueryable().BuildMockDbSet());
+        return repo;
+    }
+
     [Theory]
     [CustomAutoData(typeof(UserCustomization))]
     public async Task Handle_ShouldCreateNewUser_WhenValidTokenAndUserDoesNotExist(
@@ -81,16 +94,17 @@ public class RegisterUserCommandHandlerTests
             Arg.Any<DateTime>())
             .Returns(newUser);
 
+                var templateId = Guid.NewGuid();
+
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
             unitOfWork,
             tenantContextAccessor,
             AllowAllTenantTemplates());
-
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act
@@ -161,6 +175,7 @@ public class RegisterUserCommandHandlerTests
 
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
@@ -233,16 +248,17 @@ public class RegisterUserCommandHandlerTests
             Arg.Any<DateTime>())
             .Returns(newUser);
 
+        var templateId = Guid.NewGuid();
+
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
             unitOfWork,
             tenantContextAccessor,
             AllowAllTenantTemplates());
-
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act
@@ -312,16 +328,17 @@ public class RegisterUserCommandHandlerTests
             Arg.Any<DateTime>())
             .Returns(newUser);
 
+        var templateId = Guid.NewGuid();
+
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
             unitOfWork,
             tenantContextAccessor,
             AllowAllTenantTemplates());
-
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act
@@ -348,16 +365,17 @@ public class RegisterUserCommandHandlerTests
         externalValidator.ValidateIdTokenAsync(subjectToken, false, false, Arg.Any<InternalServiceAuthOptions?>(), Arg.Any<TestAuthenticationOptions?>(), Arg.Any<CancellationToken>())
             .Throws(new SecurityTokenException("Invalid token"));
 
+                var templateId = Guid.NewGuid();
+
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
             unitOfWork,
             tenantContextAccessor,
             AllowAllTenantTemplates());
-
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act
@@ -395,16 +413,16 @@ public class RegisterUserCommandHandlerTests
 
         var tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
 
+        var templateId = Guid.NewGuid();
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
             unitOfWork,
             tenantContextAccessor,
             AllowAllTenantTemplates());
-
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act
@@ -447,16 +465,17 @@ public class RegisterUserCommandHandlerTests
         // Mock to throw exception
         userRepo.Query().Throws(new InvalidOperationException("Database error"));
 
+                var templateId = Guid.NewGuid();
+
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
             unitOfWork,
             tenantContextAccessor,
             AllowAllTenantTemplates());
-
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act
@@ -531,16 +550,17 @@ public class RegisterUserCommandHandlerTests
             Arg.Any<DateTime>())
             .Returns(newUser);
 
+        var templateId = Guid.NewGuid();
+
         var handler = new RegisterUserCommandHandler(
             userRepo,
+            LiveTemplateRepository(templateId),
             externalValidator,
             httpContextAccessor,
             userFactory,
             unitOfWork,
             tenantContextAccessor,
             AllowAllTenantTemplates());
-
-        var templateId = Guid.NewGuid();
         var command = new RegisterUserCommand(subjectToken, templateId);
 
         // Act

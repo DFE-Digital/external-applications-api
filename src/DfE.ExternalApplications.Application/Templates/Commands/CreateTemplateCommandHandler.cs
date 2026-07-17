@@ -130,7 +130,8 @@ public sealed class CreateTemplateCommandHandler(
                 TemplateId = template.Id!.Value,
                 Name = template.Name,
                 CreatedOn = template.CreatedOn,
-                LatestVersionNumber = latestVersion
+                LatestVersionNumber = latestVersion,
+                IsLive = template.IsLive
             });
         }
         catch (ArgumentException ex)

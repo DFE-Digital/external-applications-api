@@ -4,8 +4,9 @@ namespace DfE.ExternalApplications.Application.Services;
 
 /// <summary>
 /// Provides the set of templates that belong to the current tenant.
-/// Membership is driven from the tenant EA database (admin-created templates)
-/// and remains compatible with configured HostMappings GUIDs.
+/// When HostMappings (or Template:Id) are configured, those GUIDs are the
+/// authoritative catalogue. Otherwise all templates in the tenant EA database
+/// are treated as belonging to the current tenant (isolated DB / legacy).
 /// </summary>
 public interface ITenantTemplateCatalogue
 {

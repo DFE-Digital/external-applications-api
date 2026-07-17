@@ -4,6 +4,7 @@ using DfE.ExternalApplications.Application.Common.Attributes;
 using DfE.ExternalApplications.Application.Common.Behaviours;
 using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Application.Templates.QueryObjects;
 using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -28,6 +29,7 @@ public sealed record RegisterUserCommand(string SubjectToken, Guid? TemplateId =
 
 public sealed class RegisterUserCommandHandler(
     IEaRepository<User> userRepo,
+    IEaRepository<Template> templateRepo,
     IExternalIdentityValidator externalValidator,
     IHttpContextAccessor httpContextAccessor,
     IUserFactory userFactory,
@@ -97,6 +99,20 @@ public sealed class RegisterUserCommandHandler(
             if (!await tenantTemplateResolver.IsTemplateInCurrentTenantAsync(templateId, cancellationToken))
             {
                 return Result<UserDto>.Forbid("Template does not belong to the current tenant");
+            }
+
+            var templateEntity = await new GetTemplateByIdQueryObject(templateId)
+                .Apply(templateRepo.Query().AsNoTracking())
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (templateEntity is null)
+            {
+                return Result<UserDto>.NotFound("Template not found");
+            }
+
+            if (!templateEntity.IsLive)
+            {
+                return Result<UserDto>.Forbid("Template is not live");
             }
 
             // Load user by email with template permissions to check access

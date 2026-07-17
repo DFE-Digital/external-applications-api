@@ -17,14 +17,12 @@ public class GetAccessibleTemplatesQueryHandlerTests
     private static readonly TemplateId TemplateB = new(Guid.NewGuid());
 
     [Fact]
-    public async Task Handle_ShouldReturnFullCatalogue_WhenAdmin()
+    public async Task Handle_ShouldReturnFullCatalogueIncludingNonLive_WhenAdmin()
     {
         var createdBy = new UserId(Guid.NewGuid());
-        var templates = new List<Template>
-        {
-            new(TemplateA, "Alpha", DateTime.UtcNow, createdBy),
-            new(TemplateB, "Beta", DateTime.UtcNow, createdBy)
-        }.AsQueryable().BuildMockDbSet();
+        var live = new Template(TemplateA, "Alpha", DateTime.UtcNow, createdBy, isLive: true);
+        var draft = new Template(TemplateB, "Beta", DateTime.UtcNow, createdBy, isLive: false);
+        var templates = new List<Template> { live, draft }.AsQueryable().BuildMockDbSet();
 
         var templateRepo = Substitute.For<IEaRepository<Template>>();
         templateRepo.Query().Returns(templates);
@@ -48,19 +46,17 @@ public class GetAccessibleTemplatesQueryHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value!.Count);
-        Assert.Contains(result.Value, t => t.TemplateId == TemplateA.Value && t.Name == "Alpha");
-        Assert.Contains(result.Value, t => t.TemplateId == TemplateB.Value && t.Name == "Beta");
+        Assert.Contains(result.Value, t => t.TemplateId == TemplateA.Value && t.IsLive);
+        Assert.Contains(result.Value, t => t.TemplateId == TemplateB.Value && !t.IsLive);
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnOnlyAccessibleTemplates_WhenNonAdmin()
+    public async Task Handle_ShouldReturnOnlyLiveAccessibleTemplates_WhenNonAdmin()
     {
         var createdBy = new UserId(Guid.NewGuid());
-        var templates = new List<Template>
-        {
-            new(TemplateA, "Alpha", DateTime.UtcNow, createdBy),
-            new(TemplateB, "Beta", DateTime.UtcNow, createdBy)
-        }.AsQueryable().BuildMockDbSet();
+        var live = new Template(TemplateA, "Alpha", DateTime.UtcNow, createdBy, isLive: true);
+        var draft = new Template(TemplateB, "Beta", DateTime.UtcNow, createdBy, isLive: false);
+        var templates = new List<Template> { live, draft }.AsQueryable().BuildMockDbSet();
 
         var templateRepo = Substitute.For<IEaRepository<Template>>();
         templateRepo.Query().Returns(templates);
@@ -83,7 +79,7 @@ public class GetAccessibleTemplatesQueryHandlerTests
         accessibleService.GetAccessibleTemplateIdsAsync(
                 Arg.Any<IEnumerable<TemplatePermission>>(),
                 Arg.Any<CancellationToken>())
-            .Returns(new[] { TemplateA }.AsReadOnly());
+            .Returns(new[] { TemplateA, TemplateB }.AsReadOnly());
 
         var permissionChecker = Substitute.For<IPermissionCheckerService>();
         permissionChecker.IsAdmin().Returns(false);
@@ -101,5 +97,6 @@ public class GetAccessibleTemplatesQueryHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value!);
         Assert.Equal(TemplateA.Value, result.Value!.First().TemplateId);
+        Assert.True(result.Value!.First().IsLive);
     }
 }

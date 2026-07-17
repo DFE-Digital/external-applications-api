@@ -3,11 +3,13 @@ using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.Tenancy;
+using DfE.ExternalApplications.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +24,7 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
     IHttpContextAccessor httpContextAccessor,
     IEaRepository<User> userRepo,
     IPermissionCheckerService permissionCheckerService,
+    ITenantTemplateResolver tenantTemplateResolver,
     ICacheService<IRedisCacheType> cacheService,
     ITenantContextAccessor tenantContextAccessor,
     ISender mediator)
@@ -44,6 +47,12 @@ public sealed class GetLatestTemplateSchemaQueryHandler(
 
             if (string.IsNullOrEmpty(principalId))
                 return Result<TemplateSchemaDto>.Forbid("No user identifier");
+
+            if (!await tenantTemplateResolver.IsTemplateInCurrentTenantAsync(
+                    new TemplateId(request.TemplateId), cancellationToken))
+            {
+                return Result<TemplateSchemaDto>.Forbid("Template does not belong to the current tenant");
+            }
 
             var baseCacheKey = $"TemplateSchema_PrincipalId_{CacheKeyHelper.GenerateHashedCacheKey(request.TemplateId.ToString())}_{principalId}";
             var cacheKey = TenantCacheKeyHelper.CreateTenantScopedKey(tenantContextAccessor, baseCacheKey);

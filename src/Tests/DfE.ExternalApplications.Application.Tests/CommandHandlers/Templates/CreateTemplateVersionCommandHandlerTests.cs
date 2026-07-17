@@ -1,3 +1,4 @@
+using DfE.ExternalApplications.Application.Services;
 using DfE.ExternalApplications.Application.Templates.Commands;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Factories;
@@ -20,6 +21,7 @@ namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Templates
         private readonly IEaRepository<User> _userRepo = Substitute.For<IEaRepository<User>>();
         private readonly IHttpContextAccessor _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         private readonly IPermissionCheckerService _permissionChecker = Substitute.For<IPermissionCheckerService>();
+        private readonly ITenantTemplateResolver _tenantTemplateResolver = Substitute.For<ITenantTemplateResolver>();
         private readonly ITemplateFactory _templateFactory = Substitute.For<ITemplateFactory>();
         private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
         private readonly CreateTemplateVersionCommandHandler _handler;
@@ -31,8 +33,11 @@ namespace DfE.ExternalApplications.Application.Tests.CommandHandlers.Templates
 
         public CreateTemplateVersionCommandHandlerTests()
         {
+            _tenantTemplateResolver.IsTemplateInCurrentTenantAsync(Arg.Any<TemplateId>(), Arg.Any<CancellationToken>())
+                .Returns(true);
+
             _handler = new CreateTemplateVersionCommandHandler(
-                _templateRepo, _userRepo, _httpContextAccessor, _permissionChecker, _templateFactory, _unitOfWork);
+                _templateRepo, _userRepo, _httpContextAccessor, _permissionChecker, _tenantTemplateResolver, _templateFactory, _unitOfWork);
             
             _testUser = new User(new UserId(Guid.NewGuid()), new RoleId(Guid.NewGuid()), "Test", "test@test.com", DateTime.UtcNow, null, null, null);
             

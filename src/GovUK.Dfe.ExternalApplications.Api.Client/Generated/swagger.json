@@ -2594,7 +2594,7 @@
         "tags": [
           "Templates"
         ],
-        "summary": "Returns templates in the current tenant that the caller can access.\nAdmins see the full tenant catalogue; other users see only templates they have permission for.",
+        "summary": "Returns templates in the current tenant that the caller can access.\nAdmins see the full tenant catalogue (including non-live); other users see live templates they have permission for.",
         "operationId": "Templates_GetAccessibleTemplates",
         "responses": {
           "200": {
@@ -2885,6 +2885,101 @@
           },
           "400": {
             "description": "Invalid request data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/Templates/{templateId}/live": {
+      "put": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Sets whether a template is live for end users. Admin only.",
+        "operationId": "Templates_SetTemplateLive",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTemplateLiveRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "Template live status updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - no valid user token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4571,6 +4666,9 @@
           "latestVersionNumber": {
             "type": "string",
             "nullable": true
+          },
+          "isLive": {
+            "type": "boolean"
           }
         }
       },
@@ -4635,6 +4733,15 @@
           "label": {
             "type": "string",
             "minLength": 1
+          }
+        }
+      },
+      "SetTemplateLiveRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "isLive": {
+            "type": "boolean"
           }
         }
       },

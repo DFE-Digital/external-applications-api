@@ -300,7 +300,7 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Returns templates in the current tenant that the caller can access.
-        /// <br/>Admins see the full tenant catalogue; other users see only templates they have permission for.
+        /// <br/>Admins see the full tenant catalogue (including non-live); other users see live templates they have permission for.
         /// </summary>
         /// <returns>Accessible templates for the current tenant.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
@@ -340,6 +340,14 @@ namespace GovUK.Dfe.ExternalApplications.Api.Client.Contracts
         /// <returns>Custom status created/updated.</returns>
         /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<CustomApplicationStatusDto> CreateCustomApplicationStatusAsync(System.Guid templateId, CustomApplicationStatusRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Sets whether a template is live for end users. Admin only.
+        /// </summary>
+        /// <returns>Template live status updated.</returns>
+        /// <exception cref="ExternalApplicationsException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<TemplateDto> SetTemplateLiveAsync(System.Guid templateId, SetTemplateLiveRequest request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>

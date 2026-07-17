@@ -15,7 +15,8 @@ namespace DfE.ExternalApplications.Application.Templates.Queries;
 
 /// <summary>
 /// Returns templates in the current tenant that the caller is allowed to access.
-/// Admins receive the full tenant catalogue; other users receive catalogue ∩ permissions.
+/// Admins receive the full tenant catalogue (including non-live templates for preview).
+/// Other users receive catalogue ∩ permissions ∩ live templates.
 /// </summary>
 public sealed record GetAccessibleTemplatesQuery
     : IRequest<Result<IReadOnlyCollection<TemplateDto>>>;
@@ -39,8 +40,9 @@ public sealed class GetAccessibleTemplatesQueryHandler(
         try
         {
             IReadOnlyList<TemplateId> accessibleIds;
+            var isAdmin = permissionCheckerService.IsAdmin();
 
-            if (permissionCheckerService.IsAdmin())
+            if (isAdmin)
             {
                 accessibleIds = await tenantTemplateCatalogue.GetTemplateIdsAsync(cancellationToken);
             }
@@ -90,11 +92,16 @@ public sealed class GetAccessibleTemplatesQueryHandler(
                 return Result<IReadOnlyCollection<TemplateDto>>.Success(Array.Empty<TemplateDto>());
             }
 
-            var accessibleValues = accessibleIds.Select(id => id.Value).ToList();
+            var templatesQuery = new GetTemplatesByIdsQueryObject(accessibleIds)
+                .Apply(templateRepository.Query().AsNoTracking());
 
-            var templates = await new GetTemplatesByIdsQueryObject(accessibleValues)
-                .Apply(templateRepository.Query().AsNoTracking())
-                .ToListAsync(cancellationToken);
+            // End users only see live templates; admins see all for preview/publish.
+            if (!isAdmin)
+            {
+                templatesQuery = templatesQuery.Where(t => t.IsLive);
+            }
+
+            var templates = await templatesQuery.ToListAsync(cancellationToken);
 
             // HostMappings-only GUIDs with no DB row are omitted from detail listing.
             var dtos = templates
@@ -106,7 +113,8 @@ public sealed class GetAccessibleTemplatesQueryHandler(
                     LatestVersionNumber = t.TemplateVersions
                         .OrderByDescending(v => v.CreatedOn)
                         .Select(v => v.VersionNumber)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
+                    IsLive = t.IsLive
                 })
                 .ToList()
                 .AsReadOnly();

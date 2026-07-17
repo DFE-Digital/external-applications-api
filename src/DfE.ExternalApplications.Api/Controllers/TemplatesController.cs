@@ -19,7 +19,7 @@ public class TemplatesController(ISender sender) : ControllerBase
 {
     /// <summary>
     /// Returns templates in the current tenant that the caller can access.
-    /// Admins see the full tenant catalogue; other users see only templates they have permission for.
+    /// Admins see the full tenant catalogue (including non-live); other users see live templates they have permission for.
     /// </summary>
     [HttpGet]
     [Authorize(Policy = "CanListTemplates")]
@@ -130,6 +130,33 @@ public class TemplatesController(ISender sender) : ControllerBase
         return new ObjectResult(result)
         {
             StatusCode = StatusCodes.Status201Created
+        };
+    }
+
+    /// <summary>
+    /// Sets whether a template is live for end users. Admin only.
+    /// </summary>
+    [HttpPut("{templateId}/live")]
+    [Authorize(Policy = "CanCreateTemplate")]
+    [SwaggerResponse(200, "Template live status updated.", typeof(TemplateDto))]
+    [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+    [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+    [SwaggerResponse(403, "Access denied.", typeof(ExceptionResponse))]
+    [SwaggerResponse(404, "Template not found.", typeof(ExceptionResponse))]
+    [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+    public async Task<IActionResult> SetTemplateLiveAsync(
+        [FromRoute] Guid templateId,
+        [FromBody] SetTemplateLiveRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+            throw new BadRequestException("Invalid request data.");
+
+        var result = await sender.Send(new SetTemplateLiveCommand(templateId, request.IsLive), cancellationToken);
+
+        return new ObjectResult(result)
+        {
+            StatusCode = StatusCodes.Status200OK
         };
     }
 

@@ -12,24 +12,38 @@ public sealed class Template : BaseAggregateRoot, IEntity<TemplateId>
     public DateTime CreatedOn { get; private set; }
     public UserId CreatedBy { get; private set; }
     public User? CreatedByUser { get; private set; }
+
+    /// <summary>
+    /// When <c>true</c>, end users with permission can access this template.
+    /// Admins can always access templates regardless of this flag.
+    /// </summary>
+    public bool IsLive { get; private set; }
+
     public IReadOnlyCollection<TemplateVersion> TemplateVersions => _templateVersions.AsReadOnly();
 
     private Template() { /* For EF Core */ }
 
     /// <summary>
-    /// Constructs a new Template.
+    /// Constructs a new Template. New templates start as not live (draft) until an admin publishes them.
     /// </summary>
     public Template(
         TemplateId id,
         string name,
         DateTime createdOn,
-        UserId createdBy)
+        UserId createdBy,
+        bool isLive = false)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Name = name ?? throw new ArgumentNullException(nameof(name));
         CreatedOn = createdOn;
         CreatedBy = createdBy;
+        IsLive = isLive;
     }
+
+    /// <summary>
+    /// Sets whether this template is live for end users in the tenant.
+    /// </summary>
+    public void SetLive(bool isLive) => IsLive = isLive;
 
     /// <summary>
     /// Adds a new version to this template.

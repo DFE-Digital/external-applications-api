@@ -23,7 +23,7 @@ public class GetTemplatesByIdsQueryObjectTests
             new(idC, "Gamma", DateTime.UtcNow, userId)
         };
 
-        var queryObject = new GetTemplatesByIdsQueryObject(new[] { idA.Value, idB.Value });
+        var queryObject = new GetTemplatesByIdsQueryObject(new[] { idA, idB });
         var result = queryObject.Apply(templates.AsQueryable().BuildMock()).ToList();
 
         result.Should().HaveCount(2);
@@ -40,7 +40,7 @@ public class GetTemplatesByIdsQueryObjectTests
             new(new TemplateId(Guid.NewGuid()), "Alpha", DateTime.UtcNow, userId)
         };
 
-        var queryObject = new GetTemplatesByIdsQueryObject(Array.Empty<Guid>());
+        var queryObject = new GetTemplatesByIdsQueryObject(Array.Empty<TemplateId>());
         var result = queryObject.Apply(templates.AsQueryable().BuildMock()).ToList();
 
         result.Should().BeEmpty();
@@ -60,7 +60,7 @@ public class GetTemplatesByIdsQueryObjectTests
             DateTime.UtcNow,
             userId));
 
-        var queryObject = new GetTemplatesByIdsQueryObject(new[] { templateId.Value });
+        var queryObject = new GetTemplatesByIdsQueryObject(new[] { templateId });
         var result = queryObject.Apply(new List<Template> { template }.AsQueryable().BuildMock()).Single();
 
         result.TemplateVersions.Should().HaveCount(1);

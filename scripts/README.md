@@ -3,6 +3,10 @@
 # These scripts seed TenantConfig from JSON dumps or legacy sources.
 # Runtime Web/API artefacts do not load per-app appsettings folders.
 #
+# Important: ApplicationTemplates:HostMappings (Api) must list ONLY that tenant's
+# template GUIDs. Cross-tenant entries cause Admins/end users to see other tenants'
+# templates when EA databases are shared. See Fix-TenantHostMappings.sql.
+#
 # Prerequisites
 # - Windows PowerShell 5.1+ or PowerShell 7+
 # - API running (for upserts)

@@ -2,6 +2,8 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 
 using DfE.ExternalApplications.Application.Templates.Queries;
 
+using DfE.ExternalApplications.Application.Templates.QueryObjects;
+
 using DfE.ExternalApplications.Domain.Interfaces;
 
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
@@ -19,6 +21,8 @@ using DfE.ExternalApplications.Application.Common.Behaviours;
 using DfE.ExternalApplications.Application.Common.Attributes;
 
 using DfE.ExternalApplications.Application.Services;
+
+using Microsoft.EntityFrameworkCore;
 
 
 
@@ -39,6 +43,8 @@ public sealed record CreateApplicationCommand(
 public sealed class CreateApplicationCommandHandler(
 
     IEaRepository<Domain.Entities.Application> applicationRepo,
+
+    IEaRepository<Domain.Entities.Template> templateRepository,
 
     IAuthenticatedUserService authenticatedUserService,
 
@@ -98,7 +104,18 @@ public sealed class CreateApplicationCommandHandler(
 
                 return Result<ApplicationDto>.Forbid("Template does not belong to the current tenant");
 
+            if (!permissionCheckerService.IsAdmin())
+            {
+                var template = await new GetTemplateByIdQueryObject(templateId)
+                    .Apply(templateRepository.Query().AsNoTracking())
+                    .FirstOrDefaultAsync(cancellationToken);
 
+                if (template is null)
+                    return Result<ApplicationDto>.NotFound("Template not found");
+
+                if (!template.IsLive)
+                    return Result<ApplicationDto>.Forbid("Template is not live");
+            }
 
             var canAccess = permissionCheckerService.HasPermission(ResourceType.Template, request.TemplateId.ToString(), AccessType.Write);
 
