@@ -797,7 +797,8 @@ The client automatically includes the `X-Tenant-ID` header in all requests.
 
 | Key | Description | Example |
 |-----|-------------|---------|
-| `ConnectionStrings__DefaultConnection` | SQL Server connection | `Server=...;Database=ExternalApplications;` |
+| `ConnectionStrings__DefaultConnection` | SQL Server (application data) | `Server=...;Database=ExternalApplications;` |
+| `ConnectionStrings__TenantConfigDatabase` | SQL Server (tenant config / SaaS) — required by init `/sql/migratedb` | `Server=...;Database=TenantConfig;` |
 | `ConnectionStrings__ServiceBus` | Azure Service Bus | `Endpoint=sb://...servicebus.windows.net/;` |
 | `ConnectionStrings__Redis` | Redis cache | `localhost:6379` |
 | `ConnectionStrings__AzureSignalR` | SignalR Service | `Endpoint=https://...signalr.net;` |

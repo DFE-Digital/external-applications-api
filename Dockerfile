@@ -16,9 +16,11 @@ ENV PATH="${PATH}:/root/.dotnet/tools"
 COPY ./src/ ./src/
 COPY Directory.Build.props ./
 COPY DfE.ExternalApplications.Api.sln ./
+COPY script/ ./script/
 
-# Restore + build
+# Restore + build (Api pulls Infrastructure so EF --no-build can bundle both contexts)
 RUN dotnet restore DfE.ExternalApplications.Api.sln
+RUN dotnet build ./src/DfE.ExternalApplications.Infrastructure -c Release --no-restore
 RUN dotnet build ./src/DfE.ExternalApplications.Api -c Release --no-restore
 
 # Install Playwright browsers + OS dependencies (Ubuntu!)
@@ -41,12 +43,27 @@ RUN dotnet tool install --global dotnet-ef --version 10.*
 
 RUN mkdir /sql
 
+# Bundle each DbContext separately. Use Infrastructure (migrations + design-time
+# factories) so Program.cs is not started and no live SQL is required at build time.
 RUN dotnet ef migrations bundle -r linux-x64 \
       --configuration Release \
-      --project ./src/DfE.ExternalApplications.Api \
-      --output /sql/migratedb \
+      --project ./src/DfE.ExternalApplications.Infrastructure \
+      --context ExternalApplicationsContext \
+      --output /sql/migratedb-ea \
       --no-build \
       --self-contained
+
+RUN dotnet ef migrations bundle -r linux-x64 \
+      --configuration Release \
+      --project ./src/DfE.ExternalApplications.Infrastructure \
+      --context TenantConfigDbContext \
+      --output /sql/migratedb-tenantconfig \
+      --no-build \
+      --self-contained
+
+COPY script/migrate-databases.sh /sql/migratedb
+RUN sed -i 's/\r$//' /sql/migratedb \
+ && chmod +x /sql/migratedb /sql/migratedb-ea /sql/migratedb-tenantconfig
 
 
 # ============================================================
@@ -58,6 +75,9 @@ WORKDIR /sql
 COPY --from=efbuilder /sql /sql
 COPY --from=build /app/appsettings* /sql/
 COPY --from=build /app/appsettings* /DfE.ExternalApplications.Api/
+
+# Default command matches existing Azure init_container_command = ["/sql/migratedb"]
+CMD ["/sql/migratedb"]
 
 
 # ============================================================

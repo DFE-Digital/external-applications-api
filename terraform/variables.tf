@@ -352,7 +352,12 @@ variable "init_container_image" {
 }
 
 variable "init_container_command" {
-  description = "Container command for the Init Container"
+  description = <<-EOT
+    Container command for the Init Container.
+    For EF migrations use ["/sql/migratedb"], which applies both ExternalApplications
+    and TenantConfig bundles. Requires env vars ConnectionStrings__DefaultConnection
+    and ConnectionStrings__TenantConfigDatabase on the Container App.
+  EOT
   type        = list(any)
   default     = []
 }
