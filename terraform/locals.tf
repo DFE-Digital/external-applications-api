@@ -76,6 +76,12 @@ locals {
   restrict_container_apps_to_cdn_inbound_only  = var.restrict_container_apps_to_cdn_inbound_only
   container_apps_infra_subnet_cidr             = var.container_apps_infra_subnet_cidr
 
+  data_protection_subnet_prefix                              = var.data_protection_subnet_prefix
+  data_protection_key_vault_access_ipv4                      = var.data_protection_key_vault_access_ipv4
+  data_protection_enable_storage                             = var.data_protection_enable_storage
+  data_protection_storage_account_vnet_subnet_ids_allow_list = var.data_protection_storage_account_vnet_subnet_ids_allow_list
+  data_protection_storage_account_ipv4_allow_list            = var.data_protection_storage_account_ipv4_allow_list
+
   is_windows = can(regex("^[A-Za-z]:", abspath(path.root)))
   bash       = local.is_windows ? "C:/Program Files/Git/bin/bash.exe" : "/bin/bash"
 }
