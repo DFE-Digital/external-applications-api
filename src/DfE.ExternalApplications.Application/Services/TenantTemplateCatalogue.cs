@@ -28,17 +28,29 @@ public sealed class TenantTemplateCatalogue(
         // HostMappings must only contain this tenant's template GUIDs — shared EA databases
         // plus cross-tenant HostMappings would otherwise leak other tenants' templates.
         var fromConfig = ReadConfiguredTemplateIds(tenant);
-        if (fromConfig.Count > 0)
+        var ownedTemplateIds = await templateRepository.Query()
+            .AsNoTracking()
+            .Where(template => template.TenantId == tenant.Id && template.Id != null)
+            .Select(template => template.Id!)
+            .ToListAsync(cancellationToken);
+
+        if (fromConfig.Count > 0 || ownedTemplateIds.Count > 0)
         {
+            var tenantTemplateIds = fromConfig
+                .Concat(ownedTemplateIds)
+                .Distinct()
+                .ToList()
+                .AsReadOnly();
+
             logger.LogDebug(
-                "Tenant {TenantName} catalogue resolved from configuration ({Count} template(s)).",
+                "Tenant {TenantName} catalogue resolved from configuration and owned templates ({Count} template(s)).",
                 tenant.Name,
-                fromConfig.Count);
-            return fromConfig;
+                tenantTemplateIds.Count);
+            return tenantTemplateIds;
         }
 
-        // Isolated tenant DB / legacy: no mappings configured — all templates in this DB belong
-        // to the current tenant.
+        // Isolated tenant DB / legacy: no mappings or tenant-owned rows are configured,
+        // so all templates in this database belong to the current tenant.
         var fromDatabase = await new GetAllTemplateIdsQueryObject()
             .Apply(templateRepository.Query().AsNoTracking())
             .ToListAsync(cancellationToken);

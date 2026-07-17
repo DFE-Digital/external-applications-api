@@ -14,6 +14,12 @@ public sealed class Template : BaseAggregateRoot, IEntity<TemplateId>
     public User? CreatedByUser { get; private set; }
 
     /// <summary>
+    /// Identifies the tenant that owns templates created through tenant administration.
+    /// Legacy templates may be null and remain associated through configured mappings.
+    /// </summary>
+    public Guid? TenantId { get; private set; }
+
+    /// <summary>
     /// When <c>true</c>, end users with permission can access this template.
     /// Admins can always access templates regardless of this flag.
     /// </summary>
@@ -31,13 +37,15 @@ public sealed class Template : BaseAggregateRoot, IEntity<TemplateId>
         string name,
         DateTime createdOn,
         UserId createdBy,
-        bool isLive = false)
+        bool isLive = false,
+        Guid? tenantId = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Name = name ?? throw new ArgumentNullException(nameof(name));
         CreatedOn = createdOn;
         CreatedBy = createdBy;
         IsLive = isLive;
+        TenantId = tenantId;
     }
 
     /// <summary>

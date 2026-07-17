@@ -11,7 +11,7 @@ public sealed class CreateTemplateCommandValidator : AbstractValidator<CreateTem
     {
         RuleFor(x => x.Name)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(100);
 
         RuleFor(x => x)
             .Must(x =>

@@ -7,7 +7,11 @@ namespace DfE.ExternalApplications.Domain.Factories;
 public class TemplateFactory : ITemplateFactory
 {
     /// <inheritdoc />
-    public Template CreateTemplate(string name, UserId createdBy, DateTime? createdOn = null)
+    public Template CreateTemplate(
+        string name,
+        UserId createdBy,
+        Guid tenantId,
+        DateTime? createdOn = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Template name cannot be null or empty", nameof(name));
@@ -19,7 +23,8 @@ public class TemplateFactory : ITemplateFactory
             new TemplateId(Guid.NewGuid()),
             name.Trim(),
             createdOn ?? DateTime.UtcNow,
-            createdBy);
+            createdBy,
+            tenantId: tenantId);
     }
 
     /// <inheritdoc />

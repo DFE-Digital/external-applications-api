@@ -4,9 +4,9 @@ namespace DfE.ExternalApplications.Application.Services;
 
 /// <summary>
 /// Provides the set of templates that belong to the current tenant.
-/// When HostMappings (or Template:Id) are configured, those GUIDs are the
-/// authoritative catalogue. Otherwise all templates in the tenant EA database
-/// are treated as belonging to the current tenant (isolated DB / legacy).
+/// The catalogue combines legacy configured mappings with templates explicitly
+/// owned by the tenant. An isolated legacy database is used as a fallback when
+/// neither source contains templates.
 /// </summary>
 public interface ITenantTemplateCatalogue
 {

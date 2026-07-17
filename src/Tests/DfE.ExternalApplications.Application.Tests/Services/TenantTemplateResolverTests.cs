@@ -107,6 +107,49 @@ public class TenantTemplateCatalogueTests
     }
 
     [Fact]
+    public async Task GetTemplateIdsAsync_ShouldCombineMappingsWithTemplatesOwnedByTenant()
+    {
+        var tenantId = Guid.Parse("11111111-1111-4111-8111-111111111111");
+        var createdBy = new UserId(Guid.NewGuid());
+        var ownedTemplateId = new TemplateId(Guid.NewGuid());
+        var otherTenantTemplateId = new TemplateId(Guid.NewGuid());
+        var templates = new List<Template>
+        {
+            new(ownedTemplateId, "Owned Template", DateTime.UtcNow, createdBy, tenantId: tenantId),
+            new(otherTenantTemplateId, "Other Tenant Template", DateTime.UtcNow, createdBy, tenantId: Guid.NewGuid())
+        }.AsQueryable().BuildMockDbSet();
+
+        var templateRepo = Substitute.For<IEaRepository<Template>>();
+        templateRepo.Query().Returns(templates);
+
+        var settings = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ApplicationTemplates:HostMappings:transfer"] = HostMappedTemplateId.Value.ToString()
+            })
+            .Build();
+
+        var accessor = Substitute.For<ITenantContextAccessor>();
+        accessor.CurrentTenant.Returns(new TenantConfiguration(
+            tenantId,
+            "Transfers",
+            settings,
+            []));
+
+        var catalogue = new TenantTemplateCatalogue(
+            templateRepo,
+            accessor,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<TenantTemplateCatalogue>.Instance);
+
+        var result = await catalogue.GetTemplateIdsAsync();
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(HostMappedTemplateId, result);
+        Assert.Contains(ownedTemplateId, result);
+        Assert.DoesNotContain(otherTenantTemplateId, result);
+    }
+
+    [Fact]
     public async Task GetTemplateIdsAsync_ShouldFallBackToDatabase_WhenNoMappingsConfigured()
     {
         var createdBy = new UserId(Guid.NewGuid());

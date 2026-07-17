@@ -6,8 +6,10 @@ using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using MockQueryable.NSubstitute;
 using NSubstitute;
 using System.Security.Claims;
@@ -20,6 +22,7 @@ public class CreateTemplateCommandHandlerTests
     private readonly IEaRepository<User> _userRepo = Substitute.For<IEaRepository<User>>();
     private readonly IHttpContextAccessor _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
     private readonly IPermissionCheckerService _permissionChecker = Substitute.For<IPermissionCheckerService>();
+    private readonly ITenantContextAccessor _tenantContextAccessor = Substitute.For<ITenantContextAccessor>();
     private readonly ITemplateFactory _templateFactory = Substitute.For<ITemplateFactory>();
     private readonly IUserFactory _userFactory = Substitute.For<IUserFactory>();
     private readonly IUserCacheInvalidator _cacheInvalidator = Substitute.For<IUserCacheInvalidator>();
@@ -33,6 +36,7 @@ public class CreateTemplateCommandHandlerTests
             _userRepo,
             _httpContextAccessor,
             _permissionChecker,
+            _tenantContextAccessor,
             _templateFactory,
             _userFactory,
             _cacheInvalidator,
@@ -54,6 +58,12 @@ public class CreateTemplateCommandHandlerTests
     public async Task Handle_ShouldCreateTemplate_WhenAdmin()
     {
         _permissionChecker.IsAdmin().Returns(true);
+        var tenantId = Guid.NewGuid();
+        _tenantContextAccessor.CurrentTenant.Returns(new TenantConfiguration(
+            tenantId,
+            "Transfers",
+            new ConfigurationBuilder().Build(),
+            []));
 
         var userId = new UserId(Guid.NewGuid());
         var email = "admin@education.gov.uk";
@@ -69,8 +79,8 @@ public class CreateTemplateCommandHandlerTests
         _userRepo.Query().Returns(users);
 
         var templateId = new TemplateId(Guid.NewGuid());
-        var template = new Template(templateId, "New Template", DateTime.UtcNow, userId);
-        _templateFactory.CreateTemplate("New Template", userId, Arg.Any<DateTime?>()).Returns(template);
+        var template = new Template(templateId, "New Template", DateTime.UtcNow, userId, tenantId: tenantId);
+        _templateFactory.CreateTemplate("New Template", userId, tenantId, Arg.Any<DateTime?>()).Returns(template);
 
         var result = await _handler.Handle(new CreateTemplateCommand("New Template"), CancellationToken.None);
 

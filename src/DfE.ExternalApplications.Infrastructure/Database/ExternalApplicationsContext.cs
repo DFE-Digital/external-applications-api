@@ -305,7 +305,11 @@ public class ExternalApplicationsContext : DbContext
         b.Property(e => e.IsLive)
             .HasColumnName("IsLive")
             .IsRequired()
-            .HasDefaultValue(true);
+            .HasDefaultValue(false);
+        b.Property(e => e.TenantId)
+            .HasColumnName("TenantId")
+            .IsRequired(false);
+        b.HasIndex(e => e.TenantId);
 
         b.HasOne(e => e.CreatedByUser)
             .WithMany()

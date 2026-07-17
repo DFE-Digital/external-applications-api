@@ -8,6 +8,7 @@ using DfE.ExternalApplications.Domain.Factories;
 using DfE.ExternalApplications.Domain.Interfaces;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
+using DfE.ExternalApplications.Domain.Tenancy;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using MediatR;
@@ -33,6 +34,7 @@ public sealed class CreateTemplateCommandHandler(
     IEaRepository<User> userRepository,
     IHttpContextAccessor httpContextAccessor,
     IPermissionCheckerService permissionCheckerService,
+    ITenantContextAccessor tenantContextAccessor,
     ITemplateFactory templateFactory,
     IUserFactory userFactory,
     IUserCacheInvalidator userCacheInvalidator,
@@ -48,6 +50,12 @@ public sealed class CreateTemplateCommandHandler(
             if (!permissionCheckerService.IsAdmin())
             {
                 return Result<TemplateDto>.Forbid("Only Admin users can create templates.");
+            }
+
+            var tenant = tenantContextAccessor.CurrentTenant;
+            if (tenant is null)
+            {
+                return Result<TemplateDto>.Forbid("Tenant context is required to create a template.");
             }
 
             var httpContext = httpContextAccessor.HttpContext;
@@ -98,7 +106,7 @@ public sealed class CreateTemplateCommandHandler(
                 }
             }
 
-            var template = templateFactory.CreateTemplate(request.Name, dbUser.Id!);
+            var template = templateFactory.CreateTemplate(request.Name, dbUser.Id!, tenant.Id);
             string? latestVersion = null;
 
             if (!string.IsNullOrWhiteSpace(request.InitialVersionNumber) && decodedSchema is not null)
