@@ -27,12 +27,12 @@ This project follows a strict **Domain-Driven Design (DDD)** and **Clean Archite
 
 | Layer | Project | Purpose |
 |-------|---------|---------|
-| **Presentation** | `DfE.ExternalApplications.Api` | REST API, SignalR hubs, authentication, Swagger |
-| **Application** | `DfE.ExternalApplications.Application` | CQRS handlers, validators, domain event handlers |
-| **Domain** | `DfE.ExternalApplications.Domain` | Entities, value objects, domain events, interfaces |
-| **Infrastructure** | `DfE.ExternalApplications.Infrastructure` | EF Core, repositories, external service implementations |
-| **Utilities** | `DfE.ExternalApplications.Utils` | Cross-cutting utilities (file hashing, etc.) |
-| **Client SDK** | `GovUK.Dfe.ExternalApplications.Api.Client` | Auto-generated API client for consumers |
+| **Presentation** | `GovUK.Dfe.FlexForms.Api` | REST API, SignalR hubs, authentication, Swagger |
+| **Application** | `GovUK.Dfe.FlexForms.Application` | CQRS handlers, validators, domain event handlers |
+| **Domain** | `GovUK.Dfe.FlexForms.Domain` | Entities, value objects, domain events, interfaces |
+| **Infrastructure** | `GovUK.Dfe.FlexForms.Infrastructure` | EF Core, repositories, external service implementations |
+| **Utilities** | `GovUK.Dfe.FlexForms.Utils` | Cross-cutting utilities (file hashing, etc.) |
+| **Client SDK** | `GovUK.GovUK.Dfe.FlexForms.Api.Client` | Auto-generated API client for consumers |
 
 ---
 
@@ -359,11 +359,11 @@ sequenceDiagram
 external-applications-api/
 ├── 📄 README.md
 ├── 📄 Dockerfile                          # Multi-stage build with EF migrations
-├── 📄 DfE.ExternalApplications.Api.sln
+├── 📄 GovUK.Dfe.FlexForms.Api.sln
 ├── 📄 Directory.Build.props               # Shared MSBuild properties
 │
 ├── 📁 src/
-│   ├── 📁 DfE.ExternalApplications.Api/           # Presentation Layer
+│   ├── 📁 GovUK.Dfe.FlexForms.Api/           # Presentation Layer
 │   │   ├── Controllers/                           # REST API endpoints
 │   │   ├── Hubs/                                  # SignalR hubs
 │   │   ├── Security/                              # Authorization handlers
@@ -372,7 +372,7 @@ external-applications-api/
 │   │   ├── Swagger/                               # OpenAPI configuration
 │   │   └── Program.cs                             # Application entry point
 │   │
-│   ├── 📁 DfE.ExternalApplications.Application/   # Application Layer
+│   ├── 📁 GovUK.Dfe.FlexForms.Application/   # Application Layer
 │   │   ├── Applications/                          # Application aggregate handlers
 │   │   │   ├── Commands/                          # Create, Update, Submit, Upload
 │   │   │   ├── Queries/                           # Get, List, Download
@@ -388,7 +388,7 @@ external-applications-api/
 │   │   │   └── Models/                            # Configuration models
 │   │   └── Services/                              # Application services
 │   │
-│   ├── 📁 DfE.ExternalApplications.Domain/        # Domain Layer
+│   ├── 📁 GovUK.Dfe.FlexForms.Domain/        # Domain Layer
 │   │   ├── Entities/                              # Aggregate roots & entities
 │   │   ├── Events/                                # Domain events
 │   │   ├── ValueObjects/                          # Strongly-typed IDs
@@ -397,7 +397,7 @@ external-applications-api/
 │   │   ├── Services/                              # Domain services
 │   │   └── Common/                                # Base classes & interfaces
 │   │
-│   ├── 📁 DfE.ExternalApplications.Infrastructure/# Infrastructure Layer
+│   ├── 📁 GovUK.Dfe.FlexForms.Infrastructure/# Infrastructure Layer
 │   │   ├── Database/                              # EF Core DbContext
 │   │   │   └── Interceptors/                      # Domain event dispatcher
 │   │   ├── Repositories/                          # Repository implementations
@@ -405,10 +405,10 @@ external-applications-api/
 │   │   ├── Services/                              # External service implementations
 │   │   └── Security/                              # Auth implementations
 │   │
-│   ├── 📁 DfE.ExternalApplications.Utils/         # Utilities
+│   ├── 📁 GovUK.Dfe.FlexForms.Utils/         # Utilities
 │   │   └── File/                                  # File utilities (hashing, etc.)
 │   │
-│   ├── 📁 GovUK.Dfe.ExternalApplications.Api.Client/  # Client SDK
+│   ├── 📁 GovUK.GovUK.Dfe.FlexForms.Api.Client/  # Client SDK
 │   │   ├── Generated/                             # NSwag auto-generated client
 │   │   ├── Security/                              # Auth helpers
 │   │   └── Extensions/                            # DI extensions
@@ -416,11 +416,11 @@ external-applications-api/
 │   ├── 📁 Benchmarks/                             # Performance benchmarks
 │   │
 │   └── 📁 Tests/
-│       ├── DfE.ExternalApplications.Api.Tests/              # API unit tests
-│       ├── DfE.ExternalApplications.Api.Tests.Integration/  # Integration tests
-│       ├── DfE.ExternalApplications.Application.Tests/      # Application layer tests
-│       ├── DfE.ExternalApplications.Domain.Tests/           # Domain layer tests
-│       └── DfE.ExternalApplications.Tests.Common/           # Shared test utilities
+│       ├── GovUK.Dfe.FlexForms.Api.Tests/              # API unit tests
+│       ├── GovUK.Dfe.FlexForms.Api.Tests.Integration/  # Integration tests
+│       ├── GovUK.Dfe.FlexForms.Application.Tests/      # Application layer tests
+│       ├── GovUK.Dfe.FlexForms.Domain.Tests/           # Domain layer tests
+│       └── GovUK.Dfe.FlexForms.Tests.Common/           # Shared test utilities
 │
 ├── 📁 terraform/                          # Infrastructure as Code
 │   ├── container-apps-hosting.tf          # Azure Container Apps module
@@ -835,10 +835,10 @@ The client automatically includes the `X-Tenant-ID` header in all requests.
 
 | Project | Type | Coverage |
 |---------|------|----------|
-| `DfE.ExternalApplications.Domain.Tests` | Unit | Entities, Value Objects, Factories |
-| `DfE.ExternalApplications.Application.Tests` | Unit | Handlers, Validators, Services |
-| `DfE.ExternalApplications.Api.Tests` | Unit | Security, Claim Providers |
-| `DfE.ExternalApplications.Api.Tests.Integration` | Integration | Full API endpoint tests |
+| `GovUK.Dfe.FlexForms.Domain.Tests` | Unit | Entities, Value Objects, Factories |
+| `GovUK.Dfe.FlexForms.Application.Tests` | Unit | Handlers, Validators, Services |
+| `GovUK.Dfe.FlexForms.Api.Tests` | Unit | Security, Claim Providers |
+| `GovUK.Dfe.FlexForms.Api.Tests.Integration` | Integration | Full API endpoint tests |
 
 ### Test Frameworks
 
@@ -858,7 +858,7 @@ dotnet test
 dotnet test --collect:"XPlat Code Coverage"
 
 # Run specific test project
-dotnet test src/Tests/DfE.ExternalApplications.Application.Tests
+dotnet test src/Tests/GovUK.Dfe.FlexForms.Application.Tests
 ```
 
 ---
@@ -891,7 +891,7 @@ dotnet test src/Tests/DfE.ExternalApplications.Application.Tests
 
 3. **Configure user secrets**
    ```bash
-   cd src/DfE.ExternalApplications.Api
+   cd src/GovUK.Dfe.FlexForms.Api
    dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
      "Server=localhost,1433;Database=ExternalApplications;User Id=SA;Password=YourPassword123!;TrustServerCertificate=True;"
    dotnet user-secrets set "ConnectionStrings:Redis" "localhost:6379"
@@ -899,7 +899,7 @@ dotnet test src/Tests/DfE.ExternalApplications.Application.Tests
 
 4. **Apply database migrations**
    ```bash
-   cd src/DfE.ExternalApplications.Api
+   cd src/GovUK.Dfe.FlexForms.Api
    dotnet ef database update
    ```
 

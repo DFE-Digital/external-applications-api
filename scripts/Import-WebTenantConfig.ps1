@@ -99,25 +99,25 @@ function Resolve-WebProjectPath {
     }
 
     $candidates = @(
-        (Join-Path $PSScriptRoot "..\..\external-applications-web\src\DfE.ExternalApplications.Web"),
-        (Join-Path $PSScriptRoot "..\..\..\external-applications-web\src\DfE.ExternalApplications.Web"),
-        "c:\Users\FDASHTI\source\repos\external-applications-web\src\DfE.ExternalApplications.Web"
+        (Join-Path $PSScriptRoot "..\..\external-applications-web\src\GovUK.Dfe.FlexForms.Web"),
+        (Join-Path $PSScriptRoot "..\..\..\external-applications-web\src\GovUK.Dfe.FlexForms.Web"),
+        "c:\Users\FDASHTI\source\repos\external-applications-web\src\GovUK.Dfe.FlexForms.Web"
     )
 
     foreach ($candidate in $candidates) {
         $full = [System.IO.Path]::GetFullPath($candidate)
-        if (Test-Path (Join-Path $full "DfE.ExternalApplications.Web.csproj")) {
+        if (Test-Path (Join-Path $full "GovUK.Dfe.FlexForms.Web.csproj")) {
             return $full
         }
     }
 
-    throw "Could not locate DfE.ExternalApplications.Web. Pass -WebProjectPath."
+    throw "Could not locate GovUK.Dfe.FlexForms.Web. Pass -WebProjectPath."
 }
 
 function Get-UserSecretsId {
     param([string] $ProjectPath)
 
-    $csproj = Join-Path $ProjectPath "DfE.ExternalApplications.Web.csproj"
+    $csproj = Join-Path $ProjectPath "GovUK.Dfe.FlexForms.Web.csproj"
     [xml] $xml = Get-Content -Raw $csproj
     $id = $null
     foreach ($group in $xml.Project.PropertyGroup) {

@@ -1,0 +1,31 @@
+using GovUK.Dfe.FlexForms.Application.Notifications.Commands;
+using FluentValidation.TestHelper;
+
+namespace GovUK.Dfe.FlexForms.Application.Tests.CommandValidators.Notifications;
+
+public class RemoveNotificationCommandValidatorTests
+{
+    private readonly RemoveNotificationCommandValidator _validator = new();
+
+    [Fact]
+    public void Validate_ShouldSucceed_WhenNotificationIdIsValid()
+    {
+        var command = new RemoveNotificationCommand("notification-123");
+
+        var result = _validator.TestValidate(command);
+
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Validate_ShouldFail_WhenNotificationIdIsEmpty(string? notificationId)
+    {
+        var command = new RemoveNotificationCommand(notificationId!);
+
+        var result = _validator.TestValidate(command);
+
+        result.ShouldHaveValidationErrorFor(c => c.NotificationId);
+    }
+}

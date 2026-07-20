@@ -1,0 +1,54 @@
+using GovUK.Dfe.CoreLibs.Http.Interfaces;
+using GovUK.Dfe.CoreLibs.Http.Models;
+using GovUK.Dfe.FlexForms.Application.Common.Exceptions;
+
+namespace GovUK.Dfe.FlexForms.Api.ExceptionHandlers
+{
+    /// <summary>
+    /// Application Exception Handler
+    /// </summary>
+    public class ApplicationExceptionHandler : ICustomExceptionHandler
+    {
+        public int Priority => 20;
+
+        public bool CanHandle(Type exceptionType)
+        {
+            return exceptionType.Name switch
+            {
+                nameof(ForbiddenException) => true,
+                nameof(UnauthorizedException) => true,
+                nameof(AuthorizationForbiddenException) => true,
+                nameof(ConflictException) => true,
+                nameof(NotFoundException) => true,
+                nameof(BadRequestException) => true,
+                nameof(RateLimitExceededException) => true,
+                nameof(ArgumentException) => true,
+
+                _ => false
+            };
+        }
+
+        public ExceptionResponse Handle(Exception exception, Dictionary<string, object>? context = null)
+        {
+            var (statusCode, message) = exception.GetType().Name switch
+            {
+                nameof(BadRequestException) => (400, "Invalid request: " + exception.Message),
+                nameof(ForbiddenException) => (403, exception.Message),
+                nameof(UnauthorizedException) => (401, "Unauthorized - no valid user token"),
+                nameof(AuthorizationForbiddenException) => (403, "Forbidden - user does not have required permissions"),
+                nameof(ConflictException) => (409, "Conflict error, " + exception.Message),
+                nameof(RateLimitExceededException) => (429, "TooManyRequests: "+ exception.Message),
+                nameof(NotFoundException) => (404, "Resource not found, " + exception.Message),
+                _ => (500, "An unexpected error occurred")
+            };
+
+            return new ExceptionResponse
+            {
+                StatusCode = statusCode,
+                Message = message,
+                ExceptionType = exception.GetType().Name,
+                Context = context
+            };
+        }
+    }
+}

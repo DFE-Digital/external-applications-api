@@ -3,4 +3,4 @@ set -e
 
 echo "Starting External Applications API..."
 
-exec /usr/bin/dotnet /app/DfE.ExternalApplications.Api.dll
+exec /usr/bin/dotnet /app/GovUK.Dfe.FlexForms.Api.dll

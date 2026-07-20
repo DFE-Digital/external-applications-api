@@ -1,0 +1,43 @@
+using Asp.Versioning;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.FlexForms.Application.Users.Queries;
+using GovUK.Dfe.FlexForms.Infrastructure.Security;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using GovUK.Dfe.CoreLibs.Http.Models;
+using GovUK.Dfe.FlexForms.Application.Applications.Commands;
+using System.Threading;
+
+namespace GovUK.Dfe.FlexForms.Api.Controllers
+{
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Route("v{version:apiVersion}/[controller]")]
+    public class TokensController(ISender sender) : ControllerBase
+    {
+        /// <summary>
+        /// Exchanges an DSI token for our ExternalApplications InternalUser JWT.
+        /// </summary>
+        [HttpPost("exchange")]
+        [SwaggerResponse(200, "Token exchanged successfully.", typeof(ExchangeTokenDto))]
+        [SwaggerResponse(400, "Invalid request data.", typeof(ExceptionResponse))]
+        [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
+        [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
+        [Authorize(Policy = "ServiceCallers")]
+        public async Task<ActionResult<ExchangeTokenDto>> Exchange(
+            [FromBody] ExchangeTokenRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await sender.Send(
+            new ExchangeTokenQuery(request.AccessToken), cancellationToken);
+
+            return new ObjectResult(result)
+            {
+                StatusCode = StatusCodes.Status200OK
+            };
+        }
+    }
+}

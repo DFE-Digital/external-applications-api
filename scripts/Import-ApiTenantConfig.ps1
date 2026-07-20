@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Loads the tenant object for Transfers / Lsrp / RGVisits from (in order, deep-merged):
-    1) DfE.ExternalApplications.Api/appsettings.json  -> Tenants:{ApplicationName}
+    1) GovUK.Dfe.FlexForms.Api/appsettings.json  -> Tenants:{ApplicationName}
     2) appsettings.{Environment}.json                 -> Tenants:{ApplicationName} (optional)
     3) Optional -TenantSettingsFile (full tenant JSON object, or { "Tenants": { "App": { ... } } })
     4) API user secrets                               -> Tenants:{ApplicationName}
@@ -145,25 +145,25 @@ function Resolve-ApiProjectPath {
     }
 
     $candidates = @(
-        (Join-Path $PSScriptRoot "..\src\DfE.ExternalApplications.Api"),
-        (Join-Path $PSScriptRoot "..\DfE.ExternalApplications.Api"),
-        "c:\Users\FDASHTI\source\repos\external-applications-api\src\DfE.ExternalApplications.Api"
+        (Join-Path $PSScriptRoot "..\src\GovUK.Dfe.FlexForms.Api"),
+        (Join-Path $PSScriptRoot "..\GovUK.Dfe.FlexForms.Api"),
+        "c:\Users\FDASHTI\source\repos\external-applications-api\src\GovUK.Dfe.FlexForms.Api"
     )
 
     foreach ($candidate in $candidates) {
         $full = [System.IO.Path]::GetFullPath($candidate)
-        if (Test-Path (Join-Path $full "DfE.ExternalApplications.Api.csproj")) {
+        if (Test-Path (Join-Path $full "GovUK.Dfe.FlexForms.Api.csproj")) {
             return $full
         }
     }
 
-    throw "Could not locate DfE.ExternalApplications.Api. Pass -ApiProjectPath."
+    throw "Could not locate GovUK.Dfe.FlexForms.Api. Pass -ApiProjectPath."
 }
 
 function Get-UserSecretsId {
     param([string] $ProjectPath)
 
-    $csproj = Join-Path $ProjectPath "DfE.ExternalApplications.Api.csproj"
+    $csproj = Join-Path $ProjectPath "GovUK.Dfe.FlexForms.Api.csproj"
     [xml] $xml = Get-Content -Raw $csproj
     $id = $null
     foreach ($group in $xml.Project.PropertyGroup) {

@@ -15,19 +15,19 @@ ENV PATH="${PATH}:/root/.dotnet/tools"
 # Copy solution
 COPY ./src/ ./src/
 COPY Directory.Build.props ./
-COPY DfE.ExternalApplications.Api.sln ./
+COPY GovUK.Dfe.FlexForms.Api.sln ./
 COPY script/ ./script/
 
 # Restore + build (Api pulls Infrastructure so EF --no-build can bundle both contexts)
-RUN dotnet restore DfE.ExternalApplications.Api.sln
-RUN dotnet build ./src/DfE.ExternalApplications.Infrastructure -c Release --no-restore
-RUN dotnet build ./src/DfE.ExternalApplications.Api -c Release --no-restore
+RUN dotnet restore GovUK.Dfe.FlexForms.Api.sln
+RUN dotnet build ./src/GovUK.Dfe.FlexForms.Infrastructure -c Release --no-restore
+RUN dotnet build ./src/GovUK.Dfe.FlexForms.Api -c Release --no-restore
 
 # Install Playwright browsers + OS dependencies (Ubuntu!)
 RUN playwright install --with-deps
 
 # Publish final output
-RUN dotnet publish ./src/DfE.ExternalApplications.Api -c Release --no-build -o /app
+RUN dotnet publish ./src/GovUK.Dfe.FlexForms.Api -c Release --no-build -o /app
 
 
 # ============================================================
@@ -47,7 +47,7 @@ RUN mkdir /sql
 # factories) so Program.cs is not started and no live SQL is required at build time.
 RUN dotnet ef migrations bundle -r linux-x64 \
       --configuration Release \
-      --project ./src/DfE.ExternalApplications.Infrastructure \
+      --project ./src/GovUK.Dfe.FlexForms.Infrastructure \
       --context ExternalApplicationsContext \
       --output /sql/migratedb-ea \
       --no-build \
@@ -55,7 +55,7 @@ RUN dotnet ef migrations bundle -r linux-x64 \
 
 RUN dotnet ef migrations bundle -r linux-x64 \
       --configuration Release \
-      --project ./src/DfE.ExternalApplications.Infrastructure \
+      --project ./src/GovUK.Dfe.FlexForms.Infrastructure \
       --context TenantConfigDbContext \
       --output /sql/migratedb-tenantconfig \
       --no-build \
@@ -74,7 +74,7 @@ WORKDIR /sql
 
 COPY --from=efbuilder /sql /sql
 COPY --from=build /app/appsettings* /sql/
-COPY --from=build /app/appsettings* /DfE.ExternalApplications.Api/
+COPY --from=build /app/appsettings* /GovUK.Dfe.FlexForms.Api/
 
 # Default command matches existing Azure init_container_command = ["/sql/migratedb"]
 CMD ["/sql/migratedb"]

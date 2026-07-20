@@ -1,15 +1,15 @@
 //using AutoMapper;
 //using BenchmarkDotNet.Attributes;
 //using BenchmarkDotNet.Running;
-//using DfE.ExternalApplications.Application.Common.Behaviours;
-//using DfE.ExternalApplications.Application.MappingProfiles;
-//using DfE.ExternalApplications.Application.Schools.Queries.GetPrincipalBySchool;
-//using DfE.ExternalApplications.Application.Schools.Queries.GetPrincipalsBySchools;
-//using DfE.ExternalApplications.Domain.Entities.Schools;
-//using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-//using DfE.ExternalApplications.Domain.ValueObjects;
-//using DfE.ExternalApplications.Infrastructure.Database;
-//using DfE.ExternalApplications.Infrastructure.Repositories;
+//using GovUK.Dfe.FlexForms.Application.Common.Behaviours;
+//using GovUK.Dfe.FlexForms.Application.MappingProfiles;
+//using GovUK.Dfe.FlexForms.Application.Schools.Queries.GetPrincipalBySchool;
+//using GovUK.Dfe.FlexForms.Application.Schools.Queries.GetPrincipalsBySchools;
+//using GovUK.Dfe.FlexForms.Domain.Entities.Schools;
+//using GovUK.Dfe.FlexForms.Domain.Interfaces.Repositories;
+//using GovUK.Dfe.FlexForms.Domain.ValueObjects;
+//using GovUK.Dfe.FlexForms.Infrastructure.Database;
+//using GovUK.Dfe.FlexForms.Infrastructure.Repositories;
 //using MediatR;
 //using Microsoft.AspNetCore.Http;
 //using Microsoft.Data.Sqlite;
@@ -25,7 +25,7 @@
 //using DfE.CoreLibs.Caching.Services;
 //using DfE.CoreLibs.Caching.Settings;
 
-//namespace DfE.ExternalApplications.Benchmarks
+//namespace GovUK.Dfe.FlexForms.Benchmarks
 //{
 //    [MemoryDiagnoser]
 //    [SimpleJob(launchCount: 1, warmupCount: 1, iterationCount: 1, invocationCount: 1)]

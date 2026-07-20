@@ -1,0 +1,26 @@
+using System.Threading;
+using System.Threading.Tasks;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Request;
+using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
+using GovUK.Dfe.FlexForms.Api.Client.Contracts;
+using GovUK.Dfe.FlexForms.Api.Client.Security;
+
+namespace GovUK.Dfe.FlexForms.Api.Client.Extensions;
+
+public static class TokensClientExtensions
+{
+    public static async Task<ExchangeTokenDto> ExchangeAndStoreAsync(
+        this ITokensClient client,
+        string idpToken,
+        IInternalUserTokenStore tokenStore,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new ExchangeTokenRequest(idpToken);
+        var response = await client.ExchangeAsync(request, cancellationToken);
+        if (!string.IsNullOrEmpty(response.AccessToken))
+        {
+            tokenStore.SetToken(response.AccessToken!);
+        }
+        return response;
+    }
+}
