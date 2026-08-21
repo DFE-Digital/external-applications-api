@@ -47,7 +47,7 @@ public class DiagnosticsController(
     /// SQL is written to the container console and returned as text/plain.
     /// </summary>
     [HttpGet("export-tenant-config-sql")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, SuperAdmin")]
     public IActionResult ExportTenantConfigSql()
     {
         if (!configuration.GetValue("Diagnostics:ExportTenantConfigSqlEnabled", false))

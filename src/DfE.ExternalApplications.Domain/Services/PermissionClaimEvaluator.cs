@@ -16,7 +16,8 @@ public static class PermissionClaimEvaluator
     /// Returns true when the user has full administrative access (all resources, all actions).
     /// </summary>
     public static bool HasFullAdminAccess(ClaimsPrincipal user) =>
-        user.IsInRole(RoleNames.Admin);
+        user.IsInRole(RoleNames.Admin)
+        || user.IsInRole(RoleNames.SuperAdmin);
 
     /// <summary>
     /// Returns true when the user can read all applications in the current tenant (Admin or Caseworker only).

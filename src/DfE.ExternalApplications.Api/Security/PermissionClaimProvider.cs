@@ -2,6 +2,7 @@
 using GovUK.Dfe.CoreLibs.Security.Interfaces;
 using DfE.ExternalApplications.Application.Users.Queries;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using MediatR;
@@ -59,7 +60,7 @@ namespace DfE.ExternalApplications.Api.Security
                 return Array.Empty<Claim>();
             }
 
-            var claims = new List<Claim> { new(ClaimTypes.Role, dbUser.Role.Name) };
+            var claims = new List<Claim> { new(ClaimTypes.Role, RoleNames.ToClaimRole(dbUser.Role.Name)) };
 
             if(result.Value is not null)
             {

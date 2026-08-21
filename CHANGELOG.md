@@ -140,3 +140,7 @@ All notable changes to this service will be documented in this file.
 ## [1.5.4] - Public Beta
 ### Notes
 - Fix permission loading issues and refactor caching logic to improve performance
+
+## [1.5.5] - Public Beta
+### Notes
+- Added SupewrAdmin as alias for Admin role to support legacy users

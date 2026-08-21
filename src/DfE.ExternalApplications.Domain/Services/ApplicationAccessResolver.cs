@@ -50,7 +50,7 @@ public static class ApplicationAccessResolver
 
         var roleName = user.Role?.Name;
 
-        if (string.Equals(roleName, RoleNames.Admin, StringComparison.OrdinalIgnoreCase))
+        if (RoleNames.IsAdminName(roleName))
             return new AccessScope(AccessMode.AllApplicationsInTenant, Array.Empty<ApplicationId>(), Array.Empty<TemplateId>());
 
         if (string.Equals(roleName, RoleNames.Caseworker, StringComparison.OrdinalIgnoreCase))

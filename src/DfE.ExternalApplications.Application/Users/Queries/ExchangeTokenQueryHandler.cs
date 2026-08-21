@@ -110,10 +110,12 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                 }
             }
 
-            // Add the user's role if it's not already there
-            if (!identity.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == dbUser.Role.Name))
+            // Add the user's role if it's not already there (SuperAdmin is emitted as Admin)
+            var claimRole = RoleNames.ToClaimRole(dbUser.Role.Name);
+            if (!string.IsNullOrEmpty(claimRole)
+                && !identity.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == claimRole))
             {
-                identity.AddClaim(new Claim(ClaimTypes.Role, dbUser.Role.Name));
+                identity.AddClaim(new Claim(ClaimTypes.Role, claimRole));
             }
 
             // Merge Azure Entra service roles, avoiding duplicates
@@ -121,7 +123,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
             {
                 var isExcludedRole =
                     (svcRole.Type == ClaimTypes.Role || svcRole.Type == "roles") &&
-                    (svcRole.Value.Equals(RoleNames.Admin, StringComparison.OrdinalIgnoreCase) ||
+                    (RoleNames.IsAdminName(svcRole.Value) ||
                      svcRole.Value.Equals(RoleNames.User, StringComparison.OrdinalIgnoreCase) ||
                      svcRole.Value.Equals(RoleNames.Caseworker, StringComparison.OrdinalIgnoreCase));
 

@@ -6,6 +6,12 @@ namespace DfE.ExternalApplications.Domain.Common;
 public static class RoleNames
 {
     public const string Admin = "Admin";
+
+    /// <summary>
+    /// Database alias for <see cref="Admin"/>. Treated as Admin for authorization and claims.
+    /// </summary>
+    public const string SuperAdmin = "SuperAdmin";
+
     public const string User = "User";
     public const string Caseworker = "Caseworker";
 
@@ -20,18 +26,42 @@ public static class RoleNames
     ];
 
     /// <summary>
+    /// Returns true when the role name represents full administrative access
+    /// (<see cref="Admin"/> or <see cref="SuperAdmin"/>).
+    /// </summary>
+    public static bool IsAdminName(string? roleName) =>
+        string.Equals(roleName, Admin, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(roleName, SuperAdmin, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Maps a database role name to the canonical claim/authorization role.
+    /// <see cref="SuperAdmin"/> is emitted as <see cref="Admin"/>.
+    /// </summary>
+    public static string ToClaimRole(string? dbRoleName)
+    {
+        if (string.IsNullOrWhiteSpace(dbRoleName))
+            return string.Empty;
+
+        return IsAdminName(dbRoleName) ? Admin : dbRoleName;
+    }
+
+    /// <summary>
     /// Returns true when the role can be assigned through the administrative role assignment API.
     /// </summary>
     public static bool IsAssignable(string roleName) =>
-        Assignable.Any(r => string.Equals(r, roleName, StringComparison.OrdinalIgnoreCase));
+        ResolveAssignable(roleName) is not null;
 
     /// <summary>
     /// Resolves a role name to its canonical form, or null when not assignable.
+    /// <see cref="SuperAdmin"/> resolves to <see cref="Admin"/>.
     /// </summary>
     public static string? ResolveAssignable(string roleName)
     {
         if (string.IsNullOrWhiteSpace(roleName))
             return null;
+
+        if (IsAdminName(roleName))
+            return Admin;
 
         return Assignable.FirstOrDefault(r => string.Equals(r, roleName, StringComparison.OrdinalIgnoreCase));
     }
@@ -46,7 +76,10 @@ public static class RoleNames
         if (!string.Equals(targetRole, User, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        var current = ResolveAssignable(currentRole ?? string.Empty);
+        var current = IsAdminName(currentRole)
+            ? Admin
+            : ResolveAssignable(currentRole ?? string.Empty);
+
         if (current is null || string.Equals(current, User, StringComparison.OrdinalIgnoreCase))
             return false;
 

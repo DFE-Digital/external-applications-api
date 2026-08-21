@@ -2,6 +2,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.Commands;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Services;
@@ -100,7 +101,7 @@ public sealed class GetContributorsForApplicationQueryHandler(
                             AccessType = p.AccessType
                         })
                         .ToArray(),
-                    Roles = new List<string> { c.Role?.Name! }
+                    Roles = new List<string> { RoleNames.ToClaimRole(c.Role?.Name) }
                 } : null
             }).ToList().AsReadOnly();
 
