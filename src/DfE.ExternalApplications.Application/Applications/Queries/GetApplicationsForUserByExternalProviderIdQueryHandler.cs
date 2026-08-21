@@ -23,6 +23,7 @@ public sealed record GetApplicationsForUserByExternalProviderIdQuery(
 
 public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
     IEaRepository<User> userRepo,
+    IEaRepository<Permission> permissionRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
     ITenantContextAccessor tenantContextAccessor,
@@ -45,19 +46,25 @@ public sealed class GetApplicationsForUserByExternalProviderIdQueryHandler(
                 cacheKey,
                 async () =>
                 {
-                    var userWithAuthorization = await new GetUserWithAllPermissionsByExternalIdQueryObject(request.ExternalProviderId)
+                    var dbUser = await new GetUserByExternalProviderIdQueryObject(request.ExternalProviderId)
                         .Apply(userRepo.Query().AsNoTracking())
                         .FirstOrDefaultAsync(cancellationToken);
 
-                    if (userWithAuthorization is null)
+                    if (dbUser is null)
                         return Result<PagedResult<ApplicationDto>>.Success(
                             ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
+
+                    var applicationIds = await new GetApplicationIdsByUserIdQueryObject(dbUser.Id!)
+                        .Apply(permissionRepo.Query().AsNoTracking())
+                        .Select(p => p.ApplicationId!)
+                        .Distinct()
+                        .ToListAsync(cancellationToken);
 
                     var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
 
                     var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
                         appRepo,
-                        userWithAuthorization,
+                        applicationIds,
                         templateIdsFilter);
 
                     query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);

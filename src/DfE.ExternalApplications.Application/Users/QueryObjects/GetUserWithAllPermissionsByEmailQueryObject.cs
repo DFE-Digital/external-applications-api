@@ -15,6 +15,7 @@ public sealed class GetUserWithAllPermissionsByEmailQueryObject(string email) : 
     public IQueryable<User> Apply(IQueryable<User> query) =>
         query
             .Where(u => u.Email.ToLower() == _normalizedEmail)
+            .AsSplitQuery()
             .Include(u => u.Permissions)
             .Include(u => u.TemplatePermissions)
             .Include(u => u.Role);

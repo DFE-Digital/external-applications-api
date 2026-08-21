@@ -136,3 +136,7 @@ All notable changes to this service will be documented in this file.
 ## [1.5.3] - Public Beta
 ### Notes
 - Fix for tenant:email claim type for Notification resource
+
+## [1.5.4] - Public Beta
+### Notes
+- Fix permission loading issues and refactor caching logic to improve performance

@@ -7,6 +7,7 @@ using DfE.ExternalApplications.Domain.ValueObjects;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using Microsoft.Extensions.Logging;
+using MockQueryable;
 using NSubstitute;
 
 namespace DfE.ExternalApplications.Application.Tests.Helpers;
@@ -70,18 +71,28 @@ internal static class ApplicationListingTestHelper
             .Returns(call => call.Arg<Func<Task<Result<PagedResult<ApplicationDto>>>>>()());
     }
 
+    internal static IEaRepository<Permission> CreatePermissionRepo(params Permission[] permissions)
+    {
+        var permissionRepo = Substitute.For<IEaRepository<Permission>>();
+        permissionRepo.Query().Returns(permissions.ToList().AsQueryable().BuildMock());
+        return permissionRepo;
+    }
+
     internal static GetApplicationsForUserQueryHandler CreateGetApplicationsForUserQueryHandler(
         IEaRepository<User> userRepo,
         IEaRepository<Domain.Entities.Application> appRepo,
         ITenantContextAccessor tenantContextAccessor,
         ITenantTemplateResolver templateResolver,
-        ICacheService<IRedisCacheType>? cache = null)
+        ICacheService<IRedisCacheType>? cache = null,
+        IEaRepository<Permission>? permissionRepo = null)
     {
         cache ??= Substitute.For<ICacheService<IRedisCacheType>>();
         ConfigurePassthroughCache(cache, nameof(GetApplicationsForUserQueryHandler));
+        permissionRepo ??= CreatePermissionRepo();
 
         return new GetApplicationsForUserQueryHandler(
             userRepo,
+            permissionRepo,
             appRepo,
             cache,
             tenantContextAccessor,
@@ -94,14 +105,17 @@ internal static class ApplicationListingTestHelper
         IEaRepository<Domain.Entities.Application> appRepo,
         ITenantTemplateResolver templateResolver,
         ICacheService<IRedisCacheType>? cache = null,
-        ITenantContextAccessor? tenantContextAccessor = null)
+        ITenantContextAccessor? tenantContextAccessor = null,
+        IEaRepository<Permission>? permissionRepo = null)
     {
         cache ??= Substitute.For<ICacheService<IRedisCacheType>>();
         ConfigurePassthroughCache(cache, nameof(GetApplicationsForUserByExternalProviderIdQueryHandler));
         tenantContextAccessor ??= Substitute.For<ITenantContextAccessor>();
+        permissionRepo ??= CreatePermissionRepo();
 
         return new GetApplicationsForUserByExternalProviderIdQueryHandler(
             userRepo,
+            permissionRepo,
             appRepo,
             cache,
             tenantContextAccessor,
