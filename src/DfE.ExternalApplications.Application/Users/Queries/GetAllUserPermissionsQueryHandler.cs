@@ -4,6 +4,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Users.QueryObjects;
+using DfE.ExternalApplications.Domain.Common;
 using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
 using DfE.ExternalApplications.Domain.Tenancy;
@@ -70,7 +71,7 @@ namespace DfE.ExternalApplications.Application.Users.Queries
                         var userAuthzDto = new UserAuthorizationDto
                         {
                             Permissions = resourcePermissions.Concat(templatePermissions).ToArray(),
-                            Roles = new List<string>(){ userWithPermissions.Role?.Name! }
+                            Roles = new List<string>(){ RoleNames.ToClaimRole(userWithPermissions.Role?.Name) }
                         };
 
                         return Result<UserAuthorizationDto>.Success(userAuthzDto);

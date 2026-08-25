@@ -1,6 +1,5 @@
 using GovUK.Dfe.CoreLibs.Caching.Helpers;
 using GovUK.Dfe.CoreLibs.Caching.Interfaces;
-using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Common;
 using DfE.ExternalApplications.Application.Services;
@@ -25,6 +24,7 @@ public sealed record GetApplicationsForUserQuery(
 
 public sealed class GetApplicationsForUserQueryHandler(
     IEaRepository<User> userRepo,
+    IEaRepository<Permission> permissionRepo,
     IEaRepository<Domain.Entities.Application> appRepo,
     ICacheService<IRedisCacheType> cacheService,
     ITenantContextAccessor tenantContextAccessor,
@@ -62,20 +62,11 @@ public sealed class GetApplicationsForUserQueryHandler(
                         return Result<PagedResult<ApplicationDto>>.Failure("GetApplicationsForUserQueryHandler > User not found.");
                     }
 
-                    var userWithAuthorization = await new GetUserWithAllPermissionsByUserIdQueryObject(dbUser.Id!)
-                        .Apply(userRepo.Query().AsNoTracking())
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (userWithAuthorization is null)
-                    {
-                        logger.LogWarning(
-                            "Application listing: authorization profile missing. Tenant={Tenant}, Email={Email}, UserId={UserId}",
-                            tenantName,
-                            request.Email,
-                            dbUser.Id!.Value);
-                        return Result<PagedResult<ApplicationDto>>.Success(
-                            ApplicationListingQueryBuilder.EmptyPagedResult(request.PageNumber, request.PageSize));
-                    }
+                    var applicationIds = await new GetApplicationIdsByUserIdQueryObject(dbUser.Id!)
+                        .Apply(permissionRepo.Query().AsNoTracking())
+                        .Select(p => p.ApplicationId!)
+                        .Distinct()
+                        .ToListAsync(cancellationToken);
 
                     var templateIdsFilter = tenantTemplateResolver.ResolveListingTemplateFilter(request.TemplateId);
 
@@ -83,15 +74,14 @@ public sealed class GetApplicationsForUserQueryHandler(
                         "My applications listing (own applications only). Tenant={Tenant}, Email={Email}, Role={Role}, ExplicitApplicationCount={ApplicationCount}, RequestedTemplateId={RequestedTemplateId}, EffectiveTemplateCount={EffectiveTemplateCount}",
                         tenantName,
                         request.Email,
-                        userWithAuthorization.Role?.Name ?? "(unknown)",
-                        userWithAuthorization.Permissions.Count(p =>
-                            p is { ApplicationId: not null, ResourceType: ResourceType.Application }),
+                        dbUser.Role?.Name ?? "(unknown)",
+                        applicationIds.Count,
                         request.TemplateId,
                         templateIdsFilter.Count);
 
                     var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
                         appRepo,
-                        userWithAuthorization,
+                        applicationIds,
                         templateIdsFilter);
 
                     query = ApplicationListingQueryBuilder.ApplySearchFilters(query, request.Search);

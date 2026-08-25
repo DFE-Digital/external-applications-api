@@ -72,7 +72,7 @@ public class UsersController(ISender sender) : ControllerBase
     [SwaggerResponse(401, "Unauthorized - no valid user token", typeof(ExceptionResponse))]
     [SwaggerResponse(403, "Forbidden - only administrators can assign roles", typeof(ExceptionResponse))]
     [SwaggerResponse(500, "Internal server error.", typeof(ExceptionResponse))]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, SuperAdmin")]
     public async Task<ActionResult<UserDto>> AssignUserRoleAsync(
         [FromBody] AssignUserRoleRequest request,
         CancellationToken cancellationToken)

@@ -15,6 +15,7 @@ namespace DfE.ExternalApplications.Application.Users.QueryObjects
         {
             return query
                 .Where(u => u.Id == userId)
+                .AsSplitQuery()
                 .Include(u => u.Permissions)
                 .Include(u => u.TemplatePermissions)
                 .Include(u => u.Role);

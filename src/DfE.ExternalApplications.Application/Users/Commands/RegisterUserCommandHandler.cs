@@ -198,7 +198,7 @@ public sealed class RegisterUserCommandHandler(
                     AccessType = p.AccessType
                 })
                 .ToArray(),
-            Roles = new List<string> { user.Role?.Name ?? "User" }
+            Roles = new List<string> { RoleNames.ToClaimRole(user.Role?.Name) is { Length: > 0 } role ? role : RoleNames.User }
         };
     }
 }

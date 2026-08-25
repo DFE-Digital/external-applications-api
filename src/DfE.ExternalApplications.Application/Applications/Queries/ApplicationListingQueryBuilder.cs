@@ -2,9 +2,7 @@ using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Enums;
 using GovUK.Dfe.CoreLibs.Contracts.ExternalApplications.Models.Response;
 using DfE.ExternalApplications.Application.Applications.QueryObjects;
 using DfE.ExternalApplications.Application.Common.QueriesObjects;
-using DfE.ExternalApplications.Domain.Entities;
 using DfE.ExternalApplications.Domain.Interfaces.Repositories;
-using DfE.ExternalApplications.Domain.Services;
 using DfE.ExternalApplications.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using ApplicationId = DfE.ExternalApplications.Domain.ValueObjects.ApplicationId;
@@ -20,17 +18,14 @@ internal static class ApplicationListingQueryBuilder
     /// Lists only applications the user has explicit application permission rows for (dashboard / me/applications).
     /// Role is ignored so admins and caseworkers see only their own applications here.
     /// </summary>
+    /// <param name="appRepo">Application repository.</param>
+    /// <param name="applicationIds">Distinct application IDs the user may access.</param>
+    /// <param name="templateIdsFilter">Tenant/template filter applied to the listing.</param>
     internal static IQueryable<Domain.Entities.Application> BuildMyApplicationsQuery(
         IEaRepository<Domain.Entities.Application> appRepo,
-        User userWithAuthorization,
+        IReadOnlyCollection<ApplicationId> applicationIds,
         IReadOnlyCollection<TemplateId> templateIdsFilter)
     {
-        var applicationIds = userWithAuthorization.Permissions
-            .Where(p => p is { ApplicationId: not null, ResourceType: ResourceType.Application })
-            .Select(p => p.ApplicationId!)
-            .Distinct()
-            .ToList();
-
         IQueryable<Domain.Entities.Application> query = applicationIds.Count == 0
             ? appRepo.Query().AsNoTracking().Where(_ => false)
             : new GetApplicationsByIdsQueryObject(applicationIds)

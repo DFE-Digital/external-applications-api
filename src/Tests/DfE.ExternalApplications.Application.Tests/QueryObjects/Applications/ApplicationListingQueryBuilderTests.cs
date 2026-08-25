@@ -68,14 +68,13 @@ public class ApplicationListingQueryBuilderTests
         var scope = ApplicationAccessResolver.Resolve(admin);
         Assert.Equal(ApplicationAccessResolver.AccessMode.AllApplicationsInTenant, scope.Mode);
 
-        var permissions = admin.GetType()
-            .GetField("_permissions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        permissions.SetValue(admin, new List<Permission>());
-
         var appRepo = Substitute.For<IEaRepository<Domain.Entities.Application>>();
         appRepo.Query().Returns(new List<Domain.Entities.Application>().AsQueryable());
 
-        var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(appRepo, admin, Array.Empty<TemplateId>());
+        var query = ApplicationListingQueryBuilder.BuildMyApplicationsQuery(
+            appRepo,
+            Array.Empty<Domain.ValueObjects.ApplicationId>(),
+            Array.Empty<TemplateId>());
 
         Assert.NotNull(query);
     }
