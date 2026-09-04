@@ -80,6 +80,27 @@ public class NotificationsPermissionHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldSucceed_WithTenantScopedClaimWhenTenantContextIsMissing()
+    {
+        var requirement = new NotificationsPermissionRequirement("Read");
+        var httpContext = new DefaultHttpContext();
+        var userEmail = "user@example.com";
+        var resourceKey = NotificationPermissionResourceKey.Create(TestTenantId, userEmail);
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Email, userEmail),
+            new Claim("permission", $"Notifications:{resourceKey}:Read")
+        };
+        var user = new ClaimsPrincipal(new ClaimsIdentity(claims));
+        var context = new AuthorizationHandlerContext([requirement], user, null);
+        var handler = CreateHandler(httpContext);
+
+        await handler.HandleAsync(context);
+
+        Assert.True(context.HasSucceeded);
+    }
+
+    [Fact]
     public async Task Handle_ShouldSucceed_WithAppIdClaim()
     {
         var requirement = new NotificationsPermissionRequirement("Read");

@@ -58,4 +58,43 @@ public class NotificationPermissionResourceKeyTests
         Assert.True(NotificationPermissionResourceKey.HasMatchingClaim(
             user, email, AccessType.Read, TenantId));
     }
+
+    [Fact]
+    public void HasMatchingClaim_MatchesTenantScopedClaimWhenTenantContextIsMissing()
+    {
+        var email = "user@example.com";
+        var claim = new Claim(
+            PermissionClaimEvaluator.PermissionClaimType,
+            $"Notifications:{TenantId}:{email}:Read");
+        var user = new ClaimsPrincipal(new ClaimsIdentity([claim]));
+
+        Assert.True(NotificationPermissionResourceKey.HasMatchingClaim(
+            user, email, AccessType.Read, tenantId: null));
+    }
+
+    [Fact]
+    public void HasMatchingClaim_MatchesTenantScopedClaimWhenTenantIdDiffers()
+    {
+        var email = "user@example.com";
+        var otherTenant = Guid.Parse("22222222-2222-4222-8222-222222222222");
+        var claim = new Claim(
+            PermissionClaimEvaluator.PermissionClaimType,
+            $"Notifications:{TenantId}:{email}:Write");
+        var user = new ClaimsPrincipal(new ClaimsIdentity([claim]));
+
+        Assert.True(NotificationPermissionResourceKey.HasMatchingClaim(
+            user, email, AccessType.Write, otherTenant));
+    }
+
+    [Fact]
+    public void HasMatchingClaim_DoesNotMatchDifferentEmail()
+    {
+        var claim = new Claim(
+            PermissionClaimEvaluator.PermissionClaimType,
+            $"Notifications:{TenantId}:other@example.com:Read");
+        var user = new ClaimsPrincipal(new ClaimsIdentity([claim]));
+
+        Assert.False(NotificationPermissionResourceKey.HasMatchingClaim(
+            user, "user@example.com", AccessType.Read, TenantId));
+    }
 }

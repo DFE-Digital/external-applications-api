@@ -45,6 +45,44 @@ public static class NotificationPermissionResourceKey
                 return true;
         }
 
+        // Tenant-scoped DB keys (tenantId:email) must still match when tenant context is
+        // missing or uses a different tenant id than the stored resource key.
+        return HasClaimForPrincipal(user, principalId, accessType);
+    }
+
+    private static bool HasClaimForPrincipal(
+        ClaimsPrincipal user,
+        string principalId,
+        AccessType accessType)
+    {
+        if (string.IsNullOrWhiteSpace(principalId))
+            return false;
+
+        var prefix = $"{ResourceType.Notifications}:";
+        var suffix = $":{accessType}";
+
+        foreach (var claim in user.Claims)
+        {
+            if (claim.Type != PermissionClaimEvaluator.PermissionClaimType)
+                continue;
+
+            if (!claim.Value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                || !claim.Value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var resourceKey = claim.Value.Substring(
+                prefix.Length,
+                claim.Value.Length - prefix.Length - suffix.Length);
+
+            if (resourceKey.Equals(principalId, StringComparison.OrdinalIgnoreCase)
+                || resourceKey.EndsWith($":{principalId}", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
