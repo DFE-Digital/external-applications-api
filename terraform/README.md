@@ -134,14 +134,14 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 | Name | Version |
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.81.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | 3.3.0 |
+| <a name="provider_null"></a> [null](#provider\_null) | 3.3.1 |
 
 ## Modules
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_azure_container_apps_hosting"></a> [azure\_container\_apps\_hosting](#module\_azure\_container\_apps\_hosting) | github.com/DFE-Digital/terraform-azurerm-container-apps-hosting | v2.8.1 |
-| <a name="module_data_protection"></a> [data\_protection](#module\_data\_protection) | github.com/DFE-Digital/terraform-azurerm-aspnet-data-protection | conditionally-add-storage |
+| <a name="module_azure_container_apps_hosting"></a> [azure\_container\_apps\_hosting](#module\_azure\_container\_apps\_hosting) | github.com/DFE-Digital/terraform-azurerm-container-apps-hosting | v2.9.5 |
+| <a name="module_data_protection"></a> [data\_protection](#module\_data\_protection) | github.com/DFE-Digital/terraform-azurerm-aspnet-data-protection | v1.4.0 |
 | <a name="module_statuscake-tls-monitor"></a> [statuscake-tls-monitor](#module\_statuscake-tls-monitor) | github.com/dfe-digital/terraform-statuscake-tls-monitor | v0.1.5 |
 
 ## Resources
