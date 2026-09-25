@@ -520,6 +520,12 @@ variable "storage_account_ipv4_allow_list" {
   default     = []
 }
 
+variable "storage_account_vnet_subnet_allow_list" {
+  description = "A list of VNet subnet IDs to grant access to the Storage Account"
+  type        = list(string)
+  default     = []
+}
+
 variable "enable_signalr" {
   description = "Enable serverless Azure SignalR service"
   type        = bool

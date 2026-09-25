@@ -19,6 +19,7 @@ locals {
   container_app_file_share_mount_path          = var.container_app_file_share_mount_path
   storage_account_public_access_enabled        = var.storage_account_public_access_enabled
   storage_account_ipv4_allow_list              = var.storage_account_ipv4_allow_list
+  storage_account_vnet_subnet_allow_list       = var.storage_account_vnet_subnet_allow_list
   enable_dns_zone                              = var.enable_dns_zone
   dns_zone_domain_name                         = var.dns_zone_domain_name
   dns_ns_records                               = var.dns_ns_records

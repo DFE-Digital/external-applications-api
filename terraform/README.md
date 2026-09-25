@@ -140,7 +140,7 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_azure_container_apps_hosting"></a> [azure\_container\_apps\_hosting](#module\_azure\_container\_apps\_hosting) | github.com/DFE-Digital/terraform-azurerm-container-apps-hosting | v2.9.5 |
+| <a name="module_azure_container_apps_hosting"></a> [azure\_container\_apps\_hosting](#module\_azure\_container\_apps\_hosting) | github.com/DFE-Digital/terraform-azurerm-container-apps-hosting | allow-adding-vnets-to-storage-network-rules |
 | <a name="module_data_protection"></a> [data\_protection](#module\_data\_protection) | github.com/DFE-Digital/terraform-azurerm-aspnet-data-protection | v1.4.0 |
 | <a name="module_statuscake-tls-monitor"></a> [statuscake-tls-monitor](#module\_statuscake-tls-monitor) | github.com/dfe-digital/terraform-statuscake-tls-monitor | v0.1.5 |
 
@@ -237,6 +237,7 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 | <a name="input_storage_account_file_share_quota_gb"></a> [storage\_account\_file\_share\_quota\_gb](#input\_storage\_account\_file\_share\_quota\_gb) | The maximum size of the share, in gigabytes. | `number` | `1` | no |
 | <a name="input_storage_account_ipv4_allow_list"></a> [storage\_account\_ipv4\_allow\_list](#input\_storage\_account\_ipv4\_allow\_list) | A list of public IPv4 address to grant access to the Storage Account | `list(string)` | `[]` | no |
 | <a name="input_storage_account_public_access_enabled"></a> [storage\_account\_public\_access\_enabled](#input\_storage\_account\_public\_access\_enabled) | Should the Azure Storage Account have Public visibility? | `bool` | `false` | no |
+| <a name="input_storage_account_vnet_subnet_allow_list"></a> [storage\_account\_vnet\_subnet\_allow\_list](#input\_storage\_account\_vnet\_subnet\_allow\_list) | A list of VNet subnet IDs to grant access to the Storage Account | `list(string)` | `[]` | no |
 | <a name="input_storage_subnet_cidr"></a> [storage\_subnet\_cidr](#input\_storage\_subnet\_cidr) | Specify a subnet prefix to use for the storage subnet | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to be applied to all resources | `map(string)` | n/a | yes |
 | <a name="input_tfvars_access_ipv4"></a> [tfvars\_access\_ipv4](#input\_tfvars\_access\_ipv4) | List of IPv4 Addresses that are permitted to access the tfvars storage | `list(string)` | n/a | yes |
