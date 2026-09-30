@@ -39,8 +39,8 @@ public class AzureBearerTokenHandler(
                 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    logger.LogError(">>>>>>>>>> Authentication >>> 401 Unauthorized response received - Azure token may be invalid or expired for {Method} {Uri}", 
-                        request.Method, request.RequestUri);
+                    logger.LogError(">>>>>>>>>> Authentication >>> 401 Unauthorized response received - Azure token may be invalid or expired for {Method} {Uri} [{token}]", 
+                        request.Method, request.RequestUri, azureToken);
             }
                 else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
