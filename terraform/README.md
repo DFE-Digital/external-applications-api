@@ -140,7 +140,7 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_azure_container_apps_hosting"></a> [azure\_container\_apps\_hosting](#module\_azure\_container\_apps\_hosting) | github.com/DFE-Digital/terraform-azurerm-container-apps-hosting | v2.11.0 |
+| <a name="module_azure_container_apps_hosting"></a> [azure\_container\_apps\_hosting](#module\_azure\_container\_apps\_hosting) | github.com/DFE-Digital/terraform-azurerm-container-apps-hosting | v2.11.2 |
 | <a name="module_data_protection"></a> [data\_protection](#module\_data\_protection) | github.com/DFE-Digital/terraform-azurerm-aspnet-data-protection | v1.4.0 |
 | <a name="module_statuscake-tls-monitor"></a> [statuscake-tls-monitor](#module\_statuscake-tls-monitor) | github.com/dfe-digital/terraform-statuscake-tls-monitor | v0.1.5 |
 
@@ -193,7 +193,9 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 | <a name="input_enable_main_container"></a> [enable\_main\_container](#input\_enable\_main\_container) | Enable main container | `bool` | `true` | no |
 | <a name="input_enable_monitoring"></a> [enable\_monitoring](#input\_enable\_monitoring) | Create an App Insights instance and notification group for the Container App | `bool` | n/a | yes |
 | <a name="input_enable_monitoring_traces"></a> [enable\_monitoring\_traces](#input\_enable\_monitoring\_traces) | Monitor App Insights traces for error messages | `bool` | `true` | no |
+| <a name="input_enable_mssql_audit_logs"></a> [enable\_mssql\_audit\_logs](#input\_enable\_mssql\_audit\_logs) | Enable MSSQL audit logs | `bool` | `false` | no |
 | <a name="input_enable_mssql_database"></a> [enable\_mssql\_database](#input\_enable\_mssql\_database) | Set to true to create an Azure SQL server/database, with a private endpoint within the virtual network | `bool` | `false` | no |
+| <a name="input_enable_mssql_security_audit_events"></a> [enable\_mssql\_security\_audit\_events](#input\_enable\_mssql\_security\_audit\_events) | Enable MSSQL Security Audit Event logs | `bool` | `false` | no |
 | <a name="input_enable_mssql_vulnerability_assessment"></a> [enable\_mssql\_vulnerability\_assessment](#input\_enable\_mssql\_vulnerability\_assessment) | Vulnerability assessment can discover, track, and help you remediate potential database vulnerabilities | `bool` | `true` | no |
 | <a name="input_enable_signalr"></a> [enable\_signalr](#input\_enable\_signalr) | Enable serverless Azure SignalR service | `bool` | n/a | yes |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name. Will be used along with `project_name` as a prefix for all resources. | `string` | n/a | yes |
@@ -220,6 +222,7 @@ If everything looks good, answer `yes` and wait for the new infrastructure to be
 | <a name="input_mssql_managed_identity_assign_role"></a> [mssql\_managed\_identity\_assign\_role](#input\_mssql\_managed\_identity\_assign\_role) | Assign the 'Storage Blob Data Contributor' Role to the SQL Server User-Assigned Managed Identity. Note: If you do not have 'Microsoft.Authorization/roleAssignments/write' permission, you will need to manually assign the 'Storage Blob Data Contributor' Role to the identity | `bool` | `false` | no |
 | <a name="input_mssql_private_endpoint_subnet_cidr"></a> [mssql\_private\_endpoint\_subnet\_cidr](#input\_mssql\_private\_endpoint\_subnet\_cidr) | Specify a subnet prefix to use for the mssql private endpoint subnet | `string` | n/a | yes |
 | <a name="input_mssql_server_admin_password"></a> [mssql\_server\_admin\_password](#input\_mssql\_server\_admin\_password) | The local administrator password for the MSSQL server | `string` | `""` | no |
+| <a name="input_mssql_server_name_override"></a> [mssql\_server\_name\_override](#input\_mssql\_server\_name\_override) | Provide a value to conditionally override the default mssql server name (which is set to the resource prefix by default) | `string` | `""` | no |
 | <a name="input_mssql_server_public_access_enabled"></a> [mssql\_server\_public\_access\_enabled](#input\_mssql\_server\_public\_access\_enabled) | Enable public internet access to your MSSQL instance. Be sure to specify 'mssql\_firewall\_ipv4\_allow\_list' to restrict inbound connections | `bool` | `true` | no |
 | <a name="input_mssql_sku_name"></a> [mssql\_sku\_name](#input\_mssql\_sku\_name) | Specifies the name of the SKU used by the database | `string` | `"Basic"` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name. Will be used along with `environment` as a prefix for all resources. | `string` | n/a | yes |
