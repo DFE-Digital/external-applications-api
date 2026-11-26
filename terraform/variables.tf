@@ -596,3 +596,9 @@ variable "data_protection_storage_account_ipv4_allow_list" {
   type        = list(string)
   default     = []
 }
+
+variable data_protection_enable_shared_access_key {
+  description = "Enable shared access key for Development"
+  type        = bool
+  default     = false
+}

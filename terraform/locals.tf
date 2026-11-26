@@ -86,6 +86,7 @@ locals {
   data_protection_enable_storage                             = var.data_protection_enable_storage
   data_protection_storage_account_vnet_subnet_ids_allow_list = var.data_protection_storage_account_vnet_subnet_ids_allow_list
   data_protection_storage_account_ipv4_allow_list            = var.data_protection_storage_account_ipv4_allow_list
+  data_protection_enable_shared_access_key                   = var.data_protection_enable_shared_access_key
 
   is_windows = can(regex("^[A-Za-z]:", abspath(path.root)))
   bash       = local.is_windows ? "C:/Program Files/Git/bin/bash.exe" : "/bin/bash"

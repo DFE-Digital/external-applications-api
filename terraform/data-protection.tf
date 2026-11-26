@@ -1,5 +1,5 @@
 module "data_protection" {
-  source = "github.com/DFE-Digital/terraform-azurerm-aspnet-data-protection?ref=v1.4.0"
+  source = "github.com/DFE-Digital/terraform-azurerm-aspnet-data-protection?ref=v1.4.1"
 
   data_protection_key_vault_assign_role                 = false
   data_protection_key_vault_subnet_prefix               = local.data_protection_subnet_prefix
@@ -13,4 +13,5 @@ module "data_protection" {
   enable_storage                                        = local.data_protection_enable_storage
   storage_account_vnet_subnet_ids_allow_list            = local.data_protection_storage_account_vnet_subnet_ids_allow_list
   storage_account_ipv4_allow_list                       = local.data_protection_storage_account_ipv4_allow_list
+  enable_shared_access_key                              = local.data_protection_enable_shared_access_key
 }
